@@ -35,10 +35,6 @@ int main()
         return 1;
     }
 
-    // 이 부분을 수정하여 모터의 개수와 CAN ID를 설정
-    const int num_motors = 5;    // 모터의 개수
-    int motor_ids[] = {2, 3, 4, 5, 6}; // 모터의 CAN ID
-
     // Motor check
     MotorLimits motorlimits;
     MotorLimits *p_limits;
@@ -47,10 +43,13 @@ int main()
 
     struct can_frame can_frame;
 
-    for (int i = 0; i < num_motors; ++i)
+    int tmotor_ids[] = {2, 3};
+    int t_num_motor = sizeof(tmotor_ids) / sizeof(tmotor_ids[0]);
+
+    for (int i = 0; i < t_num_motor; ++i)
     {
         MotorCommand command;
-        command.motor_id = motor_ids[i];
+        command.motor_id = tmotor_ids[i];
         command.p_des = 0;
         command.v_des = 0;
         command.kp = 8;
@@ -60,45 +59,154 @@ int main()
         // Check available motor
         pack_cmd(motorlimits, &can_frame, command.motor_id, 0, 0, 0, 0, 0); // zero command
         send_frame_and_receive_reply(can_socket, &can_frame);
-        printf("motor %d connected\n", motor_ids[i]);
+        printf("motor %d connected\n", tmotor_ids[i]);
         usleep(10000);
 
         // Enter Controlmode
         enterControlmode(&can_frame, command.motor_id);
         send_frame_and_receive_reply(can_socket, &can_frame);
-        printf("motor %d enter control mode\n", motor_ids[i]);
+        printf("motor %d enter control mode\n", tmotor_ids[i]);
         usleep(50000);
     }
 
-    struct can_frame *sent_frames = NULL;
-    struct can_frame *received_frames = NULL;
-    int num_frames = 0;
-    int actual_frames = 0;
+    // Maxon Motor initialization
 
-    // 데이터를 CSV 파일에서 불러오고 sent_frames에 저장
-    prepack_frames_from_csv("./tests/command/5_tmotors.csv", motorlimits, &sent_frames, &num_frames);
+    // Enter CSP mode
+    setNodeCSPMode(&can_frame, 0x603);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
 
-    // sent_frames를 사용하여 CAN 데이터를 전송하고 received_frames에 수신 데이터를 저장
-    sendFramesPeriodically(can_socket, sent_frames, num_frames, 5 /*ms*/, motorlimits, &received_frames, &actual_frames);
+    // Set torqueoffset
+    setNodeTorqueOffset(&can_frame, 0x603);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
 
-    // 수신한 데이터를 처리
-    postProcessReceivedData(received_frames, actual_frames, motorlimits, "./tests/recv_data", "5_tmotors.csv");
+    // Set postionoffset
+    setNodePositionOffset(&can_frame, 0x603);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
 
-    // 메모리 해제
-    free(sent_frames);
-    free(received_frames);
+    // pre-operation -> operational (PDO enable)
+    setOperational(&can_frame, 0x00);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
 
-    // 각 모터에 대한 종료 처리
-    for (int i = 0; i < num_motors; ++i) {
+    // Shut Down
+    controlWordShutdown(&can_frame, 0x203);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
+
+    // Sync
+    Sync(&can_frame);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
+
+    // Enable CSP mode
+    controlWordSwitchOnEnable(&can_frame, 0x203);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
+
+    // Sync
+    Sync(&can_frame);
+    send_frame_and_receive_reply(can_socket, &can_frame);
+    usleep(50000);
+
+    // 공통 변수 및 설정
+    clock_t external = clock();
+    int should_exit = 0;
+
+    int can_ids[] = {0x303, 2, 3}; // 예시 CAN ID. 실제 ID로 교체 필요
+    int num_motors = sizeof(can_ids) / sizeof(can_ids[0]);
+    int cycle_count = 0;
+    float sample_time = 0.005; // 5ms
+
+    float total_times[] = {2.0, 2.0, 2.0}; // 각 모터의 총 주기 시간
+                                           // 모터의 개수
+    float local_times[num_motors];         // 각 모터의 로컬 시간을 저장할 배열
+    float target_positions[num_motors];    // 각 모터의 타겟 위치를 저장할 배열
+
+    // 초기화 코드...
+    for (int i = 0; i < num_motors; ++i)
+    {
+        local_times[i] = 0.0;
+    }
+
+    char c = 'a';
+
+    while (!should_exit)
+    {
+        while (1)
+        {
+
+            clock_t internal = clock();
+            double elapsed_time = ((double)(internal - external)) / CLOCKS_PER_SEC * 1000;
+            if (elapsed_time >= (sample_time * 1000))
+            {
+                // 시간 초기화
+                external = clock();
+                for (int i = 0; i < num_motors; ++i)
+                {
+                    // 각 모터의 로컬 시간 업데이트
+                    local_times[i] = fmod(local_times[i] + sample_time, total_times[i]);
+
+                    // 주기가 끝났으면 cycle_count 증가
+                    if (fabs(local_times[i] - total_times[i]) < 1e-5)
+                    {
+                        cycle_count++;
+                    }
+                    // 사인 함수 계산
+                    target_positions[i] = sinf(2 * PI * local_times[i] / total_times[i]);
+
+                    // 패키지 생성 및 전송
+                    // Maxon의 경우
+                    if (can_ids[i] == 0x303)
+                    {
+                        controlWordTargetPosition(&can_frame, can_ids[i], (int)(target_positions[i] * 35840));
+                        send_no_read(can_socket, &can_frame);
+                        Sync(&can_frame);
+                        send_receive(can_socket, &can_frame);
+                    }
+                    // Tmotor의 경우
+                    else
+                    {
+                        pack_cmd(motorlimits, &can_frame, can_ids[i], (float)(target_positions[i] * PI / 2), 0, 8, 1, 0);
+                        send_receive(can_socket, &can_frame);
+                    }
+                }
+            }
+            // 3번 주기를 완료했으면 should_exit를 1로 설정해 루프 탈출
+            if (cycle_count >= 10)
+            {
+                should_exit = 1;
+                break;
+            }
+
+            // 종료 조건 체크 (예: 키보드 입력)
+            if (kbhit())
+            {
+                c = getchar();
+                if (c == 'q' || c == 'Q')
+                {
+                    printf("Exit control mode.\n");
+                    should_exit = 1;
+                    break;
+                }
+            }
+        }
+
+    }
+    // Exit Tmotor
+    for (int i = 0; i < t_num_motor; ++i)
+    {
         // Zero command before exit
-        pack_cmd(motorlimits, &can_frame, motor_ids[i], 0, 0, 0, 0, 0); 
+        pack_cmd(motorlimits, &can_frame, tmotor_ids[i], 0, 0, 0, 0, 0);
         send_frame_and_receive_reply(can_socket, &can_frame);
         usleep(10000);
 
         // Exit Control Mode
-        exitControlmode(&can_frame, motor_ids[i]);
+        exitControlmode(&can_frame, tmotor_ids[i]);
         send_frame_and_receive_reply(can_socket, &can_frame);
-        printf("motor %d exit\n", motor_ids[i]);
+        printf("motor %d exit\n", tmotor_ids[i]);
     }
 
     // Close socket

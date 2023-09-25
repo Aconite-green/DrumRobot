@@ -147,26 +147,25 @@ int kbhit(void)
     return 0;
 }
 
-#include <sys/socket.h> // setsockopt을 위한 헤더
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <linux/can.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-
 void send_frame_and_receive_reply(int hsocket, struct can_frame *frame)
 {
     struct timeval timeout;
-    timeout.tv_sec = 1;  // 1초
-    timeout.tv_usec = 0; // 0마이크로초
+    timeout.tv_sec = 0;      // 1초
+    timeout.tv_usec = 5000; // 0마이크로초
 
     // 타임아웃 설정
     if (setsockopt(hsocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
     {
         printf("setsockopt failed\n");
     }
+
+    // 현재 can_frame의 ID와 데이터 출력
+    printf("Before sending - CAN Frame ID: 0x%X, Data: ", frame->can_id);
+    for (int i = 0; i < frame->can_dlc; i++)
+    {
+        printf("%02X ", frame->data[i]);
+    }
+    printf("\n");
 
     int result;
     result = write(hsocket, frame, sizeof(struct can_frame));
@@ -190,8 +189,83 @@ void send_frame_and_receive_reply(int hsocket, struct can_frame *frame)
         return;
     }
 
-    // 정상적으로 데이터 수신
-    // 여기에 로직 추가
+    // 수신한 후의 can_frame의 ID와 데이터 출력
+    printf("After receiving - CAN Frame ID: 0x%X, Data: ", frame->can_id);
+    for (int i = 0; i < frame->can_dlc; i++)
+    {
+        printf("%02X ", frame->data[i]);
+    }
+    printf("\n");
+}
+
+void send_receive(int hsocket, struct can_frame *frame)
+{
+    struct timeval timeout;
+    timeout.tv_sec = 0;      // 1초
+    timeout.tv_usec = 5000; // 0마이크로초
+
+    // 타임아웃 설정
+    if (setsockopt(hsocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+    {
+        printf("setsockopt failed\n");
+    }
+
+    
+
+    int result;
+    result = write(hsocket, frame, sizeof(struct can_frame));
+    if (result <= 0)
+    {
+        printf("send error, errno: %d, strerror: %s\n", errno, strerror(errno));
+        return;
+    }
+
+    result = read(hsocket, frame, sizeof(struct can_frame));
+    if (result <= 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) // 타임아웃 발생시
+        {
+            printf("recv timeout\n");
+        }
+        else
+        {
+            printf("recv error, errno: %d, strerror: %s\n", errno, strerror(errno));
+        }
+        return;
+    }
+
+}
+
+void send_frame(int hsocket, struct can_frame *frame)
+{
+
+    // 현재 can_frame의 ID와 데이터 출력
+    printf("Only Send - CAN Frame ID: 0x%X, Data: ", frame->can_id);
+    for (int i = 0; i < frame->can_dlc; i++)
+    {
+        printf("%02X ", frame->data[i]);
+    }
+    printf("\n");
+
+    int result;
+    result = write(hsocket, frame, sizeof(struct can_frame));
+    if (result <= 0)
+    {
+        printf("send error, errno: %d, strerror: %s\n", errno, strerror(errno));
+        return;
+    }
+}
+
+void send_no_read(int hsocket, struct can_frame *frame)
+{
+
+    int result;
+    result = write(hsocket, frame, sizeof(struct can_frame));
+    if (result <= 0)
+    {
+        printf("send error, errno: %d, strerror: %s\n", errno, strerror(errno));
+        return;
+    }
 }
 
 // 각각의 명령어를 나타내는 구조체 배열을 반환
@@ -205,7 +279,6 @@ void prepack_frames_from_csv(const char *filepath, MotorLimits limits, struct ca
         return;
     }
 
-    // 줄 수 세기
     char ch;
     int lines = 0;
     while (!feof(file))
@@ -216,7 +289,7 @@ void prepack_frames_from_csv(const char *filepath, MotorLimits limits, struct ca
             lines++;
         }
     }
-    rewind(file); // 파일 포인터를 처음으로 돌림
+    rewind(file);
 
     *num_frames = lines;
     *frames_ptr = (struct can_frame *)malloc(sizeof(struct can_frame) * (*num_frames));
@@ -228,19 +301,59 @@ void prepack_frames_from_csv(const char *filepath, MotorLimits limits, struct ca
 
     struct can_frame *prepacked_frames = *frames_ptr;
 
-    // CSV 파일에서 각 줄을 읽어와서 can_frame에 저장
+    char motor_type[100];
     float p_des, v_des, kp, kd, t_ff;
-    int can_id;
+    int can_id, targetPosition;
+
+    int sync_frame_count = 0; // Maxon 모터에 대한 sync frame을 카운트하기 위한 변수
+
     for (int i = 0; i < *num_frames; i++)
     {
-        if (fscanf(file, "%d,%f,%f,%f,%f,%f\n", &can_id, &p_des, &v_des, &kp, &kd, &t_ff) != 6)
+        if (fscanf(file, "%s,%d,", motor_type, &can_id) != 2)
         {
             printf("Failed to read a line from the CSV file\n");
-            free(prepacked_frames); // 이미 할당된 메모리 해제
+            free(prepacked_frames);
             return;
         }
-        pack_cmd(limits, &(prepacked_frames[i]), can_id, p_des, v_des, kp, kd, t_ff);
+
+        if (strcmp(motor_type, "Tmotor") == 0)
+        {
+            if (fscanf(file, "%f,%f,%f,%f,%f\n", &p_des, &v_des, &kp, &kd, &t_ff) != 5)
+            {
+                printf("Failed to read Tmotor parameters from the CSV file\n");
+                free(prepacked_frames);
+                return;
+            }
+            pack_cmd(limits, &(prepacked_frames[i]), can_id, p_des, v_des, kp, kd, t_ff);
+        }
+        else if (strcmp(motor_type, "Maxon") == 0)
+        {
+            if (fscanf(file, "%d\n", &targetPosition) != 1)
+            {
+                printf("Failed to read Maxon parameters from the CSV file\n");
+                free(prepacked_frames);
+                return;
+            }
+            controlWordTargetPosition(&(prepacked_frames[i]), can_id, targetPosition);
+
+            // Maxon 모터에 대한 sync frame 추가
+            sync_frame_count++;
+            *frames_ptr = (struct can_frame *)realloc(*frames_ptr, sizeof(struct can_frame) * (*num_frames + sync_frame_count));
+            struct can_frame *sync_frame = &((*frames_ptr)[*num_frames + sync_frame_count - 1]);
+            sync_frame->can_id = 0x80;
+            sync_frame->can_dlc = 1;
+            sync_frame->data[0] = 0x00;
+        }
+        else
+        {
+            printf("Unknown motor type\n");
+            free(prepacked_frames);
+            return;
+        }
     }
+
+    // 전체 frame 수 업데이트
+    *num_frames += sync_frame_count;
 
     fclose(file);
 }
@@ -288,7 +401,7 @@ void postProcessReceivedData(struct can_frame *received_frames, int actual_frame
 }
 
 // sendFramesPeriodically 함수
-void sendFramesPeriodically(int can_socket, struct can_frame *frames, int num_frames, int period_ms, MotorLimits limits, struct can_frame **received_frames_ptr, int *actual_frames_ptr)
+void sendFramesPeriodically(int can_socket, struct can_frame *frames, int num_frames, int period_ms, struct can_frame **received_frames_ptr, int *actual_frames_ptr)
 {
     *received_frames_ptr = (struct can_frame *)malloc(num_frames * sizeof(struct can_frame));
     if (*received_frames_ptr == NULL)
@@ -343,6 +456,64 @@ void sendFramesPeriodically(int can_socket, struct can_frame *frames, int num_fr
     }
 }
 
+#include <stdio.h>
+#include <stdlib.h>
+
+void writeRawCANDataToCSV(struct can_frame *received_frames, int actual_frames, const char *folder_path, const char *file_name)
+{
+    // 파일 경로와 이름을 합친다.
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "%s/%s", folder_path, file_name);
+
+    FILE *file = fopen(full_path, "w");
+    if (file == NULL)
+    {
+        printf("Failed to open file at %s. Attempting to create it.\n", full_path);
+
+        // 폴더가 존재하지 않을 수도 있으니 폴더를 먼저 생성
+        char command[512];
+        snprintf(command, sizeof(command), "mkdir -p %s", folder_path);
+
+        int ret = system(command);
+        if (ret == -1)
+        {
+            printf("System command failed: %s\n", command);
+            return;
+        }
+
+        // 다시 파일을 열어본다.
+        file = fopen(full_path, "w");
+        if (file == NULL)
+        {
+            // 여전히 실패하면 에러 메시지를 출력하고 함수를 종료한다.
+            printf("Failed to create file at %s.\n", full_path);
+            return;
+        }
+    }
+
+    // CSV 파일 헤더 작성
+    fprintf(file, "can_id,can_dlc,data\n");
+
+    // 모든 CAN 프레임을 순회하면서 CSV 파일에 쓴다.
+    for (int i = 0; i < actual_frames; i++)
+    {
+        struct can_frame frame = received_frames[i];
+        fprintf(file, "%x,%d,", frame.can_id, frame.can_dlc);
+
+        for (int j = 0; j < frame.can_dlc; j++)
+        {
+            fprintf(file, "%02x", frame.data[j]);
+            if (j < frame.can_dlc - 1)
+            {
+                fprintf(file, " ");
+            }
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
 ////////////////////////////Epos4 CSP
 
 void setOperational(struct can_frame *frame, int can_id)
@@ -387,12 +558,8 @@ void controlWordSwitchOnEnable(struct can_frame *frame, int can_id)
     frame->data[7] = 0x00;
 }
 
-void controlWordTargetPosition(struct can_frame *frame, int can_id, float angle)
+void controlWordTargetPosition(struct can_frame *frame, int can_id, int targetPosition)
 {
-    // 각도를 입력받아 모터가 이동해야 할 엔코더 값으로 변환
-    int encoder_per_rotation = 4096;
-    float gear_ratio = 35.0;
-    int targetPosition = (int)(angle / 360.0 * encoder_per_rotation * gear_ratio);
 
     // 10진수 targetPosition을 16진수로 변환
     unsigned char posByte0 = targetPosition & 0xFF;         // 하위 8비트
@@ -412,10 +579,10 @@ void controlWordTargetPosition(struct can_frame *frame, int can_id, float angle)
     frame->data[7] = 0x00;
 }
 
-void Sync(struct can_frame *frame, int can_id)
+void Sync(struct can_frame *frame)
 {
-    frame->can_id = can_id & CAN_SFF_MASK;
-    frame->can_dlc = 0;
+    frame->can_id = 0x80;
+    frame->can_dlc = 1;
     frame->data[0] = 0x00;
     frame->data[1] = 0x00;
     frame->data[2] = 0x00;
