@@ -1,0 +1,5 @@
+//MainThread(connect + SetMotor)
+//Thread 1 : Motion Planner
+//Thread 2 : 5ms loop
+//Thread 3 : Read data
+//Thread 4 : Read IO (Sensor)
