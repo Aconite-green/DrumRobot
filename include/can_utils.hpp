@@ -31,7 +31,7 @@ void enterControlmode(struct can_frame *frame, int can_id);
 void set_to_zero(struct can_frame *frame, int can_id);
 void exitControlmode(struct can_frame *frame, int can_id);
 
-//EPOS CSP
+//Maxon 
 void setNodeCSPMode(struct can_frame *frame, int can_id);
 void setNodeTorqueOffset(struct can_frame *frame, int can_id);
 void setNodePositionOffset(struct can_frame *frame, int can_id);

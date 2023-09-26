@@ -2,57 +2,81 @@
 #include "../include/motor.hpp" // Include header file
 #include <iostream>
 
-Tmotor::Tmotor(int id, const std::string& motortype, const std::string& roboticSection): motortype(motortype), id(id), roboticSection(roboticSection) {
+TMotor::TMotor(int id, const std::string& motorType, const std::string& roboticSection): motorType(motorType), id(id), roboticSection(roboticSection) {
     // 공통된 초기값 설정
-    P_MIN = -12.5;
-    P_MAX = 12.5;
-    Kp_MIN = 0;
-    Kp_MAX = 500;
-    Kd_MIN = 0;
-    Kd_MAX = 5;
+    pMin = -12.5;
+    pMax = 12.5;
+    kpMin = 0;
+    kpMax = 500;
+    kdMin = 0;
+    kdMax = 5;
 
     // 타입에 따른 초기값 설정
     setLimits();
 }
 
-void Tmotor::setLimits() {
-    if (motortype == "AK10_9") {
-        V_MIN = -50;
-        V_MAX = 50;
-        T_MIN = -65;
-        T_MAX = 65;
-    } else if (motortype == "AK70_10") {
-        V_MIN = -50;
-        V_MAX = 50;
-        T_MIN = -25;
-        T_MAX = 25;
-    } else if (motortype == "AK60_6") {
-        V_MIN = -45;
-        V_MAX = 45;
-        T_MIN = -15;
-        T_MAX = 15;
-    } else if (motortype == "AK80_6") {
-        V_MIN = -76;
-        V_MAX = 76;
-        T_MIN = -12;
-        T_MAX = 12;
-    } else if (motortype == "AK80_9") {
-        V_MIN = -50;
-        V_MAX = 50;
-        T_MIN = -18;
-        T_MAX = 18;
-    } else if (motortype == "AK80_80" || motortype == "AK80_64") {
-        V_MIN = -8;
-        V_MAX = 8;
-        T_MIN = -144;
-        T_MAX = 144;
-    } else if (motortype == "AK80_8") {
-        V_MIN = -37.5;
-        V_MAX = 37.5;
-        T_MIN = -32;
-        T_MAX = 32;
+void TMotor::setLimits() {
+    if (motorType == "AK10_9") {
+        vMin = -50;
+        vMax = 50;
+        tMin = -65;
+        tMax = 65;
+    } else if (motorType == "AK70_10") {
+        vMin = -50;
+        vMax = 50;
+        tMin = -25;
+        tMax = 25;
+    } else if (motorType == "AK60_6") {
+        vMin = -45;
+        vMax = 45;
+        tMin = -15;
+        tMax = 15;
+    } else if (motorType == "AK80_6") {
+        vMin = -76;
+        vMax = 76;
+        tMin = -12;
+        tMax = 12;
+    } else if (motorType == "AK80_9") {
+        vMin = -50;
+        vMax = 50;
+        tMin = -18;
+        tMax = 18;
+    } else if (motorType == "AK80_80" || motorType == "AK80_64") {
+        vMin = -8;
+        vMax = 8;
+        tMin = -144;
+        tMax = 144;
+    } else if (motorType == "AK80_8") {
+        vMin = -37.5;
+        vMax = 37.5;
+        tMin = -32;
+        tMax = 32;
     } else {
-        std::cout << "Error: Invalid motor motortype entered!" << std::endl;
+        std::cout << "Error: Invalid motor motorType entered!" << std::endl;
+    }
+}
+
+void fillCanFrameForCheckMotor(struct can_frame *frame, int can_id){
+    
+}
+
+
+// maxonMotor 클래스 생성자 구현
+MaxonMotor::MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds)
+    : nodeId(nodeId), roboticSection(roboticSection) {
+    // canId 값 설정
+    canSendId = 0x600 + nodeId;
+    canReceiveId = 0x580 + nodeId;
+
+    // pdoId 배열 초기화
+    int index = 0;
+    for (const auto &pdo : pdoIds) {
+        if (index >= 4) {
+            std::cout << "Warning: More than 4 PDO IDs provided. Ignoring extras." << std::endl;
+            break;
+        }
+        pdoId[index] = pdo;
+        ++index;
     }
 }
 

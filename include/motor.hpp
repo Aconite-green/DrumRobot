@@ -1,4 +1,3 @@
-// motor.h 파일
 #ifndef MOTOR_H
 #define MOTOR_H
 
@@ -8,37 +7,63 @@
 #include <float.h>
 #include <stdlib.h>
 
-
 #include <string>
+#include "MotorInterface.hpp"
+#include "CommandParser.hpp"
+const int MaxMotors = 10;
 
-// 상수를 정의합니다. 실제로 사용할 때는 적절한 값으로 설정해 주세요.
-const int MAX_MOTORS = 10;
-
-class Tmotor {
+class TMotor : public MotorInterface
+{
 public:
-    // Limit 값들
-    float P_MIN, P_MAX;
-    float V_MIN, V_MAX;
-    float Kp_MIN, Kp_MAX;
-    float Kd_MIN, Kd_MAX;
-    float T_MIN, T_MAX;
+    float pMin, pMax;
+    float vMin, vMax;
+    float kpMin, kpMax;
+    float kdMin, kdMax;
+    float tMin, tMax;
 
-    // 모터 정보
     std::string roboticSection;
-    std::string motortype;
+    std::string motorType;
     int id;
 
-    // 커맨드 정보
-    float p_des;
-    float v_des;
+    float pDes;
+    float vDes;
     float kp;
     float kd;
-    float t_ff;
+    float tFf;
 
-    Tmotor(int id, const std::string& motortype, const std::string& roboticSection);
+    TMotor(int id, const std::string &motorType, const std::string &roboticSection);
     void setLimits();
 
-    
+    // Passer
+    TMotorCommandParser parser;
+    // CanService
+    void fillCanFrameForCheckMotor(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForControlMode(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForExit(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForZeroing(struct can_frame *frame, int can_id) override;
 };
 
-#endif 
+class MaxonMotor : public MotorInterface
+{
+public:
+    int nodeId;
+    int canSendId;
+    int canReceiveId;
+
+    int pdoId[4];
+
+    std::string roboticSection;
+
+    MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds);
+
+    // Passer
+    MaxonCommandParser parser;
+
+    // CanService
+    void fillCanFrameForControlMode(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForZeroing(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForCheckMotor(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForExit(struct can_frame *frame, int can_id) override;
+};
+
+#endif
