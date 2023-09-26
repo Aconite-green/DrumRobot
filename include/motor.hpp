@@ -25,12 +25,7 @@ public:
     std::string motorType;
     int id;
 
-    float pDes;
-    float vDes;
-    float kp;
-    float kd;
-    float tff;
-
+    
     TMotor(int id, const std::string &motorType, const std::string &roboticSection);
     void setLimits();
 
