@@ -1,21 +1,21 @@
+#include "motor.hpp"
+#include <linux/can.h>
+#include <cmath>
 
+class TMotorCommandParser
+{
 
-// CommandParser.hpp
-class CommandParser {
 public:
-    virtual void parseEventCommand(struct can_frame *frame, int can_id) = 0;
-    virtual void parseControlCommand(struct can_frame *frame, int can_id) = 0;
-    // ...
+    void parseSendCommand(TMotor &motor, struct can_frame *frame, int canId, int dlc, float p_des, float v_des, float kp, float kd, float t_ff);
+    void parseRecieveCommand(TMotor &motor, struct can_frame *frame);
+
+private:
+    int float_to_uint(float x, float x_min, float x_max, unsigned int bits);
+    float uint_to_float(int x_int, float x_min, float x_max, int bits);
 };
 
-class TMotorCommandParser : public CommandParser {
-    void parseControlCommand(struct can_frame *frame, int can_id) override;
-    void parseEventCommand(struct can_frame *frame, int can_id) override;
-};
-
-
-
-class MaxonCommandParser : public CommandParser {
-    void parseControlCommand(struct can_frame *frame, int can_id) override;
-    void parseEventCommand(struct can_frame *frame, int can_id) override;
+class MaxonCommandParser
+{
+    void parseSendCommand(struct can_frame *frame);
+    void parseRecieveCommand(struct can_frame *frame);
 };

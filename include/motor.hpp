@@ -29,7 +29,7 @@ public:
     float vDes;
     float kp;
     float kd;
-    float tFf;
+    float tff;
 
     TMotor(int id, const std::string &motorType, const std::string &roboticSection);
     void setLimits();
@@ -37,10 +37,10 @@ public:
     // Passer
     TMotorCommandParser parser;
     // CanService
-    void fillCanFrameForCheckMotor(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForControlMode(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForExit(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForZeroing(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
+    void fillCanFrameForControlMode(struct can_frame *frame) override;
+    void fillCanFrameForExit(struct can_frame *frame) override;
+    void fillCanFrameForZeroing(struct can_frame *frame) override;
 };
 
 class MaxonMotor : public MotorInterface
@@ -60,10 +60,10 @@ public:
     MaxonCommandParser parser;
 
     // CanService
-    void fillCanFrameForControlMode(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForZeroing(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForCheckMotor(struct can_frame *frame, int can_id) override;
-    void fillCanFrameForExit(struct can_frame *frame, int can_id) override;
+    void fillCanFrameForControlMode(struct can_frame *frame) override;
+    void fillCanFrameForZeroing(struct can_frame *frame) override;
+    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
+    void fillCanFrameForExit(struct can_frame *frame) override;
 };
 
 #endif
