@@ -6,11 +6,11 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
 {
 
     // 기존 변수를 계산
-    p_des = fminf(fmaxf(motor.pMin, motor.pDes), motor.pMax);
-    v_des = fminf(fmaxf(motor.vMin, motor.vDes), motor.vMax);
-    kp = fminf(fmaxf(motor.kpMin, motor.kp), motor.kpMax);
-    kd = fminf(fmaxf(motor.kdMin, motor.kd), motor.kdMax);
-    t_ff = fminf(fmaxf(motor.tMin, motor.tff), motor.tMax); // tff를 tFf로 변경, 클래스에 따라 적절히 수정
+    p_des = fminf(fmaxf(motor.pMin, p_des), motor.pMax);
+    v_des = fminf(fmaxf(motor.vMin, v_des), motor.vMax);
+    kp = fminf(fmaxf(motor.kpMin, kp), motor.kpMax);
+    kd = fminf(fmaxf(motor.kdMin, kd), motor.kdMax);
+    t_ff = fminf(fmaxf(motor.tMin, t_ff), motor.tMax); // tff를 tFf로 변경, 클래스에 따라 적절히 수정
 
     // 계산된 변수를 이용하여 unsigned int로 변환
     int p_int = float_to_uint(p_des, motor.pMin, motor.pMax, 16); // motor.P_MIN 대신 motor.pMin 사용
@@ -50,7 +50,7 @@ void TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *f
 
     printf("position : %d, speed: %d, torque: %d", position, speed, torque);
 }
-int float_to_uint(float x, float x_min, float x_max, unsigned int bits)
+int TMotorCommandParser::float_to_uint(float x, float x_min, float x_max, unsigned int bits)
 {
     float span = x_max - x_min;
     if (x < x_min)
@@ -60,7 +60,7 @@ int float_to_uint(float x, float x_min, float x_max, unsigned int bits)
     return (int)((x - x_min) * ((float)((1 << bits) / span)));
 };
 
-float uint_to_float(int x_int, float x_min, float x_max, int bits)
+float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, int bits)
 {
     float span = x_max - x_min;
     float offset = x_min;

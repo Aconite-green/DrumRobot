@@ -12,7 +12,8 @@
 #include "motor.hpp"
 #include "error_handling.hpp"
 #include "socket_config.hpp"
-
+#include "CommandParser.hpp"
+#include "motor.hpp"
 
 
 
@@ -23,33 +24,14 @@ void send_frame(int hsocket, struct can_frame *frame);
 
 
 //Thread 1 : Motion Planner
-
 //Thread 2 : 5ms loop
-void pack_cmd(MotorLimits limits, struct can_frame *frame, int can_id, float p_des, float v_des, float kp, float kd, float t_ff);
 int kbhit(void);
 void send_no_read(int hsocket, struct can_frame *frame);
 void send_receive(int hsocket, struct can_frame *frame);
-
 //Thread 3 : Read data
-void unpack_reply(MotorLimits limits, struct can_frame *frame, RecvMotorInfo *info);
-
-
 //Thread 4 : Read IO (Sensor)
-
-
-
-
-
-//With buffer
-void prepack_frames_from_csv(const char *filepath, MotorLimits limits, struct can_frame **frames_ptr, int *num_frames);
 void sendFramesPeriodically(int can_socket, struct can_frame *frames, int num_frames, int period_ms, struct can_frame **received_frames_ptr, int *actual_frames_ptr);
-void postProcessReceivedData(struct can_frame *received_frames, int actual_frames, MotorLimits limits, const char *folder_path, const char *file_name);
 void writeRawCANDataToCSV(struct can_frame *received_frames, int actual_frames, const char *folder_path, const char *file_name);
-
-
-
-
-
 
 
 #endif

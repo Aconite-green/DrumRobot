@@ -1,6 +1,11 @@
+#ifndef COMMANDPARSER_H
+#define COMMANDPARSER_H
+
 #include "motor.hpp"
 #include <linux/can.h>
 #include <cmath>
+
+class TMotor;
 
 class TMotorCommandParser
 {
@@ -19,3 +24,5 @@ class MaxonCommandParser
     void parseSendCommand(struct can_frame *frame);
     void parseRecieveCommand(struct can_frame *frame);
 };
+
+#endif

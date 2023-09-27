@@ -8,8 +8,6 @@ BINDIR = ./
 SOURCES := $(wildcard $(SRCDIR)/*.c)
 OBJFILES := $(patsubst %.c, %.o, $(SOURCES))
 
-
-
 # Phony targets
 .PHONY: all clean
 

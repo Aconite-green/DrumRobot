@@ -1,0 +1,25 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build DrumRobot",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${workspaceFolder}/src/*.cpp",
+                "-I${workspaceFolder}/include",
+                "-o",
+                "${workspaceFolder}/main.out"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        }
+    ],
+    "version": "2.0.0"
+}

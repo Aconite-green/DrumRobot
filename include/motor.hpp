@@ -25,12 +25,9 @@ public:
     std::string motorType;
     int id;
 
-    
     TMotor(int id, const std::string &motorType, const std::string &roboticSection);
     void setLimits();
 
-    // Passer
-    TMotorCommandParser parser;
     // CanService
     void fillCanFrameForCheckMotor(struct can_frame *frame, int canId) override;
     void fillCanFrameForControlMode(struct can_frame *frame, int canId) override;
@@ -52,13 +49,7 @@ public:
 
     MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds);
 
-    // Passer
-    MaxonCommandParser parser;
 
-
-    // overide for Motorinterface
-
-   
     // Send all zero(SDO)
     void fillCanFrameForCheckMotor(struct can_frame *frame, int canId) override;
     // CSP mode(SDO)
@@ -70,25 +61,20 @@ public:
     // ControlWord Shutdown(PDO)
     void fillCanFrameForQuickStop(struct can_frame *frame, int canId) override;
 
-
-    // MaxonSpecific
-
-    //pre-operation, Stop -> oprational(MNT)
+    // pre-operation, Stop -> oprational(MNT)
     void fillCanFrameForOperational(struct can_frame *frame, int canId);
 
-    //Set TorqueOffset(SDO)
+    // Set TorqueOffset(SDO)
     void fillCanFrameForTorqueOffset(struct can_frame *frame, int canId);
 
-    //ControlWold Enable(PDO) 
+    // ControlWold Enable(PDO)
     void fillCanFrameForEnable(struct can_frame *frame, int canId);
 
-    //Set targetPostion(PDO)
+    // Set targetPostion(PDO)
     void fillCanFrameForTargetPostion(struct can_frame *frame, int canId, int targetPosition);
 
-    //Sync(PDO)
+    // Sync(PDO)
     void fillCanFrameForSync(struct can_frame *frame);
-
-
 };
 
 #endif
