@@ -9,40 +9,17 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <stdlib.h>
-#include "motor.h"
-#include "error_handling.h"
-#include "socket_config.h"
+#include "motor.hpp"
+#include "error_handling.hpp"
+#include "socket_config.hpp"
 
 
-typedef struct {
-    int id;
-    float position;
-    float speed;
-    float torque;
-} RecvMotorInfo;
+
 
 //MainThread(connect + SetMotor)
 void send_frame_and_receive_reply(int hsocket, struct can_frame *frame);
 void printframe(struct can_frame *frame);
 void send_frame(int hsocket, struct can_frame *frame);
-
-//Tmotor
-void enterControlmode(struct can_frame *frame, int can_id);
-void set_to_zero(struct can_frame *frame, int can_id);
-void exitControlmode(struct can_frame *frame, int can_id);
-
-//Maxon 
-void setNodeCSPMode(struct can_frame *frame, int can_id);
-void setNodeTorqueOffset(struct can_frame *frame, int can_id);
-void setNodePositionOffset(struct can_frame *frame, int can_id);
-
-void setOperational(struct can_frame *frame, int can_id);
-
-void controlWordShutdown(struct can_frame *frame, int can_id);
-void controlWordSwitchOnEnable(struct can_frame *frame, int can_id);
-void Sync(struct can_frame *frame);
-
-void controlWordTargetPosition(struct can_frame *frame, int can_id, int targetPosition);
 
 
 //Thread 1 : Motion Planner

@@ -32,10 +32,11 @@ public:
     // Passer
     TMotorCommandParser parser;
     // CanService
-    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
-    void fillCanFrameForControlMode(struct can_frame *frame) override;
-    void fillCanFrameForExit(struct can_frame *frame) override;
-    void fillCanFrameForZeroing(struct can_frame *frame) override;
+    void fillCanFrameForCheckMotor(struct can_frame *frame, int canId) override;
+    void fillCanFrameForControlMode(struct can_frame *frame, int canId) override;
+    void fillCanFrameForExit(struct can_frame *frame, int canId) override;
+    void fillCanFrameForZeroing(struct can_frame *frame, int canId) override;
+    void fillCanFrameForQuickStop(struct can_frame *frame, int canId) override;
 };
 
 class MaxonMotor : public MotorInterface
@@ -54,11 +55,40 @@ public:
     // Passer
     MaxonCommandParser parser;
 
-    // CanService
-    void fillCanFrameForControlMode(struct can_frame *frame) override;
-    void fillCanFrameForZeroing(struct can_frame *frame) override;
-    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
-    void fillCanFrameForExit(struct can_frame *frame) override;
+
+    // overide for Motorinterface
+
+   
+    // Send all zero(SDO)
+    void fillCanFrameForCheckMotor(struct can_frame *frame, int canId) override;
+    // CSP mode(SDO)
+    void fillCanFrameForControlMode(struct can_frame *frame, int canId) override;
+    // Set pos offset(SDO)
+    void fillCanFrameForZeroing(struct can_frame *frame, int canId) override;
+    // Operational -> Stop(NMT)
+    void fillCanFrameForExit(struct can_frame *frame, int canId) override;
+    // ControlWord Shutdown(PDO)
+    void fillCanFrameForQuickStop(struct can_frame *frame, int canId) override;
+
+
+    // MaxonSpecific
+
+    //pre-operation, Stop -> oprational(MNT)
+    void fillCanFrameForOperational(struct can_frame *frame, int canId);
+
+    //Set TorqueOffset(SDO)
+    void fillCanFrameForTorqueOffset(struct can_frame *frame, int canId);
+
+    //ControlWold Enable(PDO) 
+    void fillCanFrameForEnable(struct can_frame *frame, int canId);
+
+    //Set targetPostion(PDO)
+    void fillCanFrameForTargetPostion(struct can_frame *frame, int canId, int targetPosition);
+
+    //Sync(PDO)
+    void fillCanFrameForSync(struct can_frame *frame);
+
+
 };
 
 #endif
