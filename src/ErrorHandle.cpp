@@ -1,4 +1,4 @@
-#include "../include/error_handling.hpp"
+#include "../include/ErrorHandle.hpp"
 
 // Error message and exit program
 void error_exit(const char *message) {

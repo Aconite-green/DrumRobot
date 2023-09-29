@@ -1,7 +1,7 @@
 #ifndef COMMANDPARSER_H
 #define COMMANDPARSER_H
 
-#include "motor.hpp"
+#include "Motor.hpp"
 #include <linux/can.h>
 #include <cmath>
 

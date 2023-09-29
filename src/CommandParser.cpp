@@ -48,7 +48,7 @@ void TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *f
     speed = uint_to_float(v_int, motor.vMin, motor.vMax, 12);
     torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
 
-    printf("position : %d, speed: %d, torque: %d", position, speed, torque);
+    printf("[%d] position : %d, speed: %d, torque: %d",id, position, speed, torque);
 }
 int TMotorCommandParser::float_to_uint(float x, float x_min, float x_max, unsigned int bits)
 {

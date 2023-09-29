@@ -1,5 +1,5 @@
 // motor.c 파일
-#include "../include/motor.hpp" // Include header file
+#include "../include/Motor.hpp" // Include header file
 #include <iostream>
 
 TMotor::TMotor(int id, const std::string &motorType, const std::string &roboticSection) : motorType(motorType), id(id), roboticSection(roboticSection)
@@ -136,10 +136,17 @@ void TMotor::fillCanFrameForZeroing(struct can_frame *frame, int canId)
 
 void TMotor::fillCanFrameForQuickStop(struct can_frame *frame, int canId)
 {
-    int canId = this->id;
-    int dlc = 8;
+    frame->can_id = canId;
+    frame->can_dlc = 8;
 
-    this->parser.parseSendCommand(*this, frame, canId, dlc, 0, 0, 0, 0, 0);
+    frame->data[0] = 0x80;
+    frame->data[1] = 0x00;
+    frame->data[2] = 0x80;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0x00;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x08;
+    frame->data[7] = 0x00;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

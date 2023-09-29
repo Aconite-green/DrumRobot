@@ -1,26 +1,27 @@
 # Declare variables
-CC = gcc
+CC = g++
 CFLAGS = -Wall -O2 -g
 INCLUDE = -I./include
 SRCDIR = ./src
 BINDIR = ./
 
-SOURCES := $(wildcard $(SRCDIR)/*.c)
-OBJFILES := $(patsubst %.c, %.o, $(SOURCES))
+# Automatically include all .cpp files from the src directory
+SOURCES := $(wildcard $(SRCDIR)/*.cpp)
+OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
 
 # Phony targets
 .PHONY: all clean
 
 # Build target
-all: $(BINDIR)/main.out 
+all: $(BINDIR)/main.out
 
-$(BINDIR)/main.out: $(SRCDIR)/main.o $(OBJFILES)
+$(BINDIR)/main.out: $(OBJFILES)
 	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) -lm
 
 # Pattern rules
-%.o: %.c
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 # Clean rule
 clean:
-	rm -f $(SRCDIR)/*.o $(BINDIR)/main.out 
+	rm -f $(SRCDIR)/*.o $(BINDIR)/main.out
