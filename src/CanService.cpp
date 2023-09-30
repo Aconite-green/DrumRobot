@@ -1,101 +1,80 @@
 #include "../include/CanService.hpp"
 
-void CanService::enterControlMode(MotorInterface &motor, int can_id, int socket)
+
+
+void CanService::enterControlMode(MotorInterface &motor, int can_id)
 {
     motor.fillCanFrameForControlMode(&frame, can_id);
-    cansocket.send_frame_and_receive_reply(socket, &frame);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::setToZero(MotorInterface &motor, int can_id, int socket)
+void CanService::setToZero(MotorInterface &motor, int can_id)
 {
     motor.fillCanFrameForZeroing(&frame, can_id);
-    cansocket.send_frame_and_receive_reply(socket, &frame);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::checkMotor(MotorInterface &motor, int can_id, int socket)
+void CanService::checkMotor(MotorInterface &motor, int can_id)
 {
     motor.fillCanFrameForCheckMotor(&frame, can_id);
-    cansocket.send_frame_and_receive_reply(socket, &frame);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::Exit(MotorInterface &motor, int can_id, int socket)
+void CanService::Exit(MotorInterface &motor, int can_id)
 {
     motor.fillCanFrameForExit(&frame, can_id);
-    cansocket.send_frame_and_receive_reply(socket, &frame);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::quickStop(MotorInterface &motor, int can_id, int socket)
+void CanService::quickStop(MotorInterface &motor, int can_id)
 {
     motor.fillCanFrameForQuickStop(&frame, can_id);
-    cansocket.send_frame_and_receive_reply(socket, &frame);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::enterOperationalMode(MotorInterface &motor, int can_id, int socket)
-{
+
+MaxonMotor* CanService::castToMaxonMotor(MotorInterface &motor) {
     MaxonMotor *maxonMotor = dynamic_cast<MaxonMotor *>(&motor);
-    if (maxonMotor != nullptr)
-    {
-        maxonMotor->fillCanFrameForOperational(&frame, can_id);
-        cansocket.send_frame_and_receive_reply(socket, &frame);
+    if (maxonMotor == nullptr) {
+        throw std::runtime_error("dynamic_cast to MaxonMotor failed");
     }
-    else
-    {
-        printf("dynamic_cast failed");
-    }
+    return maxonMotor;
 }
 
-void CanService::setTorqueOffset(MotorInterface &motor, int can_id, int socket)
+void CanService::enterOperationalMode(MotorInterface &motor, int can_id)
 {
-    MaxonMotor *maxonMotor = dynamic_cast<MaxonMotor *>(&motor);
-    if (maxonMotor != nullptr)
-    {
-        maxonMotor->fillCanFrameForTorqueOffset(&frame, can_id);
-        cansocket.send_frame_and_receive_reply(socket, &frame);
-    }
-    else
-    {
-        printf("dynamic_cast failed");
-    }
+    MaxonMotor *maxonMotor = castToMaxonMotor(motor);
+    maxonMotor->fillCanFrameForOperational(&frame, can_id);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::enableControl(MotorInterface &motor, int can_id, int socket)
+void CanService::setTorqueOffset(MotorInterface &motor, int can_id)
 {
-    MaxonMotor *maxonMotor = dynamic_cast<MaxonMotor *>(&motor);
-    if (maxonMotor != nullptr)
-    {
-        maxonMotor->fillCanFrameForEnable(&frame, can_id);
-        cansocket.send_frame_and_receive_reply(socket, &frame);
-    }
-    else
-    {
-        printf("dynamic_cast failed");
-    }
+    MaxonMotor *maxonMotor = castToMaxonMotor(motor);
+    maxonMotor->fillCanFrameForTorqueOffset(&frame, can_id);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::setTargetPosition(MotorInterface &motor, int can_id, int socket, int targetPosition)
+void CanService::enableControl(MotorInterface &motor, int can_id)
 {
-    MaxonMotor *maxonMotor = dynamic_cast<MaxonMotor *>(&motor);
-    if (maxonMotor != nullptr)
-    {
-        maxonMotor->fillCanFrameForTargetPostion(&frame, can_id, targetPosition);
-        cansocket.send_frame_and_receive_reply(socket, &frame);
-    }
-    else
-    {
-        printf("dynamic_cast failed");
-    }
+    MaxonMotor *maxonMotor = castToMaxonMotor(motor);
+    maxonMotor->fillCanFrameForEnable(&frame, can_id);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::syncMotor(MotorInterface &motor, int socket)
+void CanService::setTargetPosition(MotorInterface &motor, int can_id, int targetPosition)
 {
-    MaxonMotor *maxonMotor = dynamic_cast<MaxonMotor *>(&motor);
-    if (maxonMotor != nullptr)
-    {
-        maxonMotor->fillCanFrameForSync(&frame);
-        cansocket.send_frame_and_receive_reply(socket, &frame);
-    }
-    else
-    {
-        printf("dynamic_cast failed");
-    }
+    MaxonMotor *maxonMotor = castToMaxonMotor(motor);
+    maxonMotor->fillCanFrameForTargetPostion(&frame, can_id, targetPosition);
+    cansocket.send_frame_and_receive_reply(&frame);
 }
+
+void CanService::syncMotor(MotorInterface &motor)
+{
+    MaxonMotor *maxonMotor = castToMaxonMotor(motor);
+    maxonMotor->fillCanFrameForSync(&frame);
+    cansocket.send_frame_and_receive_reply(&frame);
+}
+
+
+

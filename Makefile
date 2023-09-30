@@ -16,7 +16,7 @@ OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
 all: $(BINDIR)/main.out
 
 $(BINDIR)/main.out: $(OBJFILES)
-	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) -lm
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) -lm -lpthread
 
 # Pattern rules
 %.o: %.cpp

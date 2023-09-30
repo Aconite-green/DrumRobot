@@ -2,15 +2,8 @@
 #define CAN_SERVICE_H
 
 #include <linux/can.h>
-#include <math.h>
 #include <stdio.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <time.h>
-#include <stdlib.h>
-#include <linux/can.h>
+#include <stdexcept> 
 #include "MotorInterface.hpp"
 #include "CanSocketUtils.hpp"
 #include "Motor.hpp"
@@ -18,22 +11,25 @@
 class CanService
 {
 public:
-    void enterControlMode(MotorInterface &motor, int can_id, int socket);
-    void setToZero(MotorInterface &motor, int can_id, int socket);
-    void checkMotor(MotorInterface &motor, int can_id, int socket);
-    void Exit(MotorInterface &motor, int can_id, int socket);
-    void quickStop(MotorInterface &motor, int can_id, int socket);
+    CanService(const char *ifname) : cansocket(ifname) {}  // 생성자에서 CanSocketUtils 초기화
     
-    //Maxon
-    void enterOperationalMode(MotorInterface &motor, int can_id, int socket);
-    void setTorqueOffset(MotorInterface &motor, int can_id, int socket);
-    void enableControl(MotorInterface &motor, int can_id, int socket);
-    void setTargetPosition(MotorInterface &motor, int can_id, int socket, int targetPosition);
-    void syncMotor(MotorInterface &motor, int socket);
+    void enterControlMode(MotorInterface &motor, int can_id);
+    void setToZero(MotorInterface &motor, int can_id);
+    void checkMotor(MotorInterface &motor, int can_id);
+    void Exit(MotorInterface &motor, int can_id);
+    void quickStop(MotorInterface &motor, int can_id);
+    
+    // Maxon
+    void enterOperationalMode(MotorInterface &motor, int can_id);
+    void setTorqueOffset(MotorInterface &motor, int can_id);
+    void enableControl(MotorInterface &motor, int can_id);
+    void setTargetPosition(MotorInterface &motor, int can_id, int targetPosition);
+    void syncMotor(MotorInterface &motor);
 
 private:
     struct can_frame frame;
-    CanSocketUtils cansocket;
+    CanSocketUtils cansocket; 
+    MaxonMotor* castToMaxonMotor(MotorInterface &motor); // CanSocketUtils 객체
 };
 
 #endif // CAN_SERVICE_H
