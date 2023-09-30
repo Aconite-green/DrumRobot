@@ -2,33 +2,33 @@
 
 
 
-void CanService::enterControlMode(MotorInterface &motor, int can_id)
+void CanService::enterControlMode(MotorInterface &motor)
 {
-    motor.fillCanFrameForControlMode(&frame, can_id);
+    motor.fillCanFrameForControlMode(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::setToZero(MotorInterface &motor, int can_id)
+void CanService::setToZero(MotorInterface &motor)
 {
-    motor.fillCanFrameForZeroing(&frame, can_id);
+    motor.fillCanFrameForZeroing(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::checkMotor(MotorInterface &motor, int can_id)
+void CanService::checkMotor(MotorInterface &motor)
 {
-    motor.fillCanFrameForCheckMotor(&frame, can_id);
+    motor.fillCanFrameForCheckMotor(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::Exit(MotorInterface &motor, int can_id)
+void CanService::Exit(MotorInterface &motor)
 {
-    motor.fillCanFrameForExit(&frame, can_id);
+    motor.fillCanFrameForExit(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::quickStop(MotorInterface &motor, int can_id)
+void CanService::quickStop(MotorInterface &motor)
 {
-    motor.fillCanFrameForQuickStop(&frame, can_id);
+    motor.fillCanFrameForQuickStop(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
@@ -41,31 +41,31 @@ MaxonMotor* CanService::castToMaxonMotor(MotorInterface &motor) {
     return maxonMotor;
 }
 
-void CanService::enterOperationalMode(MotorInterface &motor, int can_id)
+void CanService::enterOperationalMode(MotorInterface &motor)
 {
     MaxonMotor *maxonMotor = castToMaxonMotor(motor);
-    maxonMotor->fillCanFrameForOperational(&frame, can_id);
+    maxonMotor->fillCanFrameForOperational(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::setTorqueOffset(MotorInterface &motor, int can_id)
+void CanService::setTorqueOffset(MotorInterface &motor)
 {
     MaxonMotor *maxonMotor = castToMaxonMotor(motor);
-    maxonMotor->fillCanFrameForTorqueOffset(&frame, can_id);
+    maxonMotor->fillCanFrameForTorqueOffset(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::enableControl(MotorInterface &motor, int can_id)
+void CanService::enableControl(MotorInterface &motor)
 {
     MaxonMotor *maxonMotor = castToMaxonMotor(motor);
-    maxonMotor->fillCanFrameForEnable(&frame, can_id);
+    maxonMotor->fillCanFrameForEnable(&frame);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 
-void CanService::setTargetPosition(MotorInterface &motor, int can_id, int targetPosition)
+void CanService::setTargetPosition(MotorInterface &motor, int targetPosition)
 {
     MaxonMotor *maxonMotor = castToMaxonMotor(motor);
-    maxonMotor->fillCanFrameForTargetPostion(&frame, can_id, targetPosition);
+    maxonMotor->fillCanFrameForTargetPostion(&frame, targetPosition);
     cansocket.send_frame_and_receive_reply(&frame);
 }
 

@@ -11,4 +11,6 @@
 class InitializeTask {
 public:
     void operator()(SharedBuffer& buffer);
+
+    
 };

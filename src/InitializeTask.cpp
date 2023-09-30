@@ -9,6 +9,9 @@ void InitializeTask::operator()(SharedBuffer &buffer)
 
     CanService canService("can0");
 
-    canService.checkMotor(tMotorWaist, tMotorWaist.id);
-    canService.enterControlMode(tMotorWaist, tMotorWaist.id);
+    canService.checkMotor(tMotorWaist);
+    canService.enterControlMode(tMotorWaist);
+    
+    canService.checkMotor(tMotorWaist);
+    canService.Exit(tMotorWaist);
 }

@@ -73,9 +73,9 @@ void TMotor::setLimits()
     }
 }
 
-void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame, int canId)
+void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
 {
-    frame->can_id = canId;
+    frame->can_id = this->id;
     frame->can_dlc = 8;
 
     frame->data[0] = 0x80;
@@ -88,7 +88,7 @@ void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void TMotor::fillCanFrameForControlMode(struct can_frame *frame, int canId)
+void TMotor::fillCanFrameForControlMode(struct can_frame *frame)
 {
     frame->can_id = this->id;
     frame->can_dlc = 8;
@@ -103,7 +103,7 @@ void TMotor::fillCanFrameForControlMode(struct can_frame *frame, int canId)
     frame->data[7] = 0xFC;
 }
 
-void TMotor::fillCanFrameForExit(struct can_frame *frame, int canId)
+void TMotor::fillCanFrameForExit(struct can_frame *frame)
 {
     frame->can_id = this->id;
     frame->can_dlc = 8;
@@ -119,7 +119,7 @@ void TMotor::fillCanFrameForExit(struct can_frame *frame, int canId)
     frame->data[7] = 0xFD; // torque 4 bit lower
 }
 
-void TMotor::fillCanFrameForZeroing(struct can_frame *frame, int canId)
+void TMotor::fillCanFrameForZeroing(struct can_frame *frame)
 {
     frame->can_id = this->id;
     frame->can_dlc = 8;
@@ -134,9 +134,9 @@ void TMotor::fillCanFrameForZeroing(struct can_frame *frame, int canId)
     frame->data[7] = 0xFE; // torque 4 bit lower
 }
 
-void TMotor::fillCanFrameForQuickStop(struct can_frame *frame, int canId)
+void TMotor::fillCanFrameForQuickStop(struct can_frame *frame)
 {
-    frame->can_id = canId;
+    frame->can_id = this->id;
     frame->can_dlc = 8;
 
     frame->data[0] = 0x80;
@@ -174,7 +174,7 @@ MaxonMotor::MaxonMotor(int nodeId, const std::string &roboticSection, std::initi
     }
 }
 
-void MaxonMotor::fillCanFrameForCheckMotor(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
 {
     // In CSP mode
     frame->can_id = this->canSendId;
@@ -189,7 +189,7 @@ void MaxonMotor::fillCanFrameForCheckMotor(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForControlMode(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForControlMode(struct can_frame *frame)
 {
     frame->can_id = this->canSendId;
     frame->can_dlc = 8;
@@ -203,7 +203,7 @@ void MaxonMotor::fillCanFrameForControlMode(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForZeroing(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForZeroing(struct can_frame *frame)
 {
     frame->can_id = this->canSendId;
     frame->can_dlc = 8;
@@ -217,7 +217,7 @@ void MaxonMotor::fillCanFrameForZeroing(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForExit(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForExit(struct can_frame *frame)
 {
     frame->can_id = 0x00;
     frame->can_dlc = 8;
@@ -231,7 +231,7 @@ void MaxonMotor::fillCanFrameForExit(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForOperational(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForOperational(struct can_frame *frame)
 {
     frame->can_id = 0x00;
     frame->can_dlc = 8;
@@ -245,10 +245,10 @@ void MaxonMotor::fillCanFrameForOperational(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForEnable(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForEnable(struct can_frame *frame)
 {
 
-    frame->can_id = canId;
+    frame->can_id = this->pdoId[0];
     frame->can_dlc = 8;
     frame->data[0] = 0x0F;
     frame->data[1] = 0x00;
@@ -260,9 +260,9 @@ void MaxonMotor::fillCanFrameForEnable(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForTorqueOffset(struct can_frame *frame, int canId)
+void MaxonMotor::fillCanFrameForTorqueOffset(struct can_frame *frame)
 {
-    frame->can_id = canId;
+    frame->can_id = this->canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB2;
@@ -274,7 +274,7 @@ void MaxonMotor::fillCanFrameForTorqueOffset(struct can_frame *frame, int canId)
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForTargetPostion(struct can_frame *frame, int canId, int targetPosition)
+void MaxonMotor::fillCanFrameForTargetPostion(struct can_frame *frame, int targetPosition)
 {
     // 10진수 targetPosition을 16진수로 변환
     // 1[revolve] = 4096[inc]
@@ -283,7 +283,7 @@ void MaxonMotor::fillCanFrameForTargetPostion(struct can_frame *frame, int canId
     unsigned char posByte2 = (targetPosition >> 16) & 0xFF; // 다음 8비트
     unsigned char posByte3 = (targetPosition >> 24) & 0xFF; // 최상위 8비트
 
-    frame->can_id = canId & CAN_SFF_MASK;
+    frame->can_id = this->pdoId[1];
     frame->can_dlc = 4;
     frame->data[0] = posByte0;
     frame->data[1] = posByte1;
@@ -308,8 +308,8 @@ void MaxonMotor::fillCanFrameForSync(struct can_frame *frame){
     frame->data[7] = 0x00;
 }
 
-void MaxonMotor::fillCanFrameForQuickStop(struct can_frame *frame, int canId){
-    frame->can_id = canId & CAN_SFF_MASK;
+void MaxonMotor::fillCanFrameForQuickStop(struct can_frame *frame){
+    frame->can_id = this->pdoId[0];
     frame->can_dlc = 8;
     frame->data[0] = 0x06;
     frame->data[1] = 0x00;

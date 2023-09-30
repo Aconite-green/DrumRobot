@@ -13,17 +13,17 @@ class CanService
 public:
     CanService(const char *ifname) : cansocket(ifname) {}  // 생성자에서 CanSocketUtils 초기화
     
-    void enterControlMode(MotorInterface &motor, int can_id);
-    void setToZero(MotorInterface &motor, int can_id);
-    void checkMotor(MotorInterface &motor, int can_id);
-    void Exit(MotorInterface &motor, int can_id);
-    void quickStop(MotorInterface &motor, int can_id);
+    void enterControlMode(MotorInterface &motor);
+    void setToZero(MotorInterface &motor);
+    void checkMotor(MotorInterface &motor);
+    void Exit(MotorInterface &motor);
+    void quickStop(MotorInterface &motor);
     
     // Maxon
-    void enterOperationalMode(MotorInterface &motor, int can_id);
-    void setTorqueOffset(MotorInterface &motor, int can_id);
-    void enableControl(MotorInterface &motor, int can_id);
-    void setTargetPosition(MotorInterface &motor, int can_id, int targetPosition);
+    void enterOperationalMode(MotorInterface &motor);
+    void setTorqueOffset(MotorInterface &motor);
+    void enableControl(MotorInterface &motor);
+    void setTargetPosition(MotorInterface &motor, int targetPosition);
     void syncMotor(MotorInterface &motor);
 
 private:
