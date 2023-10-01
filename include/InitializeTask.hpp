@@ -8,9 +8,10 @@
 #include "../include/Motor.hpp"
 #include "../include/MotorInterface.hpp"
 
+
+
 class InitializeTask {
 public:
     void operator()();
-
-    
 };
+
