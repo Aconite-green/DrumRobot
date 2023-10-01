@@ -35,13 +35,14 @@ public:
     void writeRawCANDataToCSV(struct can_frame *received_frames, int actual_frames, const char *folder_path, const char *file_name);
 
     void list_and_activate_available_can_ports();
+    int hsocket;
 
 private:
     void check(int result, const char *errMsg, int errCode);
     bool is_port_up(const char *port);
     void activate_port(const char *port);
     std::string ifname;
-    int hsocket;
+    
 };
 
 #endif // CAN_SOCKET_UTILS_H

@@ -2,7 +2,8 @@
 #include "../include/Motor.hpp" // Include header file
 #include <iostream>
 
-TMotor::TMotor(int id, const std::string &motorType, const std::string &roboticSection) : motorType(motorType), id(id), roboticSection(roboticSection)
+TMotor::TMotor(int id, const std::string &motorType, const std::string &roboticSection)
+    : roboticSection(roboticSection), motorType(motorType), id(id)
 {
     // 공통된 초기값 설정
     pMin = -12.5;

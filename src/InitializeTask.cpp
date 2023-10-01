@@ -2,7 +2,7 @@
 #include "../include/SharedBuffer.hpp"
 #include <string>
 
-void InitializeTask::operator()(SharedBuffer &buffer)
+void InitializeTask::operator()()
 {
 
     TMotor tMotorWaist(1, "AK10_9", "Waist");

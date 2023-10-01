@@ -1,5 +1,5 @@
 #pragma once
-#include "SharedBuffer.hpp"
+
 #include <stdio.h>
 #include "../include/CanService.hpp"
 #include "../include/CanSocketUtils.hpp"
@@ -10,7 +10,7 @@
 
 class InitializeTask {
 public:
-    void operator()(SharedBuffer& buffer);
+    void operator()();
 
     
 };

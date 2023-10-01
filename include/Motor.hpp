@@ -13,8 +13,7 @@
 class TMotor : public MotorInterface
 {
 public:
-    TMotor::TMotor(int id, const std::string &motorType, const std::string &roboticSection)
-    : roboticSection(roboticSection), id(id), motorType(motorType){};
+   TMotor(int nodeId, const std::string &motorType, const std::string &roboticSection);
 
     // CanService
     void fillCanFrameForCheckMotor(struct can_frame *frame) override;
@@ -30,9 +29,8 @@ private:
     float kdMin, kdMax;
     float tMin, tMax;
 
-    std::string roboticSection;
     std::string motorType;
-    int id;
+
 
     void setLimits();
 };
@@ -40,13 +38,12 @@ private:
 class MaxonMotor : public MotorInterface
 {
 public:
-    int nodeId;
     int canSendId;
     int canReceiveId;
 
     int pdoId[4];
 
-    std::string roboticSection;
+    
 
     MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds);
 
