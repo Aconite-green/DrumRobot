@@ -3,7 +3,6 @@
 #include "../include/MotorSignalSendTask.hpp"
 #include <string>
 
-void MotorSignalSendTask::operator()(SharedBuffer& buffer) {
-    std::string command = buffer.pop();
-    // 모터에 신호를 보내는 코드
+void MotorSignalSendTask::operator()(SharedBuffer<can_frame>& buffer, std::map<std::string, std::shared_ptr<TMotor>>& tmotors){
+   
 }

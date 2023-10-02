@@ -42,7 +42,6 @@ private:
     bool is_port_up(const char *port);
     void activate_port(const char *port);
     std::string ifname;
-    
 };
 
 #endif // CAN_SOCKET_UTILS_H

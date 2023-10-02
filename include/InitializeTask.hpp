@@ -7,11 +7,10 @@
 #include "../include/ErrorHandle.hpp"
 #include "../include/Motor.hpp"
 #include "../include/MotorInterface.hpp"
-
-
+#include <map>
+#include <memory>
 
 class InitializeTask {
 public:
-    void operator()();
+    void operator()(std::map<std::string, std::shared_ptr<TMotor>>& tmotors);
 };
-

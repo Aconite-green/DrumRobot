@@ -11,7 +11,6 @@
 class MotorInterface {
 public:
     int nodeId;
-    std::string roboticSection;
     
     virtual void fillCanFrameForCheckMotor(struct can_frame *frame) = 0;
     virtual void fillCanFrameForControlMode(struct can_frame *frame) = 0;

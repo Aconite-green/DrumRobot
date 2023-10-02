@@ -2,8 +2,7 @@
 #include "../include/Motor.hpp" // Include header file
 #include <iostream>
 
-TMotor::TMotor(int id, const std::string &motorType, const std::string &roboticSection)
-    : roboticSection(roboticSection), motorType(motorType), id(id)
+TMotor::TMotor(int nodeId, const std::string &motorType)
 {
     // 공통된 초기값 설정
     pMin = -12.5;
@@ -76,7 +75,7 @@ void TMotor::setLimits()
 
 void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
 {
-    frame->can_id = this->id;
+    frame->can_id = this->nodeId;
     frame->can_dlc = 8;
 
     frame->data[0] = 0x80;
@@ -91,7 +90,7 @@ void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
 
 void TMotor::fillCanFrameForControlMode(struct can_frame *frame)
 {
-    frame->can_id = this->id;
+    frame->can_id = this->nodeId;
     frame->can_dlc = 8;
 
     frame->data[0] = 0xFF;
@@ -106,7 +105,7 @@ void TMotor::fillCanFrameForControlMode(struct can_frame *frame)
 
 void TMotor::fillCanFrameForExit(struct can_frame *frame)
 {
-    frame->can_id = this->id;
+    frame->can_id = this->nodeId;
     frame->can_dlc = 8;
 
     /// pack ints into the can buffer ///
@@ -122,7 +121,7 @@ void TMotor::fillCanFrameForExit(struct can_frame *frame)
 
 void TMotor::fillCanFrameForZeroing(struct can_frame *frame)
 {
-    frame->can_id = this->id;
+    frame->can_id = this->nodeId;
     frame->can_dlc = 8;
 
     frame->data[0] = 0xFF; // Position 8 higher
@@ -137,7 +136,7 @@ void TMotor::fillCanFrameForZeroing(struct can_frame *frame)
 
 void TMotor::fillCanFrameForQuickStop(struct can_frame *frame)
 {
-    frame->can_id = this->id;
+    frame->can_id = this->nodeId;
     frame->can_dlc = 8;
 
     frame->data[0] = 0x80;
@@ -154,8 +153,7 @@ void TMotor::fillCanFrameForQuickStop(struct can_frame *frame)
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds)
-    : nodeId(nodeId), roboticSection(roboticSection)
+MaxonMotor::MaxonMotor(int nodeId, std::initializer_list<int> pdoIds)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;

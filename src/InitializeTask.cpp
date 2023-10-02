@@ -3,15 +3,7 @@
 #include "../include/CanService.hpp"
 #include <string>
 
-void InitializeTask::operator()()
+void InitializeTask::operator()(std::map<std::string, std::shared_ptr<TMotor>>& tmotors)
 {
-
-    TMotor tMotorWaist(1, "AK10_9", "Waist");
-    CanService canService("can0");
-
-    canService.checkMotor(tMotorWaist);
-    canService.enterControlMode(tMotorWaist);
-
-    canService.checkMotor(tMotorWaist);
-    canService.Exit(tMotorWaist);
+    //go
 }

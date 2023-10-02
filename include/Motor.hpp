@@ -13,7 +13,7 @@
 class TMotor : public MotorInterface
 {
 public:
-   TMotor(int nodeId, const std::string &motorType, const std::string &roboticSection);
+   TMotor(int nodeId, const std::string &motorType);
 
     // CanService
     void fillCanFrameForCheckMotor(struct can_frame *frame) override;
@@ -45,7 +45,7 @@ public:
 
     
 
-    MaxonMotor(int nodeId, const std::string &roboticSection, std::initializer_list<int> pdoIds);
+    MaxonMotor(int nodeId, std::initializer_list<int> pdoIds);
 
     // Send all zero(SDO)
     void fillCanFrameForCheckMotor(struct can_frame *frame) override;
