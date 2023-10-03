@@ -7,7 +7,12 @@
 #include <map>
 #include <memory>
 
-void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer, std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
+MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>>& tmotors)
+: tmotors(tmotors)
+{
+}
+
+void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
     // total_times와 그에 해당하는 모터의 이름
     std::map<std::string, float> total_times = {{"waist", 8}};

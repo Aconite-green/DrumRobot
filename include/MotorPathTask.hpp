@@ -7,9 +7,12 @@
 class MotorPathTask
 {
 public:
-    void operator()(SharedBuffer<can_frame> &buffer, std::map<std::string, std::shared_ptr<TMotor>> &tmotors);
+    MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors);
+    void operator()(SharedBuffer<can_frame> &buffer);
 
 private:
     TMotorCommandParser Parser;
     can_frame frame;
+
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
 };

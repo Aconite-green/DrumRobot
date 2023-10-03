@@ -10,7 +10,13 @@
 #include <map>
 #include <memory>
 
-class InitializeTask {
+class InitializeTask
+{
 public:
-    void operator()(std::map<std::string, std::shared_ptr<TMotor>>& tmotors);
+    InitializeTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets);
+    void operator()();
+
+private:
+    std::map<std::string, std::shared_ptr<TMotor>>& tmotors;
+    const std::map<std::string, int>& sockets;
 };

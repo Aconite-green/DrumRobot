@@ -16,27 +16,31 @@
 
 int main()
 {
-    //Tasks For Threads
-    InitializeTask initialTask;
-    MotorPathTask pathTask;
-    MotorSignalSendTask sendTask;
-    MotorResponseReadTask readTask;
-    SensorSignalReadTask sensorTask;
 
-    //Buffer
+    // Buffer
     SharedBuffer<can_frame> sendBuffer;
     SharedBuffer<can_frame> receiveBuffer;
     SharedBuffer<int> sensorBuffer;
 
-    //Motor Declariration
+    // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
     tmotors["waist"] = std::make_shared<TMotor>(1, "AK10_9");
 
+    // Canport Initialization
+    std::vector<std::string> ifnames = {"can0", "can1"};
+    CanSocketUtils canUtils(ifnames);
 
-    //Begain Operation
-    initialTask(tmotors);
-    pathTask(sendBuffer, tmotors);
+    // Tasks For Threads
+    InitializeTask initialTask(tmotors, canUtils.getSockets());
+    MotorPathTask pathTask(tmotors);
+    MotorSignalSendTask sendTask(tmotors, canUtils.getSockets());
+    MotorResponseReadTask readTask(tmotors, canUtils.getSockets());
+    //SensorSignalReadTask sensorTask;
 
+
+    // Begain Operation
+    initialTask();
+    pathTask(sendBuffer);
 
     std::string userInput;
     while (true)
@@ -52,14 +56,14 @@ int main()
         else if (userInput == "run")
         {
             // Task 실행을 위한 스레드 생성 및 실행
-            std::thread sendThread(sendTask, std::ref(sendBuffer), std::ref(tmotors));
-            std::thread readThread(readTask, std::ref(receiveBuffer), std::ref(tmotors));
-            //std::thread sensorThread(sensorTask, std::ref(sensorBuffer), std::ref(tmotors));
+            std::thread sendThread(sendTask, std::ref(sendBuffer));
+            std::thread readThread(readTask, std::ref(receiveBuffer));
+            // std::thread sensorThread(sensorTask, std::ref(sensorBuffer), std::ref(tmotors));
 
             // 모든 스레드가 종료될 때까지 대기
             sendThread.join();
             readThread.join();
-            //sensorThread.join();
+            // sensorThread.join();
         }
     }
 
