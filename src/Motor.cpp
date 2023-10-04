@@ -2,7 +2,7 @@
 #include "../include/Motor.hpp" // Include header file
 #include <iostream>
 
-TMotor::TMotor(int nodeId, const std::string &motorType)
+TMotor::TMotor(int nodeId, const std::string &motorType, const std::string &interFaceName)
 {
     // 공통된 초기값 설정
     pMin = -12.5;
@@ -73,80 +73,24 @@ void TMotor::setLimits()
     }
 }
 
-void TMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
-{
-    frame->can_id = this->nodeId;
-    frame->can_dlc = 8;
-
-    frame->data[0] = 0x80;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x80;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x08;
-    frame->data[7] = 0x00;
+CanFrameInfo TMotor::getCanFrameForCheckMotor() {
+    return {this->nodeId, 8, {0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00}};
 }
 
-void TMotor::fillCanFrameForControlMode(struct can_frame *frame)
-{
-    frame->can_id = this->nodeId;
-    frame->can_dlc = 8;
-
-    frame->data[0] = 0xFF;
-    frame->data[1] = 0xFF;
-    frame->data[2] = 0xFF;
-    frame->data[3] = 0xFF;
-    frame->data[4] = 0xFF;
-    frame->data[5] = 0xFF;
-    frame->data[6] = 0xFF;
-    frame->data[7] = 0xFC;
+CanFrameInfo TMotor::getCanFrameForControlMode() {
+    return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC}};
 }
 
-void TMotor::fillCanFrameForExit(struct can_frame *frame)
-{
-    frame->can_id = this->nodeId;
-    frame->can_dlc = 8;
-
-    /// pack ints into the can buffer ///
-    frame->data[0] = 0xFF; // Position 8 higher
-    frame->data[1] = 0xFF; // Position 8 lower
-    frame->data[2] = 0xFF; // Speed 8 higher
-    frame->data[3] = 0xFF; // Speed 4 bit lower KP 4bit higher
-    frame->data[4] = 0xFF; // KP 8 bit lower
-    frame->data[5] = 0xFF; // Kd 8 bit higher
-    frame->data[6] = 0xFF; // KP 4 bit lower torque 4 bit higher
-    frame->data[7] = 0xFD; // torque 4 bit lower
+CanFrameInfo TMotor::getCanFrameForExit() {
+    return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD}};
 }
 
-void TMotor::fillCanFrameForZeroing(struct can_frame *frame)
-{
-    frame->can_id = this->nodeId;
-    frame->can_dlc = 8;
-
-    frame->data[0] = 0xFF; // Position 8 higher
-    frame->data[1] = 0xFF; // Position 8 lower
-    frame->data[2] = 0xFF; // Speed 8 higpaher
-    frame->data[3] = 0xFF; // Speed 4 bit lower KP 4bit higher
-    frame->data[4] = 0xFF; // KP 8 bit lower
-    frame->data[5] = 0xFF; // Kd 8 bit higher
-    frame->data[6] = 0xFF; // KP 4 bit lower torque 4 bit higher
-    frame->data[7] = 0xFE; // torque 4 bit lower
+CanFrameInfo TMotor::getCanFrameForZeroing() {
+    return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE}};
 }
 
-void TMotor::fillCanFrameForQuickStop(struct can_frame *frame)
-{
-    frame->can_id = this->nodeId;
-    frame->can_dlc = 8;
-
-    frame->data[0] = 0x80;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x80;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x08;
-    frame->data[7] = 0x00;
+CanFrameInfo TMotor::getCanFrameForQuickStop() {
+    return {this->nodeId, 8, {0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00}};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -173,108 +117,36 @@ MaxonMotor::MaxonMotor(int nodeId, std::initializer_list<int> pdoIds)
     }
 }
 
-void MaxonMotor::fillCanFrameForCheckMotor(struct can_frame *frame)
-{
-    // In CSP mode
-    frame->can_id = this->canSendId;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x00;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForCheckMotor() {
+    return {this->canSendId, 8, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForControlMode(struct can_frame *frame)
-{
-    frame->can_id = this->canSendId;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x22;
-    frame->data[1] = 0x60;
-    frame->data[2] = 0x60;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x08;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForControlMode() {
+    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x08, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForZeroing(struct can_frame *frame)
-{
-    frame->can_id = this->canSendId;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x22;
-    frame->data[1] = 0xB0;
-    frame->data[2] = 0x60;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForZeroing() {
+    return {this->canSendId, 8, {0x22, 0xB0, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForExit(struct can_frame *frame)
-{
-    frame->can_id = 0x00;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x02;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForExit() {
+    return {0x00, 8, {0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForOperational(struct can_frame *frame)
-{
-    frame->can_id = 0x00;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x01;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForOperational() {
+    return {0x00, 8, {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForEnable(struct can_frame *frame)
-{
-
-    frame->can_id = this->pdoId[0];
-    frame->can_dlc = 8;
-    frame->data[0] = 0x0F;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForEnable() {
+    return {this->pdoId[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForTorqueOffset(struct can_frame *frame)
-{
-    frame->can_id = this->canSendId;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x22;
-    frame->data[1] = 0xB2;
-    frame->data[2] = 0x60;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset() {
+    return {this->canSendId, 8, {0x22, 0xB2, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForTargetPostion(struct can_frame *frame, int targetPosition)
-{
+
+CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
     // 10진수 targetPosition을 16진수로 변환
     // 1[revolve] = 4096[inc]
     unsigned char posByte0 = targetPosition & 0xFF;         // 하위 8비트
@@ -282,40 +154,13 @@ void MaxonMotor::fillCanFrameForTargetPostion(struct can_frame *frame, int targe
     unsigned char posByte2 = (targetPosition >> 16) & 0xFF; // 다음 8비트
     unsigned char posByte3 = (targetPosition >> 24) & 0xFF; // 최상위 8비트
 
-    frame->can_id = this->pdoId[1];
-    frame->can_dlc = 4;
-    frame->data[0] = posByte0;
-    frame->data[1] = posByte1;
-    frame->data[2] = posByte2;
-    frame->data[3] = posByte3;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+    return {this->pdoId[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForSync(struct can_frame *frame){
-    frame->can_id = 0x80;
-    frame->can_dlc = 1;
-    frame->data[0] = 0x00;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForSync() {
+    return {0x80, 1, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-void MaxonMotor::fillCanFrameForQuickStop(struct can_frame *frame){
-    frame->can_id = this->pdoId[0];
-    frame->can_dlc = 8;
-    frame->data[0] = 0x06;
-    frame->data[1] = 0x00;
-    frame->data[2] = 0x00;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+CanFrameInfo MaxonMotor::getCanFrameForQuickStop() {
+    return {this->pdoId[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }

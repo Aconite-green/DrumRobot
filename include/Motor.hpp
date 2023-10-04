@@ -6,23 +6,29 @@
 #include <string.h>
 #include <float.h>
 #include <stdlib.h>
-
+#include <array>
+#include <cstdint>
 #include <string>
-#include "MotorInterface.hpp"
 
-class TMotor : public MotorInterface
+
+struct CanFrameInfo
+{
+    uint32_t can_id;
+    uint8_t can_dlc;
+    std::array<uint8_t, 8> data;
+};
+
+class TMotor
 {
 public:
-   TMotor(int nodeId, const std::string &motorType);
+    TMotor(int nodeId, const std::string &motorType, const std::string &interFaceName);
+    CanFrameInfo getCanFrameForCheckMotor();
+    CanFrameInfo getCanFrameForControlMode();
+    CanFrameInfo getCanFrameForExit();
+    CanFrameInfo getCanFrameForZeroing();
+    CanFrameInfo getCanFrameForQuickStop();
+    uint32_t nodeId;
 
-    // CanService
-    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
-    void fillCanFrameForControlMode(struct can_frame *frame) override;
-    void fillCanFrameForExit(struct can_frame *frame) override;
-    void fillCanFrameForZeroing(struct can_frame *frame) override;
-    void fillCanFrameForQuickStop(struct can_frame *frame) override;
-
-private:
     float pMin, pMax;
     float vMin, vMax;
     float kpMin, kpMax;
@@ -30,48 +36,42 @@ private:
     float tMin, tMax;
 
     std::string motorType;
+    std::string interFaceName;
 
-
+private:
     void setLimits();
 };
 
-class MaxonMotor : public MotorInterface
+class MaxonMotor
 {
 public:
-    int canSendId;
-    int canReceiveId;
+    uint32_t canSendId;
+    uint32_t canReceiveId;
 
-    int pdoId[4];
-
-    
+    uint32_t pdoId[4];
 
     MaxonMotor(int nodeId, std::initializer_list<int> pdoIds);
 
     // Send all zero(SDO)
-    void fillCanFrameForCheckMotor(struct can_frame *frame) override;
+    CanFrameInfo getCanFrameForCheckMotor();
     // CSP mode(SDO)
-    void fillCanFrameForControlMode(struct can_frame *frame) override;
+    CanFrameInfo getCanFrameForControlMode();
     // Set pos offset(SDO)
-    void fillCanFrameForZeroing(struct can_frame *frame) override;
+    CanFrameInfo getCanFrameForZeroing();
     // Operational -> Stop(NMT)
-    void fillCanFrameForExit(struct can_frame *frame) override;
+    CanFrameInfo getCanFrameForExit();
     // ControlWord Shutdown(PDO)
-    void fillCanFrameForQuickStop(struct can_frame *frame) override;
-
+    CanFrameInfo getCanFrameForQuickStop();
     // pre-operation, Stop -> oprational(MNT)
-    void fillCanFrameForOperational(struct can_frame *frame);
-
+    CanFrameInfo getCanFrameForOperational();
     // Set TorqueOffset(SDO)
-    void fillCanFrameForTorqueOffset(struct can_frame *frame);
-
+    CanFrameInfo getCanFrameForTorqueOffset();
     // ControlWold Enable(PDO)
-    void fillCanFrameForEnable(struct can_frame *frame);
-
-    // Set targetPostion(PDO)
-    void fillCanFrameForTargetPostion(struct can_frame *frame, int targetPosition);
-
+    CanFrameInfo getCanFrameForEnable();
+    // Set targetPosition(PDO)
+    CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
     // Sync(PDO)
-    void fillCanFrameForSync(struct can_frame *frame);
+    CanFrameInfo getCanFrameForSync();
 };
 
 #endif

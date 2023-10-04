@@ -1,19 +1,13 @@
 #include "../include/CanSocketUtils.hpp"
 
-void CanSocketUtils::check(int result, const char *errMsg, int errCode)
+CanSocketUtils::CanSocketUtils(const std::vector<std::string> &ifnames) : ifnames(ifnames)
 {
-    if (result == -1)
+    list_and_activate_available_can_ports(); // 포트를 자동으로 활성화
+    for (const auto &ifname : this->ifnames)
     {
-        perror(errMsg);
-        exit(errCode);
-    }
-}
-
-CanSocketUtils::CanSocketUtils(const std::vector<std::string>& ifnames) : ifnames(ifnames)
-{
-    for (const auto& ifname : this->ifnames) {
         int hsocket = create_socket(ifname);
-        if (hsocket < 0) {
+        if (hsocket < 0)
+        {
             // 에러 처리
             exit(EXIT_FAILURE);
         }
@@ -23,26 +17,26 @@ CanSocketUtils::CanSocketUtils(const std::vector<std::string>& ifnames) : ifname
 
 CanSocketUtils::~CanSocketUtils()
 {
-    for (const auto& kv : sockets) {
+    for (const auto &kv : sockets)
+    {
         int hsocket = kv.second;
-        if (hsocket >= 0) {
+        if (hsocket >= 0)
+        {
             close(hsocket);
         }
     }
     sockets.clear();
 }
 
-
-
-
-
-int CanSocketUtils::create_socket(const std::string& ifname) {
+int CanSocketUtils::create_socket(const std::string &ifname)
+{
     int result;
     struct sockaddr_can addr;
     struct ifreq ifr;
 
     int localSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW); // 지역 변수로 소켓 생성
-    if (localSocket < 0) {
+    if (localSocket < 0)
+    {
         return ERR_SOCKET_CREATE_FAILURE;
     }
 
@@ -51,7 +45,8 @@ int CanSocketUtils::create_socket(const std::string& ifname) {
 
     strcpy(ifr.ifr_name, ifname.c_str());
     result = ioctl(localSocket, SIOCGIFINDEX, &ifr);
-    if (result < 0) {
+    if (result < 0)
+    {
         close(localSocket);
         return ERR_SOCKET_CREATE_FAILURE;
     }
@@ -59,7 +54,8 @@ int CanSocketUtils::create_socket(const std::string& ifname) {
     addr.can_ifindex = ifr.ifr_ifindex;
     addr.can_family = AF_CAN;
 
-    if (bind(localSocket, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (bind(localSocket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
         close(localSocket);
         return ERR_SOCKET_CREATE_FAILURE;
     }
@@ -159,17 +155,4 @@ void CanSocketUtils::list_and_activate_available_can_ports()
     }
 }
 
-
-int CanSocketUtils::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec) {
-    struct timeval timeout;
-    timeout.tv_sec = timeout_sec;
-    timeout.tv_usec = timeout_usec;
-
-    if (setsockopt(hsocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
-    {
-        perror("setsockopt failed"); // perror 함수는 실패 원인을 출력해줍니다.
-        return ERR_SOCKET_CONFIGURE_FAILURE; // 실패 시 에러 코드 반환
-    }
-    return 0; // 성공 시 0 반환
-}
 

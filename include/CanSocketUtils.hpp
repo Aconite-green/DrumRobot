@@ -31,7 +31,7 @@ public:
     ~CanSocketUtils();
 
     int create_socket(const std::string &ifname); // 여러 if_name에 대해 소켓을 생성
-    int set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec);
+    
 
     void list_and_activate_available_can_ports();
 
@@ -41,11 +41,11 @@ public:
     }
 
 private:
-    void check(int result, const char *errMsg, int errCode);
     bool is_port_up(const char *port);
     void activate_port(const char *port);
     std::vector<std::string> ifnames;
     std::map<std::string, int> sockets; // 각 if_name에 대한 소켓 디스크립터를 저장
 };
+
 
 #endif // CAN_SOCKET_UTILS_H
