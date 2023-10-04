@@ -2,7 +2,8 @@
 #include "../include/Motor.hpp" // Include header file
 #include <iostream>
 
-TMotor::TMotor(int nodeId, const std::string &motorType, const std::string &interFaceName)
+TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)
+    : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName) // 멤버 변수 초기화
 {
     // 공통된 초기값 설정
     pMin = -12.5;
@@ -97,7 +98,7 @@ CanFrameInfo TMotor::getCanFrameForQuickStop() {
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(int nodeId, std::initializer_list<int> pdoIds)
+MaxonMotor::MaxonMotor(uint32_t nodeId, std::initializer_list<int> pdoIds)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;

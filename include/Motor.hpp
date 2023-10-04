@@ -21,7 +21,7 @@ struct CanFrameInfo
 class TMotor
 {
 public:
-    TMotor(int nodeId, const std::string &motorType, const std::string &interFaceName);
+    TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName);
     CanFrameInfo getCanFrameForCheckMotor();
     CanFrameInfo getCanFrameForControlMode();
     CanFrameInfo getCanFrameForExit();
@@ -50,7 +50,7 @@ public:
 
     uint32_t pdoId[4];
 
-    MaxonMotor(int nodeId, std::initializer_list<int> pdoIds);
+    MaxonMotor(uint32_t nodeId, std::initializer_list<int> pdoIds);
 
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();

@@ -12,7 +12,9 @@
 #include "../include/SharedBuffer.hpp"
 #include "../include/MotorResponseReadTask.hpp"
 #include "../include/SensorSignalReadTask.hpp"
-#include "../include/InitializeTask.hpp"
+#include "../include/ActivateControlTask.hpp"
+#include "../include/DeactivateControlTask.hpp"
+
 
 
 int main()
@@ -29,17 +31,20 @@ int main()
 
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["waist"] = std::make_shared<TMotor>(1, "AK10_9", "can0");
+    tmotors["waist"] = std::make_shared<TMotor>(0x01, "AK70_10", "can0");
+    tmotors["arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
+    tmotors["arm2"] = std::make_shared<TMotor>(0x03, "AK10_9", "can0");
 
     // Tasks For Threads
-    InitializeTask initialTask(tmotors, canUtils.getSockets());
+    ActivateControlTask activateTask(tmotors, canUtils.getSockets());
     // MotorPathTask pathTask(tmotors);
     // MotorSignalSendTask sendTask(tmotors, canUtils.getSockets());
     // MotorResponseReadTask readTask(tmotors, canUtils.getSockets());
     // SensorSignalReadTask sensorTask;
+    DeactivateControlTask deactivateTask(tmotors, canUtils.getSockets());
 
     // Begain Operation
-    initialTask();
+    activateTask();
     // pathTask(sendBuffer);
     /*
         std::string userInput;
@@ -67,5 +72,7 @@ int main()
             }
         }
     */
+
+   deactivateTask();
     return 0;
 }

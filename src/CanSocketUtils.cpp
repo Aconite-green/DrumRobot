@@ -79,10 +79,10 @@ bool CanSocketUtils::is_port_up(const char *port)
     if (fgets(output, sizeof(output) - 1, fp) == NULL)
     {
         perror("fgets failed");
+        printf("Errno: %d\n", errno); // errno 값을 출력
         pclose(fp);
         return false;
     }
-    pclose(fp);
 
     if (strstr(output, "DOWN"))
     {
@@ -114,6 +114,8 @@ void CanSocketUtils::activate_port(const char *port)
     }
 }
 
+#include <iostream> // std::cout을 사용하기 위해 필요
+
 void CanSocketUtils::list_and_activate_available_can_ports()
 {
     int portCount = 0; // CAN 포트 수를 세기 위한 변수
@@ -128,12 +130,20 @@ void CanSocketUtils::list_and_activate_available_can_ports()
     char output[1024];
     while (fgets(output, sizeof(output) - 1, fp) != nullptr)
     {
+        std::cout << "Output: " << output << std::endl; // fgets로 읽어들인 내용 출력
+
         portCount++; // CAN 포트를 발견할 때마다 카운트 증가
         std::string line(output);
         std::istringstream iss(line);
-        std::string port;
-        iss >> port;
-        port = port.substr(0, port.size() - 1); // 콜론 제거
+        std::string skip, port;
+        iss >> skip >> port;
+        
+        std::cout << "Skip: " << skip << ", Port: " << port << std::endl; // 파싱한 내용 출력
+
+        // 콜론 제거
+        if (!port.empty() && port.back() == ':') {
+            port.pop_back();
+        }
 
         if (is_port_up(port.c_str()))
         {
@@ -145,6 +155,13 @@ void CanSocketUtils::list_and_activate_available_can_ports()
             activate_port(port.c_str());
         }
     }
+
+    if (feof(fp) == 0)
+    {
+        perror("fgets failed");
+        printf("Errno: %d\n", errno); // errno 값을 출력
+    }
+    
     pclose(fp);
 
     // CAN 포트를 하나도 발견하지 못했으면 프로그램 종료
@@ -154,5 +171,4 @@ void CanSocketUtils::list_and_activate_available_can_ports()
         exit(1);
     }
 }
-
 

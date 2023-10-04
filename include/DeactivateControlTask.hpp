@@ -9,10 +9,10 @@
 #include <memory>
 #include <string>
 
-class InitializeTask
+class DeactivateControlTask
 {
 public:
-    InitializeTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets);
+    DeactivateControlTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets);
     void operator()();
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -1;
 

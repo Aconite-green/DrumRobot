@@ -1,19 +1,19 @@
-// InitializeTask.cpp
-#include "../include/InitializeTask.hpp"
+// DeactivateControlTask.cpp
+#include "../include/DeactivateControlTask.hpp"
 
-InitializeTask::InitializeTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets)
+DeactivateControlTask::DeactivateControlTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets)
     : tmotors(tmotors), sockets(sockets)
 {
 }
 
-void InitializeTask::fillCanFrameFromInfo(struct can_frame *frame, const CanFrameInfo &info)
+void DeactivateControlTask::fillCanFrameFromInfo(struct can_frame *frame, const CanFrameInfo &info)
 {
     frame->can_id = info.can_id;
     frame->can_dlc = info.can_dlc;
     std::copy(info.data.begin(), info.data.end(), frame->data);
 }
 
-int InitializeTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
+int DeactivateControlTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
 {
     struct timeval timeout;
     timeout.tv_sec = timeout_sec;
@@ -27,7 +27,7 @@ int InitializeTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout
     return 0; // 성공 시 0 반환
 }
 
-void InitializeTask::sendAndReceive(int socket, const std::string &name, struct can_frame &frame)
+void DeactivateControlTask::sendAndReceive(int socket, const std::string &name, struct can_frame &frame)
 {
     ssize_t write_status = write(socket, &frame, sizeof(can_frame));
     if (write_status > 0)
@@ -49,7 +49,7 @@ void InitializeTask::sendAndReceive(int socket, const std::string &name, struct 
     }
 }
 
-void InitializeTask::operator()()
+void DeactivateControlTask::operator()()
 {
     struct can_frame frame;
 
@@ -57,35 +57,14 @@ void InitializeTask::operator()()
     for (const auto &socketPair : sockets)
     {
         int hsocket = socketPair.second;
-        if (set_socket_timeout(hsocket, 0, 50000) != 0) // 5초, 0마이크로초로 타임아웃 설정
+        if (set_socket_timeout(hsocket, 0, 50000) != 0) // 50ms
         {
             // 타임아웃 설정 실패 처리
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
         }
     }
 
-    // 첫 번째 for문: 모터 상태 확인
-    for (const auto &motorPair : tmotors)
-    {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        std::cout << "Checking motor [" << name << "]..." << std::endl;
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame);
-    }
-
-    // 두 번째 for문: 제어 모드 설정
-    for (const auto &motorPair : tmotors)
-    {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-        std::cout << "Setting control mode for motor [" << name << "]..." << std::endl;
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame);
-    }
-
+    
     // 세 번째 for문: 모터 상태 재확인
     for (const auto &motorPair : tmotors)
     {
