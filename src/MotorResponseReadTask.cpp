@@ -45,9 +45,9 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 for (int i = 0; i < motor_count; ++i)
                 {
-                    can_frame readFrame;
+                    can_frame readFrame[1000];
                     setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-                    ssize_t bytesRead = read(socket_descriptor, &readFrame, sizeof(can_frame));
+                    ssize_t bytesRead = read(socket_descriptor, &readFrame, sizeof(can_frame)*1000);
 
                     if (bytesRead == -1)
                     {
@@ -56,7 +56,7 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
                     }
                     else
                     {
-                        buffer.push(readFrame);
+                        buffer.push(readFrame[1000]);
                     }
                 }
             }

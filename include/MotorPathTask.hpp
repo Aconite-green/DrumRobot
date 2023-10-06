@@ -14,7 +14,7 @@ public:
 
 private:
     TMotorCommandParser Parser;
-    can_frame frame;
+   
 
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
 };

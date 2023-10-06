@@ -7,8 +7,8 @@
 #include <map>
 #include <memory>
 
-MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>>& tmotors)
-: tmotors(tmotors)
+MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
+    : tmotors(tmotors)
 {
 }
 
@@ -19,20 +19,21 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
         {"arm1", 4}
         // 추가로 다른 모터에 대한 주기도 여기에 추가할 수 있습니다.
     };
-
+    struct can_frame frame;
     if (tmotors.size() != total_times.size())
     {
         std::cerr << "Error: The number of motors does not match the number of total_times entries.\n";
         return;
     }
 
-    float sample_time = 0.005;//100ms
-    int cycles = 1;
+    float sample_time = 0.1; // 100ms
+    int cycles = 5;
     float max_time = std::max_element(total_times.begin(), total_times.end(),
-    [](const auto& a, const auto& b)
-    {
-        return a.second < b.second;
-    })->second; // 모든 모터 중 가장 긴 주기를 max_time으로 설정합니다.
+                                      [](const auto &a, const auto &b)
+                                      {
+                                          return a.second < b.second;
+                                      })
+                         ->second; // 모든 모터 중 가장 긴 주기를 max_time으로 설정합니다.
 
     int max_samples = static_cast<int>(max_time / sample_time);
 
@@ -55,13 +56,14 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 float local_time = std::fmod(time, total_times[motor_name]);
                 float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
-                //float v_des = cosf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
 
-                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+                // p_des 값을 출력합니다.
+                std::cout << "p_des for motor " << motor_name << ": " << p_des << std::endl;
+
+                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, 0, 0, 0, 0, 0);
 
                 buffer.push(frame);
             }
         }
     }
 }
-
