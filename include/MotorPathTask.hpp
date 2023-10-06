@@ -3,6 +3,8 @@
 #include "CommandParser.hpp"
 #include "Motor.hpp"
 #include <map>
+#include <algorithm>
+
 
 class MotorPathTask
 {

@@ -9,7 +9,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
-
+#include <vector>
 
 struct CanFrameInfo
 {
@@ -45,12 +45,13 @@ private:
 class MaxonMotor
 {
 public:
+    uint32_t nodeId;
     uint32_t canSendId;
     uint32_t canReceiveId;
 
     uint32_t pdoId[4];
-
-    MaxonMotor(uint32_t nodeId, std::initializer_list<int> pdoIds);
+    MaxonMotor() = default;
+    MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &pdoIds);
 
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();

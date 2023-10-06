@@ -27,26 +27,17 @@ int DeactivateControlTask::set_socket_timeout(int hsocket, int timeout_sec, int 
     return 0; // 성공 시 0 반환
 }
 
-void DeactivateControlTask::sendAndReceive(int socket, const std::string &name, struct can_frame &frame)
+void DeactivateControlTask::sendAndReceive(
+    int socket,
+    const std::string &name,
+    struct can_frame &frame,
+    std::function<void(const std::string &, bool)> customOutput)
 {
     ssize_t write_status = write(socket, &frame, sizeof(can_frame));
-    if (write_status > 0)
-    {
-        std::cout << "Command sent to motor [" << name << "]. Awaiting response..." << std::endl;
-        ssize_t read_status = read(socket, &frame, sizeof(can_frame));
-        if (read_status > 0)
-        {
-            std::cout << "Motor [" << name << "] successfully processed." << std::endl;
-        }
-        else
-        {
-            std::cerr << "Issue receiving response from motor [" << name << "]." << std::endl;
-        }
-    }
-    else
-    {
-        std::cerr << "Issue sending command to motor [" << name << "]." << std::endl;
-    }
+    ssize_t read_status = read(socket, &frame, sizeof(can_frame));
+    bool success = write_status > 0 && read_status > 0;
+
+    customOutput(name, success);
 }
 
 void DeactivateControlTask::operator()()
@@ -57,14 +48,13 @@ void DeactivateControlTask::operator()()
     for (const auto &socketPair : sockets)
     {
         int hsocket = socketPair.second;
-        if (set_socket_timeout(hsocket, 0, 50000) != 0) // 50ms
+        if (set_socket_timeout(hsocket, 0, 0) != 0)
         {
             // 타임아웃 설정 실패 처리
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
         }
     }
 
-    
     // 세 번째 for문: 모터 상태 재확인
     for (const auto &motorPair : tmotors)
     {
@@ -72,18 +62,38 @@ void DeactivateControlTask::operator()()
         std::shared_ptr<TMotor> motor = motorPair.second;
 
         fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        std::cout << "Checking motor [" << name << "]..." << std::endl;
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame);
-    }
+        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success)
+                       {
+                           if (success)
+                           {
+                               std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
+                           }
+                           else
+                           {
+                               std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
+                           }
+                       });
 
-    // 네 번째 for문: 제어 모드 종료
-    for (const auto &motorPair : tmotors)
-    {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
+        // 구분자 추가
+        std::cout << "---------------------------------------" << std::endl;
 
         fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
-        std::cout << "Exiting control mode for motor [" << name << "]..." << std::endl;
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame);
+
+        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success)
+                       {
+                           if (success)
+                           {
+                               std::cout << "Exiting control mode for motor [" << motorName << "]." << std::endl;
+                           }
+                           else
+                           {
+                               std::cerr << "Failed to exit control mode for motor [" << motorName << "]." << std::endl;
+                           }
+                       });
+
+        // 구분자 추가
+        std::cout << "=======================================" << std::endl;
     }
 }

@@ -14,8 +14,7 @@
 #include "../include/SensorSignalReadTask.hpp"
 #include "../include/ActivateControlTask.hpp"
 #include "../include/DeactivateControlTask.hpp"
-
-
+#include <atomic>
 
 int main()
 {
@@ -24,6 +23,7 @@ int main()
     SharedBuffer<can_frame> sendBuffer;
     SharedBuffer<can_frame> receiveBuffer;
     SharedBuffer<int> sensorBuffer;
+    std::atomic<bool> paused(false);
 
     // Canport Initialization
     std::vector<std::string> ifnames = {"can0"};
@@ -31,22 +31,27 @@ int main()
 
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["waist"] = std::make_shared<TMotor>(0x01, "AK70_10", "can0");
     tmotors["arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
-    tmotors["arm2"] = std::make_shared<TMotor>(0x03, "AK10_9", "can0");
+
+    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
+    maxonMotors["a"] = std::make_shared<MaxonMotor>(0x01, std::vector<uint32_t>{0x201, 0x301});
+
+
 
     // Tasks For Threads
     ActivateControlTask activateTask(tmotors, canUtils.getSockets());
-    // MotorPathTask pathTask(tmotors);
-    // MotorSignalSendTask sendTask(tmotors, canUtils.getSockets());
-    // MotorResponseReadTask readTask(tmotors, canUtils.getSockets());
-    // SensorSignalReadTask sensorTask;
+    MotorPathTask pathTask(tmotors);
+    MotorSignalSendTask sendTask(tmotors, canUtils.getSockets(), paused);
+    //MotorResponseReadTask readTask(tmotors, canUtils.getSockets(), paused);
+    //SensorSignalReadTask sensorTask(tmotors, paused);
     DeactivateControlTask deactivateTask(tmotors, canUtils.getSockets());
 
     // Begain Operation
     activateTask();
-    // pathTask(sendBuffer);
-    /*
+    pathTask(sendBuffer);
+    sendBuffer.print_buffer();
+
+    
         std::string userInput;
         while (true)
         {
@@ -62,17 +67,18 @@ int main()
             {
                 // Task 실행을 위한 스레드 생성 및 실행
                 std::thread sendThread(sendTask, std::ref(sendBuffer));
-                std::thread readThread(readTask, std::ref(receiveBuffer));
-                // std::thread sensorThread(sensorTask, std::ref(sensorBuffer), std::ref(tmotors));
+                //std::thread readThread(readTask, std::ref(receiveBuffer));
+                //std::thread sensorThread(sensorTask, std::ref(sensorBuffer));
 
                 // 모든 스레드가 종료될 때까지 대기
                 sendThread.join();
-                readThread.join();
-                // sensorThread.join();
+                //readThread.join();
+                //sensorThread.join();
             }
         }
-    */
+    
 
-   deactivateTask();
+    deactivateTask();
+    receiveBuffer.print_buffer();
     return 0;
 }

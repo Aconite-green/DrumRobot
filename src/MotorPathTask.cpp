@@ -14,8 +14,11 @@ MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>>& tmo
 
 void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
-    // total_times와 그에 해당하는 모터의 이름
-    std::map<std::string, float> total_times = {{"waist", 8}};
+    // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
+    std::map<std::string, float> total_times = {
+        {"arm1", 4}
+        // 추가로 다른 모터에 대한 주기도 여기에 추가할 수 있습니다.
+    };
 
     if (tmotors.size() != total_times.size())
     {
@@ -23,9 +26,14 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
         return;
     }
 
-    float sample_time = 0.005;
-    int cycles = 5;
-    float max_time = 8.0;
+    float sample_time = 0.005;//100ms
+    int cycles = 1;
+    float max_time = std::max_element(total_times.begin(), total_times.end(),
+    [](const auto& a, const auto& b)
+    {
+        return a.second < b.second;
+    })->second; // 모든 모터 중 가장 긴 주기를 max_time으로 설정합니다.
+
     int max_samples = static_cast<int>(max_time / sample_time);
 
     for (int cycle = 0; cycle < cycles; cycle++)
@@ -38,7 +46,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
             {
                 const std::string &motor_name = entry.first;
                 std::shared_ptr<TMotor> &motor = entry.second;
-                
+
                 if (total_times.find(motor_name) == total_times.end())
                 {
                     std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
@@ -47,12 +55,13 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 float local_time = std::fmod(time, total_times[motor_name]);
                 float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
-                float v_des = cosf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
+                //float v_des = cosf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
 
-                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 8, 1, 0);
+                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
                 buffer.push(frame);
             }
         }
     }
 }
+
