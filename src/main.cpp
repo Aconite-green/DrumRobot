@@ -27,7 +27,7 @@ int main()
 
     // Canport Initialization
     std::vector<std::string> ifnames = {"can0"};
-    CanSocketUtils canUtils(ifnames);
+    //CanSocketUtils canUtils(ifnames);
 
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
@@ -39,18 +39,18 @@ int main()
 
 
     // Tasks For Threads
-    ActivateControlTask activateTask(tmotors, canUtils.getSockets());
+    //ActivateControlTask activateTask(tmotors, canUtils.getSockets());
     MotorPathTask pathTask(tmotors);
-    MotorSignalSendTask sendTask(tmotors, canUtils.getSockets(), paused);
+    //MotorSignalSendTask sendTask(tmotors, canUtils.getSockets(), paused);
     //MotorResponseReadTask readTask(tmotors, canUtils.getSockets(), paused);
     //SensorSignalReadTask sensorTask(tmotors, paused);
-    DeactivateControlTask deactivateTask(tmotors, canUtils.getSockets());
+    //DeactivateControlTask deactivateTask(tmotors, canUtils.getSockets());
 
     // Begain Operation
-    activateTask();
+    //activateTask();
     pathTask(sendBuffer);
     sendBuffer.print_buffer();
-
+/*
     
         std::string userInput;
         while (true)
@@ -80,5 +80,7 @@ int main()
 
     deactivateTask();
     receiveBuffer.print_buffer();
-    return 0;
+    
+    */
+   return 0;
 }

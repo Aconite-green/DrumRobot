@@ -60,7 +60,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 // p_des 값을 출력합니다.
                 std::cout << "p_des for motor " << motor_name << ": " << p_des << std::endl;
 
-                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, 0, 0, 0, 0, 0);
+                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
                 buffer.push(frame);
             }
