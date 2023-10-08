@@ -13,11 +13,12 @@
 class ActivateControlTask
 {
 public:
-    ActivateControlTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, const std::map<std::string, int> &sockets);
+    ActivateControlTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,const std::map<std::string, int> &sockets);
     void operator()();
 
 private:
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
     const std::map<std::string, int> &sockets;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -1;
 
@@ -29,4 +30,9 @@ private:
         struct can_frame &frame,
         std::function<void(const std::string &, bool)> customOutput // 추가된 인자
     );
+    void sendNotRead(
+        int socket,
+        const std::string &name,
+        struct can_frame &frame,
+        std::function<void(const std::string &, bool)> customOutput);
 };

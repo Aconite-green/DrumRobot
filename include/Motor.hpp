@@ -52,13 +52,13 @@ public:
     uint32_t pdoId[4];
     MaxonMotor() = default;
     MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &pdoIds);
-
+    std::string interFaceName;
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
     // CSP mode(SDO)
     CanFrameInfo getCanFrameForControlMode();
     // Set pos offset(SDO)
-    CanFrameInfo getCanFrameForZeroing();
+    CanFrameInfo getCanFrameForPosOffset();
     // Operational -> Stop(NMT)
     CanFrameInfo getCanFrameForExit();
     // ControlWord Shutdown(PDO)
@@ -73,6 +73,8 @@ public:
     CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
     // Sync(PDO)
     CanFrameInfo getCanFrameForSync();
+
+    
 };
 
 #endif

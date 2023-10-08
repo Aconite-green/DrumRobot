@@ -51,6 +51,14 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "map": "cpp",
-        "iomanip": "cpp"
-    }
+        "iomanip": "cpp",
+        "cstring": "cpp"
+    },
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/syp/DrumRobot_v1.0",
+            "binaryPath": "/home/syp/DrumRobot_v1.0/main.out",
+            "binaryArgs": []
+        }
+    ]
 }

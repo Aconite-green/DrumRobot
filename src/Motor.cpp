@@ -127,7 +127,7 @@ CanFrameInfo MaxonMotor::getCanFrameForControlMode() {
     return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x08, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForZeroing() {
+CanFrameInfo MaxonMotor::getCanFrameForPosOffset() {
     return {this->canSendId, 8, {0x22, 0xB0, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
