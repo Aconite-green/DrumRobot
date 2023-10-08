@@ -24,6 +24,7 @@ int main()
     SharedBuffer<can_frame> receiveBuffer;
     SharedBuffer<int> sensorBuffer;
     std::atomic<bool> paused(false);
+    std::atomic<bool> stop(false);
 
     // Canport Initialization
     std::vector<std::string> ifnames = {"can0"};
@@ -34,16 +35,16 @@ int main()
     tmotors["arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
 
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
-    maxonMotors["a"] = std::make_shared<MaxonMotor>(0x01, std::vector<uint32_t>{0x201, 0x301});
+    maxonMotors["a"] = std::make_shared<MaxonMotor>(0x01, std::vector<uint32_t>{0x201, 0x301}, "can0");
 
 
 
     // Tasks For Threads
     //ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
     MotorPathTask pathTask(tmotors);
-    //MotorSignalSendTask sendTask(tmotors, canUtils.getSockets(), paused);
-    //MotorResponseReadTask readTask(tmotors, canUtils.getSockets(), paused);
-    //SensorSignalReadTask sensorTask(tmotors, paused);
+    //MotorSignalSendTask sendTask(tmotors, canUtils.getSockets(), paused, stop);
+    //MotorResponseReadTask readTask(tmotors, canUtils.getSockets(), paused, stop);
+    //SensorSignalReadTask sensorTask(tmotors, paused, stop);
     //DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
 
     // Begain Operation

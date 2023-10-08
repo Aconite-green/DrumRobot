@@ -98,8 +98,8 @@ CanFrameInfo TMotor::getCanFrameForQuickStop() {
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& pdoIds)
-: nodeId(nodeId)
+MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& pdoIds, const std::string &interFaceName)
+: nodeId(nodeId), interFaceName(interFaceName)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;
@@ -114,10 +114,11 @@ MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& pdoIds)
             std::cout << "Warning: More than 4 PDO IDs provided. Ignoring extras." << std::endl;
             break;
         }
-        pdoId[index] = pdo;
+        this->pdoIds[index] = pdo;
         ++index;
     }
 }
+
 
 CanFrameInfo MaxonMotor::getCanFrameForCheckMotor() {
     return {this->canSendId, 8, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
@@ -140,7 +141,7 @@ CanFrameInfo MaxonMotor::getCanFrameForOperational() {
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForEnable() {
-    return {this->pdoId[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {this->pdoIds[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset() {
@@ -156,7 +157,7 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
     unsigned char posByte2 = (targetPosition >> 16) & 0xFF; // 다음 8비트
     unsigned char posByte3 = (targetPosition >> 24) & 0xFF; // 최상위 8비트
 
-    return {this->pdoId[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
+    return {this->pdoIds[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForSync() {
@@ -164,5 +165,5 @@ CanFrameInfo MaxonMotor::getCanFrameForSync() {
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForQuickStop() {
-    return {this->pdoId[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {this->pdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }

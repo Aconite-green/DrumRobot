@@ -49,9 +49,12 @@ public:
     uint32_t canSendId;
     uint32_t canReceiveId;
 
-    uint32_t pdoId[4];
+    uint32_t pdoIds[4];
     MaxonMotor() = default;
-    MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &pdoIds);
+    MaxonMotor(uint32_t nodeId, 
+    const std::vector<uint32_t> &pdoIds,
+    const std::string &interFaceName);
+    
     std::string interFaceName;
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
