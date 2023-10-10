@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <linux/can.h>
 #include <queue> // 큐를 사용하기 위한 헤더
+#include "CommandParser.hpp"
+#include <fstream>
+#include <map>
 
 template <typename T>
 class SharedBuffer
@@ -76,6 +79,49 @@ public:
             temp_buffer.pop();
             count++;
         }
+    }
+
+    void parse_and_save_to_csv(const std::string &csv_file_name,
+                               TMotorCommandParser &parser,
+                               std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
+    {
+        std::unique_lock<std::mutex> lock(buffer_mutex); // 동기화를 위한 뮤텍스 잠금
+
+        // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
+        std::ofstream ofs(csv_file_name, std::ios::app);
+
+        if (!ofs.is_open())
+        {
+            std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+            return;
+        }
+
+        // 파일이 새로 생성되었으면 CSV 헤더를 추가
+        ofs.seekp(0, std::ios::end);
+        if (ofs.tellp() == 0)
+        {
+            ofs << "MotorName,ID,Position,Speed,Torque\n";
+        }
+
+        std::queue<T> temp_buffer = buffer; // 버퍼를 임시 큐에 복사
+
+        while (!temp_buffer.empty())
+        {
+
+            for (const auto &pair : tmotors)
+            {
+                std::shared_ptr<TMotor> motor = pair.second;
+                can_frame frame = temp_buffer.front();
+                temp_buffer.pop();
+                auto [id, position, speed, torque] = parser.parseRecieveCommand(*motor, &frame);
+
+                ofs << id << ","
+                    << position << ","
+                    << speed << ","
+                    << torque << "\n";
+            }
+        }
+        ofs.close();
     }
 
 private:

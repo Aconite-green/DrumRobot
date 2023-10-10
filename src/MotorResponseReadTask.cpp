@@ -4,10 +4,10 @@
 #include <string>
 
 MotorResponseReadTask::MotorResponseReadTask(
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors, 
-     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors, 
-    const std::map<std::string, int> &sockets, 
-    std::atomic<bool> &paused, 
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
+    const std::map<std::string, int> &sockets,
+    std::atomic<bool> &paused,
     std::atomic<bool> &stop)
     : tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets), paused(paused), stop(stop)
 {
@@ -54,14 +54,27 @@ int MotorResponseReadTask::kbhit(void)
 
 void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
 {
+    // 시간 관련 설정
     clock_t external = clock();
     struct timeval timeout;
     timeout.tv_sec = 0;
-    timeout.tv_usec = 5000; 
+    timeout.tv_usec = 5000; // 5ms
+    TMotorCommandParser parser;
+    const int NUM_FRAMES = 200;
+    // 소켓 옵션 설정
+    for (const auto &socket_pair : sockets)
+    {
+        int socket_descriptor = socket_pair.second;
+        if (setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+        {
+            std::cerr << "Failed to set socket options for interface: " << socket_pair.first << std::endl;
+            return;
+        }
+    }
 
     while (!stop)
     {
-
+        // 키보드 입력 처리
         if (kbhit())
         {
             char ch = getchar();
@@ -72,29 +85,29 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
             if (ch == 'e' || ch == 'E')
                 stop.store(true);
         }
+
+        // 일시정지 여부
         if (paused.load())
         {
             continue;
         }
 
+        // 시간 체크
         clock_t internal = clock();
         double elapsed_time = ((double)(internal - external)) / CLOCKS_PER_SEC * 1000;
-        if (elapsed_time >= 100) // 5ms
+        if (elapsed_time >= 100) // 100ms
         {
             external = clock();
 
             for (const auto &socket_pair : sockets)
             {
-
                 int socket_descriptor = socket_pair.second;
-                int motor_count = motor_count_per_port[socket_pair.first]; 
+                int motor_count = motor_count_per_port[socket_pair.first];
 
                 for (int i = 0; i < motor_count; ++i)
                 {
-                    
-                    can_frame readFrame[1000];
-                    setsockopt(socket_descriptor, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-                    ssize_t bytesRead = read(socket_descriptor, &readFrame, sizeof(can_frame) * 1000);
+                    can_frame readFrame[NUM_FRAMES];
+                    ssize_t bytesRead = read(socket_descriptor, &readFrame, sizeof(can_frame) * NUM_FRAMES);
 
                     if (bytesRead == -1)
                     {
@@ -103,10 +116,15 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
                     }
                     else
                     {
-                        buffer.push(readFrame[1000]);
+                        int numFramesRead = bytesRead / sizeof(can_frame);
+                        for (int i = 0; i < numFramesRead; ++i)
+                        {
+                            buffer.push(readFrame[i]);
+                        }
                     }
                 }
             }
         }
     }
+    buffer.parse_and_save_to_csv("tmotors", parser, tmotors);
 }

@@ -16,7 +16,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        {"arm1", 4}
+        {"arm1", 4}, {"arm2", 4}, {"waist", 4}
         // 추가로 다른 모터에 대한 주기도 여기에 추가할 수 있습니다.
     };
     struct can_frame frame;
@@ -26,8 +26,8 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
         return;
     }
 
-    float sample_time = 0.1; // 100ms
-    int cycles = 5;
+    float sample_time = 0.005; // 100ms
+    int cycles = 3;
     float max_time = std::max_element(total_times.begin(), total_times.end(),
                                       [](const auto &a, const auto &b)
                                       {
@@ -57,10 +57,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 float local_time = std::fmod(time, total_times[motor_name]);
                 float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
 
-                // p_des 값을 출력합니다.
-                std::cout << "p_des for motor " << motor_name << ": " << p_des << std::endl;
-
-                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, 0, 0, 0, 0, 0);
+                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
                 buffer.push(frame);
             }

@@ -34,9 +34,10 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
     frame->data[7] = t_int & 0xff;                         // torque 4 bit lower
 }
 
-void TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
+std::tuple<int, float, float, float>TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
 {
-    int id, position, speed, torque;
+    int id; 
+    float position, speed, torque;
     /// unpack ints from can buffer ///
     id = frame->data[0];
     int p_int = (frame->data[1] << 8) | frame->data[2];
@@ -48,7 +49,8 @@ void TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *f
     speed = uint_to_float(v_int, motor.vMin, motor.vMax, 12);
     torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
 
-    printf("[%d] position : %d, speed: %d, torque: %d",id, position, speed, torque);
+    return std::make_tuple(id, position, speed, torque);
+
 }
 int TMotorCommandParser::float_to_uint(float x, float x_min, float x_max, unsigned int bits)
 {

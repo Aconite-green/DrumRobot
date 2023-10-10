@@ -32,4 +32,5 @@ private:
     std::atomic<bool> &stop;
     std::map<std::string, int> motor_count_per_port;
     int kbhit(void); 
+    
 };

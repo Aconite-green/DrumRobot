@@ -1,6 +1,6 @@
 # Declare variables
 CC = g++
-CFLAGS = -Wall -O2 -g
+CFLAGS = -Wall -O2 -g -std=c++17  # C++17 표준 사용
 INCLUDE = -I./include
 SRCDIR = ./src
 BINDIR = ./
