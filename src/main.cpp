@@ -38,7 +38,7 @@ int main()
     tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x04, "AK70_10", "can3");
     tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x05, "AK70_10", "can3");
     tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x06, "AK70_10", "can3");
-    
+    /*
         // Canport Initialization
         std::vector<std::string> ifnames = {"can2", "can3"};
         CanSocketUtils canUtils(ifnames);
@@ -56,12 +56,13 @@ int main()
         // SensorSignalReadTask sensorTask(tmotors, paused, stop);
         DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
     
-
+*/
     PathManager PathManager(tmotors);
-    
+    PathManager(sendBuffer);
+  /*  
     ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager,sendTask, readTask,sendBuffer, receiveBuffer, stop);
     std::thread threadLoop(threadLoopTask);
     threadLoop.join();
-
+*/
     return 0;
 }

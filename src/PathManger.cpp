@@ -155,6 +155,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
     vector<vector<double>> Q;
     vector<vector<double>> Q_LEFT(n_time_32, vector<double>(4));
     vector<vector<double>> Q_RIGHT(n_time_32, vector<double>(4));
+    vector<vector<double>> q(n_time_32 * n, vector<double>(7));
     vector<vector<double>> q_LEFT(n_time_32 * n, vector<double>(4));
     vector<vector<double>> q_RIGHT(n_time_32 * n, vector<double>(4));
     vector<double> P1;
@@ -217,6 +218,11 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
         }
     }
 
+    for (long unsigned int i = 0; i < q_RIGHT.size(); ++i)
+    {
+        q[i] = {q_RIGHT[i][0], q_RIGHT[i][1], q_LEFT[i][1], q_RIGHT[i][2], q_RIGHT[i][3], q_LEFT[i][2], q_LEFT[i][3]};
+    }
+
     // Time += ((int)clock() - start) / (CLOCKS_PER_SEC / 1000);
 
     // cout << "TIME : " << Time << "ms\n";
@@ -232,28 +238,20 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
     }
     cout << "\n";
 
-    /*
-    cout << "q_RIGHT : " << q_RIGHT.size() << " x " << q_RIGHT[0].size() << "\n";
-    for (long unsigned int i = 0; i < q_RIGHT.size(); ++i) {
-        for (long unsigned int j = 0; j < q_RIGHT[0].size(); ++j) {
-            cout << q_RIGHT[i][j] << " ";
+    cout << "q : " << q.size() << " x " << q[0].size() << "\n";
+    for (long unsigned int i = 0; i < q.size(); ++i)
+    {
+        for (long unsigned int j = 0; j < q[0].size(); ++j)
+        {
+            cout << q[i][j] << " ";
         }
         cout << "\n";
     }
     cout << "\n";
 
-    cout << "q_LEFT : " << q_LEFT.size() << " x " << q_LEFT[0].size() << "\n";
-    for (long unsigned int i = 0; i < q_LEFT.size(); ++i) {
-        for (long unsigned int j = 0; j < q_LEFT[0].size(); ++j) {
-            cout << q_LEFT[i][j] << " ";
-        }
-        cout << "\n";
-    }
-    cout << "\n";
-    */
-
+   
     struct can_frame frame;
-    for (long unsigned int i = 0; i < Q.size(); ++i)    // time num
+    for (long unsigned int i = 0; i < q.size(); ++i)    // time num
     {
         int j = 0;  // instrument num
         for (auto &entry : tmotors)
@@ -261,9 +259,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
             const std::string &motor_name = entry.first;
             std::shared_ptr<TMotor> &motor = entry.second;
 
-            cout << motor_name << " ";
-
-            float p_des = Q[i][j];
+            float p_des = q[i][j];
 
             Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
@@ -273,4 +269,5 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
         }
         cout << "\n";
     }
+    
 }
