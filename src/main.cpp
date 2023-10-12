@@ -30,13 +30,13 @@ int main()
 
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["waist"] = std::make_shared<TMotor>(0x01, "AK10_9", "can1");
-    tmotors["R_arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
-    tmotors["L_arm1"] = std::make_shared<TMotor>(0x03, "AK70_10", "can2");
-    tmotors["R_arm2"] = std::make_shared<TMotor>(0x04, "AK70_10", "can0");
-    tmotors["R_arm3"] = std::make_shared<TMotor>(0x05, "AK70_10", "can0");
-    tmotors["L_arm2"] = std::make_shared<TMotor>(0x06, "AK70_10", "can2");
-    tmotors["L_arm3"] = std::make_shared<TMotor>(0x07, "AK70_10", "can2");
+    tmotors["1_waist"] = std::make_shared<TMotor>(0x01, "AK10_9", "can1");
+    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
+    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x03, "AK70_10", "can2");
+    tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x04, "AK70_10", "can0");
+    tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x05, "AK70_10", "can0");
+    tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x06, "AK70_10", "can2");
+    tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x07, "AK70_10", "can2");
     /*
         // Canport Initialization
         std::vector<std::string> ifnames = {"can0"};

@@ -64,7 +64,7 @@ public:
         std::cout << "Buffer contents: \n"
                   << std::endl;
 
-        while (!temp_buffer.empty() && count < 30)
+        while (!temp_buffer.empty() && count < 200)
         {
             const can_frame &frame = temp_buffer.front();
             std::cout << "can_id: " << std::hex << frame.can_id

@@ -252,25 +252,25 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
     cout << "\n";
     */
 
-    for (long unsigned int i = 0; i < Q.size(); ++i)
+    struct can_frame frame;
+    for (long unsigned int i = 0; i < Q.size(); ++i)    // time num
     {
+        int j = 0;  // instrument num
         for (auto &entry : tmotors)
         {
             const std::string &motor_name = entry.first;
             std::shared_ptr<TMotor> &motor = entry.second;
 
-            if (total_times.find(motor_name) == total_times.end())
-            {
-                std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
-                continue;
-            }
+            cout << motor_name << " ";
 
-            float local_time = std::fmod(time, total_times[motor_name]);
-            float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
+            float p_des = Q[i][j];
 
             Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
             buffer.push(frame);
+
+            j++;
         }
+        cout << "\n";
     }
 }
