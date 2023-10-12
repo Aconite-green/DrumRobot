@@ -3,6 +3,7 @@
 ThreadLoopTask::ThreadLoopTask(ActivateControlTask &activateTask_, 
                                DeactivateControlTask &deactivateTask_,
                                MotorPathTask &pathTask_,
+                               PathManager &pathManagerTask,
                                MotorSignalSendTask &sendTask_,
                                MotorResponseReadTask &readTask_,
                                SharedBuffer<can_frame> &sendBuffer_, 
@@ -11,6 +12,7 @@ ThreadLoopTask::ThreadLoopTask(ActivateControlTask &activateTask_,
 : activateTask(activateTask_), 
   deactivateTask(deactivateTask_),
   pathTask(pathTask_),
+  pathManagerTask(pathManagerTask),
   sendTask(sendTask_),
   readTask(readTask_),
   sendBuffer(sendBuffer_),
@@ -29,7 +31,7 @@ void ThreadLoopTask::operator()()
     std::string userInput;
     while (true)
     {
-        std::cout << "Enter 'run' to continue or 'exit' to quit: ";
+        std::cout << "Enter 'run' to continue or 'exit' to quit or 'sine to test: ";
         std::cin >> userInput;
         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
 
@@ -37,7 +39,7 @@ void ThreadLoopTask::operator()()
         {
             break;
         }
-        else if (userInput == "run")
+        else if (userInput == "sine")
         {
             stop.store(false);
             pathTask(sendBuffer);
@@ -46,6 +48,12 @@ void ThreadLoopTask::operator()()
 
             sendThread.join();
             readThread.join();
+        }
+        else if (userInput == "run"){
+            stop.store(false);
+            pathManagerTask(sendBuffer);
+            std::thread sendThread(sendTask, std::ref(sendBuffer));
+            std::thread readThread(readTask, std::ref(receiveBuffer));
         }
     }
 

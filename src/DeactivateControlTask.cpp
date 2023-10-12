@@ -60,7 +60,7 @@ void DeactivateControlTask::operator()()
     for (const auto &socketPair : sockets)
     {
         int hsocket = socketPair.second;
-        if (set_socket_timeout(hsocket, 0, 0) != 0)
+        if (set_socket_timeout(hsocket, 0, 50000) != 0)
         {
             // 타임아웃 설정 실패 처리
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
@@ -110,6 +110,7 @@ void DeactivateControlTask::operator()()
     }
 
     // MaxonMotor
+    /*
     for (const auto &motorPair : maxonMotors)
     {
         std::string name = motorPair.first;
@@ -160,4 +161,5 @@ void DeactivateControlTask::operator()()
                            }
                        });
     }
+    */
 }
