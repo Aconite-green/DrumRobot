@@ -30,13 +30,13 @@ int main()
 
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["a"] = std::make_shared<TMotor>(0x01, "AK70_10", "can0");
-    tmotors["b"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
-    tmotors["c"] = std::make_shared<TMotor>(0x03, "AK70_10", "can0");
-    tmotors["d"] = std::make_shared<TMotor>(0x04, "AK70_10", "can2");
-    tmotors["e"] = std::make_shared<TMotor>(0x05, "AK70_10", "can2");
-    tmotors["f"] = std::make_shared<TMotor>(0x06, "AK70_10", "can2");
-    tmotors["g"] = std::make_shared<TMotor>(0x07, "AK10_9", "can1");
+    tmotors["waist"] = std::make_shared<TMotor>(0x01, "AK10_9", "can1");
+    tmotors["R_arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
+    tmotors["L_arm1"] = std::make_shared<TMotor>(0x03, "AK70_10", "can2");
+    tmotors["R_arm2"] = std::make_shared<TMotor>(0x04, "AK70_10", "can0");
+    tmotors["R_arm3"] = std::make_shared<TMotor>(0x05, "AK70_10", "can0");
+    tmotors["L_arm2"] = std::make_shared<TMotor>(0x06, "AK70_10", "can2");
+    tmotors["L_arm3"] = std::make_shared<TMotor>(0x07, "AK70_10", "can2");
     /*
         // Canport Initialization
         std::vector<std::string> ifnames = {"can0"};
@@ -54,13 +54,12 @@ int main()
         MotorResponseReadTask readTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
         // SensorSignalReadTask sensorTask(tmotors, paused, stop);
         DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
-
-
     */
 
     PathManager PathManager(tmotors);
     PathManager(sendBuffer);
 
+    sendBuffer.print_buffer();
     /*ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, sendTask, readTask, sendBuffer, receiveBuffer, stop);
     std::thread threadLoop(threadLoopTask);
     threadLoop.join();*/
