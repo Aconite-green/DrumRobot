@@ -2,6 +2,13 @@
 #include "SharedBuffer.hpp"
 #include "CommandParser.hpp"
 #include "Motor.hpp"
+#include "bin2str.hpp"
+#include "RL_assign.hpp"
+#include "str2bin.hpp"
+#include "qd2sd.hpp"
+#include "qd2sd_F.hpp"
+#include "IKfun.hpp"
+#include "connect.hpp"
 #include <map>
 #include <algorithm>
 
