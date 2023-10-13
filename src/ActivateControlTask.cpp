@@ -67,173 +67,171 @@ void ActivateControlTask::operator()()
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
         }
     }
-
-    // 첫 번째 for문: 모터 상태 확인 및 제어 모드 설정
-    for (const auto &motorPair : tmotors)
+    if (!tmotors.empty())
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
+        // 첫 번째 for문: 모터 상태 확인 및 제어 모드 설정
+        for (const auto &motorPair : tmotors)
+        {
+            std::string name = motorPair.first;
+            std::shared_ptr<TMotor> motor = motorPair.second;
 
-        // 상태 확인
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            // 상태 확인
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
+                               }
+                           });
 
-        // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            // 제어 모드 설정
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Control mode set for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Control mode set for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
-                           }
-                       });
-
-        // 구분자 추가
-        std::cout << "=======================================" << std::endl;
+            // 구분자 추가
+            std::cout << "=======================================" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "No Tmotors to process." << std::endl;
     }
 
     // MaxonMotor
-    /*for (const auto &motorPair : maxonMotors)
+    if (!maxonMotors.empty())
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+        for (const auto &motorPair : maxonMotors)
+        {
+            std::string name = motorPair.first;
+            std::shared_ptr<MaxonMotor> motor = motorPair.second;
 
-        // 상태 확인
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            // 상태 확인
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
+                               }
+                           });
 
-        // 구분자 추가
-        std::cout << "---------------------------------------" << std::endl;
+            // 구분자 추가
+            std::cout << "---------------------------------------" << std::endl;
 
-        // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            // 제어 모드 설정
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Control mode set for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Control mode set for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
 
-        // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForPosOffset());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            // 제어 모드 설정
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForPosOffset());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Position Offset set for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
+                               if (success)
+                               {
+                                   std::cout << "Position Offset set for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to set Position Offset for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
+            // 제어 모드 설정
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cerr << "Failed to set Position Offset for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
-        // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+                               if (success)
+                               {
+                                   std::cout << "Torque Offset set for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to set Torque Offset for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
+            // 제어 모드 설정
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Torque Offset set for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to set Torque Offset for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
-        // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "In Operational for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to be In Operational for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "In Operational for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to be In Operational for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Enabled for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to Enable for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Enabled for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to Enable for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        sendNotRead(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            sendNotRead(sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success)
+                        {
+                            if (success)
+                            {
+                                std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
+                            }
+                            else
+                            {
+                                std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                            }
+                        });
 
-        // 구분자 추가
-        std::cout << "=======================================" << std::endl;
+            // 구분자 추가
+            std::cout << "=======================================" << std::endl;
+        }
     }
-    */
+    else
+    {
+        std::cout << "No Maxon motors to process." << std::endl;
+    }
 }

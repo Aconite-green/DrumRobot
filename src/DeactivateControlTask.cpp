@@ -68,95 +68,99 @@ void DeactivateControlTask::operator()()
     }
 
     // Tmotors
-    for (const auto &motorPair : tmotors)
+    if (!tmotors.empty())
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
+        for (const auto &motorPair : tmotors)
+        {
+            std::string name = motorPair.first;
+            std::shared_ptr<TMotor> motor = motorPair.second;
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
-                           }
-                       });
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success) {
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
+                           });
 
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "Exiting control mode for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to exit control mode for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
 
-        // 구분자 추가
-        std::cout << "=======================================" << std::endl;
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
+                           {
+                               if (success)
+                               {
+                                   std::cout << "Exiting control mode for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to exit control mode for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
+
+            // 구분자 추가
+            std::cout << "=======================================" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "No Tmotors to process." << std::endl;
     }
 
     // MaxonMotor
-    /*
-    for (const auto &motorPair : maxonMotors)
+    if (!maxonMotors.empty())
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+        for (const auto &motorPair : maxonMotors)
+        {
+            std::string name = motorPair.first;
+            std::shared_ptr<MaxonMotor> motor = motorPair.second;
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
-        sendNotRead(sockets.at(motor->interFaceName), name, frame,
-                    [](const std::string &motorName, bool success)
-                    {
-                        if (success)
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            sendNotRead(sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success)
                         {
-                            std::cout << "Quick Stop for motor [" << motorName << "]." << std::endl;
-                        }
-                        else
-                        {
-                            std::cerr << "Failed to Quick Stop for motor [" << motorName << "]." << std::endl;
-                        }
-                    });
+                            if (success)
+                            {
+                                std::cout << "Quick Stop for motor [" << motorName << "]." << std::endl;
+                            }
+                            else
+                            {
+                                std::cerr << "Failed to Quick Stop for motor [" << motorName << "]." << std::endl;
+                            }
+                        });
 
-        // 구분자 추가
-        std::cout << "---------------------------------------" << std::endl;
+            // 구분자 추가
+            std::cout << "---------------------------------------" << std::endl;
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
-        sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
                            {
-                               std::cout << "Exiting for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to exit for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
+                               if (success)
+                               {
+                                   std::cout << "Exiting for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to exit for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
+        }
     }
-    */
+    else
+    {
+        std::cout << "No Maxon motors to process." << std::endl;
+    }
 }
