@@ -256,7 +256,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
         int j = 0;  // instrument num
         for (auto &entry : tmotors)
         {
-            const std::string &motor_name = entry.first;
+
             std::shared_ptr<TMotor> &motor = entry.second;
 
             float p_des = q[i][j];

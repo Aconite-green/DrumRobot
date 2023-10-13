@@ -101,7 +101,7 @@ bool CanSocketUtils::is_port_up(const char *port)
 void CanSocketUtils::activate_port(const char *port)
 {
     char command1[100], command2[100];
-    snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.75", port);
+    snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.850", port);
     snprintf(command2, sizeof(command2), "sudo ip link set %s up", port);
 
     int ret1 = system(command1);
