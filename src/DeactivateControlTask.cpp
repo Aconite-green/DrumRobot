@@ -87,9 +87,6 @@ void DeactivateControlTask::operator()()
                            }
                        });
 
-        // 구분자 추가
-        std::cout << "---------------------------------------" << std::endl;
-
         fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
 
         sendAndReceive(sockets.at(motor->interFaceName), name, frame,

@@ -89,9 +89,6 @@ void ActivateControlTask::operator()()
                            }
                        });
 
-        // 구분자 추가
-        std::cout << "---------------------------------------" << std::endl;
-
         // 제어 모드 설정
         fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
         sendAndReceive(sockets.at(motor->interFaceName), name, frame,
@@ -125,7 +122,7 @@ void ActivateControlTask::operator()()
         std::cout << "=======================================" << std::endl;
     }
 
-    //MaxonMotor
+    // MaxonMotor
     /*for (const auto &motorPair : maxonMotors)
     {
         std::string name = motorPair.first;
