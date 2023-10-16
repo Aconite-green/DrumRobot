@@ -16,8 +16,8 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
 {
     struct can_frame frameToProcess;
     clock_t external = clock();
-
-    while (!buffer.empty())
+    stop.store(false);
+    while (!buffer.empty() || !stop)
     {
         if (paused.load())
             continue;
@@ -58,6 +58,4 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
             }
         }
     }
-
-    stop.store(true);
 }

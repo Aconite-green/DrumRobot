@@ -126,5 +126,5 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
             }
         }
     }
-    buffer.parse_and_save_to_csv("tmotors", parser, tmotors);
+    buffer.parse_and_save_to_csv("response", parser, tmotors);
 }

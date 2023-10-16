@@ -14,11 +14,14 @@ MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmo
 
 void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
+
+    // CSV 파일을 쓰기 모드로 열기
+    std::ofstream csvFile("motor_send_data.csv");
+    csvFile << "CAN_ID,p_des\n"; // CSV 헤더
+
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        {"1_waist", 4}, {"2_R_arm1", 4}, {"3_L_arm1", 4}, 
-        {"4_R_arm2", 4}, {"5_R_arm3", 4}, {"6_L_arm2", 4}, 
-        {"7_L_arm3", 4}
+        {"1_waist", 4}, {"2_R_arm1", 4}, {"3_L_arm1", 4}, {"4_R_arm2", 4}, {"5_R_arm3", 4}, {"6_L_arm2", 4}, {"7_L_arm3", 4}
         // 추가로 다른 모터에 대한 주기도 여기에 추가할 수 있습니다.
     };
     struct can_frame frame;
@@ -58,11 +61,13 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 float local_time = std::fmod(time, total_times[motor_name]);
                 float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
-
+                csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
                 Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
 
                 buffer.push(frame);
             }
         }
     }
+
+    csvFile.close();
 }

@@ -15,7 +15,6 @@ template <typename T>
 class SharedBuffer
 {
 public:
-    // 아이템을 버퍼에 넣는 함수
     void push(const T &item)
     {
         std::unique_lock<std::mutex> lock(buffer_mutex); // 동기화를 위해 뮤텍스 잠금
