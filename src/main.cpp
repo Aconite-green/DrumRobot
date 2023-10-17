@@ -50,7 +50,7 @@ int main()
 
     // Tasks For Threads
     ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
-    MotorPathTask pathTask(tmotors);
+    MotorPathTask pathTask(tmotors, maxonMotors);
     MotorSignalSendTask sendTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
     MotorResponseReadTask readTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
     // SensorSignalReadTask sensorTask(tmotors, paused, stop);

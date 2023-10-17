@@ -7,8 +7,8 @@
 #include <map>
 #include <memory>
 
-MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
-    : tmotors(tmotors)
+MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors,std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors)
+    : tmotors(tmotors), maxonMotors(maxonMotors)
 {
 }
 
@@ -63,10 +63,12 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 // float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
                 float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2;
                 csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
-                Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 
                 buffer.push(frame);
             }
+
+
         }
     }
 

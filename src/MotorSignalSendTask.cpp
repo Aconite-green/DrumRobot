@@ -57,6 +57,9 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                     break; 
                 }
             }
+
+
+            
         }
     }
 }
