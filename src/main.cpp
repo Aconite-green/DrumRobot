@@ -33,11 +33,11 @@ int main()
     CanSocketUtils canUtils(ifnames);
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["1_waist"] = std::make_shared<TMotor>(0x07, "AK10_9", "can0");
+    tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x01, "AK70_10", "can0");
-    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x02, "AK70_10", "can0");
-    tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x03, "AK70_10", "can0");
+    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can0");
+    tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can0");
 
     //tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
     //tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");

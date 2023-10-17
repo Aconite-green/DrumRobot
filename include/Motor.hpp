@@ -15,7 +15,7 @@ struct CanFrameInfo
 {
     uint32_t can_id;
     uint8_t can_dlc;
-    std::array<uint8_t, 8> data;
+    std::array<uint32_t, 8> data;
 };
 
 class TMotor

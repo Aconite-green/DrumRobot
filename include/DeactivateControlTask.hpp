@@ -15,12 +15,11 @@ class DeactivateControlTask
 public:
     DeactivateControlTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors, const std::map<std::string, int> &sockets);
     void operator()();
-   
 
 private:
- static const int ERR_SOCKET_CONFIGURE_FAILURE = -1;
+    static const int ERR_SOCKET_CONFIGURE_FAILURE = -1;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
-     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
     const std::map<std::string, int> &sockets;
 
     void fillCanFrameFromInfo(struct can_frame *frame, const CanFrameInfo &info);
@@ -31,9 +30,15 @@ private:
         struct can_frame &frame,
         std::function<void(const std::string &, bool)> customOutput // 추가된 인자
     );
-     void sendNotRead(
+    void sendNotRead(
         int socket,
         const std::string &name,
         struct can_frame &frame,
+        std::function<void(const std::string &, bool)> customOutput);
+    void writeAndReadForSync(
+        int socket,
+        const std::string &name,
+        struct can_frame &frame,
+        size_t numMaxonMotors,
         std::function<void(const std::string &, bool)> customOutput);
 };

@@ -69,10 +69,19 @@ void ActivateControlTask::writeAndReadForSync(
     // 응답을 저장할 버퍼
     std::vector<struct can_frame> read_frames(numMaxonMotors);
 
-    // 모든 응답을 읽음
-    ssize_t read_status = read(socket, read_frames.data(), sizeof(can_frame) * numMaxonMotors);
+    bool success = true;
+    ssize_t read_status;
 
-    bool success = read_status > 0 && (read_status / sizeof(can_frame)) == numMaxonMotors;
+    // 모터의 개수만큼 read 실행
+    for (size_t i = 0; i < numMaxonMotors; ++i)
+    {
+        read_status = read(socket, &read_frames[i], sizeof(can_frame));
+        if (read_status <= 0)
+        {
+            success = false;
+            break;
+        }
+    }
 
     customOutput(name, success);
 }
@@ -112,21 +121,6 @@ void ActivateControlTask::operator()()
                                else
                                {
                                    std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
-                               }
-                           });
-
-            // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForZeroing());
-            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "zero set for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to set zero for motor [" << motorName << "]." << std::endl;
                                }
                            });
 
@@ -182,14 +176,7 @@ void ActivateControlTask::operator()()
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success)
                            {
-                               if (success)
-                               {
-                                   std::cout << "Control mode set for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
-                               }
+                               
                            });
 
             // 제어 모드 설정
@@ -197,43 +184,23 @@ void ActivateControlTask::operator()()
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success)
                            {
-                               if (success)
-                               {
-                                   std::cout << "Position Offset set for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to set Position Offset for motor [" << motorName << "]." << std::endl;
-                               }
+                               
                            });
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success)
                            {
-                               if (success)
-                               {
-                                   std::cout << "Torque Offset set for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to set Torque Offset for motor [" << motorName << "]." << std::endl;
-                               }
+                              
                            });
+
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
-            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "In Operational for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to be In Operational for motor [" << motorName << "]." << std::endl;
-                               }
-                           });
+            sendNotRead(sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success)
+                        {
+                            
+                        });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
             sendNotRead(sockets.at(motor->interFaceName), name, frame,
@@ -250,21 +217,54 @@ void ActivateControlTask::operator()()
                         });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            writeAndReadForSync(sockets.at(motor->interFaceName),name,frame,maxonMotors.size(),
-                [](const std::string &motorName, bool success)
-                {
-                    if (success)
-                    {
-                        std::cout << "Sync Signal for motor [" << motorName << "] succeeded." << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
-                    }
-                });
+            writeAndReadForSync(sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success)
+                                {
+                                    
+                                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
+
+            /*fillCanFrameFromInfo(&frame, motor->getCanFrameForTargetPosition(35840));
+            sendNotRead(sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success)
+                                {
+                                    if (success)
+                                    {
+                                        std::cout << "Sync Signal for motor [" << motorName << "] succeeded." << std::endl;
+                                    }
+                                    else
+                                    {
+                                        std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                                    }
+                                });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForTargetPosition(0));
+            sendNotRead(sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success)
+                                {
+                                    if (success)
+                                    {
+                                        std::cout << "Sync Signal for motor [" << motorName << "] succeeded." << std::endl;
+                                    }
+                                    else
+                                    {
+                                        std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                                    }
+                                });*/
         }
     }
     else

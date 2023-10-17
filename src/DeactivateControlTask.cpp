@@ -52,6 +52,31 @@ void DeactivateControlTask::sendNotRead(
     customOutput(name, success);
 }
 
+void DeactivateControlTask::writeAndReadForSync(
+    int socket,
+    const std::string &name,
+    struct can_frame &frame,
+    size_t numMaxonMotors,
+    std::function<void(const std::string &, bool)> customOutput)
+{
+    ssize_t write_status = write(socket, &frame, sizeof(can_frame));
+    if (write_status <= 0)
+    {
+        customOutput(name, false);
+        return;
+    }
+
+    // 응답을 저장할 버퍼
+    std::vector<struct can_frame> read_frames(numMaxonMotors);
+
+    // 모든 응답을 읽음
+    ssize_t read_status = read(socket, read_frames.data(), sizeof(can_frame) * numMaxonMotors);
+
+    bool success = read_status > 0 && (read_status / sizeof(can_frame)) == numMaxonMotors;
+
+    customOutput(name, success);
+}
+
 void DeactivateControlTask::operator()()
 {
     struct can_frame frame;
@@ -115,15 +140,23 @@ void DeactivateControlTask::operator()()
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success) {
-
+                        [](const std::string &motorName, bool success)
+                        {
+                            if (success)
+                            {
+                                std::cout << "Exiting for motor [" << motorName << "]." << std::endl;
+                            }
+                            else
+                            {
+                                std::cerr << "Failed to exit for motor [" << motorName << "]." << std::endl;
+                            }
                         });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
+            writeAndReadForSync(sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success) {
 
-                           });
+                                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;

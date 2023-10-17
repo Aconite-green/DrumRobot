@@ -133,11 +133,11 @@ CanFrameInfo MaxonMotor::getCanFrameForPosOffset() {
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForExit() {
-    return {0x00, 8, {0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {0x00, 8, {0x02, this->nodeId, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForOperational() {
-    return {0x00, 8, {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {0x00, 8, {0x01, this->nodeId, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForEnable() {
@@ -151,7 +151,7 @@ CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset() {
 
 CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
     // 10진수 targetPosition을 16진수로 변환
-    // 1[revolve] = 4096[inc]
+    // 1[revolve] = 4096[inc] * 35[gear ratio]
     unsigned char posByte0 = targetPosition & 0xFF;         // 하위 8비트
     unsigned char posByte1 = (targetPosition >> 8) & 0xFF;  // 다음 8비트
     unsigned char posByte2 = (targetPosition >> 16) & 0xFF; // 다음 8비트
