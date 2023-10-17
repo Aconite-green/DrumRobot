@@ -115,48 +115,18 @@ void DeactivateControlTask::operator()()
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success)
-                        {
-                            if (success)
-                            {
-                                std::cout << "Quick Stop for motor [" << motorName << "]." << std::endl;
-                            }
-                            else
-                            {
-                                std::cerr << "Failed to Quick Stop for motor [" << motorName << "]." << std::endl;
-                            }
-                        });
+                        [](const std::string &motorName, bool success) {
 
-            // 구분자 추가
-            std::cout << "---------------------------------------" << std::endl;
+                        });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
-                               }
+                           [](const std::string &motorName, bool success) {
+
                            });
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
-            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "Exiting for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to exit for motor [" << motorName << "]." << std::endl;
-                               }
-                           });
+            // 구분자 추가
+            std::cout << "=======================================" << std::endl;
         }
     }
     else

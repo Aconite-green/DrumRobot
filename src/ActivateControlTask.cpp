@@ -90,6 +90,21 @@ void ActivateControlTask::operator()()
                                }
                            });
 
+                           // 상태 확인
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForZeroing());
+            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success)
+                           {
+                               if (success)
+                               {
+                                   std::cout << "zero set for motor [" << motorName << "]." << std::endl;
+                               }
+                               else
+                               {
+                                   std::cerr << "Failed to set zero for motor [" << motorName << "]." << std::endl;
+                               }
+                           });
+
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,

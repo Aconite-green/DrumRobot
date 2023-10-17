@@ -17,7 +17,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
     struct can_frame frameToProcess;
     clock_t external = clock();
     stop.store(false);
-    while (!buffer.empty() || !stop)
+    while (!stop)
     {
         if (paused.load())
             continue;
@@ -53,6 +53,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 else
                 {
                     std::cerr << "Failed to pop CAN frame from buffer" << std::endl;
+                    stop.store(true);
                     break; // 버퍼에서 더 이상 읽을 데이터가 없으므로 break
                 }
             }
