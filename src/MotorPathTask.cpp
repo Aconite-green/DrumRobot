@@ -68,6 +68,25 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 buffer.push(frame);
             }
 
+            for (auto &entry : maxonMotors)
+            {
+                const std::string &motor_name = entry.first;
+                std::shared_ptr<TMotor> &motor = entry.second;
+
+                if (total_times.find(motor_name) == total_times.end())
+                {
+                    std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
+                    continue;
+                }
+
+                local_time = std::fmod(time, total_times[motor_name]);
+                // float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
+                p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2;
+                csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
+                MParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+                buffer.push(frame);
+            }
+
 
         }
     }
