@@ -54,7 +54,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 {
                     std::cerr << "Failed to pop CAN frame from buffer" << std::endl;
                     stop.store(true);
-                    break; // 버퍼에서 더 이상 읽을 데이터가 없으므로 break
+                    break; 
                 }
             }
         }

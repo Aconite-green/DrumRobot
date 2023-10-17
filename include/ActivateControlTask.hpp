@@ -35,4 +35,11 @@ private:
         const std::string &name,
         struct can_frame &frame,
         std::function<void(const std::string &, bool)> customOutput);
+    void writeAndReadForSync(
+        int socket,
+        const std::string &name,
+        struct can_frame &frame,
+        size_t numMaxonMotors,
+        std::function<void(const std::string &, bool)> customOutput);
+    
 };

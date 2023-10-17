@@ -52,6 +52,31 @@ void ActivateControlTask::sendNotRead(
     customOutput(name, success);
 }
 
+void ActivateControlTask::writeAndReadForSync(
+    int socket,
+    const std::string &name,
+    struct can_frame &frame,
+    size_t numMaxonMotors,
+    std::function<void(const std::string &, bool)> customOutput)
+{
+    ssize_t write_status = write(socket, &frame, sizeof(can_frame));
+    if (write_status <= 0)
+    {
+        customOutput(name, false);
+        return;
+    }
+
+    // 응답을 저장할 버퍼
+    std::vector<struct can_frame> read_frames(numMaxonMotors);
+
+    // 모든 응답을 읽음
+    ssize_t read_status = read(socket, read_frames.data(), sizeof(can_frame) * numMaxonMotors);
+
+    bool success = read_status > 0 && (read_status / sizeof(can_frame)) == numMaxonMotors;
+
+    customOutput(name, success);
+}
+
 // operation
 void ActivateControlTask::operator()()
 {
@@ -90,7 +115,7 @@ void ActivateControlTask::operator()()
                                }
                            });
 
-                           // 상태 확인
+            // 상태 확인
             fillCanFrameFromInfo(&frame, motor->getCanFrameForZeroing());
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success)
@@ -152,9 +177,6 @@ void ActivateControlTask::operator()()
                                }
                            });
 
-            // 구분자 추가
-            std::cout << "---------------------------------------" << std::endl;
-
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
             sendAndReceive(sockets.at(motor->interFaceName), name, frame,
@@ -214,32 +236,32 @@ void ActivateControlTask::operator()()
                            });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-            sendAndReceive(sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "Enabled for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to Enable for motor [" << motorName << "]." << std::endl;
-                               }
-                           });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             sendNotRead(sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success)
                         {
                             if (success)
                             {
-                                std::cout << "Sync Signal for motor [" << motorName << "]." << std::endl;
+                                std::cout << "Enabled for motor [" << motorName << "]." << std::endl;
                             }
                             else
                             {
-                                std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                                std::cerr << "Failed to Enable for motor [" << motorName << "]." << std::endl;
                             }
                         });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(sockets.at(motor->interFaceName),name,frame,maxonMotors.size(),
+                [](const std::string &motorName, bool success)
+                {
+                    if (success)
+                    {
+                        std::cout << "Sync Signal for motor [" << motorName << "] succeeded." << std::endl;
+                    }
+                    else
+                    {
+                        std::cerr << "Failed to send Sync Signal for motor [" << motorName << "]." << std::endl;
+                    }
+                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
