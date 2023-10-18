@@ -52,7 +52,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
                 else
                 {
-                    std::cerr << "No CAN frame left in buffer" << std::endl;
+                    std::cerr << "No CAN frame left in buffer[T]" << std::endl;
                     stop.store(true);
                     break;
                 }
@@ -85,7 +85,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                     }
                     else
                     {
-                        std::cerr << "No CAN frame left in buffer" << std::endl;
+                        std::cerr << "No CAN frame left in buffer[M]" << std::endl;
                         stop.store(true);
                         break;
                     }

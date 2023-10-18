@@ -73,13 +73,14 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
 /////////////////////////////////////////////////////
 void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, int p_des)
 {
+    /*4096 * 35 => 1 revolve*/
     unsigned char posByte0 = p_des & 0xFF;         // 하위 8비트
     unsigned char posByte1 = (p_des >> 8) & 0xFF;  // 다음 8비트
     unsigned char posByte2 = (p_des >> 16) & 0xFF; // 다음 8비트
     unsigned char posByte3 = (p_des >> 24) & 0xFF; // 최상위 8비트
 
     // Set CAN frame id and data length code
-    frame->can_id = motor.pdoIds[1]; // Replace YOUR_CAN_ID with the appropriate id
+    frame->can_id = motor.txPdoIds[1]; // Replace YOUR_CAN_ID with the appropriate id
     frame->can_dlc = 4;              // Data Length Code is set to maximum allowed length
 
     /// pack ints into the can buffer ///
@@ -93,18 +94,21 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
-std::tuple<int, int> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
+std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
 {
     int id = frame->can_id;
 
-    int currentPosition = 0;
-    currentPosition |= frame->data[2];
-    currentPosition |= (frame->data[3] << 8);
-    currentPosition |= (frame->data[4] << 16);
-    currentPosition |= (frame->data[5] << 24);
+    int currentPosition = 0; // 결과값을 저장할 변수, 32비트 signed int
+    currentPosition |= static_cast<unsigned char>(frame->data[2]); // 최하위 바이트
+    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8; // 그 다음 하위 바이트
+    currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
+    currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
 
-    return std::make_tuple(id, currentPosition);
+    float currentPositionFloat = static_cast<float>(currentPosition) / (35.0f * 4096.0f) * M_PI;
+
+    return std::make_tuple(id, currentPositionFloat);
 }
+
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {

@@ -98,7 +98,7 @@ CanFrameInfo TMotor::getCanFrameForQuickStop() {
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& pdoIds, const std::string &interFaceName)
+MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& txPdoIds,const std::vector<uint32_t>& rxPdoIds, const std::string &interFaceName)
 : nodeId(nodeId), interFaceName(interFaceName)
 {
     // canId 값 설정
@@ -107,14 +107,25 @@ MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& pdoIds, con
 
     // pdoId 배열 초기화
     int index = 0;
-    for (const auto &pdo : pdoIds)
+    for (const auto &pdo : txPdoIds)
     {
         if (index >= 4)
         {
-            std::cout << "Warning: More than 4 PDO IDs provided. Ignoring extras." << std::endl;
+            std::cout << "Warning: More than 4 txPDO IDs provided. Ignoring extras." << std::endl;
             break;
         }
-        this->pdoIds[index] = pdo;
+        this->txPdoIds[index] = pdo;
+        ++index;
+    }
+    index = 0;
+    for (const auto &pdo : rxPdoIds)
+    {
+        if (index >= 4)
+        {
+            std::cout << "Warning: More than 4 rxPDO IDs provided. Ignoring extras." << std::endl;
+            break;
+        }
+        this->rxPdoIds[index] = pdo;
         ++index;
     }
 }
@@ -141,7 +152,7 @@ CanFrameInfo MaxonMotor::getCanFrameForOperational() {
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForEnable() {
-    return {this->pdoIds[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {this->txPdoIds[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset() {
@@ -157,7 +168,7 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
     unsigned char posByte2 = (targetPosition >> 16) & 0xFF; // 다음 8비트
     unsigned char posByte3 = (targetPosition >> 24) & 0xFF; // 최상위 8비트
 
-    return {this->pdoIds[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
+    return {this->txPdoIds[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForSync() {
@@ -165,5 +176,5 @@ CanFrameInfo MaxonMotor::getCanFrameForSync() {
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForQuickStop() {
-    return {this->pdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {this->txPdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }

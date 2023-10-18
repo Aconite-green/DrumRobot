@@ -49,10 +49,15 @@ public:
     uint32_t canSendId;
     uint32_t canReceiveId;
 
-    uint32_t pdoIds[4];
+
+    uint32_t txPdoIds[4];
+    uint32_t rxPdoIds[4];
+
+
     MaxonMotor() = default;
     MaxonMotor(uint32_t nodeId, 
-    const std::vector<uint32_t> &pdoIds,
+    const std::vector<uint32_t> &txPdoIds,
+    const std::vector<uint32_t> &rxPdoIds,
     const std::string &interFaceName);
     
     std::string interFaceName;

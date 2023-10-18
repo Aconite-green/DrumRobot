@@ -108,29 +108,34 @@ public:
 
         while (!temp_buffer.empty())
         {
+            can_frame frame = temp_buffer.front();
+            temp_buffer.pop();
 
+            // TMotor 처리
             for (const auto &pair : tmotors)
             {
                 std::shared_ptr<TMotor> motor = pair.second;
-                can_frame frame = temp_buffer.front();
-                temp_buffer.pop();
-                auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
-
-                ofs << id << ","
-                    << position << ","
-                    << speed << ","
-                    << torque << "\n";
-            }
-            if (!maxonMotors.empty())
-            {
-                for (const auto &pair : maxonMotors)
+                if (motor->nodeId == frame.data[0])
                 {
-                    std::shared_ptr<MaxonMotor> motor = pair.second;
-                    can_frame frame = temp_buffer.front();
-                    temp_buffer.pop();
+                    auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
+                    ofs << id << ","
+                        << position << ","
+                        << speed << ","
+                        << torque << "\n";
+                    break; // 해당하는 모터를 찾았으므로 for문을 종료
+                }
+            }
+
+            // MaxonMotor 처리
+            for (const auto &pair : maxonMotors)
+            {
+                std::shared_ptr<MaxonMotor> motor = pair.second;
+                if (motor->nodeId == frame.can_id)
+                {
                     auto [id, position] = Mparser.parseRecieveCommand(&frame);
                     ofs << id << ","
                         << position << "\n";
+                    break; // 해당하는 모터를 찾았으므로 for문을 종료
                 }
             }
         }

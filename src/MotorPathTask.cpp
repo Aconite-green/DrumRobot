@@ -25,14 +25,14 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
         
     };
     struct can_frame frame;
-    if (tmotors.size() != total_times.size())
+    if ((tmotors.size() + maxonMotors.size()) != total_times.size())
     {
         std::cerr << "Error: The number of motors does not match the number of total_times entries.\n";
         return;
     }
 
     float sample_time = 0.005;
-    int cycles = 5;
+    int cycles = 2;
     float max_time = std::max_element(total_times.begin(), total_times.end(),
                                       [](const auto &a, const auto &b)
                                       {
