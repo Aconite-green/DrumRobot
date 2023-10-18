@@ -52,14 +52,45 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
                 else
                 {
-                    std::cerr << "Failed to pop CAN frame from buffer" << std::endl;
+                    std::cerr << "No CAN frame left in buffer" << std::endl;
                     stop.store(true);
-                    break; 
+                    break;
                 }
             }
 
 
-            
+            if (!maxonMotors.empty())
+            {
+                for (auto &motor_pair : maxonMotors)
+                {
+                    auto motor_ptr = motor_pair.second;
+                    auto interface_name = motor_ptr->interFaceName;
+
+                    if (buffer.try_pop(frameToProcess))
+                    {
+                        if (sockets.find(interface_name) != sockets.end())
+                        {
+                            int socket_descriptor = sockets.at(interface_name);
+                            ssize_t bytesWritten = write(socket_descriptor, &frameToProcess, sizeof(struct can_frame));
+                            if (bytesWritten == -1)
+                            {
+                                std::cerr << "Failed to write to socket for interface: " << interface_name << std::endl;
+                                std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                            }
+                        }
+                        else
+                        {
+                            std::cerr << "Socket not found for interface: " << interface_name << std::endl;
+                        }
+                    }
+                    else
+                    {
+                        std::cerr << "No CAN frame left in buffer" << std::endl;
+                        stop.store(true);
+                        break;
+                    }
+                }
+            }
         }
     }
 }

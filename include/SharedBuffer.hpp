@@ -81,8 +81,10 @@ public:
     }
 
     void parse_and_save_to_csv(const std::string &csv_file_name,
-                               TMotorCommandParser &parser,
-                               std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
+                               TMotorCommandParser &Tparser,
+                               MaxonCommandParser &Mparser,
+                               std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
+                               std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors)
     {
         std::unique_lock<std::mutex> lock(buffer_mutex); // 동기화를 위한 뮤텍스 잠금
 
@@ -112,19 +114,32 @@ public:
                 std::shared_ptr<TMotor> motor = pair.second;
                 can_frame frame = temp_buffer.front();
                 temp_buffer.pop();
-                auto [id, position, speed, torque] = parser.parseRecieveCommand(*motor, &frame);
+                auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
 
                 ofs << id << ","
                     << position << ","
                     << speed << ","
                     << torque << "\n";
             }
+            if (!maxonMotors.empty())
+            {
+                for (const auto &pair : maxonMotors)
+                {
+                    std::shared_ptr<MaxonMotor> motor = pair.second;
+                    can_frame frame = temp_buffer.front();
+                    temp_buffer.pop();
+                    auto [id, position] = Mparser.parseRecieveCommand(&frame);
+                    ofs << id << ","
+                        << position << "\n";
+                }
+            }
         }
         ofs.close();
     }
 
 private:
-    std::queue<T> buffer;             // 데이터를 저장할 큐
+    std::queue<T>
+        buffer;                       // 데이터를 저장할 큐
     mutable std::mutex buffer_mutex;  // 동기화를 위한 뮤텍스
     std::condition_variable cond_var; // 대기 중인 스레드를 깨우기 위한 조건 변수
 };

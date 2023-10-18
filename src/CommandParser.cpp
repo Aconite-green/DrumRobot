@@ -21,7 +21,7 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
 
     // Set CAN frame id and data length code
     frame->can_id = canId & CAN_SFF_MASK; // Replace YOUR_CAN_ID with the appropriate id
-    frame->can_dlc = dlc;                   // Data Length Code is set to maximum allowed length
+    frame->can_dlc = dlc;                 // Data Length Code is set to maximum allowed length
 
     /// pack ints into the can buffer ///
     frame->data[0] = p_int >> 8;                           // Position 8 higher
@@ -34,9 +34,9 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
     frame->data[7] = t_int & 0xff;                         // torque 4 bit lower
 }
 
-std::tuple<int, float, float, float>TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
+std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
 {
-    int id; 
+    int id;
     float position, speed, torque;
     /// unpack ints from can buffer ///
     id = frame->data[0];
@@ -50,7 +50,6 @@ std::tuple<int, float, float, float>TMotorCommandParser::parseRecieveCommand(TMo
     torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
 
     return std::make_tuple(id, position, speed, torque);
-
 }
 int TMotorCommandParser::float_to_uint(float x, float x_min, float x_max, unsigned int bits)
 {
@@ -69,16 +68,49 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
     return ((float)x_int) * span / ((float)((1 << bits) - 1)) + offset;
 }
 
-void MaxonCommandParser::parseSendCommand(struct can_frame *frame)
+//////////////////////////////////////////////////////
+// Maxon Parser definition
+/////////////////////////////////////////////////////
+void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, int p_des)
 {
-    // MaxonMotor에 명령을 보내는 경우에 대한 파싱 작업
-    // 예를 들어, CAN 프레임의 데이터 필드를 채우거나
-    // can_id에 따른 명령어를 설정
+    unsigned char posByte0 = p_des & 0xFF;         // 하위 8비트
+    unsigned char posByte1 = (p_des >> 8) & 0xFF;  // 다음 8비트
+    unsigned char posByte2 = (p_des >> 16) & 0xFF; // 다음 8비트
+    unsigned char posByte3 = (p_des >> 24) & 0xFF; // 최상위 8비트
+
+    // Set CAN frame id and data length code
+    frame->can_id = motor.pdoIds[1]; // Replace YOUR_CAN_ID with the appropriate id
+    frame->can_dlc = 4;              // Data Length Code is set to maximum allowed length
+
+    /// pack ints into the can buffer ///
+    frame->data[0] = posByte0;
+    frame->data[1] = posByte1;
+    frame->data[2] = posByte2;
+    frame->data[3] = posByte3;
+    frame->data[4] = 0x00;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
+std::tuple<int, int> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
 {
-    // MaxonMotor로부터 받은 데이터를 파싱하는 작업
-    // 예를 들어, CAN 프레임에서 데이터를 추출하여
-    // 어떤 명령어인지 판별하거나 상태를 업데이트
+    int id = frame->can_id;
+
+    int currentPosition = 0;
+    currentPosition |= frame->data[2];
+    currentPosition |= (frame->data[3] << 8);
+    currentPosition |= (frame->data[4] << 16);
+    currentPosition |= (frame->data[5] << 24);
+
+    return std::make_tuple(id, currentPosition);
+}
+
+void MaxonCommandParser::makeSync(struct can_frame *frame)
+{
+    frame->can_id = 0x80; // Replace YOUR_CAN_ID with the appropriate id
+    frame->can_dlc = 1;   // Data Length Code is set to maximum allowed length
+
+    /// pack ints into the can buffer ///
+    frame->data[0] = 0x00;
 }

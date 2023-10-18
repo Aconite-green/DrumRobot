@@ -47,7 +47,6 @@ int main()
     maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001, std::vector<uint32_t>{0x201, 0x301}, "can1");
     maxonMotors["b_maxon"] = std::make_shared<MaxonMotor>(0x002, std::vector<uint32_t>{0x202, 0x302}, "can1");
 
-
     // Tasks For Threads
     ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
     MotorPathTask pathTask(tmotors, maxonMotors);

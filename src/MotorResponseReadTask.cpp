@@ -59,7 +59,8 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 5000; // 5ms
-    TMotorCommandParser parser;
+    TMotorCommandParser Tparser;
+    MaxonCommandParser Mparser;
     const int NUM_FRAMES = 200;
     // 소켓 옵션 설정
     for (const auto &socket_pair : sockets)
@@ -126,5 +127,5 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
             }
         }
     }
-    buffer.parse_and_save_to_csv("response", parser, tmotors);
+    buffer.parse_and_save_to_csv("response", Tparser, Mparser, tmotors, maxonMotors);
 }

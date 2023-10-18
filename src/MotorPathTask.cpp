@@ -7,7 +7,7 @@
 #include <map>
 #include <memory>
 
-MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors,std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors)
+MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors)
     : tmotors(tmotors), maxonMotors(maxonMotors)
 {
 }
@@ -21,8 +21,8 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        {"1_waist", 1}, {"2_R_arm1", 1}, {"3_L_arm1", 1}, {"4_R_arm2", 1}, {"5_R_arm3", 1}, {"6_L_arm2", 1}, {"7_L_arm3", 1}
-        // 추가로 다른 모터에 대한 주기도 여기에 추가할 수 있습니다.
+        {"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8}, {"a_maxon", 8}, {"b_maxon", 8}
+        
     };
     struct can_frame frame;
     if (tmotors.size() != total_times.size())
@@ -60,34 +60,34 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
 
                 float local_time = std::fmod(time, total_times[motor_name]);
-                // float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
-                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2;
+                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI / 2;
                 csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 
                 buffer.push(frame);
             }
-
-            for (auto &entry : maxonMotors)
+            if (!maxonMotors.empty())
             {
-                const std::string &motor_name = entry.first;
-                std::shared_ptr<TMotor> &motor = entry.second;
-
-                if (total_times.find(motor_name) == total_times.end())
+                for (auto &entry : maxonMotors)
                 {
-                    std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
-                    continue;
-                }
+                    const std::string &motor_name = entry.first;
+                    std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                local_time = std::fmod(time, total_times[motor_name]);
-                // float p_des = sinf(2 * M_PI * local_time / total_times[motor_name]) * M_PI / 2;
-                p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2;
-                csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
-                MParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+                    if (total_times.find(motor_name) == total_times.end())
+                    {
+                        std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
+                        continue;
+                    }
+
+                    float local_time = std::fmod(time, total_times[motor_name]);
+                    int p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * (4096 * 35) / 2;
+                    csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
+                    MParser.parseSendCommand(*motor, &frame, p_des);
+                    buffer.push(frame);
+                }
+                MParser.makeSync(&frame);
                 buffer.push(frame);
             }
-
-
         }
     }
 
