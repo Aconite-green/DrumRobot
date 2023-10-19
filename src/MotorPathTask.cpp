@@ -22,7 +22,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
         {"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8}, {"a_maxon", 8}, {"b_maxon", 8}
-        
+
     };
     struct can_frame frame;
     if ((tmotors.size() + maxonMotors.size()) != total_times.size())
@@ -32,7 +32,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
     }
 
     float sample_time = 0.005;
-    int cycles = 2;
+    int cycles = 1;
     float max_time = std::max_element(total_times.begin(), total_times.end(),
                                       [](const auto &a, const auto &b)
                                       {
@@ -86,6 +86,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                     buffer.push(frame);
                 }
                 MParser.makeSync(&frame);
+                csvFile << "sync : "<<std::hex << frame.can_id << '\n';
                 buffer.push(frame);
             }
         }

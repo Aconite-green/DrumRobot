@@ -58,7 +58,6 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
             }
 
-
             if (!maxonMotors.empty())
             {
                 for (auto &motor_pair : maxonMotors)
@@ -88,6 +87,17 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                         std::cerr << "No CAN frame left in buffer[M]" << std::endl;
                         stop.store(true);
                         break;
+                    }
+                }
+                if (buffer.try_pop(frameToProcess))
+                {
+                    auto interface_name_for_sync = maxonMotors.begin()->second->interFaceName; // 첫 번째 MaxonMotor의 인터페이스 이름을 가져옵니다.
+                    int socket_descriptor_for_sync = sockets.at(interface_name_for_sync);      // 모든 MaxonMotor가 같은 소켓을 사용한다고 했으므로, 아무거나 선택해도 됩니다.                                                                         // 이곳에 sync 신호에 대한 정보를 채워주세요.
+                    ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
+                    if (bytesWritten == -1)
+                    {
+                        std::cerr << "Failed to write sync signal to socket for interface: " << interface_name_for_sync << std::endl;
+                        std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
                     }
                 }
             }
