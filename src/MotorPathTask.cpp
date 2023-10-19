@@ -61,7 +61,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 float local_time = std::fmod(time, total_times[motor_name]);
                 float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI / 2;
-                csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
+                csvFile << std::hex << motor->nodeId << ',' << std::dec << p_des << '\n';
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 
                 buffer.push(frame);
@@ -80,13 +80,13 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                     }
 
                     float local_time = std::fmod(time, total_times[motor_name]);
-                    int p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * (4096 * 35) / 2;
-                    csvFile << std::hex << motor->nodeId << ',' << p_des << '\n';
+                    int p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * (2048 * 35) / 2;
+                    csvFile << std::hex << motor->nodeId << ',' << std::dec << p_des << '\n';
                     MParser.parseSendCommand(*motor, &frame, p_des);
                     buffer.push(frame);
                 }
                 MParser.makeSync(&frame);
-                csvFile << "sync : "<<std::hex << frame.can_id << '\n';
+                csvFile << "sync : " << std::hex << frame.can_id << '\n';
                 buffer.push(frame);
             }
         }
