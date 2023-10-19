@@ -21,7 +21,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        {"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8}, {"a_maxon", 8}, {"b_maxon", 8}
+        {"1_waist", 1}, {"2_R_arm1", 1}, {"3_L_arm1", 1}, {"4_R_arm2", 1}, /*{"a_maxon", 8}, {"b_maxon", 8}*/
 
     };
     struct can_frame frame;
@@ -32,7 +32,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
     }
 
     float sample_time = 0.005;
-    int cycles = 1;
+    int cycles = 5;
     float max_time = std::max_element(total_times.begin(), total_times.end(),
                                       [](const auto &a, const auto &b)
                                       {
@@ -60,7 +60,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
 
                 float local_time = std::fmod(time, total_times[motor_name]);
-                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI / 2;
+                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2 ;
                 csvFile << std::hex << motor->nodeId << ',' << std::dec << p_des << '\n';
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 

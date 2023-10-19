@@ -18,6 +18,8 @@
 #include "../include/PathManager.hpp"
 #include <atomic>
 
+
+
 int main()
 {
 
@@ -44,7 +46,7 @@ int main()
     // tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
-    maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
+    /*maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
                                                           std::vector<uint32_t>{0x201, 0x301},
                                                           std::vector<uint32_t>{0x181},
                                                           "can0");
@@ -52,7 +54,7 @@ int main()
                                                           std::vector<uint32_t>{0x202, 0x302},
                                                           std::vector<uint32_t>{0x182},
                                                           "can0");
-
+*/
     // Tasks For Threads
     ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
     MotorPathTask pathTask(tmotors, maxonMotors);
