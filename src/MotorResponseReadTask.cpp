@@ -11,16 +11,29 @@ MotorResponseReadTask::MotorResponseReadTask(
     std::atomic<bool> &stop)
     : tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets), paused(paused), stop(stop)
 {
-    // 포트당 연결된 모터 개수를 계산
     for (const auto &motor_pair : tmotors)
     {
-        const auto &motor = motor_pair.second;
-        const auto &interface_name = motor->interFaceName;
+        const auto &interface_name = motor_pair.second->interFaceName;
+        motor_count_per_port[interface_name] = 0;
+    }
 
-        if (motor_count_per_port.find(interface_name) == motor_count_per_port.end())
-        {
-            motor_count_per_port[interface_name] = 0;
-        }
+    for (const auto &motor_pair : maxonMotors)
+    {
+        const auto &interface_name = motor_pair.second->interFaceName;
+        motor_count_per_port[interface_name] = 0;
+    }
+
+    // tmotors에 대한 카운트 증가
+    for (const auto &motor_pair : tmotors)
+    {
+        const auto &interface_name = motor_pair.second->interFaceName;
+        motor_count_per_port[interface_name]++;
+    }
+
+    // maxonMotors에 대한 카운트 증가
+    for (const auto &motor_pair : maxonMotors)
+    {
+        const auto &interface_name = motor_pair.second->interFaceName;
         motor_count_per_port[interface_name]++;
     }
 }
@@ -61,7 +74,7 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
     timeout.tv_usec = 5000; // 5ms
     TMotorCommandParser Tparser;
     MaxonCommandParser Mparser;
-    const int NUM_FRAMES = 200;
+    const int NUM_FRAMES = 100;
     // 소켓 옵션 설정
     for (const auto &socket_pair : sockets)
     {
@@ -127,6 +140,6 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
             }
         }
     }
-    buffer.print_buffer();
+
     buffer.parse_and_save_to_csv("response", Tparser, Mparser, tmotors, maxonMotors);
 }

@@ -104,7 +104,7 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
     currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
 
-    float currentPositionFloat = static_cast<float>(currentPosition) / (35.0f * 4096.0f) * M_PI;
+    float currentPositionFloat = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
 
     return std::make_tuple(id, currentPositionFloat);
 }
@@ -113,7 +113,7 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {
     frame->can_id = 0x80; // Replace YOUR_CAN_ID with the appropriate id
-    frame->can_dlc = 1;   // Data Length Code is set to maximum allowed length
+    frame->can_dlc = 0;   // Data Length Code is set to maximum allowed length
 
     /// pack ints into the can buffer ///
     frame->data[0] = 0x00;

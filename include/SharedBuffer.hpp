@@ -63,7 +63,7 @@ public:
         std::cout << "Buffer contents: \n"
                   << std::endl;
 
-        while (!temp_buffer.empty() && count < 200)
+        while (!temp_buffer.empty() && count < 30)
         {
             const can_frame &frame = temp_buffer.front();
             std::cout << "can_id: " << std::hex << frame.can_id
@@ -123,6 +123,7 @@ public:
                         isMaxonMotorFound = true;
                         auto [id, position] = Mparser.parseRecieveCommand(&frame);
                         ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                            << std::dec
                             << position << "\n";
                         break; // 해당하는 모터를 찾았으므로 for문을 종료
                     }
@@ -139,6 +140,7 @@ public:
                     {
                         auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
                         ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                            << std::dec
                             << position << ","
                             << speed << ","
                             << torque << "\n";
