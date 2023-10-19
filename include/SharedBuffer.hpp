@@ -110,35 +110,44 @@ public:
         {
             can_frame frame = temp_buffer.front();
             temp_buffer.pop();
+            bool isMaxonMotorFound = false;
 
-            // TMotor 처리
-            for (const auto &pair : tmotors)
+            // MaxonMotor 처리
+            if (!maxonMotors.empty()) // maxonMotor가 존재할 때만 실행
             {
-                std::shared_ptr<TMotor> motor = pair.second;
-                if (motor->nodeId == frame.data[0])
+                for (const auto &pair : maxonMotors)
                 {
-                    auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
-                    ofs << id << ","
-                        << position << ","
-                        << speed << ","
-                        << torque << "\n";
-                    break; // 해당하는 모터를 찾았으므로 for문을 종료
+                    std::shared_ptr<MaxonMotor> motor = pair.second;
+                    if (motor->rxPdoIds[0] == frame.can_id)
+                    {
+                        isMaxonMotorFound = true;
+                        auto [id, position] = Mparser.parseRecieveCommand(&frame);
+                        ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                            << position << "\n";
+                        break; // 해당하는 모터를 찾았으므로 for문을 종료
+                    }
                 }
             }
 
-            // MaxonMotor 처리
-            for (const auto &pair : maxonMotors)
+            // MaxonMotor가 없거나 해당 canframe이 MaxonMotor가 아니면 TMotor 처리
+            if (!isMaxonMotorFound)
             {
-                std::shared_ptr<MaxonMotor> motor = pair.second;
-                if (motor->nodeId == frame.can_id)
+                for (const auto &pair : tmotors)
                 {
-                    auto [id, position] = Mparser.parseRecieveCommand(&frame);
-                    ofs << id << ","
-                        << position << "\n";
-                    break; // 해당하는 모터를 찾았으므로 for문을 종료
+                    std::shared_ptr<TMotor> motor = pair.second;
+                    if (motor->nodeId == frame.data[0])
+                    {
+                        auto [id, position, speed, torque] = Tparser.parseRecieveCommand(*motor, &frame);
+                        ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                            << position << ","
+                            << speed << ","
+                            << torque << "\n";
+                        break; // 해당하는 모터를 찾았으므로 for문을 종료
+                    }
                 }
             }
         }
+
         ofs.close();
     }
 

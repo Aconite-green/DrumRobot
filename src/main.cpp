@@ -50,7 +50,7 @@ int main()
                                                           "can1");
     maxonMotors["b_maxon"] = std::make_shared<MaxonMotor>(0x002,
                                                           std::vector<uint32_t>{0x202, 0x302},
-                                                          std::vector<uint32_t>{0x181},
+                                                          std::vector<uint32_t>{0x182},
                                                           "can1");
 
     // Tasks For Threads
