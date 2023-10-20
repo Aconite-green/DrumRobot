@@ -101,7 +101,7 @@ public:
         ofs.seekp(0, std::ios::end);
         if (ofs.tellp() == 0)
         {
-            ofs << "MotorName,ID,Position,Speed,Torque\n";
+            ofs << "ID,Position(degree),Speed,Torque\n";
         }
 
         std::queue<T> temp_buffer = buffer; // 버퍼를 임시 큐에 복사

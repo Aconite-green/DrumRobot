@@ -39,21 +39,23 @@ void ThreadLoopTask::operator()()
         }
         else if (userInput == "sine")
         {
-            
-            pathTask(sendBuffer);
+
+            std::thread pathThread(pathTask, std::ref(sendBuffer));
             std::thread sendThread(sendTask, std::ref(sendBuffer));
             std::thread readThread(readTask, std::ref(receiveBuffer));
 
+            pathThread.join();
             sendThread.join();
             readThread.join();
         }
         else if (userInput == "run")
         {
-            
-            pathManagerTask(sendBuffer);
+
+            std::thread pathThread(pathManagerTask, std::ref(sendBuffer));
             std::thread sendThread(sendTask, std::ref(sendBuffer));
             std::thread readThread(readTask, std::ref(receiveBuffer));
-
+            
+            pathThread.join();
             sendThread.join();
             readThread.join();
         }

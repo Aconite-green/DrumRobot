@@ -46,6 +46,7 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
 
     /// convert ints to floats ///
     position = uint_to_float(p_int, motor.pMin, motor.pMax, 16);
+    position = position*180/M_PI;
     speed = uint_to_float(v_int, motor.vMin, motor.vMax, 12);
     torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
 
