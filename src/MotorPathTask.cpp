@@ -21,7 +21,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        {"1_waist", 1}, {"2_R_arm1", 1}, {"3_L_arm1", 1}, {"4_R_arm2", 1}, /*{"a_maxon", 8}, {"b_maxon", 8}*/
+        {"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8}, /*{"a_maxon", 8}, {"b_maxon", 8}*/
 
     };
     struct can_frame frame;

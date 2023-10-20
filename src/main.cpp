@@ -18,8 +18,6 @@
 #include "../include/PathManager.hpp"
 #include <atomic>
 
-
-
 int main()
 {
 
@@ -31,7 +29,7 @@ int main()
     std::atomic<bool> stop(false);
 
     // Canport Initialization
-    std::vector<std::string> ifnames = {"can0", "can1"};
+    std::vector<std::string> ifnames = {"can1"};
     CanSocketUtils canUtils(ifnames);
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
@@ -53,8 +51,8 @@ int main()
     maxonMotors["b_maxon"] = std::make_shared<MaxonMotor>(0x002,
                                                           std::vector<uint32_t>{0x202, 0x302},
                                                           std::vector<uint32_t>{0x182},
-                                                          "can0");
-*/
+                                                          "can0");*/
+
     // Tasks For Threads
     ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
     MotorPathTask pathTask(tmotors, maxonMotors);
