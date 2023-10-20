@@ -21,6 +21,7 @@
 int main()
 {
 
+int a=0;
     // Buffer
     SharedBuffer<can_frame> sendBuffer;
     SharedBuffer<can_frame> receiveBuffer;
