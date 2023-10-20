@@ -9,6 +9,7 @@
 #include "ActivateControlTask.hpp"
 #include "DeactivateControlTask.hpp"
 #include "PathManager.hpp"
+#include "SineSignalSendTask.hpp"
 #include <atomic>
 #include <thread>
 #include <vector>
@@ -25,6 +26,7 @@ public:
                  DeactivateControlTask &deactivateTask,
                  MotorPathTask &pathTask,
                  PathManager &pathManagerTask,
+                 SineSignalSendTask &tuning,
                  MotorSignalSendTask &sendTask,
                  MotorResponseReadTask &readTask,
                  SharedBuffer<can_frame> &sendBuffer, 
@@ -38,6 +40,7 @@ private:
     DeactivateControlTask &deactivateTask;
     MotorPathTask &pathTask;
     PathManager &pathManagerTask;
+    SineSignalSendTask &tuning;
     MotorSignalSendTask &sendTask;
     MotorResponseReadTask &readTask;
     SharedBuffer<can_frame> &sendBuffer;

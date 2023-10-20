@@ -29,19 +29,19 @@ int main()
     std::atomic<bool> stop(false);
 
     // Canport Initialization
-    std::vector<std::string> ifnames = {"can1"};
+    std::vector<std::string> ifnames = {"can0"};
     CanSocketUtils canUtils(ifnames);
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can1");
+    // tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can1");
 
-    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can1");
-    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can1");
-    tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can1");
+    // tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can1");
+    // tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can1");
+    // tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can1");
 
-    // tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
-    // tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
-    // tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
+    //tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
+    //tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
     /*maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
@@ -62,8 +62,9 @@ int main()
     DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
 
     PathManager PathManager(tmotors);
+    SineSignalSendTask tuning(tmotors, maxonMotors, canUtils.getSockets());
 
-    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, sendTask, readTask, sendBuffer, receiveBuffer, stop);
+    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, tuning,sendTask, readTask, sendBuffer, receiveBuffer, stop);
     std::thread threadLoop(threadLoopTask);
     threadLoop.join();
 

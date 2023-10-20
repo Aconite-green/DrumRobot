@@ -24,7 +24,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
 
         clock_t internal = clock();
         double elapsed_time = ((double)(internal - external)) / CLOCKS_PER_SEC * 1000;
-        if (elapsed_time >= 5) // 5ms
+        if (elapsed_time >= 2) // 5ms
         {
             external = clock();
 
