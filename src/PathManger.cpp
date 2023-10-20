@@ -15,80 +15,12 @@ PathManager::PathManager(std::map<std::string, std::shared_ptr<TMotor>> &tmotors
 
 void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 {
-    /*
-	//////// 32분 음표기준으로 작성
-	vector<vector<int>> qd = {
-		{1, 0, 1, 0, 1, 1, 0, 1},  // base
-		{0, 0, 0, 0, 1, 0, 0, 0},  // right crash
-		{1, 1, 0, 1, 0, 1, 1, 0},  // ride
-		{0, 0, 0, 1, 0, 0, 0, 0},  // snare
-		{0, 0, 0, 0, 0, 0, 0, 0},  // open high hat
-		{0, 0, 0, 0, 0, 0, 0, 0},  // closed high hat
-		{0, 0, 1, 0, 1, 0, 0, 1},  // floor tom
-		{1, 0, 0, 0, 0, 1, 0, 0},  // mid tom
-		{0, 0, 0, 0, 0, 0, 0, 0},  // left crash
-		{0, 1, 0, 0, 0, 0, 1, 0}   // high tom
-	};
-	*/
-
-	/////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
-	map<string, int> instrument_mapping = {
-		{"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9},
-		{"5", 4}, {"6", 5}, {"7", 4}, {"8", 8}, {"11", 3},
-		{"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}
-	};
-
-	string score_path = "D:/drumrobot2/codeConfession.txt";
-	vector<double> time_arr;
-	vector<vector<int>> RA, LA;
-	vector<int> RF, LF;
-
-	ifstream file(score_path);
-	if (!file.is_open()) {
-		cerr << "Error opening file." << endl;
-		return 1;
-	}
-
-	string line;
-	int lineIndex = 0;
-	while (getline(file, line)) {
-		istringstream iss(line);
-		string item;
-		vector<string> columns;
-		while (getline(iss, item, '\t')) {
-			columns.push_back(item);
-		}
-
-		vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-		time_arr.push_back(stod(columns[1]));
-
-		if (columns[2] != "0") {
-			inst_arr_R[instrument_mapping[columns[2]]] = 1;
-		}
-		if (columns[3] != "0") {
-			inst_arr_L[instrument_mapping[columns[3]]] = 1;
-		}
-
-		RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-		LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-
-		RA.push_back(inst_arr_R);
-		LA.push_back(inst_arr_L);
-
-		lineIndex++;
-	}
-
-	file.close();
-
-
-
 	/////////// 악기를 칠때의 손목위치 assignment
 	// Load data from the file
 	ifstream inputFile("rT.txt");
 
 	if (!inputFile.is_open()) {
 		cerr << "Failed to open the file." << "\n";
-		return 1;
 	}
 
 	// Read data into a 2D vector
@@ -147,45 +79,106 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	vector<vector<double>> right_inst = { right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT };
 	vector<vector<double>> left_inst = { left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT };
 
-	/////////////////////////////////////////////////////////////////////////////////////////
+	
+	// initialize
 	const double pi = 3.14159265358979;
 
 	vector<double> R = { 0.368, 0.414, 0.368, 0.414 };
 	double s = 0.530;
 	double z0 = 0.000;
-	/*
-	int n_time = qd[0].size();
-	int n_inst = qd.size();
-
-
-	////////// bin2str : qd를 binary type에서 string type으로 변경 & 오른발 / 왼발 값 추출
-	bin2str b2s(qd);
-	vector<int> RF = b2s.RF_arr();
-	vector<int> LF = b2s.LF_arr();
-	vector<string> inst_arr = b2s.Arm_arr();
-
-
-	////////// RL_assign : 오른속 / 왼손 배정 알고리즘
-	RL_assign rl_assign(inst_arr);
-	vector<string> R_hnd = rl_assign.RH_arr();
-	vector<string> L_hnd = rl_assign.LH_arr();
-
-
-	///////// str2bin : 오른속 / 왼손 배정 값을 string type에서 binary type으로 변경
-	str2bin s2b_r(R_hnd);
-	str2bin s2b_l(L_hnd);
-	vector<vector<int>> RA = s2b_r.Arm_arr();
-	vector<vector<int>> LA = s2b_l.Arm_arr();
-	*/
 	
+	double theta0_standby = 0;
+	double theta1_standby = pi / 2;
+	double theta2_standby = pi / 2;
+	double theta3_standby = pi / 6;
+	double theta4_standby = 2 * pi / 3;
+	double theta5_standby = pi / 6;
+	double theta6_standby = 2 * pi / 3;
+
+	vector<double> standby_L = { theta0_standby, theta2_standby, theta5_standby, theta6_standby };
+	vector<double> standby_R = { theta0_standby, theta1_standby, theta3_standby, theta4_standby };
+	vector<double> standby = { theta0_standby, theta1_standby, theta2_standby, theta3_standby, theta4_standby, theta5_standby, theta6_standby };
+
+	vector<double> Q0_LEFT(4, 0);
+	vector<double> Q0_RIGHT(4, 0);
+	vector<vector<double>> q_ready_L;
+	vector<vector<double>> q_ready_R;
+
+	//// 준비자세 배열 생성
+	vector<double> Qi;
+	int n = 200;
+	for (int k = 1; k <= n; ++k) {
+		connect cnt_rL(Q0_LEFT, standby_L, k, n, 0, 1);
+		Qi = cnt_rL.Run();
+		q_ready_L.push_back(Qi);
+
+		connect cnt_rR(Q0_RIGHT, standby_R, k, n, 0, 1);
+		Qi = cnt_rR.Run();
+		q_ready_R.push_back(Qi);
+	}
+
+
+	/////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
+	map<string, int> instrument_mapping = {
+		{"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9},
+		{"5", 4}, {"6", 5}, {"7", 4}, {"8", 8}, {"11", 3},
+		{"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}
+	};
+
+	string score_path = "D:/drumrobot2/codeConfession.txt";
+	vector<double> time_arr;
+	vector<vector<int>> RA, LA;
+	vector<int> RF, LF;
+
+	ifstream file(score_path);
+	if (!file.is_open()) {
+		cerr << "Error opening file." << endl;
+	}
+
+	string line;
+	int lineIndex = 0;
+	while (getline(file, line)) {
+		istringstream iss(line);
+		string item;
+		vector<string> columns;
+		while (getline(iss, item, '\t')) {
+			columns.push_back(item);
+		}
+
+		vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
+		time_arr.push_back(stod(columns[1]));
+
+		if (columns[2] != "0") {
+			inst_arr_R[instrument_mapping[columns[2]]] = 1;
+		}
+		if (columns[3] != "0") {
+			inst_arr_L[instrument_mapping[columns[3]]] = 1;
+		}
+
+		RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
+		LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+
+		RA.push_back(inst_arr_R);
+		LA.push_back(inst_arr_L);
+
+		lineIndex++;
+	}
+
+	file.close();
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 	//// 걸리는 시간을 절반으로 나눔 (-1, 1, 0, -0.5 구분) => 행 2배
-	std::vector<double> timest_arr = { /* Populate your time_arr here */ };
+	std::vector<double> timest_arr;
 
 	for (size_t k = 0; k < time_arr.size(); ++k) {
 		timest_arr.push_back(time_arr[k] / 2);
 		timest_arr.push_back(time_arr[k] / 2);
 	}
 
+	int n_time = timest_arr.size();
+	int n_inst = 10;
 
 	//////// qd2sd : 악보를 기준으로 1, -1, 0, -0.5
 	qd2sd q2s_r(RA);
@@ -197,53 +190,18 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	vector<double> RFst = q2s_F_r.Arm_st();
 	vector<double> LFst = q2s_F_l.Arm_st();
 
+	vector<double> P1;
+	vector<double> P2;
+	vector<int> state_P1(n_time, 0);
+	vector<int> state_P2(n_time, 0);
+	vector<vector<double>> Q(n_time, vector<double>(7, 0));
+	vector<vector<double>> Q_LEFT(n_time, vector<double>(4, 0));
+	vector<vector<double>> Q_RIGHT(n_time, vector<double>(4, 0));
+	vector<vector<double>> q_LEFT;
+	vector<vector<double>> q_RIGHT;
 
-	////////////////////////////////////////////////////////////////////////////////////////////
-	int n_time = timest_arr.size();
-	int n_inst = 10;
-
-	const double PI = 3.14159265358979;
-
-	double theta0_standby = 0;
-	double theta1_standby = PI / 2;
-	double theta2_standby = PI / 2;
-	double theta3_standby = PI / 6;
-	double theta4_standby = 2 * PI / 3;
-	double theta5_standby = PI / 6;
-	double theta6_standby = 2 * PI / 3;
-
-	std::vector<double> standby_L = { theta0_standby, theta2_standby, theta5_standby, theta6_standby };
-	std::vector<double> standby_R = { theta0_standby, theta1_standby, theta3_standby, theta4_standby };
-	std::vector<double> standby = { theta0_standby, theta1_standby, theta2_standby, theta3_standby, theta4_standby, theta5_standby, theta6_standby };
-
-	std::vector<double> Q0_LEFT(4, 0);
-	std::vector<double> Q0_RIGHT(4, 0);
-	std::vector<std::vector<double>> q_ready_L;
-	std::vector<std::vector<double>> q_ready_R;
-
-	int n = 200;
-	for (int k = 1; k <= n; ++k) {
-		connect cnt_rL(Q0_LEFT, standby_L, k, n, 0, 1);
-		vector<double> Qi = cnt_rL.Run();
-		q_ready_L.push_back(Qi);
-
-		connect cnt_rR(Q0_RIGHT, standby_R, k, n, 0, 1);
-		vector<double> Qi = cnt_rR.Run();
-		q_ready_R.push_back(Qi);
-	}
-
-	std::vector<double> P1;
-	std::vector<double> P2;
-	std::vector<int> state_P1(n_time, 0);
-	std::vector<int> state_P2(n_time, 0);
-	std::vector<std::vector<double>> Q(n_time, std::vector<double>(7, 0));
-	std::vector<std::vector<double>> Q_LEFT(n_time, std::vector<double>(4, 0));
-	std::vector<std::vector<double>> Q_RIGHT(n_time, std::vector<double>(4, 0));
-	std::vector<std::vector<double>> q_LEFT;
-	std::vector<std::vector<double>> q_RIGHT;
-
-	std::vector<double> P0_R = { 0.265, -0.391, -0.039837 };
-	std::vector<double> P0_L = { -0.265, -0.391, -0.039837 };
+	vector<double> P0_R = { 0.265, -0.391, -0.039837 };
+	vector<double> P0_L = { -0.265, -0.391, -0.039837 };
 
 	int start_R = 0;
 	int start_L = 0;
@@ -369,7 +327,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		cout << "\n";
 	}
 	cout << "\n";
-	*/
+	
 
    
     struct can_frame frame;
@@ -391,5 +349,5 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
         }
         cout << "\n";
     }
-    
+    */
 }
