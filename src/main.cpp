@@ -21,7 +21,6 @@
 int main()
 {
 
-int a=0;
     // Buffer
     SharedBuffer<can_frame> sendBuffer;
     SharedBuffer<can_frame> receiveBuffer;
@@ -41,8 +40,8 @@ int a=0;
     // tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can1");
 
     tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
-    //tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
-    //tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
+    // tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
+    // tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
     /*maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
@@ -63,9 +62,9 @@ int a=0;
     DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
 
     PathManager PathManager(tmotors);
-    SineSignalSendTask tuning(tmotors, maxonMotors, canUtils.getSockets());
+    TuningTask tuningTask(tmotors, maxonMotors, canUtils.getSockets());
 
-    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, tuning,sendTask, readTask, sendBuffer, receiveBuffer, stop);
+    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, tuningTask, sendTask, readTask, sendBuffer, receiveBuffer, stop);
     std::thread threadLoop(threadLoopTask);
     threadLoop.join();
 

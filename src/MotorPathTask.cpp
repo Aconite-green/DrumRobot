@@ -15,13 +15,9 @@ MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmo
 void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
 
-    // CSV 파일을 쓰기 모드로 열기
-    std::ofstream csvFile("motor_send_data.csv");
-    csvFile << "CAN_ID,p_des\n"; // CSV 헤더
-
     // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
     std::map<std::string, float> total_times = {
-        /*{"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8},*/{"5_R_arm3", 8}, /*{"6_L_arm2", 8},{"7_L_arm3", 8} *//*{"a_maxon", 8}, {"b_maxon", 8}*/
+        /*{"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8},*/ {"5_R_arm3", 8}, /*{"6_L_arm2", 8},{"7_L_arm3", 8} */ /*{"a_maxon", 8}, {"b_maxon", 8}*/
 
     };
     struct can_frame frame;
@@ -60,8 +56,7 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
 
                 float local_time = std::fmod(time, total_times[motor_name]);
-                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI/2 ;
-                csvFile << std::hex << motor->nodeId << ',' << std::dec << p_des << '\n';
+                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI / 2;
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 
                 buffer.push(frame);
@@ -81,16 +76,13 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
                     float local_time = std::fmod(time, total_times[motor_name]);
                     int p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * (2048 * 35) / 2;
-                    csvFile << std::hex << motor->nodeId << ',' << std::dec << p_des << '\n';
                     MParser.parseSendCommand(*motor, &frame, p_des);
                     buffer.push(frame);
                 }
                 MParser.makeSync(&frame);
-                csvFile << "sync : " << std::hex << frame.can_id << '\n';
+
                 buffer.push(frame);
             }
         }
     }
-
-    csvFile.close();
 }

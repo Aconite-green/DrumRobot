@@ -1,8 +1,8 @@
-#include "../include/SineSignalSendTask.hpp"
+#include "../include/TuningTask.hpp"
 #include <cerrno>  // errno
 #include <cstring> // strerror
 
-SineSignalSendTask::SineSignalSendTask(
+TuningTask::TuningTask(
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
     const std::map<std::string, int> &sockets)
@@ -10,7 +10,7 @@ SineSignalSendTask::SineSignalSendTask(
 {
 }
 
-int SineSignalSendTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
+int TuningTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
 {
     struct timeval timeout;
     timeout.tv_sec = timeout_sec;
@@ -24,7 +24,7 @@ int SineSignalSendTask::set_socket_timeout(int hsocket, int timeout_sec, int tim
     return 0; // 성공 시 0 반환
 }
 
-void SineSignalSendTask::operator()()
+void TuningTask::operator()()
 {
     // sockets 맵의 모든 항목에 대해 set_socket_timeout 설정
     for (const auto &socketPair : sockets)
@@ -39,18 +39,16 @@ void SineSignalSendTask::operator()()
 
     // CSV 파일을 쓰기 모드로 열기
     std::ofstream csvFile("motor_data_for_tuning.csv");
-    csvFile << "CAN_ID,p_des,p_act,torque,calculated\n"; // CSV 헤더
+    csvFile << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
 
-    float total_times = 1;
     struct can_frame frame;
 
     float sample_time = 0.005;
     int cycles = 2;
-    int max_samples = static_cast<int>(total_times / sample_time);
+    int max_samples = static_cast<int>(sine_t / sample_time);
     float v_des = 0;
-    int kp = 50;
-    int kd = 1;
-    float result_val = 0;
+    float tff_des=0;
+    float p_act, v_act, tff_act;
     for (int cycle = 0; cycle < cycles; cycle++)
     {
         for (int i = 0; i < max_samples; i++)
@@ -62,10 +60,10 @@ void SineSignalSendTask::operator()()
 
                 std::shared_ptr<TMotor> &motor = entry.second;
 
-                float local_time = std::fmod(time, total_times);
-                float p_des = (1 - cosf(2 * M_PI * local_time / total_times)) * M_PI / 2;
+                float local_time = std::fmod(time, sine_t);
+                float p_des = (1 - cosf(2 * M_PI * local_time / sine_t)) * M_PI / 2;
 
-                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, kp, kd, 0/*torque*/);
+                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, kp, kd, tff_des);
                 csvFile << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId << ',' << std::dec << p_des;
 
                 clock_t external = clock();
@@ -93,11 +91,11 @@ void SineSignalSendTask::operator()()
                         {
                             std::tuple<int, float, float, float> result = TParser.parseRecieveCommand(*motor, &frame);
 
-                            float p_act = std::get<1>(result);
-                            float v_act = std::get<1>(result);
-                            float torque = std::get<3>(result);
-                            result_val = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFile << ',' << std::dec << p_act << ',' << torque << ',' << result_val << '\n';
+                            p_act = std::get<1>(result);
+                            v_act = std::get<1>(result);
+                            tff_act = std::get<3>(result);
+                            tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                            csvFile << ',' << std::dec << p_act << ',' << tff_des << ',' << tff_act << '\n';
                             break;
                         }
                     }
