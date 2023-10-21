@@ -7,6 +7,13 @@
 #include <map>
 #include <memory>
 
+#define Tdegree_180 M_PI
+#define Tdegree_90 M_PI/2
+#define Mdegree_180 2048*35
+#define Mdegree_90 1024*35
+
+
+
 MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmotors, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors)
     : tmotors(tmotors), maxonMotors(maxonMotors)
 {
@@ -15,13 +22,19 @@ MotorPathTask::MotorPathTask(std::map<std::string, std::shared_ptr<TMotor>> &tmo
 void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
 
-    // total_times는 동적으로 설정 가능하며 모터 이름과 그에 해당하는 주기(초)를 맵핑합니다.
-    std::map<std::string, float> total_times = {
-        /*{"1_waist", 8}, {"2_R_arm1", 8}, {"3_L_arm1", 8}, {"4_R_arm2", 8},*/ {"5_R_arm3", 8}, /*{"6_L_arm2", 8},{"7_L_arm3", 8} */ /*{"a_maxon", 8}, {"b_maxon", 8}*/
+    std::map<std::string, std::pair<float, float>> motor_configurations = {
+        {"1_waist", {8, Tdegree_180}},
+        {"2_R_arm1", {8, Tdegree_180}},
+        {"3_L_arm1", {8, Tdegree_180}},
+        {"4_R_arm2", {8, Tdegree_180}},
+        {"5_R_arm3", {8, Tdegree_180}},
+        {"6_L_arm2", {8, Tdegree_180}},
+        {"7_L_arm3", {8, Tdegree_180}},
+        {"a_maxon", {8, Mdegree_180}},
+        {"b_maxon", {8, Mdegree_180}}};
 
-    };
     struct can_frame frame;
-    if ((tmotors.size() + maxonMotors.size()) != total_times.size())
+    if ((tmotors.size() + maxonMotors.size()) != motor_configurations.size())
     {
         std::cerr << "Error: The number of motors does not match the number of total_times entries.\n";
         return;
@@ -29,12 +42,12 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 
     float sample_time = 0.002;
     int cycles = 5;
-    float max_time = std::max_element(total_times.begin(), total_times.end(),
+    float max_time = std::max_element(motor_configurations.begin(), motor_configurations.end(),
                                       [](const auto &a, const auto &b)
                                       {
-                                          return a.second < b.second;
+                                          return a.second.first < b.second.first;
                                       })
-                         ->second; // 모든 모터 중 가장 긴 주기를 max_time으로 설정합니다.
+                         ->second.first; // 모든 모터 중 가장 긴 주기를 max_time으로 설정합니다.
 
     int max_samples = static_cast<int>(max_time / sample_time);
 
@@ -49,14 +62,16 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                 const std::string &motor_name = entry.first;
                 std::shared_ptr<TMotor> &motor = entry.second;
 
-                if (total_times.find(motor_name) == total_times.end())
+                if (motor_configurations.find(motor_name) == motor_configurations.end())
                 {
-                    std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
+                    std::cerr << "Error: Configuration for motor " << motor_name << " not found.\n";
                     continue;
                 }
 
-                float local_time = std::fmod(time, total_times[motor_name]);
-                float p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * M_PI / 2;
+                float local_time = std::fmod(time, motor_configurations[motor_name].first); // 주기
+                float amplitude = motor_configurations[motor_name].second;                  // 진폭
+                float p_des = (1 - cosf(2 * M_PI * local_time / motor_configurations[motor_name].first))/2 * amplitude;
+
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
 
                 buffer.push(frame);
@@ -68,14 +83,15 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
                     const std::string &motor_name = entry.first;
                     std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                    if (total_times.find(motor_name) == total_times.end())
+                    if (motor_configurations.find(motor_name) == motor_configurations.end())
                     {
-                        std::cerr << "Error: total_time for motor " << motor_name << " not found.\n";
+                        std::cerr << "Error: Configuration for motor " << motor_name << " not found.\n";
                         continue;
                     }
 
-                    float local_time = std::fmod(time, total_times[motor_name]);
-                    int p_des = (1 - cosf(2 * M_PI * local_time / total_times[motor_name])) * (2048 * 35) / 2;
+                    float local_time = std::fmod(time, motor_configurations[motor_name].first); // 주기
+                    float amplitude = motor_configurations[motor_name].second;
+                    int p_des = (1 - cosf(2 * M_PI * local_time / motor_configurations[motor_name].first))/2 * amplitude;
                     MParser.parseSendCommand(*motor, &frame, p_des);
                     buffer.push(frame);
                 }
