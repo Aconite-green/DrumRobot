@@ -60,7 +60,6 @@ int main()
     MotorResponseReadTask readTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
     // SensorSignalReadTask sensorTask(tmotors, paused, stop);
     DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
-
     PathManager PathManager(tmotors);
     TuningTask tuningTask(tmotors, maxonMotors, canUtils.getSockets());
 

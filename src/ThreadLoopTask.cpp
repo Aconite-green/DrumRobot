@@ -56,10 +56,10 @@ void ThreadLoopTask::operator()()
             while (true)
             {
 
-                std::cout << " Enter 'csv', 'waves', 'exit' ";
+                std::cout << " Enter 'tuning', 'waves', 'exit' ";
                 std::cin >> userInput;
                 std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
-                if (userInput == "tune")
+                if (userInput == "tuning")
                 {
                     while (true)
                     {
