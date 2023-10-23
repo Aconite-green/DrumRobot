@@ -55,7 +55,7 @@ void ThreadLoopTask::operator()()
             while (true)
             {
 
-                std::cout << " Enter 'tuning', 'waves', 'exit' :";
+                std::cout << "Enter 'tuning', 'waves', 'exit' :";
                 std::cin >> userInput;
                 std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
                 if (userInput == "tuning")
@@ -95,7 +95,7 @@ void ThreadLoopTask::operator()()
                         else if (userInput == "period")
                         {
                             std::cout << "Current Time for Sine period : " << tuningTask.sine_t << "\n";
-                            std::cout << "Enter Desired Kd : "
+                            std::cout << "Enter Desired Sine period : "
                                       << "\n";
                             std::cin >> tuningTask.sine_t;
                         }

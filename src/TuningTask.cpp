@@ -39,7 +39,7 @@ void TuningTask::operator()()
     }
 
     // CSV 파일을 쓰기 모드로 열기
-    std::ofstream csvFile("motor_data_for_tuning.csv");
+    std::ofstream csvFile("kp_8_kd_1_sinePeriod_1.csv");
     csvFile << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
