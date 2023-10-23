@@ -5,10 +5,11 @@
 TuningTask::TuningTask(
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
-    const std::map<std::string, int> &sockets)
-    : tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets)
-{
+    const std::map<std::string, int> &sockets
+) : kp(8), kd(1), sine_t(8.0), tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets) {
+    // 생성자 본문
 }
+
 
 int TuningTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
 {

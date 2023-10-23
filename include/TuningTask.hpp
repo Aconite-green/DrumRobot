@@ -21,8 +21,8 @@ public:
          std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
          const std::map<std::string, int> &sockets);
      void operator()();
-     int kp = 13.60, kd = 0.46;
-     float sine_t = 8.0;
+
+     float kp, kd, sine_t;
 
 private:
      std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
