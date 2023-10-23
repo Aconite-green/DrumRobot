@@ -10,12 +10,10 @@ class connect
 	vector<double> Q2;
 	int k;
 	int n;
-	double s1;
-	double s2;
 	vector<double> Qi;
 
 public:
-	connect(vector<double>& q1, vector<double>& q2, int k_val, int n_val, double s1_val, double s2_val);
+	connect(vector<double>& q1, vector<double>& q2, int k_val, int n_val);
 	vector<double> Run();
 };
 

@@ -171,7 +171,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	int n = 200;
 	for (int k = 1; k <= n; ++k)
 	{
-		connect cnt(Q0, standby, k, n, 0, 1);
+		connect cnt(Q0, standby, k, n);
 		c_MotorAngle = cnt.Run();
 		q_ready.push_back(c_MotorAngle);
 
@@ -278,7 +278,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		n = round(timest / 0.005);
 		for (int k = 0; k < n; ++k)
 		{
-			connect cnt(c_MotorAngle, Q[0], k, n, 0, 0);
+			connect cnt(c_MotorAngle, Q[0], k, n);
 			Qi = cnt.Run();
 			q.push_back(Qi);
 
@@ -296,7 +296,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		}
 		for (int k = 0; k < n; ++k)
 		{
-			connect cnt(Q[0], Q[1], k, n, 0, 0);
+			connect cnt(Q[0], Q[1], k, n);
 			Qi = cnt.Run();
 			q.push_back(Qi);
 
