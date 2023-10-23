@@ -20,7 +20,5 @@ public:
 
 private:
     TMotorCommandParser Parser;
-   
-
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
 };
