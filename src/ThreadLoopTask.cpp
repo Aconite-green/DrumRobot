@@ -31,6 +31,12 @@ void ThreadLoopTask::operator()()
     std::string userInput;
     while (true)
     {
+        int result = system("clear");
+        if (result != 0)
+        {
+            std::cout << "error during sys function";
+        }
+
         std::cout << "Enter 'run','exit','test': ";
         std::cin >> userInput;
         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
@@ -41,6 +47,13 @@ void ThreadLoopTask::operator()()
         }
         else if (userInput == "run")
         {
+            int result = system("clear");
+            if (result != 0)
+            {
+                std::cout << "error during sys function";
+            }
+
+            std::cout << "Performing ...... \n";
 
             std::thread pathThread(pathManagerTask, std::ref(sendBuffer));
             std::thread sendThread(sendTask, std::ref(sendBuffer));
@@ -49,6 +62,8 @@ void ThreadLoopTask::operator()()
             pathThread.join();
             sendThread.join();
             readThread.join();
+
+            std::cout << "........End performance \n";
         }
         else if (userInput == "test")
         {
