@@ -33,20 +33,21 @@ int main()
     CanSocketUtils canUtils(ifnames);
     // Motor Declariration
     std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can1");
+    //tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can1");
 
-    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can1");
-    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can1");
-    tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can1");
+    //tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can1");
+    //tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can1");
+    //tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can1");
 
     // tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
     // tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
     // tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
+
+    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
+
     PathManager PathManager(tmotors);
     std::thread pathManager(PathManager, std::ref(sendBuffer));
     pathManager.join();
-
-    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
     /*maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
                                                           std::vector<uint32_t>{0x201, 0x301},
                                                           std::vector<uint32_t>{0x181},
@@ -64,7 +65,9 @@ int main()
     // SensorSignalReadTask sensorTask(tmotors, paused, stop);
     DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
 
-    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, sendTask, readTask, sendBuffer, receiveBuffer, stop);
+    TuningTask tuningTask(tmotors, maxonMotors, canUtils.getSockets());
+
+    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, tuningTask, sendTask, readTask, sendBuffer, receiveBuffer, stop);
     std::thread threadLoop(threadLoopTask);
     threadLoop.join();
 

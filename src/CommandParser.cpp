@@ -46,7 +46,6 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
 
     /// convert ints to floats ///
     position = uint_to_float(p_int, motor.pMin, motor.pMax, 16);
-    position = position*180/M_PI;
     speed = uint_to_float(v_int, motor.vMin, motor.vMax, 12);
     torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
 
@@ -82,7 +81,7 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
 
     // Set CAN frame id and data length code
     frame->can_id = motor.txPdoIds[1]; // Replace YOUR_CAN_ID with the appropriate id
-    frame->can_dlc = 4;              // Data Length Code is set to maximum allowed length
+    frame->can_dlc = 4;                // Data Length Code is set to maximum allowed length
 
     /// pack ints into the can buffer ///
     frame->data[0] = posByte0;
@@ -99,9 +98,9 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
 {
     int id = frame->can_id;
 
-    int currentPosition = 0; // 결과값을 저장할 변수, 32비트 signed int
-    currentPosition |= static_cast<unsigned char>(frame->data[2]); // 최하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8; // 그 다음 하위 바이트
+    int currentPosition = 0;                                             // 결과값을 저장할 변수, 32비트 signed int
+    currentPosition |= static_cast<unsigned char>(frame->data[2]);       // 최하위 바이트
+    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;  // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
 
@@ -109,7 +108,6 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
 
     return std::make_tuple(id, currentPositionFloat);
 }
-
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {
