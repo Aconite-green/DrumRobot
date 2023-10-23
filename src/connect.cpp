@@ -4,14 +4,12 @@
 #include "connect.hpp"
 using namespace std;
 
-connect::connect(vector<double>& q1, vector<double>& q2, int k_val, int n_val, double s1_val, double s2_val)
+connect::connect(vector<double>& q1, vector<double>& q2, int k_val, int n_val)
 {
 	Q1 = q1;
 	Q2 = q2;
 	k = k_val;
 	n = n_val;
-	s1 = s1_val;
-	s2 = s2_val;
 }
 vector<double> connect::Run() {
 	std::vector<double> A, B;
