@@ -100,7 +100,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	map<string, int> instrument_mapping = {
 		{"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 5}, {"7", 4}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
 
-	string score_path = "../include/codeConfession0.txt";
+	string score_path = "../include/codeConfession.txt";
 	vector<double> time_arr;
 	vector<vector<int>> RA, LA;
 	vector<int> RF, LF;
@@ -305,7 +305,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 			{
 				std::shared_ptr<TMotor> &motor = entry.second;
 				float p_des = Qi[j];
-				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13, 1, 0);
 				buffer.push(frame);
 
 				j++;
@@ -319,16 +319,4 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		// cout << "TIME : " << Time << "ms\n";
 	}
 
-	// print
-	
-	for (long unsigned int i = 0; i < q.size(); i++)
-	{
-		cout << "i :" << i << "\n";
-		for (long unsigned int j = 0; j < q[0].size(); j++)
-		{
-			cout << q[i][j] << " ";
-		}
-		cout << "\n";
-	}
-	cout << q.size() << " x " << q[0].size() << "\n";
 }
