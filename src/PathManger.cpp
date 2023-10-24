@@ -148,7 +148,7 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 	//// 준비자세 배열 생성
 	
 	int n = 200;
-	for (int k = 1; k <= n; ++k)
+	for (int k = 0; k <= n; ++k)
 	{
 		connect cnt(Q0, standby, k, n);
 		c_MotorAngle = cnt.Run();
@@ -159,7 +159,7 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 		{
 			std::shared_ptr<TMotor> &motor = entry.second;
 			float p_des = c_MotorAngle[j];
-			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13.46, 0.46, 0);
 			buffer.push(frame);
 
 			j++;
@@ -167,7 +167,6 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 		// cout << "\n";
 	}
 }
-
 
 void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 {
@@ -300,4 +299,32 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		// cout << "TIME : " << Time << "ms\n";
 	}
 
+}
+
+void PathManager::finish(SharedBuffer<can_frame> &buffer){
+
+	vector<double> Q0(7, 0);
+	vector<vector<double>> q_finish;
+
+	//// 끝나는자세 배열 생성
+	vector<double> Qi;
+	int n = 200;
+	for (int k = 0; k < n; ++k)
+		{
+			connect cnt(c_MotorAngle, Q0, k, n);
+			Qi = cnt.Run();
+			q_finish.push_back(Qi);
+
+			int j = 0; // motor num
+			for (auto &entry : tmotors)
+			{
+				std::shared_ptr<TMotor> &motor = entry.second;
+				float p_des = Qi[j];
+				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13.46, 0.46, 0);
+				buffer.push(frame);
+
+				j++;
+			}
+			// cout << "\n";
+		}
 }
