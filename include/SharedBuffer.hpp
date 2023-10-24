@@ -80,6 +80,14 @@ public:
         }
     }
 
+    // 버퍼에 들어있는 아이템의 개수를 출력하는 함수
+    void print_buffer_size() const
+    {
+        std::unique_lock<std::mutex> lock(buffer_mutex);  // 동기화를 위한 뮤텍스 잠금
+        std::cout << "Number of items in buffer: " << buffer.size() << std::endl;
+    }
+
+
     void parse_and_save_to_csv(const std::string &csv_file_name,
                                TMotorCommandParser &Tparser,
                                MaxonCommandParser &Mparser,

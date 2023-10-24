@@ -29,6 +29,8 @@ void ThreadLoopTask::operator()()
     activateTask();
     pathManagerTask.ready(sendBuffer);
 
+    sendBuffer.print_buffer_size();
+
     std::string userInput;
     while (true)
     {
