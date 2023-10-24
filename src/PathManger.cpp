@@ -287,7 +287,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 			{
 				std::shared_ptr<TMotor> &motor = entry.second;
 				float p_des = Qi[j];
-				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13.46, 0.46, 0);
 				buffer.push(frame);
 
 				j++;
@@ -305,7 +305,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 			{
 				std::shared_ptr<TMotor> &motor = entry.second;
 				float p_des = Qi[j];
-				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13, 1, 0);
+				Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 13.46, 0.46, 0);
 				buffer.push(frame);
 
 				j++;
