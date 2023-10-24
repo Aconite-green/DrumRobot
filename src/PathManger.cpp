@@ -147,7 +147,7 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 
 	//// 준비자세 배열 생성
 	
-	int n = 200;
+	int n = 400;
 	for (int k = 0; k <= n; ++k)
 	{
 		connect cnt(Q0, standby, k, n);
@@ -304,7 +304,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 
 	//// 끝나는자세 배열 생성
 	vector<double> Qi;
-	int n = 200;
+	int n = 400;
 	for (int k = 0; k < n; ++k)
 		{
 			connect cnt(c_MotorAngle, Q0, k, n);
