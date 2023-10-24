@@ -1,5 +1,6 @@
 #include "../include/ThreadLoopTask.hpp"
 
+
 ThreadLoopTask::ThreadLoopTask(ActivateControlTask &activateTask_,
                                DeactivateControlTask &deactivateTask_,
                                MotorPathTask &pathTask_,
@@ -89,6 +90,16 @@ void ThreadLoopTask::operator()()
                         std::cout << "Current Kp : " << tuningTask.kp << "\n";
                         std::cout << "Current Kd : " << tuningTask.kd << "\n";
                         std::cout << "Time for Sine period : " << tuningTask.sine_t << "\n";
+
+                        // 파일 존재 여부를 확인하고 사용자에게 알림
+                        if (std::filesystem::exists(tuningTask.fileName))
+                        {
+                            std::cout << "Current File (" << tuningTask.fileName << ") Already Exists\n";
+                        }
+                        else
+                        {
+                            std::cout << "Current File (" << tuningTask.fileName << ") Does Not Exist\n";
+                        }
                         std::cout << "\n\n";
                         std::cout << "Enter run, kp, kd, period, exit : \n";
                         std::cin >> userInput;
@@ -117,6 +128,11 @@ void ThreadLoopTask::operator()()
                             std::cout << "Enter Desired Sine period : "
                                       << "\n";
                             std::cin >> tuningTask.sine_t;
+                        }
+                        else if (userInput == "file")
+                        {
+                            std::cout << "Enter Desired File Name: ";
+                            std::cin >> tuningTask.fileName;
                         }
                         else if (userInput == "exit")
                         {

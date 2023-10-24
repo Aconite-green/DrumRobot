@@ -23,6 +23,7 @@ public:
      void operator()();
 
      float kp, kd, sine_t;
+     std::string fileName;
 
 private:
      std::map<std::string, std::shared_ptr<TMotor>> &tmotors;

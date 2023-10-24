@@ -167,12 +167,7 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 		// cout << "\n";
 	}
 
-	for(int i=0; i<q_ready.size(); i++){
-		for(int j=0; j<q_ready[0].size(); j++){
-			cout << q_ready[i][j] << " ";
-		}
-		cout << "\n";
-	}
+	
 
 }
 

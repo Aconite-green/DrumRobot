@@ -18,6 +18,7 @@
 #include <cctype>
 #include <memory>
 #include <map>
+#include <filesystem>
 
 class ThreadLoopTask
 {

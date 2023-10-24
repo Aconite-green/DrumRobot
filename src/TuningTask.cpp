@@ -5,11 +5,10 @@
 TuningTask::TuningTask(
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
-    const std::map<std::string, int> &sockets
-) : kp(8), kd(1), sine_t(8.0), tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets) {
+    const std::map<std::string, int> &sockets) : kp(8), kd(1), sine_t(8.0), fileName("yourFile"), tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets)
+{
     // 생성자 본문
 }
-
 
 int TuningTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
 {
@@ -48,7 +47,7 @@ void TuningTask::operator()()
     int cycles = 2;
     int max_samples = static_cast<int>(sine_t / sample_time);
     float v_des = 0;
-    float tff_des=0;
+    float tff_des = 0;
     float p_act, v_act, tff_act;
     for (int cycle = 0; cycle < cycles; cycle++)
     {
