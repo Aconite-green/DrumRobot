@@ -27,6 +27,7 @@ void ThreadLoopTask::operator()()
 {
     // Begin Operation
     activateTask();
+    pathManagerTask.ready(sendBuffer);
 
     std::string userInput;
     while (true)

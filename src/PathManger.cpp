@@ -24,6 +24,34 @@ std::string trimWhitespace(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
+void PathManager::ready(SharedBuffer<can_frame> &buffer){
+
+	vector<double> Q0(7, 0);
+	vector<vector<double>> q_ready;
+
+	//// 준비자세 배열 생성
+	
+	int n = 200;
+	for (int k = 1; k <= n; ++k)
+	{
+		connect cnt(Q0, standby, k, n);
+		c_MotorAngle = cnt.Run();
+		q_ready.push_back(c_MotorAngle);
+
+		int j = 0; // motor num
+		for (auto &entry : tmotors)
+		{
+			std::shared_ptr<TMotor> &motor = entry.second;
+			float p_des = c_MotorAngle[j];
+			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+			buffer.push(frame);
+
+			j++;
+		}
+		// cout << "\n";
+	}
+}
+
 void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 {
 	/////////// 악기를 칠때의 손목위치 assignment
@@ -147,47 +175,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 
 	file.close();
 
-	// initialize
-	const double pi = 3.14159265358979;
-
-	double theta0_standby = 0;
-	double theta1_standby = pi / 2;
-	double theta2_standby = pi / 2;
-	double theta3_standby = pi / 6;
-	double theta4_standby = 2 * pi / 3;
-	double theta5_standby = pi / 6;
-	double theta6_standby = 2 * pi / 3;
-
-	vector<double> standby_L = {theta0_standby, theta2_standby, theta5_standby, theta6_standby};
-	vector<double> standby_R = {theta0_standby, theta1_standby, theta3_standby, theta4_standby};
-	vector<double> standby = {theta0_standby, theta1_standby, theta2_standby, theta3_standby, theta4_standby, theta5_standby, theta6_standby};
-
-	vector<double> Q0(7, 0);
-	vector<vector<double>> q_ready;
-
-	//// 준비자세 배열 생성
-	struct can_frame frame;
-	vector<double> c_MotorAngle;
-	int n = 200;
-	for (int k = 1; k <= n; ++k)
-	{
-		connect cnt(Q0, standby, k, n);
-		c_MotorAngle = cnt.Run();
-		q_ready.push_back(c_MotorAngle);
-
-		int j = 0; // motor num
-		for (auto &entry : tmotors)
-		{
-			std::shared_ptr<TMotor> &motor = entry.second;
-			float p_des = c_MotorAngle[j];
-			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
-			buffer.push(frame);
-
-			j++;
-		}
-		// cout << "\n";
-	}
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////
 
 	double p_R = 0; // 오른손 이전 악기 유무
@@ -275,7 +263,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 
 		vector<double> Qi;
 		double timest = time_arr[i] / 2;
-		n = round(timest / 0.002);
+		int n = round(timest / 0.002);
 		for (int k = 0; k < n; ++k)
 		{
 			connect cnt(c_MotorAngle, Q[0], k, n);
