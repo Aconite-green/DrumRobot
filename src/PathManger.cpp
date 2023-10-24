@@ -175,15 +175,19 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	double c_R = 0; // 오른손 현재 악기 유무
 	double c_L = 0; // 왼손 현재 악기 유무재
 
+	/*
 	vector<double> P1 = {0.265, -0.391, -0.039837};	 // RightArm Standby
 	vector<double> P2 = {-0.265, -0.391, -0.039837}; // LeftArm Standby
 	int n_inst = 10;
 
-	/*
 	vector<double> R = {0.368, 0.414, 0.368, 0.414};
 	double s = 0.530;
 	double z0 = 0.000;
 	*/
+	vector<double> P1 = {0.3, -0.45, -0.0866};	 // RightArm Standby
+	vector<double> P2 = {-0.3, -0.45, -0.0866}; // LeftArm Standby
+	int n_inst = 10;
+
 	vector<double> R = {0.500, 0.400, 0.500, 0.400};
 	double s = 0.600;
 	double z0 = 0.000;
