@@ -13,48 +13,6 @@ using namespace std;
 PathManager::PathManager(std::map<std::string, std::shared_ptr<TMotor>> &tmotors)
 	: tmotors(tmotors)
 {
-}
-
-std::string trimWhitespace(const std::string& str) {
-    size_t first = str.find_first_not_of(" \t");
-    if (std::string::npos == first) {
-        return str;
-    }
-    size_t last = str.find_last_not_of(" \t");
-    return str.substr(first, (last - first + 1));
-}
-
-void PathManager::ready(SharedBuffer<can_frame> &buffer){
-
-	vector<double> Q0(7, 0);
-	vector<vector<double>> q_ready;
-
-	//// 준비자세 배열 생성
-	
-	int n = 200;
-	for (int k = 1; k <= n; ++k)
-	{
-		connect cnt(Q0, standby, k, n);
-		c_MotorAngle = cnt.Run();
-		q_ready.push_back(c_MotorAngle);
-
-		int j = 0; // motor num
-		for (auto &entry : tmotors)
-		{
-			std::shared_ptr<TMotor> &motor = entry.second;
-			float p_des = c_MotorAngle[j];
-			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
-			buffer.push(frame);
-
-			j++;
-		}
-		// cout << "\n";
-	}
-}
-
-void PathManager::setting(){
-	/////////// 악기를 칠때의 손목위치 assignment
-	// Load data from the file
 	ifstream inputFile("../include/rT.txt");
 
 	if (!inputFile.is_open())
@@ -172,6 +130,44 @@ void PathManager::setting(){
 
 	file.close();
 }
+
+std::string PathManager::trimWhitespace(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t");
+    if (std::string::npos == first) {
+        return str;
+    }
+    size_t last = str.find_last_not_of(" \t");
+    return str.substr(first, (last - first + 1));
+}
+
+void PathManager::ready(SharedBuffer<can_frame> &buffer){
+
+	vector<double> Q0(7, 0);
+	vector<vector<double>> q_ready;
+
+	//// 준비자세 배열 생성
+	
+	int n = 200;
+	for (int k = 1; k <= n; ++k)
+	{
+		connect cnt(Q0, standby, k, n);
+		c_MotorAngle = cnt.Run();
+		q_ready.push_back(c_MotorAngle);
+
+		int j = 0; // motor num
+		for (auto &entry : tmotors)
+		{
+			std::shared_ptr<TMotor> &motor = entry.second;
+			float p_des = c_MotorAngle[j];
+			Parser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 8, 1, 0);
+			buffer.push(frame);
+
+			j++;
+		}
+		// cout << "\n";
+	}
+}
+
 
 void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 {

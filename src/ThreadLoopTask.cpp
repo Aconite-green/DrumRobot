@@ -65,6 +65,7 @@ void ThreadLoopTask::operator()()
             readThread.join();
 
             std::cout << "........End performance \n";
+            pathManagerTask.ready(sendBuffer);
         }
         else if (userInput == "test")
         {

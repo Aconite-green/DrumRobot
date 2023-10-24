@@ -17,7 +17,7 @@ class PathManager
 public:
     PathManager(std::map<std::string, std::shared_ptr<TMotor>> &tmotors);
     void ready(SharedBuffer<can_frame> &buffer);
-    void setting();
+    string trimWhitespace(const std::string& str);
     void operator()(SharedBuffer<can_frame> &buffer);
 
 private:
