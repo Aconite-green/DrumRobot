@@ -260,7 +260,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 
 		vector<double> Qi;
 		double timest = time_arr[i] / 2;
-		int n = round(timest / 0.002);
+		int n = round(timest / 0.005);
 		for (int k = 0; k < n; ++k)
 		{
 			connect cnt(c_MotorAngle, Q[0], k, n);
