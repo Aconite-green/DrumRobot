@@ -19,7 +19,6 @@ public:
     void ready(SharedBuffer<can_frame> &buffer);
     string trimWhitespace(const std::string& str);
     void operator()(SharedBuffer<can_frame> &buffer);
-    void finish(SharedBuffer<can_frame> &buffer);
 
 private:
     TMotorCommandParser Parser;
