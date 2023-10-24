@@ -52,8 +52,7 @@ void PathManager::ready(SharedBuffer<can_frame> &buffer){
 	}
 }
 
-void PathManager::operator()(SharedBuffer<can_frame> &buffer)
-{
+void PathManager::setting(){
 	/////////// 악기를 칠때의 손목위치 assignment
 	// Load data from the file
 	ifstream inputFile("../include/rT.txt");
@@ -121,17 +120,15 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	}
 
 	// Combine the elements into right_inst and left_inst
-	vector<vector<double>> right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
-	vector<vector<double>> left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
+	right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
+	left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
 
 	/////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
 	map<string, int> instrument_mapping = {
 		{"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 5}, {"7", 4}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
 
 	string score_path = "../include/codeConfession.txt";
-	vector<double> time_arr;
-	vector<vector<int>> RA, LA;
-	vector<int> RF, LF;
+	
 
 	ifstream file(score_path);
 	if (!file.is_open())
@@ -153,7 +150,7 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 		}
 
 		vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-		time_arr.push_back(stod(columns[1]));
+		time_arr.push_back(stod(columns[1])*100/bpm);
 
 		if (columns[2] != "0")
 		{
@@ -174,10 +171,10 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 	}
 
 	file.close();
+}
 
-	
-	////////////////////////////////////////////////////////////////////////////////////////////
-
+void PathManager::operator()(SharedBuffer<can_frame> &buffer)
+{
 	double p_R = 0; // 오른손 이전 악기 유무
 	double p_L = 0; // 왼손 이전 악기 유무
 	double c_R = 0; // 오른손 현재 악기 유무

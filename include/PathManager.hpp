@@ -17,6 +17,7 @@ class PathManager
 public:
     PathManager(std::map<std::string, std::shared_ptr<TMotor>> &tmotors);
     void ready(SharedBuffer<can_frame> &buffer);
+    void setting();
     void operator()(SharedBuffer<can_frame> &buffer);
 
 private:
@@ -39,4 +40,12 @@ private:
 
     struct can_frame frame;
 	vector<double> c_MotorAngle;
+
+    vector<vector<double>> right_inst;
+    vector<vector<double>> left_inst;
+
+    int bpm = 80;
+    vector<double> time_arr;
+	vector<vector<int>> RA, LA;
+	vector<int> RF, LF;
 };
