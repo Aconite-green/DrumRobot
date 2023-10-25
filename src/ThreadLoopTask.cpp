@@ -90,7 +90,6 @@ void ThreadLoopTask::operator()()
                         std::cout << "Current Kp : " << tuningTask.kp << "\n";
                         std::cout << "Current Kd : " << tuningTask.kd << "\n";
                         std::cout << "Time for Sine period : " << tuningTask.sine_t << "\n";
-
                         // 파일 존재 여부를 확인하고 사용자에게 알림
                         if (std::filesystem::exists(tuningTask.fileName))
                         {
@@ -101,7 +100,7 @@ void ThreadLoopTask::operator()()
                             std::cout << "Current File (" << tuningTask.fileName << ") Does Not Exist\n";
                         }
                         std::cout << "\n\n";
-                        std::cout << "Enter run, kp, kd, period, exit : \n";
+                        std::cout << "Enter run, kp, kd, period, file, exit : \n";
                         std::cin >> userInput;
                         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
                         if (userInput == "run")

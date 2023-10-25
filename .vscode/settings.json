@@ -53,7 +53,8 @@
         "map": "cpp",
         "iomanip": "cpp",
         "cstring": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "codecvt": "cpp"
     },
     "makefile.launchConfigurations": [
         {

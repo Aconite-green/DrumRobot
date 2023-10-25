@@ -1,13 +1,23 @@
 #include "../include/TuningTask.hpp"
 #include <cerrno>  // errno
 #include <cstring> // strerror
+#include <sstream>
+#include <iomanip>
 
 TuningTask::TuningTask(
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors,
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors,
-    const std::map<std::string, int> &sockets) : kp(8), kd(1), sine_t(8.0), fileName("yourFile"), tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets)
+    const std::map<std::string, int> &sockets) : kp(8), kd(1), sine_t(1.0), fileName(""), tmotors(tmotors), maxonMotors(maxonMotors), sockets(sockets)
 {
-    // 생성자 본문
+   std::stringstream ss;
+
+    ss << std::fixed << std::setprecision(2); // 소수점 둘째 자리까지만
+    ss << "kp_" << kp << "_kd_" << kd << "_period_" << sine_t << ".csv";
+
+    // 파일 이름 자동 설정
+    std::string folderName = "data";
+    std::string baseName = ss.str(); // ss.str()로 stringstream의 내용을 std::string으로 가져옵니다.
+    fileName = folderName + "/" + baseName;
 }
 
 int TuningTask::set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
@@ -37,8 +47,24 @@ void TuningTask::operator()()
         }
     }
 
+    std::stringstream ss;
+
+    ss << std::fixed << std::setprecision(2); // 소수점 둘째 자리까지만
+    ss << "kp_" << kp << "_kd_" << kd << "_period_" << sine_t << ".csv";
+
+    // 파일 이름 자동 설정
+    std::string folderName = "data";
+    std::string baseName = ss.str(); // ss.str()로 stringstream의 내용을 std::string으로 가져옵니다.
+    fileName = folderName + "/" + baseName;
+
+    // 'data' 폴더가 없으면 생성
+    if (!std::filesystem::exists(folderName))
+    {
+        std::filesystem::create_directory(folderName);
+    }
+
     // CSV 파일을 쓰기 모드로 열기
-    std::ofstream csvFile("kp_13_kd_1_sinePeriod_1.csv");
+    std::ofstream csvFile(fileName);
     csvFile << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;

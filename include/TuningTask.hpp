@@ -13,6 +13,7 @@
 #include "../include/CommandParser.hpp"
 #include "../include/CanSocketUtils.hpp"
 #include <atomic>
+#include <filesystem>
 class TuningTask
 {
 public:

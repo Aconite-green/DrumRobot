@@ -6,6 +6,7 @@
             "label": "For DrumRobot",
             "command": "/usr/bin/g++",
             "args": [
+                "--std=c++17",
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}/src/*.o",
