@@ -217,8 +217,6 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 			}
 		}
 
-		int Time = 0;
-		clock_t start = clock();
 
 		if (c_R == 0 && c_L == 0)
 		{ // 왼손 & 오른손 안침
@@ -302,8 +300,6 @@ void PathManager::operator()(SharedBuffer<can_frame> &buffer)
 
 		c_MotorAngle = Qi;
 
-		Time += ((int)clock() - start) / (CLOCKS_PER_SEC / 1000);
-		cout << "TIME : " << Time << "ms\n";
 	}
 
 	vector<double> Q0(7, 0);

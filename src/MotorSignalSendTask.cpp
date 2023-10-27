@@ -16,6 +16,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
 {
     struct can_frame frameToProcess;
     clock_t external = clock();
+    // std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
     stop.store(false);
     while (!stop)
     {
@@ -24,7 +25,8 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
 
         clock_t internal = clock();
         double elapsed_time = ((double)(internal - external)) / CLOCKS_PER_SEC * 1000;
-        if (elapsed_time >= 5) // 5ms
+
+        if (elapsed_time > 5) // 5ms
         {
             external = clock();
 
@@ -35,6 +37,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
 
                 if (buffer.try_pop(frameToProcess))
                 {
+
                     if (sockets.find(interface_name) != sockets.end())
                     {
                         int socket_descriptor = sockets.at(interface_name);
@@ -58,6 +61,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                 }
             }
 
+            /*
             if (!maxonMotors.empty())
             {
                 for (auto &motor_pair : maxonMotors)
@@ -101,6 +105,7 @@ void MotorSignalSendTask::operator()(SharedBuffer<can_frame> &buffer)
                     }
                 }
             }
+            */
         }
     }
 }

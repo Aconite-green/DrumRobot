@@ -141,8 +141,7 @@ void ThreadLoopTask::operator()()
                 }
                 else if (userInput == "waves")
                 {
-                    while (true)
-                    {
+                    
                         std::thread pathThread(pathTask, std::ref(sendBuffer));
                         std::thread sendThread(sendTask, std::ref(sendBuffer));
                         std::thread readThread(readTask, std::ref(receiveBuffer));
@@ -150,7 +149,8 @@ void ThreadLoopTask::operator()()
                         pathThread.join();
                         sendThread.join();
                         readThread.join();
-                    }
+                    
+                    
                 }
                 else if (userInput == "exit")
                 {

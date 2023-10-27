@@ -68,7 +68,7 @@ int MotorResponseReadTask::kbhit(void)
 void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
 {
     // 시간 관련 설정
-    clock_t external = clock();
+
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 5000; // 5ms
@@ -85,7 +85,7 @@ void MotorResponseReadTask::operator()(SharedBuffer<can_frame> &buffer)
             return;
         }
     }
-
+    clock_t external = clock();
     while (!stop)
     {
         // 키보드 입력 처리

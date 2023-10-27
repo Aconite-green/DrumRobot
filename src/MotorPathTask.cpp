@@ -23,15 +23,16 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
 {
 
     std::map<std::string, std::pair<float, float>> motor_configurations = {
-        {"1_waist", {8, Tdegree_180}},
+        //{"1_waist", {8, Tdegree_180}},
         {"2_R_arm1", {8, Tdegree_180}},
         {"3_L_arm1", {8, Tdegree_180}},
-        {"4_R_arm2", {8, Tdegree_180}},
-        {"5_R_arm3", {8, Tdegree_180}},
-        {"6_L_arm2", {8, Tdegree_180}},
-        {"7_L_arm3", {8, Tdegree_180}},
-        {"a_maxon", {8, Mdegree_180}},
-        {"b_maxon", {8, Mdegree_180}}};
+        //{"4_R_arm2", {8, Tdegree_180}},
+        //{"5_R_arm3", {4, Tdegree_180}},
+        //{"6_L_arm2", {4, Tdegree_180}},
+        //{"7_L_arm3", {4, Tdegree_180}},
+        //{"a_maxon", {8, Mdegree_180}},
+        //{"b_maxon", {8, Mdegree_180}}
+        };
 
     struct can_frame frame;
     if ((tmotors.size() + maxonMotors.size()) != motor_configurations.size())
@@ -40,8 +41,8 @@ void MotorPathTask::operator()(SharedBuffer<can_frame> &buffer)
         return;
     }
 
-    float sample_time = 0.002;
-    int cycles = 5;
+    float sample_time = 0.005;
+    int cycles = 3;
     float max_time = std::max_element(motor_configurations.begin(), motor_configurations.end(),
                                       [](const auto &a, const auto &b)
                                       {
