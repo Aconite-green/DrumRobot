@@ -1,28 +1,38 @@
 # Declare variables
 CC = g++
-CFLAGS = -Wall -O2 -g -std=c++17  # C++17 표준 사용
-INCLUDE = -I./include
-LDFLAGS = -lm -lpthread -lstdc++fs  # 여기에 -lstdc++fs 추가
+CFLAGS = -Wall -O2 -g -std=c++17 -fPIC `pkg-config --cflags Qt5Widgets Qt5Charts`
+INCLUDE = -I./include -I./lib `pkg-config --cflags Qt5Widgets Qt5Charts`
+LDFLAGS = -lm -lpthread -lstdc++fs -L./lib -lUSBIO_64 `pkg-config --libs Qt5Widgets Qt5Charts`
 SRCDIR = ./src
-BINDIR = ./
+BINDIR = ./src/main.out
 
 # Automatically include all .cpp files from the src directory
 SOURCES := $(wildcard $(SRCDIR)/*.cpp)
 OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
 
-# Phony targets
-.PHONY: all clean
+# Qt MOC 처리
+MOC = moc
+MOC_HEADERS = $(wildcard ./include/*.hpp)  # Adjust to include all headers in include directory
+MOC_SRC = $(patsubst %.hpp, %.moc.cpp, $(MOC_HEADERS))
+MOC_OBJ = $(patsubst %.moc.cpp, %.moc.o, $(MOC_SRC))
 
 # Build target
-all: $(BINDIR)/main.out
+all: $(BINDIR)
 
-$(BINDIR)/main.out: $(OBJFILES)
-	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) $(LDFLAGS)  # 여기서 LDFLAGS 사용
+$(BINDIR): $(OBJFILES) $(MOC_OBJ)
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) $(LDFLAGS)
 
 # Pattern rules
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
+# MOC 규칙
+%.moc.cpp: %.hpp
+	$(MOC) $< -o $@
+
+%.moc.o: %.moc.cpp
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+
 # Clean rule
 clean:
-	rm -f $(SRCDIR)/*.o $(BINDIR)/main.out
+	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.moc.cpp $(SRCDIR)/*.moc.o $(BINDIR)

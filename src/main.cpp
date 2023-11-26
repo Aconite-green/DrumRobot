@@ -7,67 +7,59 @@
 #include <map>
 
 #include "../include/Motor.hpp"
-#include "../include/MotorPathTask.hpp"
-#include "../include/MotorSignalSendTask.hpp"
-#include "../include/SharedBuffer.hpp"
-#include "../include/MotorResponseReadTask.hpp"
-#include "../include/SensorSignalReadTask.hpp"
-#include "../include/ActivateControlTask.hpp"
-#include "../include/DeactivateControlTask.hpp"
-#include "../include/ThreadLoopTask.hpp"
-#include "../include/PathManager.hpp"
+#include "../include/Task.hpp"
+#include "../include/TaskUtility.hpp"
+#include "../include/ChartHandler.hpp"
+#include "../include/StateTask.hpp"
+#include "../include/State.hpp"
 #include <atomic>
+#include <QApplication>
+#include <QtCharts/QLineSeries>
 
-int main()
+using namespace std;
+
+
+
+int main(int argc, char *argv[])
 {
 
-    // Buffer
-    SharedBuffer<can_frame> sendBuffer;
-    SharedBuffer<can_frame> receiveBuffer;
-    SharedBuffer<int> sensorBuffer;
-    std::atomic<bool> paused(false);
-    std::atomic<bool> stop(false);
-
-    // Canport Initialization
-    std::vector<std::string> ifnames = {"can0"};
-    CanSocketUtils canUtils(ifnames);
     // Motor Declariration
-    std::map<std::string, std::shared_ptr<TMotor>> tmotors;
-    //tmotors["1_waist"] = std::make_shared<TMotor>(0x007, "AK10_9", "can0");
+    std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> tmotors;
 
-    tmotors["2_R_arm1"] = std::make_shared<TMotor>(0x001, "AK70_10", "can0");
-    tmotors["3_L_arm1"] = std::make_shared<TMotor>(0x002, "AK70_10", "can0");
-    //tmotors["4_R_arm2"] = std::make_shared<TMotor>(0x003, "AK70_10", "can0");
+    tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    //tmotors["5_R_arm3"] = std::make_shared<TMotor>(0x004, "AK70_10", "can0");
-    //tmotors["6_L_arm2"] = std::make_shared<TMotor>(0x005, "AK70_10", "can0");
-    //tmotors["7_L_arm3"] = std::make_shared<TMotor>(0x006, "AK70_10", "can0");
+    // tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
+    // tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
 
-    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
+    // tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
-    PathManager PathManager(tmotors);
-    /*maxonMotors["a_maxon"] = std::make_shared<MaxonMotor>(0x001,
-                                                          std::vector<uint32_t>{0x201, 0x301},
-                                                          std::vector<uint32_t>{0x181},
+    map<string, shared_ptr<MaxonMotor>> maxonMotors;
+    /*maxonMotors["a_maxon"] = make_shared<MaxonMotor>(0x001,
+                                                          vector<uint32_t>{0x201, 0x301},
+                                                          vector<uint32_t>{0x181},
                                                           "can0");
-    maxonMotors["b_maxon"] = std::make_shared<MaxonMotor>(0x002,
-                                                          std::vector<uint32_t>{0x202, 0x302},
-                                                          std::vector<uint32_t>{0x182},
+    maxonMotors["b_maxon"] = make_shared<MaxonMotor>(0x002,
+                                                          vector<uint32_t>{0x202, 0x302},
+                                                          vector<uint32_t>{0x182},
                                                           "can0");*/
 
-    // Tasks For Threads
-    ActivateControlTask activateTask(tmotors, maxonMotors, canUtils.getSockets());
-    MotorPathTask pathTask(tmotors, maxonMotors);
-    MotorSignalSendTask sendTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
-    MotorResponseReadTask readTask(tmotors, maxonMotors, canUtils.getSockets(), paused, stop);
-    // SensorSignalReadTask sensorTask(tmotors, paused, stop);
-    DeactivateControlTask deactivateTask(tmotors, maxonMotors, canUtils.getSockets());
 
-    TuningTask tuningTask(tmotors, maxonMotors, canUtils.getSockets());
+    std::atomic<State> state(State::SystemInit); // 상태 관리를 위한 원자적 변수
+    StateTask stateThread(state);
 
-    ThreadLoopTask threadLoopTask(activateTask, deactivateTask, pathTask, PathManager, tuningTask, sendTask, readTask, sendBuffer, receiveBuffer, stop);
-    std::thread threadLoop(threadLoopTask);
-    threadLoop.join();
 
-    return 0;
+    // 스레드 생성
+    std::thread state_thread(stateThread);
+    std::thread send_thread(sendThread, std::ref(state));
+    std::thread receive_thread(receiveThread, std::ref(state));
+
+
+    // 스레드 종료 대기
+    state_thread.join();
+    send_thread.join();
+    receive_thread.join();
+
 }

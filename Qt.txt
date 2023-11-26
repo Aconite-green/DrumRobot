@@ -1,0 +1,23 @@
+sudo apt-get update
+sudo apt-get install qt5-default
+sudo apt-get install libqt5charts5 libqt5charts5-dev
+
+
+
+using namespace QtCharts;
+
+In main function{
+
+ ChartHandler chartHandler;
+
+    QApplication app(argc, argv);
+    QObject::connect(&chartHandler, &ChartHandler::displayChartSignal,
+                     &chartHandler, &ChartHandler::displayChartSlot);
+    QObject::connect(&chartHandler, &ChartHandler::requestQuit, &app, &QApplication::quit);
+
+    task.setChartHandler(&chartHandler); 
+
+int ret = app.exec();
+
+
+}

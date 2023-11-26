@@ -54,12 +54,19 @@
         "iomanip": "cpp",
         "cstring": "cpp",
         "filesystem": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "set": "cpp",
+        "list": "cpp",
+        "variant": "cpp",
+        "qmainwindow": "cpp",
+        "bitset": "cpp",
+        "regex": "cpp",
+        "shared_mutex": "cpp"
     },
     "makefile.launchConfigurations": [
         {
-            "cwd": "/home/syp/DrumRobot_v1.0",
-            "binaryPath": "/home/syp/DrumRobot_v1.0/main.out",
+            "cwd": "/home/syp/DrumRobot2",
+            "binaryPath": "/home/syp/DrumRobot2/main.out",
             "binaryArgs": []
         }
     ]

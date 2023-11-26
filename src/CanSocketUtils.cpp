@@ -114,8 +114,6 @@ void CanSocketUtils::activate_port(const char *port)
     }
 }
 
-#include <iostream> // std::cout을 사용하기 위해 필요
-
 void CanSocketUtils::list_and_activate_available_can_ports()
 {
     int portCount = 0; // CAN 포트 수를 세기 위한 변수
@@ -167,5 +165,52 @@ void CanSocketUtils::list_and_activate_available_can_ports()
     {
         printf("No CAN port found. Exiting...\n");
         exit(1);
+    }
+}
+
+void CanSocketUtils::restart_all_can_ports()
+{
+    // 먼저 모든 포트를 down 시킵니다.
+    for (const auto &port : ifnames)
+    {
+        down_port(port.c_str());
+        
+
+        int socket_fd = sockets[port];
+        if (socket_fd >= 0)
+        {
+            close(socket_fd);   // 기존 소켓을 닫습니다.
+            sockets[port] = -1; // 소켓 디스크립터 값을 초기화합니다.
+        }
+    }
+
+    // 각 포트에 대해 새로운 소켓을 생성하고 디스크립터를 업데이트합니다.
+    for (const auto &port : ifnames)
+    {
+        usleep(100000); // 100ms 대기
+        activate_port(port.c_str());
+        
+
+        int new_socket_fd = create_socket(port);
+        if (new_socket_fd < 0)
+        {
+            // 새로운 소켓 생성에 실패한 경우 처리
+            fprintf(stderr, "Failed to create a new socket for port: %s\n", port.c_str());
+        }
+        else
+        {
+            sockets[port] = new_socket_fd;                               // 소켓 디스크립터 값을 업데이트합니다.
+        }
+    }
+}
+
+void CanSocketUtils::down_port(const char *port)
+{
+    char command[100];
+    snprintf(command, sizeof(command), "sudo ip link set %s down", port);
+    int ret = system(command);
+    if (ret != 0)
+    {
+        fprintf(stderr, "Failed to down port: %s\n", port);
     }
 }
