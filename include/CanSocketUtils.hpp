@@ -28,6 +28,7 @@ public:
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
     // Public Methods
     CanSocketUtils(const std::vector<std::string> &ifnames);
+    CanSocketUtils();
     ~CanSocketUtils();
 
     void restart_all_can_ports();
