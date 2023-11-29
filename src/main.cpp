@@ -12,7 +12,7 @@
 #include "../include/ChartHandler.hpp"
 #include "../include/StateTask.hpp"
 #include "../include/State.hpp"
-#include "../include/SendTask.hpp"
+#include "../include/SendLoopTask.hpp"
 #include <atomic>
 #include <QApplication>
 #include <QtCharts/QLineSeries>
@@ -27,13 +27,15 @@ int main(int argc, char *argv[])
     
 
     std::atomic<State> state(State::SystemInit); // 상태 관리를 위한 원자적 변수
-    StateTask stateThread(state);
-    SendTask sendThread(state);
+    CanSocketUtils canUtils;
+    
+    StateTask stateTask(state);
+    SendLoopTask sendLoopTask(state, canUtils);
 
 
     // 스레드 생성
-    std::thread state_thread(stateThread);
-    std::thread send_thread(sendThread);
+    std::thread state_thread(stateTask);
+    std::thread send_thread(sendLoopTask);
     std::thread receive_thread(receiveThread, std::ref(state));
 
 

@@ -214,3 +214,64 @@ void CanSocketUtils::down_port(const char *port)
         fprintf(stderr, "Failed to down port: %s\n", port);
     }
 }
+
+void CanSocketUtils::clear_all_can_buffers() {
+    for (const auto &socketPair : sockets) {
+        int socket_fd = socketPair.second;
+        clearCanBuffer(socket_fd);
+    }
+}
+
+void CanSocketUtils::clearCanBuffer(int canSocket) {
+    struct can_frame frame;
+    fd_set readSet;
+    struct timeval timeout;
+
+    // 수신 대기 시간 설정
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0; // 즉시 반환
+
+    while (true) {
+        FD_ZERO(&readSet);
+        FD_SET(canSocket, &readSet);
+
+        // 소켓에서 읽을 데이터가 있는지 확인
+        int selectRes = select(canSocket + 1, &readSet, NULL, NULL, &timeout);
+
+        if (selectRes > 0) {
+            // 수신 버퍼에서 데이터 읽기
+            ssize_t nbytes = read(canSocket, &frame, sizeof(struct can_frame));
+
+            if (nbytes <= 0) {
+                // 읽기 실패하거나 더 이상 읽을 데이터가 없음
+                break;
+            }
+        } else {
+            // 읽을 데이터가 없음
+            break;
+        }
+    }
+}
+
+
+int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec) {
+    struct timeval timeout;
+    timeout.tv_sec = sec;
+    timeout.tv_usec = usec;
+
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+        perror("setsockopt failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+void CanSocketUtils::set_all_sockets_timeout(int sec, int usec) {
+    for (const auto &socketPair : sockets) {
+        int socket_fd = socketPair.second;
+        if (set_socket_timeout(socket_fd, sec, usec) != 0) {
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
+}

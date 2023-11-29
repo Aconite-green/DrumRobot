@@ -38,23 +38,23 @@
 using namespace std;
 using namespace QtCharts;
 
-class SendTask
+class SendLoopTask
 {
 public:
     // 생성자 선언
-    SendTask(std::atomic<State> &stateRef);
+    SendLoopTask(std::atomic<State>& stateRef, CanSocketUtils& canUtilsRef);
 
     // operator() 함수 선언
     void operator()();
 
 private:
     std::atomic<State> &state;
+    CanSocketUtils& canUtils;
     std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> tmotors;         // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors; // 가정된 MaxonMotor 배열
 
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
-    CanSocketUtils canUtils;
 
 
     //System Initiallize

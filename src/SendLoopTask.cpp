@@ -1,10 +1,11 @@
-#include "../include/SendTask.hpp"
+#include "../include/SendLoopTask.hpp"
 
-SendTask::SendTask(std::atomic<State> &stateRef) : state(stateRef)
+SendLoopTask::SendLoopTask(std::atomic<State> &stateRef, CanSocketUtils &canUtilsRef)
+    : state(stateRef), canUtils(canUtilsRef)
 {
 }
 
-void SendTask::operator()()
+void SendLoopTask::operator()()
 {
     while (state != State::Shutdown)
     {
@@ -15,7 +16,7 @@ void SendTask::operator()()
             initializeCanUtils();
             ActivateControlTask();
 
-            state = State::Connected; // 작업 완료 후 상태 변경
+            state = State::Home; // 작업 완료 후 상태 변경
             break;
 
         case State::Tuning:
@@ -35,7 +36,7 @@ void SendTask::operator()()
     }
 }
 
-void SendTask::initializeTMotors()
+void SendLoopTask::initializeTMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
@@ -58,11 +59,12 @@ void SendTask::initializeTMotors()
                                                           "can0");*/
 };
 
-void SendTask::initializeCanUtils() {
+void SendLoopTask::initializeCanUtils()
+{
     canUtils = CanSocketUtils(extractIfnamesFromMotors(tmotors));
 }
 
-vector<string> SendTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
+vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
 {
     set<string> interface_names;
     for (const auto &motor_pair : motors)
@@ -72,42 +74,45 @@ vector<string> SendTask::extractIfnamesFromMotors(const map<string, shared_ptr<T
     return vector<string>(interface_names.begin(), interface_names.end());
 }
 
-void SendTask::ActivateControlTask()
+void SendLoopTask::ActivateControlTask()
 {
     struct can_frame frame;
 
-    // sockets 맵의 모든 항목에 대해 set_socket_timeout 설정
-    for (const auto &socketPair : canUtils.sockets)
-    {
-        int hsocket = socketPair.second;
-        if (set_socket_timeout(hsocket, 5, 0) != 0)
-        {
-            // 타임아웃 설정 실패 처리
-            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
-        }
-    }
+    canUtils.set_all_sockets_timeout(5 /*sec*/, 0);
+    canUtils.clear_all_can_buffers();
+
     if (!tmotors.empty())
     {
         // 첫 번째 for문: 모터 상태 확인 및 제어 모드 설정
-        for (const auto &motorPair : tmotors)
+        for (auto it = tmotors.begin(); it != tmotors.end();)
         {
-            std::string name = motorPair.first;
-            std::shared_ptr<TMotor> motor = motorPair.second;
+            std::string name = it->first;
+            std::shared_ptr<TMotor> motor = it->second;
+
+            bool success = true;
 
             // 상태 확인
             fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
+                           [&success](const std::string &motorName, bool result)
                            {
-                               if (success)
+                               if (result)
                                {
                                    std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
                                }
                                else
                                {
                                    std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
+                                   success = false;
                                }
                            });
+
+            if (!success)
+            {
+                // 실패한 경우, 해당 모터를 배열에서 제거하고 다음 모터로 넘어감
+                it = tmotors.erase(it);
+                continue;
+            }
 
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
@@ -141,6 +146,7 @@ void SendTask::ActivateControlTask()
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
+            ++it;
         }
     }
     else
