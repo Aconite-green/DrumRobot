@@ -1,11 +1,12 @@
 #include "../include/StateTask.hpp"
 
+
 // StateTask 클래스의 생성자
-StateTask::StateTask(std::atomic<State>& stateRef) : state(stateRef) {}
+StateTask::StateTask(SystemState& systemStateRef) : systemState(systemStateRef) {}
 
 // StateTask 클래스의 operator() 함수
 void StateTask::operator()() {
-    while (state != State::Shutdown) {
+    while (systemState.main != Main::Shutdown) {
         std::cout << "\nCurrent State: " << getStateName() << "\n";
         displayAvailableCommands();
 
@@ -20,12 +21,11 @@ void StateTask::operator()() {
 }
 
 std::string StateTask::getStateName() const {
-    switch (state.load()) {
-        case State::Connected: return "Connected";
-        case State::Homing: return "Homing";
-        case State::HomeReady: return "Home Ready";
-        case State::Tuning: return "Tuning";
-        case State::Performing: return "Performing";
+    switch (systemState.main.load()) {
+        case Main::SystemInit: return "System Initialization";
+        case Main::Home: return "Home";
+        case Main::Tune: return "Tune";
+        case Main::Perform: return "Performing";
         // 다른 상태들에 대한 이름 추가...
         default: return "Unknown";
     }
@@ -33,9 +33,9 @@ std::string StateTask::getStateName() const {
 
 void StateTask::displayAvailableCommands() const {
     std::cout << "Available Commands:\n";
-    if (state == State::Connected) {
+    if (systemState.main == Main::SystemInit) {
         std::cout << "- home: Set home position\n";
-    } else if (state == State::HomeReady) {
+    } else if (systemState.homeMode == HomeMode::HomeReady) {
         std::cout << "- tune: Start tuning\n";
         std::cout << "- perform: Start performing\n";
     }
@@ -43,21 +43,21 @@ void StateTask::displayAvailableCommands() const {
 }
 
 bool StateTask::processInput(const std::string& input) {
-    if (input == "connect" && state == State::SystemInit) {
-        state = State::Connected;
+    // 여기서는 systemState.main과 systemState.homeMode를 적절히 변경합니다.
+    // 예시 로직만 제공하며, 실제 로직은 프로젝트의 요구 사항에 따라 다를 수 있습니다.
+    if (input == "home" && systemState.main == Main::SystemInit) {
+        systemState.main = Main::Home;  // 예시로 변경
         return true;
-    } else if (input == "home" && state == State::Connected) {
-        state = State::Homing;
+    } else if (input == "tune" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady) {
+        systemState.main = Main::Tune;  // 상태 변경 예시
         return true;
-    } else if (input == "tune" && state == State::HomeReady) {
-        state = State::Tuning;
+    } else if (input == "perform" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady) {
+        systemState.main = Main::Perform;  // 상태 변경 예시
         return true;
-    } else if (input == "perform" && state == State::HomeReady) {
-        state = State::Performing;
-        return true;
-    } else if (input == "shutdown") {
-        state = State::Shutdown;
+    } 
+    else if (input == "shutdown") {
+        systemState.main = Main::Shutdown;
         return true;
     }
-    return false; // 명령어가 유효하지 않거나 현재 상태에서 허용되지 않음
+    return false; 
 }

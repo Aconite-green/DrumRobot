@@ -26,11 +26,11 @@ int main(int argc, char *argv[])
 
     
 
-    std::atomic<State> state(State::SystemInit); // 상태 관리를 위한 원자적 변수
+    SystemState systemState;
     CanSocketUtils canUtils;
     
-    StateTask stateTask(state);
-    SendLoopTask sendLoopTask(state, canUtils);
+    StateTask stateTask(systemState);
+    SendLoopTask sendLoopTask(systemState, canUtils);
 
 
     // 스레드 생성

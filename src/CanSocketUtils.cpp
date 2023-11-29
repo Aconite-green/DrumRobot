@@ -1,4 +1,5 @@
 #include "../include/CanSocketUtils.hpp"
+CanSocketUtils::CanSocketUtils(){}
 
 CanSocketUtils::CanSocketUtils(const std::vector<std::string> &ifnames) : ifnames(ifnames)
 {
@@ -272,6 +273,22 @@ void CanSocketUtils::set_all_sockets_timeout(int sec, int usec) {
         int socket_fd = socketPair.second;
         if (set_socket_timeout(socket_fd, sec, usec) != 0) {
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
+}
+
+void CanSocketUtils::releaseBusyResources() {
+    for (const auto &ifname : this->ifnames) {
+        if (is_port_up(ifname.c_str())) {
+            // 포트가 사용 중인 경우, 포트를 다운시키고 소켓을 닫음
+            down_port(ifname.c_str());
+            int socket_fd = sockets[ifname];
+            if (socket_fd >= 0) {
+                close(socket_fd);   // 기존 소켓을 닫습니다.
+                sockets[ifname] = -1; // 소켓 디스크립터 값을 초기화합니다.
+            }
+            // 포트를 다시 활성화
+            activate_port(ifname.c_str());
         }
     }
 }

@@ -33,7 +33,7 @@
 #include <QtCharts/QChartView>
 
 #include "ChartHandler.hpp"
-#include "State.hpp"
+#include "SystemState.hpp"
 
 using namespace std;
 using namespace QtCharts;
@@ -42,13 +42,13 @@ using namespace QtCharts;
 class StateTask {
 public:
     // 생성자 선언
-    StateTask(std::atomic<State>& stateRef);
+   StateTask(SystemState& systemStateRef);
 
     // operator() 함수 선언
     void operator()();
 
 private:
-    std::atomic<State>& state; // 상태 참조
+    SystemState& systemState; // 상태 참조
 
     // 추가된 private 함수들
     void displayAvailableCommands() const;

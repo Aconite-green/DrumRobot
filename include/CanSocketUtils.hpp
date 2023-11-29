@@ -35,24 +35,24 @@ public:
     void restart_all_can_ports();
     void set_all_sockets_timeout(int sec, int usec);
     void clear_all_can_buffers();
-    
 
-    std::map<std::string, int> sockets; 
+    std::map<std::string, int> sockets;
 
 private:
     std::vector<std::string> ifnames;
-    
-    //Port
+
+    // Port
     bool is_port_up(const char *port);
     void activate_port(const char *port);
     void list_and_activate_available_can_ports();
     void down_port(const char *port);
 
-    //Network (Socket)
+    // Network (Socket)
     int create_socket(const std::string &ifname);
     int set_socket_timeout(int socket, int sec, int usec);
-   
-    //Recieve Buffer Uitility
+    void releaseBusyResources();
+
+    // Recieve Buffer Uitility
     void clearCanBuffer(int canSocket);
 };
 
