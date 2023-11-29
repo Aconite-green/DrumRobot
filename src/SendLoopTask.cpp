@@ -5,7 +5,6 @@ SendLoopTask::SendLoopTask(SystemState &systemStateRef, CanSocketUtils &canUtils
 {
 }
 
-// SendLoopTask 클래스의 operator() 함수
 void SendLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
@@ -240,7 +239,7 @@ void SendLoopTask::ActivateControlTask()
     }
 }
 
-/////////////////////////// [ HOME ] ///////////////////////////
+/////////////////////////// [         HOME        ] ///////////////////////////
 
 void SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 {
@@ -285,31 +284,6 @@ void SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
     }
 }
 
-void SendLoopTask::FixMotorPosition()
-{
-    struct can_frame frame;
-    for (const auto &motorPair : tmotors)
-    {
-        std::string name = motorPair.first;
-        std::shared_ptr<TMotor> motor = motorPair.second;
-        CheckCurrentPosition(motor);
-
-        TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success)
-                       {
-                           if (success)
-                           {
-                               std::cout << "Position fixed for motor [" << motorName << "]." << std::endl;
-                           }
-                           else
-                           {
-                               std::cerr << "Failed to fix position for motor [" << motorName << "]." << std::endl;
-                           }
-                       });
-    }
-}
-
 void SendLoopTask::SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName)
 {
     auto interface_name = motor->interFaceName;
@@ -339,6 +313,7 @@ void SendLoopTask::SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can
         std::cerr << "Socket not found for interface: " << interface_name << std::endl;
     }
 }
+
 bool SendLoopTask::PromptUserForHoming(const std::string &motorName)
 {
     char userResponse;
@@ -388,7 +363,7 @@ void SendLoopTask::SetHome()
         {"L_arm2", -1.0},
         {"L_arm3", -1.0}};
 
-    canUtils.set_all_sockets_timeout(5/*sec*/, 0);
+    canUtils.set_all_sockets_timeout(5 /*sec*/, 0);
 
     for (auto &motor_pair : tmotors)
     {
@@ -433,5 +408,32 @@ void SendLoopTask::SetHome()
 
     cout << "All in Home\n";
     DeactivateSensor();
+}
+
+/////////////////////////// [         TUNE        ] ///////////////////////////
+
+void SendLoopTask::FixMotorPosition()
+{
+    struct can_frame frame;
+    for (const auto &motorPair : tmotors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<TMotor> motor = motorPair.second;
+        CheckCurrentPosition(motor);
+
+        TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success)
+                       {
+                           if (success)
+                           {
+                               std::cout << "Position fixed for motor [" << motorName << "]." << std::endl;
+                           }
+                           else
+                           {
+                               std::cerr << "Failed to fix position for motor [" << motorName << "]." << std::endl;
+                           }
+                       });
+    }
 }
 //
