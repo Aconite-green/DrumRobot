@@ -7,9 +7,7 @@ Task::Task(map<string, shared_ptr<TMotor>, CustomCompare> &input_tmotors,
       canUtils(extractIfnamesFromMotors(input_tmotors)) // 멤버 초기화
 {
     state.store(0);
-    chartHandler = nullptr;
 }
-
 vector<string> Task::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
 {
     set<string> interface_names;
@@ -100,7 +98,7 @@ void Task::operator()()
         }
     }
     DeactivateControlTask();
-    emit chartHandler->requestQuit();
+    
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,26 +369,7 @@ void Task::Tuning(float kp, float kd, float sine_t, const std::string selectedMo
         }
     }
 
-    /*
-
-    std::string fileName;
-
-
-
-    // 파일 이름 자동 설정
-    std::string folderName = "TuningData";
-    std::string baseName = ss.str(); // ss.str()로 stringstream의 내용을 std::string으로 가져옵니다.
-    fileName = folderName + "/" + baseName;
-
-    // CSV 파일을 쓰기 모드로 열기
-
-    std::ofstream csvFile(fileName);
-    if (!csvFile.is_open())
-    {
-        std::cerr << "Failed to open file: " << fileName << std::endl;
-        return; // 또는 다른 오류 처리
-    }
-    */
+    canUtils.set_all_sockets_timeout(0, 50000);
 
     std::stringstream ss;
     ss << std::fixed << std::setprecision(2); // 소수점 둘째 자리까지만
@@ -541,12 +520,12 @@ void Task::TuningLoopTask()
     InitializeTuningParameters(selectedMotor, kp, kd, peakAngle, pathType);
     while (true)
     {
-        /*int result = system("clear");
+        int result = system("clear");
         if (result != 0)
         {
             std::cerr << "Error during clear screen" << std::endl;
         }
-        */
+        
         std::string pathTypeDescription;
         if (pathType == 1)
         {
@@ -640,13 +619,7 @@ void Task::TuningLoopTask()
         {
             Task::Tuning(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
         }
-        else if (userInput[0] == 'a')
-        {
-            if (chartHandler)
-            {
-                emit chartHandler->displayChartSignal();
-            }
-        }
+        
     }
 }
 
@@ -671,10 +644,7 @@ void Task::InitializeTuningParameters(const std::string selectedMotor, float &kp
     // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
 }
 
-void Task::setChartHandler(ChartHandler *handler)
-{
-    chartHandler = handler;
-}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions for DrumRobot PathGenerating
 //////////////////////////////////////////////////////////////////////////////////////////////////

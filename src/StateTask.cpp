@@ -43,10 +43,8 @@ void StateTask::displayAvailableCommands() const {
 }
 
 bool StateTask::processInput(const std::string& input) {
-    // 여기서는 systemState.main과 systemState.homeMode를 적절히 변경합니다.
-    // 예시 로직만 제공하며, 실제 로직은 프로젝트의 요구 사항에 따라 다를 수 있습니다.
     if (input == "home" && systemState.main == Main::SystemInit) {
-        systemState.main = Main::Home;  // 예시로 변경
+        systemState.main = Main::Home;  
         return true;
     } else if (input == "tune" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady) {
         systemState.main = Main::Tune;  // 상태 변경 예시

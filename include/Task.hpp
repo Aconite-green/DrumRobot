@@ -26,18 +26,13 @@
 #include <cmath>
 #include <chrono>
 #include <set>
-#include <QtCharts/QChart>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QChartView>
 
-#include "ChartHandler.hpp"
 
-#define Pause 1
 #define Terminate 2
 #define Resume 0
 
 using namespace std;
-using namespace QtCharts;
+
 
 class Task
 {
@@ -49,7 +44,7 @@ public:
 
     void operator()();
 
-    void setChartHandler(ChartHandler *handler);
+   
 
 private:
     map<string, shared_ptr<TMotor>, CustomCompare> &tmotors;
@@ -72,7 +67,7 @@ private:
     void Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
     void InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
-    ChartHandler *chartHandler;
+    
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0};

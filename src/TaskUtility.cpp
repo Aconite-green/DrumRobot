@@ -116,18 +116,4 @@ int kbhit()
     return 0;
 }
 
-void drawChart(QtCharts::QLineSeries *series) {
-    
-    QtCharts::QChart *chart = new QtCharts::QChart();
-    chart->addSeries(series);
-    chart->createDefaultAxes();
-    
-    QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
-    
-    QMainWindow *window = new QMainWindow;
-    window->setCentralWidget(chartView);
-    window->resize(800, 600);
-    window->show();
-}
 

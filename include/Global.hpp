@@ -14,6 +14,7 @@
  *    create
  *
  **********************************************************************/
+#pragma once
 
 #include "ICPDAS_USBIO.hpp"
 #include "USBIO_Object_Layout.hpp"

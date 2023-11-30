@@ -29,27 +29,27 @@
 #include <chrono>
 #include <set>
 
-
-
 #include "SystemState.hpp"
 
 using namespace std;
 
-
-
-class StateTask {
+class RecieveLoopTask
+{
 public:
     // 생성자 선언
-   StateTask(SystemState& systemStateRef);
+    RecieveLoopTask(SystemState &systemStateRef, CanSocketUtils &canUtilsRef);
 
     // operator() 함수 선언
     void operator()();
 
 private:
-    SystemState& systemState; // 상태 참조
+    SystemState &systemState;
+    CanSocketUtils &canUtils;
+    std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> tmotors; // 모터 배열
+    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
 
-    // 추가된 private 함수들
-    void displayAvailableCommands() const;
-    std::string getStateName() const;
-    bool processInput(const std::string& input);
+    TMotorCommandParser TParser;
+    MaxonCommandParser MParser;
+
+    
 };

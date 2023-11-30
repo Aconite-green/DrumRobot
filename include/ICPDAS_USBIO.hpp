@@ -19,6 +19,8 @@
  *
  **********************************************************************/
 
+#pragma once
+
 /* Linux */
 #include "USBIO_Device.hpp"
 #include <linux/types.h>
