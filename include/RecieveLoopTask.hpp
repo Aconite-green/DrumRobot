@@ -30,6 +30,7 @@
 #include <set>
 
 #include "SystemState.hpp"
+#include "SenSor.hpp"
 
 using namespace std;
 
@@ -48,8 +49,16 @@ private:
     std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> tmotors; // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
 
+    queue<can_frame> recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
 
-    
+    const int NUM_FRAMES = 20;
+    const int TIME_THRESHOLD_MS = 5;
+    int writeFailCount = 0;
+
+    void checkUserInput();
+    void RecieveLoop(queue<can_frame> &recieveBuffer);
+    void handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer);
+    void parse_and_save_to_csv(const std::string &csv_file_name);
 };

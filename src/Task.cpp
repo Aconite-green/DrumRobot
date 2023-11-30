@@ -1244,7 +1244,7 @@ void Task::SendLoopTask(std::queue<can_frame> &sendBuffer)
     while (state.load() != Terminate)
     {
 
-        if (state.load() == Pause)
+        if (state.load() == Terminate)
         {
             continue;
         }
@@ -1397,7 +1397,7 @@ void Task::checkUserInput()
     {
         char input = getchar();
         if (input == 'q')
-            state = Pause;
+            state = Terminate;
         else if (input == 'e')
             state = Terminate;
         else if (input == 'r')
@@ -1471,7 +1471,7 @@ void Task::RecieveLoopTask(queue<can_frame> &recieveBuffer)
     {
         checkUserInput();
 
-        if (state.load() == Pause)
+        if (state.load() == Terminate)
         {
             continue;
         }
@@ -1510,7 +1510,7 @@ void Task::SensorLoopTask(queue<int> &sensorBuffer)
         if ((DIValue >> i) & 1)
         {
             printf("Ch%2d DI  On   \n", i);
-            state = Pause;
+            state = Terminate;
             return;
         }
     }

@@ -1,7 +1,7 @@
 #include "../include/SendLoopTask.hpp"
 
 SendLoopTask::SendLoopTask(SystemState &systemStateRef, CanSocketUtils &canUtilsRef)
-    : systemState(systemStateRef), canUtils(canUtilsRef)
+    : systemState(systemStateRef), canUtils(canUtilsRef), pathManager(sendBuffer, tmotors)
 {
 }
 
@@ -19,7 +19,11 @@ void SendLoopTask::operator()()
             break;
 
         case Main::Home:
-
+            if (systemState.homeMode == HomeMode::Homing)
+            {
+                SetHome();
+                systemState.homeMode = HomeMode::HomeReady;
+            }
             break;
 
         case Main::Tune:
@@ -28,14 +32,20 @@ void SendLoopTask::operator()()
             break;
 
         case Main::Perform:
-            // Performing 상태에서의 동작
+            SendLoop();
+            systemState.main = Main::Home;
             break;
 
-            // ... 기타 상태에 따른 동작 ...
-
-        default:
-            // 기본적인 동작이나 대기 로직
+        case Main::Ready:
+            if (CheckAllMotorsCurrentPosition())
+            {
+                pathManager.GetReadyArr();
+            };
+            SendReadyLoop();
             break;
+
+        case Main::Shutdown:
+            DeactivateControlTask();
         }
     }
 }
@@ -238,6 +248,9 @@ void SendLoopTask::ActivateControlTask()
     {
         std::cout << "No Maxon motors to process." << std::endl;
     }
+
+    //Sensor 동작 확인
+    Sensor sensor;
 }
 
 void SendLoopTask::DeactivateControlTask()
@@ -325,16 +338,13 @@ void SendLoopTask::DeactivateControlTask()
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-void SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
+bool SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-
     canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
     canUtils.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
-    // 상태 확인
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
     if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
     {
         int socket_descriptor = canUtils.sockets.at(interface_name);
@@ -342,27 +352,28 @@ void SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 
         if (bytesWritten == -1)
         {
-            std::cerr << "Failed to write to socket for interface: " << interface_name << std::endl;
-            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
         }
 
         ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
-
         if (bytesRead == -1)
         {
-            std::cerr << "Failed to read to socket for interface: " << interface_name << std::endl;
-            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
         }
 
         std::tuple<int, float, float, float> parsedData = TParser.parseRecieveCommand(*motor, &frame);
         motor->currentPos = std::get<1>(parsedData);
-
-        cout << "Current Position of "
-             << "[" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
+        cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
+        return true;
     }
     else
     {
-        std::cerr << "Socket not found for interface: " << interface_name << std::endl;
+        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
+        return false;
     }
 }
 
@@ -439,7 +450,6 @@ struct MotorSettings
 void SendLoopTask::SetHome()
 {
     struct can_frame frameToProcess;
-    ActivateSensor();
 
     // 각 모터의 방향 및 센서 비트 설정
     std::map<std::string, MotorSettings> motorSettings = {
@@ -499,7 +509,6 @@ void SendLoopTask::SetHome()
     }
 
     cout << "All in Home\n";
-    DeactivateSensor();
 }
 
 float SendLoopTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit)
@@ -507,13 +516,14 @@ float SendLoopTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, co
     float firstPosition = 0.0f, secondPosition = 0.0f;
     bool firstSensorTriggered = false;
     bool secondSensorTriggered = false;
+    Sensor sensor;
 
     cout << "Moving " << motorName << " to sensor location.\n";
 
     while (true)
     {
-        USBIO_DI_ReadValue(DevNum, &DIValue);
-        bool sensorTriggered = ((DIValue >> sensorBit) & 1) != 0;
+
+        bool sensorTriggered = ((sensor.ReadVal() >> sensorBit) & 1) != 0;
 
         if (!firstSensorTriggered && sensorTriggered)
         {
@@ -851,17 +861,11 @@ void SendLoopTask::InitializeTuningParameters(const std::string selectedMotor, f
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                                   PATH.hpp                                 */
-///////////////////////////////////////////////////////////////////////////////
-
-
-
-/////////////////////////////////////////////////////////////////////////////////
 /*                                  PERFORM                                   */
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename MotorMap>
-void SendLoopTask::writeToSocket(MotorMap &motorMap, std::queue<can_frame> &sendBuffer, const std::map<std::string, int> &sockets)
+void SendLoopTask::writeToSocket(MotorMap &motorMap, const std::map<std::string, int> &sockets)
 {
     struct can_frame frameToProcess;
 
@@ -900,7 +904,7 @@ void SendLoopTask::writeToSocket(MotorMap &motorMap, std::queue<can_frame> &send
     }
 }
 
-void SendLoopTask::SendLoop(std::queue<can_frame> &sendBuffer)
+void SendLoopTask::SendLoop()
 {
 
     struct can_frame frameToProcess;
@@ -916,22 +920,22 @@ void SendLoopTask::SendLoop(std::queue<can_frame> &sendBuffer)
 
         if (sendBuffer.size() <= 10)
         {
-            if (line < end)
+            if (pathManager.line < pathManager.end)
             {
-                cout << "line : " << line << ", end : " << end << "\n";
-                PathLoopTask(sendBuffer);
+                cout << "line : " << pathManager.line << ", end : " << pathManager.end << "\n";
+                pathManager.PathLoopTask(sendBuffer);
                 std::cout << sendBuffer.size() << "\n";
-                line++;
+                pathManager.line++;
             }
-            else if (line == end)
+            else if (pathManager.line == pathManager.end)
             {
                 cout << "Turn Back\n";
-                GetBackArr();
-                line++;
+                pathManager.GetBackArr();
+                pathManager.line++;
             }
             else if (sendBuffer.size() == 0)
             {
-                systemState.runMode == RunMode::Stop;
+                systemState.runMode = RunMode::Stop;
                 cout << "Performance is Over\n";
             }
         }
@@ -943,11 +947,11 @@ void SendLoopTask::SendLoop(std::queue<can_frame> &sendBuffer)
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(tmotors, sendBuffer, canUtils.sockets);
+            writeToSocket(tmotors, canUtils.sockets);
 
             if (!maxonMotors.empty())
             {
-                writeToSocket(maxonMotors, sendBuffer, canUtils.sockets);
+                writeToSocket(maxonMotors, canUtils.sockets);
 
                 // sync 신호 전송
                 frameToProcess = sendBuffer.front();
@@ -984,7 +988,7 @@ void SendLoopTask::SendLoop(std::queue<can_frame> &sendBuffer)
     csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
-    for (const auto &row : q)
+    for (const auto &row : pathManager.q)
     {
         for (const double cell : row)
         {
@@ -1005,6 +1009,62 @@ void SendLoopTask::SendLoop(std::queue<can_frame> &sendBuffer)
     std::cout << "SendLoop terminated\n";
 }
 
+bool SendLoopTask::CheckAllMotorsCurrentPosition()
+{
+    bool allMotorsChecked = true;
+    for (const auto &motor_pair : tmotors)
+    {
+        std::shared_ptr<TMotor> motor = motor_pair.second;
+        cout << "Checking position for motor: " << motor_pair.first << endl;
+        bool motorChecked = CheckCurrentPosition(motor);
+        if (!motorChecked)
+        {
+            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+            allMotorsChecked = false;
+        }
+    }
+    return allMotorsChecked;
+}
 
+void SendLoopTask::SendReadyLoop()
+{
+    struct can_frame frameToProcess;
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
+    while (sendBuffer.size() != 0)
+    {
+        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+
+        if (elapsed_time.count() >= 5000) // 5ms
+        {
+            external = std::chrono::system_clock::now();
+
+            writeToSocket(tmotors, canUtils.sockets);
+
+            if (!maxonMotors.empty())
+            {
+                writeToSocket(maxonMotors, canUtils.sockets);
+
+                // sync 신호 전송
+                frameToProcess = sendBuffer.front();
+                sendBuffer.pop();
+                auto it = canUtils.sockets.find(maxonMotors.begin()->second->interFaceName);
+
+                if (it != canUtils.sockets.end())
+                {
+                    int socket_descriptor_for_sync = it->second;
+                    ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
+
+                    handleError(bytesWritten, maxonMotors.begin()->second->interFaceName);
+                }
+                else
+                {
+                    std::cerr << "Socket not found for interface: " << maxonMotors.begin()->second->interFaceName << std::endl;
+                }
+            }
+        }
+    }
+    canUtils.clear_all_can_buffers();
+}
 //
