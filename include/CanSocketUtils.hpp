@@ -27,25 +27,33 @@ public:
     static const int ERR_SOCKET_CREATE_FAILURE = -1;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
     // Public Methods
-    CanSocketUtils(const std::vector<std::string> &ifnames);
+    CanSocketUtils();
     ~CanSocketUtils();
 
-    int create_socket(const std::string &ifname); // 여러 if_name에 대해 소켓을 생성
-    
+    CanSocketUtils(const std::vector<std::string> &ifnames);
 
-    void list_and_activate_available_can_ports();
+    void restart_all_can_ports();
+    void set_all_sockets_timeout(int sec, int usec);
+    void clear_all_can_buffers();
 
-    const std::map<std::string, int> &getSockets() const
-    {
-        return sockets;
-    }
+    std::map<std::string, int> sockets;
 
 private:
+    std::vector<std::string> ifnames;
+
+    // Port
     bool is_port_up(const char *port);
     void activate_port(const char *port);
-    std::vector<std::string> ifnames;
-    std::map<std::string, int> sockets; // 각 if_name에 대한 소켓 디스크립터를 저장
-};
+    void list_and_activate_available_can_ports();
+    void down_port(const char *port);
 
+    // Network (Socket)
+    int create_socket(const std::string &ifname);
+    int set_socket_timeout(int socket, int sec, int usec);
+    void releaseBusyResources();
+
+    // Recieve Buffer Uitility
+    void clearCanBuffer(int canSocket);
+};
 
 #endif // CAN_SOCKET_UTILS_H

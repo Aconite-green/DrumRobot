@@ -1,4 +1,5 @@
 #include "../include/CanSocketUtils.hpp"
+CanSocketUtils::CanSocketUtils(){}
 
 CanSocketUtils::CanSocketUtils(const std::vector<std::string> &ifnames) : ifnames(ifnames)
 {
@@ -114,8 +115,6 @@ void CanSocketUtils::activate_port(const char *port)
     }
 }
 
-#include <iostream> // std::cout을 사용하기 위해 필요
-
 void CanSocketUtils::list_and_activate_available_can_ports()
 {
     int portCount = 0; // CAN 포트 수를 세기 위한 변수
@@ -167,5 +166,129 @@ void CanSocketUtils::list_and_activate_available_can_ports()
     {
         printf("No CAN port found. Exiting...\n");
         exit(1);
+    }
+}
+
+void CanSocketUtils::restart_all_can_ports()
+{
+    // 먼저 모든 포트를 down 시킵니다.
+    for (const auto &port : ifnames)
+    {
+        down_port(port.c_str());
+        
+
+        int socket_fd = sockets[port];
+        if (socket_fd >= 0)
+        {
+            close(socket_fd);   // 기존 소켓을 닫습니다.
+            sockets[port] = -1; // 소켓 디스크립터 값을 초기화합니다.
+        }
+    }
+
+    // 각 포트에 대해 새로운 소켓을 생성하고 디스크립터를 업데이트합니다.
+    for (const auto &port : ifnames)
+    {
+        usleep(100000); // 100ms 대기
+        activate_port(port.c_str());
+        
+
+        int new_socket_fd = create_socket(port);
+        if (new_socket_fd < 0)
+        {
+            // 새로운 소켓 생성에 실패한 경우 처리
+            fprintf(stderr, "Failed to create a new socket for port: %s\n", port.c_str());
+        }
+        else
+        {
+            sockets[port] = new_socket_fd;                               // 소켓 디스크립터 값을 업데이트합니다.
+        }
+    }
+}
+
+void CanSocketUtils::down_port(const char *port)
+{
+    char command[100];
+    snprintf(command, sizeof(command), "sudo ip link set %s down", port);
+    int ret = system(command);
+    if (ret != 0)
+    {
+        fprintf(stderr, "Failed to down port: %s\n", port);
+    }
+}
+
+void CanSocketUtils::clear_all_can_buffers() {
+    for (const auto &socketPair : sockets) {
+        int socket_fd = socketPair.second;
+        clearCanBuffer(socket_fd);
+    }
+}
+
+void CanSocketUtils::clearCanBuffer(int canSocket) {
+    struct can_frame frame;
+    fd_set readSet;
+    struct timeval timeout;
+
+    // 수신 대기 시간 설정
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0; // 즉시 반환
+
+    while (true) {
+        FD_ZERO(&readSet);
+        FD_SET(canSocket, &readSet);
+
+        // 소켓에서 읽을 데이터가 있는지 확인
+        int selectRes = select(canSocket + 1, &readSet, NULL, NULL, &timeout);
+
+        if (selectRes > 0) {
+            // 수신 버퍼에서 데이터 읽기
+            ssize_t nbytes = read(canSocket, &frame, sizeof(struct can_frame));
+
+            if (nbytes <= 0) {
+                // 읽기 실패하거나 더 이상 읽을 데이터가 없음
+                break;
+            }
+        } else {
+            // 읽을 데이터가 없음
+            break;
+        }
+    }
+}
+
+
+int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec) {
+    struct timeval timeout;
+    timeout.tv_sec = sec;
+    timeout.tv_usec = usec;
+
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+        perror("setsockopt failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+void CanSocketUtils::set_all_sockets_timeout(int sec, int usec) {
+    for (const auto &socketPair : sockets) {
+        int socket_fd = socketPair.second;
+        if (set_socket_timeout(socket_fd, sec, usec) != 0) {
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
+}
+
+void CanSocketUtils::releaseBusyResources() {
+    for (const auto &ifname : this->ifnames) {
+        if (is_port_up(ifname.c_str())) {
+            // 포트가 사용 중인 경우, 포트를 다운시키고 소켓을 닫음
+            down_port(ifname.c_str());
+            int socket_fd = sockets[ifname];
+            if (socket_fd >= 0) {
+                close(socket_fd);   // 기존 소켓을 닫습니다.
+                sockets[ifname] = -1; // 소켓 디스크립터 값을 초기화합니다.
+            }
+            // 포트를 다시 활성화
+            activate_port(ifname.c_str());
+        }
     }
 }

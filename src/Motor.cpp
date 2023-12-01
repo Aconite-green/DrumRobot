@@ -3,7 +3,7 @@
 #include <iostream>
 
 TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)
-    : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName) // 멤버 변수 초기화
+    : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName)
 {
     // 공통된 초기값 설정
     pMin = -12.5;
@@ -74,23 +74,28 @@ void TMotor::setLimits()
     }
 }
 
-CanFrameInfo TMotor::getCanFrameForCheckMotor() {
+CanFrameInfo TMotor::getCanFrameForCheckMotor()
+{
     return {this->nodeId, 8, {0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00}};
 }
 
-CanFrameInfo TMotor::getCanFrameForControlMode() {
+CanFrameInfo TMotor::getCanFrameForControlMode()
+{
     return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC}};
 }
 
-CanFrameInfo TMotor::getCanFrameForExit() {
+CanFrameInfo TMotor::getCanFrameForExit()
+{
     return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD}};
 }
 
-CanFrameInfo TMotor::getCanFrameForZeroing() {
+CanFrameInfo TMotor::getCanFrameForZeroing()
+{
     return {this->nodeId, 8, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE}};
 }
 
-CanFrameInfo TMotor::getCanFrameForQuickStop() {
+CanFrameInfo TMotor::getCanFrameForQuickStop()
+{
     return {this->nodeId, 8, {0x80, 0x00, 0x80, 0x00, 0x00, 0x00, 0x08, 0x00}};
 }
 
@@ -98,8 +103,8 @@ CanFrameInfo TMotor::getCanFrameForQuickStop() {
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& txPdoIds,const std::vector<uint32_t>& rxPdoIds, const std::string &interFaceName)
-: nodeId(nodeId), interFaceName(interFaceName)
+MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &txPdoIds, const std::vector<uint32_t> &rxPdoIds, const std::string &interFaceName)
+    : nodeId(nodeId), interFaceName(interFaceName)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;
@@ -130,37 +135,43 @@ MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t>& txPdoIds,co
     }
 }
 
-
-CanFrameInfo MaxonMotor::getCanFrameForCheckMotor() {
+CanFrameInfo MaxonMotor::getCanFrameForCheckMotor()
+{
     return {this->canSendId, 8, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForControlMode() {
+CanFrameInfo MaxonMotor::getCanFrameForControlMode()
+{
     return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x08, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForPosOffset() {
+CanFrameInfo MaxonMotor::getCanFrameForPosOffset()
+{
     return {this->canSendId, 8, {0x22, 0xB0, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForExit() {
+CanFrameInfo MaxonMotor::getCanFrameForExit()
+{
     return {0x00, 8, {0x02, this->nodeId, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForOperational() {
+CanFrameInfo MaxonMotor::getCanFrameForOperational()
+{
     return {0x00, 8, {0x01, this->nodeId, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForEnable() {
+CanFrameInfo MaxonMotor::getCanFrameForEnable()
+{
     return {this->txPdoIds[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset() {
+CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset()
+{
     return {this->canSendId, 8, {0x22, 0xB2, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-
-CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
+CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition)
+{
     // 10진수 targetPosition을 16진수로 변환
     // 1[revolve] = 4096[inc] * 35[gear ratio]
     unsigned char posByte0 = targetPosition & 0xFF;         // 하위 8비트
@@ -171,10 +182,12 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition) {
     return {this->txPdoIds[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForSync() {
+CanFrameInfo MaxonMotor::getCanFrameForSync()
+{
     return {0x80, 1, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForQuickStop() {
+CanFrameInfo MaxonMotor::getCanFrameForQuickStop()
+{
     return {this->txPdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
