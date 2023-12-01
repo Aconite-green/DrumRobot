@@ -100,7 +100,7 @@ void ThreadLoopTask::operator()()
                             std::cout << "Current File (" << tuningTask.fileName << ") Does Not Exist\n";
                         }
                         std::cout << "\n\n";
-                        std::cout << "Enter run, kp, kd, period, file, exit : \n";
+                        std::cout << "Enter run, kp, kd, period, exit : \n";
                         std::cin >> userInput;
                         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
                         if (userInput == "run")

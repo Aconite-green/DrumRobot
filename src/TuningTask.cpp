@@ -70,7 +70,7 @@ void TuningTask::operator()()
     struct can_frame frame;
 
     float sample_time = 0.005;
-    int cycles = 2;
+    int cycles = 4;
     int max_samples = static_cast<int>(sine_t / sample_time);
     float v_des = 0;
     float tff_des = 0;
