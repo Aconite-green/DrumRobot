@@ -51,6 +51,7 @@ void StateTask::displayAvailableCommands() const
     if (systemState.homeMode == HomeMode::NotHome)
     {
         std::cout << "- homing: Start homing\n";
+        std::cout << "- xhome : Make home state by user\n";
     }
     else if (systemState.homeMode == HomeMode::HomeReady)
     {
@@ -80,6 +81,11 @@ bool StateTask::processInput(const std::string &input)
     else if (input == "ready" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady)
     {
         systemState.main = Main::Ready;
+        return true;
+    }
+    else if (input == "xhome" && systemState.main == Main::Home && systemState.homeMode == HomeMode::NotHome)
+    {
+        systemState.homeMode = HomeMode::HomeReady; // 상태 변경 예시
         return true;
     }
     else if (input == "shutdown")

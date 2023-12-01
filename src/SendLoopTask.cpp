@@ -415,13 +415,13 @@ bool SendLoopTask::PromptUserForHoming(const std::string &motorName)
     return userResponse == 'y';
 }
 
-void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, float midpoint)
+void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
     struct can_frame frameToProcess;
     CheckCurrentPosition(motor);
-    // 수정된 부분: midpoint를 고려하여 targetRadian 계산
-    const double targetRadian = (M_PI / 2 * direction) + midpoint + (motor->currentPos); // 90도 회전 + midpoint
-    int totalSteps = 8000 / 5;                                                           // 8초 동안 5ms 간격으로 나누기
+    // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
+    const double targetRadian = (degree * M_PI / 180.0) * direction + midpoint; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
+    int totalSteps = 8000 / 5; // 8초 동안 5ms 간격으로 나누기
 
     auto startTime = std::chrono::system_clock::now();
     for (int step = 0; step < totalSteps; ++step)
@@ -433,13 +433,14 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
         }
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
-        double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps);
+        double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
         TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, 50, 1, 0);
         SendCommandToMotor(motor, frameToProcess, motorName);
 
         startTime = std::chrono::system_clock::now();
     }
 }
+
 
 struct MotorSettings
 {
@@ -487,7 +488,7 @@ void SendLoopTask::SetHome()
         cout << "\nPress Enter to move to Home Position\n";
         getchar();
 
-        RotateMotor(motor, motor_pair.first, -settings.direction, midpoint);
+        RotateMotor(motor, motor_pair.first, -settings.direction, 90, midpoint);
 
         cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
         // 모터를 멈추는 신호를 보냄
@@ -504,7 +505,7 @@ void SendLoopTask::SetHome()
 
         if (motor_pair.first == "L_arm1" || motor_pair.first == "R_arm1")
         {
-            RotateMotor(motor, motor_pair.first, settings.direction, 0);
+            RotateMotor(motor, motor_pair.first, settings.direction, 90,0);
         }
     }
 
