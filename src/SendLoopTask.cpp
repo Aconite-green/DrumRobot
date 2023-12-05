@@ -436,8 +436,8 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
     struct can_frame frameToProcess;
     CheckCurrentPosition(motor);
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
-    const double targetRadian = (degree * M_PI / 180.0) * direction + midpoint; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
-    int totalSteps = 8000 / 5;                                                  // 8초 동안 5ms 간격으로 나누기
+    const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
+    int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
 
     auto startTime = std::chrono::system_clock::now();
     for (int step = 0; step < totalSteps; ++step)
@@ -450,7 +450,7 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
         double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
-        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, 50, 1, 0);
+        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, 300, 2.5, 0);
         SendCommandToMotor(motor, frameToProcess, motorName);
 
         startTime = std::chrono::system_clock::now();
@@ -469,16 +469,25 @@ void SendLoopTask::SetHome()
 
     // 각 모터의 방향 및 센서 비트 설정
     std::map<std::string, MotorSettings> motorSettings = {
-        {"R_arm1", {1.0, 1}}, // 예시: R_arm1 모터의 방향 1.0, 센서 비트 0
-        {"L_arm1", {1.0, 0}},
-        {"R_arm2", {1.0, 2}},
+        {"R_arm1", {1.0, 0}}, // 예시: R_arm1 모터의 방향 1.0, 센서 비트 0
+        {"L_arm1", {1.0, 1}},
+        {"R_arm2", {1.0, 0}},
         {"R_arm3", {1.0, 0}},
         {"L_arm2", {-1.0, 0}},
-        {"L_arm3", {-1.0, 0}},
+        {"L_arm3", {-1.0, 2}},
         // ... 다른 모터 설정 ...
     };
 
-    canUtils.set_all_sockets_timeout(5 /*sec*/, 0);
+    
+    for (const auto &socketPair : canUtils.sockets)
+    {
+        int hsocket = socketPair.second;
+        if (set_socket_timeout(hsocket, 5, 0) != 0)
+        {
+            // 타임아웃 설정 실패 처리
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
 
     for (auto &motor_pair : tmotors)
     {
@@ -491,28 +500,34 @@ void SendLoopTask::SetHome()
         if (!PromptUserForHoming(motor_pair.first)) // 사용자에게 홈 설정을 묻는 함수
             continue;
 
-        double initialDirection = 0.2 * settings.direction;
+        // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
+        double initialDirection = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? (-0.2) * settings.direction : 0.2 * settings.direction;
 
-        double additionalTorque = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? settings.direction * 1 : 0;
+        double additionalTorque = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? settings.direction * (-1.6) : 0;
         TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
         SendCommandToMotor(motor, frameToProcess, motor_pair.first);
 
         float midpoint = MoveMotorToSensorLocation(motor, motor_pair.first, settings.sensorBit); // 모터를 센서 위치까지 이동시키는 함수, 센서 비트 전달
                                                                                                  // 모터를 센서 위치까지 이동시키는 함수
 
-        std::cout << "\nPress Enter to move to Home Position\n";
+        cout << "\nPress Enter to move to Home Position\n";
         getchar();
 
-        RotateMotor(motor, motor_pair.first, -settings.direction, 90, midpoint);
+        double degree = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? -30.0 : 90.0;
+        midpoint = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? (-1) * midpoint : midpoint;
+        RotateMotor(motor, motor_pair.first, -settings.direction, degree, midpoint);
 
-        std::cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
+        cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
         // 모터를 멈추는 신호를 보냄
         TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
         SendCommandToMotor(motor, frameToProcess, motor_pair.first);
 
+        sleep(1);
         // 그 상태에서 setzero 명령을 보냄(현재 position을 0으로 인식)
         fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
         SendCommandToMotor(motor, frameToProcess, motor_pair.first);
+        
+       //CheckCurrentPosition();
 
         // 상태 확인
         fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForCheckMotor());
@@ -522,9 +537,16 @@ void SendLoopTask::SetHome()
         {
             RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
         }
+
+        /*
+        if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
+        {
+            RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
+        }
+        */
     }
 
-    std::cout << "All in Home\n";
+    cout << "All in Home\n";
 }
 
 float SendLoopTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit)
@@ -538,7 +560,6 @@ float SendLoopTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, co
 
     while (true)
     {
-
         bool sensorTriggered = ((sensor.ReadVal() >> sensorBit) & 1) != 0;
 
         if (!firstSensorTriggered && sensorTriggered)
@@ -565,8 +586,8 @@ float SendLoopTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, co
     }
 
     // 1번과 2번 위치의 차이의 절반을 저장
-    float positionDifference = (secondPosition - firstPosition) / 2.0f;
-    std::cout << motorName << " midpoint position: " << positionDifference << endl;
+    float positionDifference = abs((secondPosition - firstPosition) / 2.0f);
+    cout << motorName << " midpoint position: " << positionDifference << endl;
 
     return positionDifference;
 }
