@@ -85,13 +85,16 @@ private:
     double s = 0.600;
     double z0 = 0.000;
 
-    
+    vector<double> Q1, Q2, Q3, Q4;
+    vector<vector<double>> p;
+    vector<vector<double>> v;
 
     map<string, int> motor_mapping = {
         {"L_arm1", 2}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_arm1", 1}, {"R_arm2", 3}, {"R_arm3", 4}, {"waist", 0}};
 
     string trimWhitespace(const std::string &str);
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
+    void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
 
 };

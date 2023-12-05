@@ -38,6 +38,87 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
     return Qi;
 }
 
+// 행렬의 determinant 계산 함수
+double determinant(double mat[3][3])
+{
+    return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
+           mat[0][1] * (mat[1][0] * mat[2][2] - mat[2][0] * mat[1][2]) +
+           mat[0][2] * (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]);
+}
+
+// 역행렬 계산 함수
+void inverseMatrix(double mat[3][3], double inv[3][3])
+{
+    double det = determinant(mat);
+
+    if (det == 0)
+    {
+        std::cerr << "역행렬이 존재하지 않습니다." << std::endl;
+        return;
+    }
+
+    double invDet = 1.0 / det;
+
+    inv[0][0] = (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) * invDet;
+    inv[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) * invDet;
+    inv[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * invDet;
+
+    inv[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) * invDet;
+    inv[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * invDet;
+    inv[1][2] = (mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2]) * invDet;
+
+    inv[2][0] = (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]) * invDet;
+    inv[2][1] = (mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1]) * invDet;
+    inv[2][2] = (mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]) * invDet;
+}
+
+void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t)
+{
+    vector<double> V1;
+    vector<double> p_out;
+    vector<double> v_out;
+    for (size_t i = 0; i < P0.size(); ++i)
+    {
+        if ((P1[i] - P0[i]) / (P2[i] - P1[i]) > 0)
+            V1.push_back((P2[i] - P0[i]) / t2);
+        else
+            V1.push_back(0);
+
+        double f = P0[i];
+        double d = 0;
+        double e = V0[i];
+
+        double M[3][3] = {
+            {20.0 * pow(t1, 2), 12.0 * t1, 6.0},
+            {5.0 * pow(t1, 4), 4.0 * pow(t1, 3), 3.0 * pow(t1, 2)},
+            {pow(t1, 5), pow(t1, 4), pow(t1, 3)}};
+        double ANS[3] = {0, V1[i] - V0[i], P1[i] - P0[i] - V0[i] * t1};
+
+        double invM[3][3];
+        inverseMatrix(M, invM);
+        // Multiply the inverse of T with ANS
+        double tem[3];
+        for (size_t j = 0; j < 3; ++j)
+        {
+            tem[j] = 0;
+            for (size_t k = 0; k < 3; ++k)
+            {
+                tem[j] += invM[j][k] * ANS[k];
+            }
+        }
+
+        double a = tem[0];
+        double b = tem[1];
+        double c = tem[2];
+
+        p_out.push_back(a * pow(t, 5) + b * pow(t, 4) + c * pow(t, 3) + d * pow(t, 2) + e * t + f);
+        v_out.push_back(5 * a * pow(t, 4) + 4 * b * pow(t, 3) + 3 * c * pow(t, 2) + 3 * d * t + e);
+    }
+
+    p.push_back(p_out);
+    v.push_back(v_out);
+}
+
 vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
     vector<double> Qf;
@@ -318,10 +399,14 @@ void PathManager::GetMusicSheet()
 void PathManager::GetReadyArr()
 {
     struct can_frame frame;
-    
 
     vector<double> Qi;
     vector<vector<double>> q_ready;
+    for (auto &entry : tmotors)
+    {
+        std::shared_ptr<TMotor> &motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+    }
 
     //// 준비자세 배열 생성
     int n = 800;
@@ -340,23 +425,76 @@ void PathManager::GetReadyArr()
         // cout << "\n";
     }
 
-    c_MotorAngle = Qi;
-
-   
-
-    //// 준비자세 동작
-    
+    c_MotorAngle = q_ready.back();    
 }
 
 void PathManager::PathLoopTask(queue<can_frame> &sendBuffer)
 {
     struct can_frame frame;
 
-    vector<vector<double>> Q(2, vector<double>(7, 0));
-
-    for (int i = 0; i < 7; i++)
+    // 처음 시작할 때 Q2, Q4 모두 계산
+    if (line == 0)
     {
-        cout << "Current Motor Angle : " << c_MotorAngle[i] << "\n";
+        c_R = 0;
+        c_L = 0;
+
+        for (int j = 0; j < n_inst; ++j)
+        {
+            if (RA[line][j] != 0)
+            {
+                P1 = right_inst[j];
+                c_R = 1;
+            }
+            if (LA[line][j] != 0)
+            {
+                P2 = left_inst[j];
+                c_L = 1;
+            }
+        }
+
+        if (c_R == 0 && c_L == 0)
+        { // 왼손 & 오른손 안침
+            Q1 = c_MotorAngle;
+            if (p_R == 1)
+            {
+                Q1[4] = Q1[4] + M_PI / 18;
+            }
+            if (p_L == 1)
+            {
+                Q1[6] = Q1[6] + M_PI / 18;
+            }
+            Q2 = Q1;
+        }
+        else
+        {
+            Q1 = IKfun(P1, P2, R, s, z0);
+            Q2 = Q1;
+            if (c_R == 0)
+            { // 왼손만 침
+                Q1[4] = Q1[4] + M_PI / 18;
+                Q2[4] = Q2[4] + M_PI / 18;
+                Q1[6] = Q1[6] + M_PI / 6;
+            }
+            if (c_L == 0)
+            { // 오른손만 침
+                Q1[4] = Q1[4] + M_PI / 6;
+                Q2[6] = Q2[6] + M_PI / 18;
+                Q2[6] = Q2[6] + M_PI / 18;
+            }
+            else
+            { // 왼손 & 오른손 침
+                Q1[4] = Q1[4] + M_PI / 6;
+                Q1[6] = Q1[6] + M_PI / 6;
+            }
+        }
+
+        p_R = c_R;
+        p_L = c_L;
+
+        line++;
+
+        p.push_back(c_MotorAngle);
+        v.push_back({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     }
 
     c_R = 0;
@@ -376,84 +514,86 @@ void PathManager::PathLoopTask(queue<can_frame> &sendBuffer)
         }
     }
 
-    // int Time = 0;
-    // clock_t start = clock();
-
     if (c_R == 0 && c_L == 0)
     { // 왼손 & 오른손 안침
-        Q[0] = c_MotorAngle;
+        Q3 = c_MotorAngle;
         if (p_R == 1)
         {
-            Q[0][4] = Q[0][4] + M_PI / 18;
+            Q3[4] = Q3[4] + M_PI / 18;
         }
         if (p_L == 1)
         {
-            Q[0][6] = Q[0][6] + M_PI / 18;
+            Q3[6] = Q3[6] + M_PI / 18;
         }
-        Q[1] = Q[0];
+        Q4 = Q3;
     }
     else
     {
-        Q[0] = IKfun(P1, P2, R, s, z0);
-        Q[1] = Q[0];
+        Q3 = IKfun(P1, P2, R, s, z0);
+        Q4 = Q3;
         if (c_R == 0)
         { // 왼손만 침
-            Q[0][4] = Q[0][4] + M_PI / 18;
-            Q[1][4] = Q[1][4] + M_PI / 18;
-            Q[0][6] = Q[0][6] + M_PI / 6;
+            Q3[4] = Q3[4] + M_PI / 18;
+            Q4[4] = Q4[4] + M_PI / 18;
+            Q3[6] = Q3[6] + M_PI / 6;
         }
         if (c_L == 0)
         { // 오른손만 침
-            Q[0][4] = Q[0][4] + M_PI / 6;
-            Q[0][6] = Q[0][6] + M_PI / 18;
-            Q[1][6] = Q[1][6] + M_PI / 18;
+            Q3[4] = Q3[4] + M_PI / 6;
+            Q4[6] = Q4[6] + M_PI / 18;
+            Q4[6] = Q4[6] + M_PI / 18;
         }
         else
         { // 왼손 & 오른손 침
-            Q[0][4] = Q[0][4] + M_PI / 6;
-            Q[0][6] = Q[0][6] + M_PI / 6;
+            Q3[4] = Q3[4] + M_PI / 6;
+            Q3[6] = Q3[6] + M_PI / 6;
         }
     }
 
     p_R = c_R;
     p_L = c_L;
 
-    vector<double> Qi;
-    double timest = time_arr[line] / 2;
-    int n = round(timest / 0.005);
-    for (int k = 0; k < n; ++k)
+    double t1 = time_arr[line - 1];
+    double t2 = time_arr[line];
+    double t = 0.005;
+    int n = round((t1 / 2) / t);
+    vector<double> Pi;
+    vector<double> Vi;
+    vector<double> V0 = v.back();
+    for (int i = 0; i < n; i++)
     {
-        Qi = connect(c_MotorAngle, Q[0], k, n);
-        q.push_back(Qi);
+        iconnect(c_MotorAngle, Q1, Q2, V0, t1 / 2, t1, t * i);
+        Pi = p.back();
+        Vi = v.back();
 
         for (auto &entry : tmotors)
         {
             std::shared_ptr<TMotor> &motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+            float p_des = Pi[motor_mapping[entry.first]];
+            float v_des = Vi[motor_mapping[entry.first]];
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 50, 1, 0);
             sendBuffer.push(frame);
         }
-        // cout << "\n";
     }
-    for (int k = 0; k < n; ++k)
+    V0 = v.back();
+    for (int i = 0; i < n; i++)
     {
-        Qi = connect(Q[0], Q[1], k, n);
-        q.push_back(Qi);
+        iconnect(Q1, Q2, Q3, V0, t1 / 2, (t1 + t2) / 2, t * i);
+        Pi = p.back();
+        Vi = v.back();
 
         for (auto &entry : tmotors)
         {
             std::shared_ptr<TMotor> &motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+            float p_des = Pi[motor_mapping[entry.first]];
+            float v_des = Vi[motor_mapping[entry.first]];
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 50, 1, 0);
             sendBuffer.push(frame);
         }
-        // cout << "\n";
     }
-
-    c_MotorAngle = Qi;
-
-    // Time += ((int)clock() - start) / (CLOCKS_PER_SEC / 1000);
-    // cout << "TIME : " << Time << "ms\n";
+    c_MotorAngle = p.back();
+    Q1 = Q3;
+    Q2 = Q4;
 }
 
 void PathManager::GetBackArr()
