@@ -398,6 +398,7 @@ void PathManager::GetMusicSheet()
 
 void PathManager::GetReadyArr()
 {
+    cout << "Get Ready..." << "\n";
     struct can_frame frame;
 
     vector<double> Qi;
