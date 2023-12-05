@@ -4,7 +4,7 @@ CanSocketUtils::CanSocketUtils() {}
 
 CanSocketUtils::~CanSocketUtils()
 {
-    std::cout << "In 소멸자\n";
+    
     for (const auto &kv : sockets)
     {
         int hsocket = kv.second;

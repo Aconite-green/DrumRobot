@@ -19,7 +19,8 @@ enum class HomeMode
 {
     NotHome,
     Homing,   // Home 시작
-    HomeReady, // Home 완료
+    HomeReady,
+    PosReady, // Home 완료
     HomeError
 };
 

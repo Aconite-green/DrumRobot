@@ -60,6 +60,10 @@ void StateTask::displayAvailableCommands() const
     else if (systemState.homeMode == HomeMode::HomeReady)
     {
         std::cout << "- tune: Start tuning\n";
+        std::cout << "- ready: Go to ready position\n";
+    }
+    else if (systemState.main == Main::Ready && systemState.homeMode == HomeMode::PosReady)
+    {
         std::cout << "- perform: Start performing\n";
     }
     std::cout << "- shutdown: Shut down the system\n";
@@ -77,7 +81,7 @@ bool StateTask::processInput(const std::string &input)
         systemState.main = Main::Tune; // 상태 변경 예시
         return true;
     }
-    else if (input == "perform" && systemState.main == Main::Ready && systemState.homeMode == HomeMode::HomeReady)
+    else if (input == "perform" && systemState.main == Main::Ready && systemState.homeMode == HomeMode::PosReady)
     {
         systemState.main = Main::Perform; // 상태 변경 예시
         return true;
