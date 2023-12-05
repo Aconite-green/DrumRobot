@@ -8,19 +8,23 @@ void StateTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        int ret = system("clear");
-        if (ret == -1) cout << "system clear error" << endl;
-
-        std::cout << "\nCurrent State: " << getStateName() << "\n";
-        displayAvailableCommands();
-
-        std::string input;
-        std::cout << "Enter command: ";
-        std::getline(std::cin, input);
-
-        if (!processInput(input))
+        if (systemState.main != Main::SystemInit)
         {
-            std::cout << "Invalid command or not allowed in current state!\n";
+            int ret = system("clear");
+            if (ret == -1)
+                cout << "system clear error" << endl;
+
+            std::cout << "\nCurrent State: " << getStateName() << "\n";
+            displayAvailableCommands();
+
+            std::string input;
+            std::cout << "Enter command: ";
+            std::getline(std::cin, input);
+
+            if (!processInput(input))
+            {
+                std::cout << "Invalid command or not allowed in current state!\n";
+            }
         }
     }
 }

@@ -10,14 +10,17 @@ CanSocketUtils::CanSocketUtils(const std::vector<std::string> &ifnames) : ifname
         if (hsocket < 0)
         {
             // 에러 처리
+            std::cout << "socket create error\n";
             exit(EXIT_FAILURE);
         }
         sockets[ifname] = hsocket;
     }
+
 }
 
 CanSocketUtils::~CanSocketUtils()
 {
+    std::cout << "In 소멸자\n";
     for (const auto &kv : sockets)
     {
         int hsocket = kv.second;
