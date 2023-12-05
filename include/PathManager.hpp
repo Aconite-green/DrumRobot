@@ -32,8 +32,9 @@ class PathManager
 {
 
 public:
-    PathManager(queue<can_frame> &sendBuffer, map<string, shared_ptr<TMotor>, CustomCompare> &tmotors);
-
+    
+    PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef);
+    
     void GetMusicSheet();
     void GetReadyArr();
     void PathLoopTask(queue<can_frame> &sendBuffer);

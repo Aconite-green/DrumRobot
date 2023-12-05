@@ -1,8 +1,9 @@
 #include "../include/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBuffer, map<string, shared_ptr<TMotor>, CustomCompare> &tmotors)
-    : sendBuffer(sendBuffer), tmotors(tmotors)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef)
+    : sendBuffer(sendBufferRef), tmotors(tmotorsRef)
 {
+    // 여기에 필요한 초기화 코드를 추가합니다.
 }
 
 string PathManager::trimWhitespace(const std::string &str)
@@ -422,6 +423,7 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
             sendBuffer.push(frame);
+            cout << "Frame added for motor: " << entry.first << "\n";
         }
         // cout << "\n";
     }
