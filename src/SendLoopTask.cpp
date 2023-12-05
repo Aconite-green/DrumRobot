@@ -33,6 +33,7 @@ void SendLoopTask::operator()()
 
         case Main::Perform:
             SendLoop();
+            systemState.homeMode = HomeMode::HomeReady;
             systemState.main = Main::Home;
             break;
 
