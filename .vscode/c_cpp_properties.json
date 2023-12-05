@@ -4,12 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/include/**",
-                "${workspaceFolder}/src/**",
-                "/usr/include/x86_64-linux-gnu/qt5", // Qt 기본 include 경로
-                "/usr/include/x86_64-linux-gnu/qt5/QtWidgets", // QtWidgets include 경로
-                "/usr/include/x86_64-linux-gnu/qt5/QtGui",
-                "/usr/include/x86_64-linux-gnu/qt5/QtCore",
-                "/usr/include/x86_64-linux-gnu/qt5/QtCharts" // QtCharts include 경로
+                "${workspaceFolder}/src/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

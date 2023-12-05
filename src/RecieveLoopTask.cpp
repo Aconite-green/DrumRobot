@@ -9,7 +9,8 @@ void RecieveLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        RecieveLoop(recieveBuffer);
+        if (systemState.main == Main::Perform)
+            RecieveLoop(recieveBuffer);
     }
 }
 
