@@ -1,22 +1,6 @@
 #include "../include/CanSocketUtils.hpp"
-CanSocketUtils::CanSocketUtils(){}
+CanSocketUtils::CanSocketUtils() {}
 
-CanSocketUtils::CanSocketUtils(const std::vector<std::string> &ifnames) : ifnames(ifnames)
-{
-    list_and_activate_available_can_ports(); // 포트를 자동으로 활성화
-    for (const auto &ifname : this->ifnames)
-    {
-        int hsocket = create_socket(ifname);
-        if (hsocket < 0)
-        {
-            // 에러 처리
-            std::cout << "socket create error\n";
-            exit(EXIT_FAILURE);
-        }
-        sockets[ifname] = hsocket;
-    }
-
-}
 
 CanSocketUtils::~CanSocketUtils()
 {
@@ -30,6 +14,25 @@ CanSocketUtils::~CanSocketUtils()
         }
     }
     sockets.clear();
+}
+
+void CanSocketUtils::startCAN(const std::vector<std::string> &ifnames) {
+    this->ifnames = ifnames; // 클래스 멤버 변수 업데이트
+    std::cout << "Updated interface names:" << std::endl;
+    for (const auto &ifname : this->ifnames) {
+        std::cout << ifname << std::endl; // 업데이트된 인터페이스 이름 출력
+    }
+    list_and_activate_available_can_ports();
+    for (const auto &ifname : this->ifnames) {
+        std::cout << "Processing interface: " << ifname << std::endl;
+        int hsocket = create_socket(ifname);
+        if (hsocket < 0) {
+            std::cerr << "Socket creation error for interface: " << ifname << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        sockets[ifname] = hsocket;
+        std::cout << "Socket created for " << ifname << ": " << hsocket << std::endl;
+    }
 }
 
 int CanSocketUtils::create_socket(const std::string &ifname)
@@ -178,7 +181,6 @@ void CanSocketUtils::restart_all_can_ports()
     for (const auto &port : ifnames)
     {
         down_port(port.c_str());
-        
 
         int socket_fd = sockets[port];
         if (socket_fd >= 0)
@@ -193,7 +195,6 @@ void CanSocketUtils::restart_all_can_ports()
     {
         usleep(100000); // 100ms 대기
         activate_port(port.c_str());
-        
 
         int new_socket_fd = create_socket(port);
         if (new_socket_fd < 0)
@@ -203,7 +204,7 @@ void CanSocketUtils::restart_all_can_ports()
         }
         else
         {
-            sockets[port] = new_socket_fd;                               // 소켓 디스크립터 값을 업데이트합니다.
+            sockets[port] = new_socket_fd; // 소켓 디스크립터 값을 업데이트합니다.
         }
     }
 }
@@ -219,14 +220,17 @@ void CanSocketUtils::down_port(const char *port)
     }
 }
 
-void CanSocketUtils::clear_all_can_buffers() {
-    for (const auto &socketPair : sockets) {
+void CanSocketUtils::clear_all_can_buffers()
+{
+    for (const auto &socketPair : sockets)
+    {
         int socket_fd = socketPair.second;
         clearCanBuffer(socket_fd);
     }
 }
 
-void CanSocketUtils::clearCanBuffer(int canSocket) {
+void CanSocketUtils::clearCanBuffer(int canSocket)
+{
     struct can_frame frame;
     fd_set readSet;
     struct timeval timeout;
@@ -235,35 +239,41 @@ void CanSocketUtils::clearCanBuffer(int canSocket) {
     timeout.tv_sec = 0;
     timeout.tv_usec = 0; // 즉시 반환
 
-    while (true) {
+    while (true)
+    {
         FD_ZERO(&readSet);
         FD_SET(canSocket, &readSet);
 
         // 소켓에서 읽을 데이터가 있는지 확인
         int selectRes = select(canSocket + 1, &readSet, NULL, NULL, &timeout);
 
-        if (selectRes > 0) {
+        if (selectRes > 0)
+        {
             // 수신 버퍼에서 데이터 읽기
             ssize_t nbytes = read(canSocket, &frame, sizeof(struct can_frame));
 
-            if (nbytes <= 0) {
+            if (nbytes <= 0)
+            {
                 // 읽기 실패하거나 더 이상 읽을 데이터가 없음
                 break;
             }
-        } else {
+        }
+        else
+        {
             // 읽을 데이터가 없음
             break;
         }
     }
 }
 
-
-int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec) {
+int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec)
+{
     struct timeval timeout;
     timeout.tv_sec = sec;
     timeout.tv_usec = usec;
 
-    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+    {
         perror("setsockopt failed");
         return -1;
     }
@@ -271,23 +281,30 @@ int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec) {
     return 0;
 }
 
-void CanSocketUtils::set_all_sockets_timeout(int sec, int usec) {
-    for (const auto &socketPair : sockets) {
+void CanSocketUtils::set_all_sockets_timeout(int sec, int usec)
+{
+    for (const auto &socketPair : sockets)
+    {
         int socket_fd = socketPair.second;
-        if (set_socket_timeout(socket_fd, sec, usec) != 0) {
+        if (set_socket_timeout(socket_fd, sec, usec) != 0)
+        {
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
         }
     }
 }
 
-void CanSocketUtils::releaseBusyResources() {
-    for (const auto &ifname : this->ifnames) {
-        if (is_port_up(ifname.c_str())) {
+void CanSocketUtils::releaseBusyResources()
+{
+    for (const auto &ifname : this->ifnames)
+    {
+        if (is_port_up(ifname.c_str()))
+        {
             // 포트가 사용 중인 경우, 포트를 다운시키고 소켓을 닫음
             down_port(ifname.c_str());
             int socket_fd = sockets[ifname];
-            if (socket_fd >= 0) {
-                close(socket_fd);   // 기존 소켓을 닫습니다.
+            if (socket_fd >= 0)
+            {
+                close(socket_fd);     // 기존 소켓을 닫습니다.
                 sockets[ifname] = -1; // 소켓 디스크립터 값을 초기화합니다.
             }
             // 포트를 다시 활성화

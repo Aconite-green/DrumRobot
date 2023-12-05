@@ -8,7 +8,7 @@ void StateTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        if (systemState.main != Main::SystemInit)
+        if (systemState.main == Main::Home)
         {
             int ret = system("clear");
             if (ret == -1)

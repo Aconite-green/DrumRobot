@@ -79,8 +79,10 @@ void SendLoopTask::initializeTMotors()
 
 void SendLoopTask::initializeCanUtils()
 {
-    canUtils = CanSocketUtils(extractIfnamesFromMotors(tmotors));
+    canUtils.startCAN(extractIfnamesFromMotors(tmotors));
+    std::cout << "StartCan fucntion activated\n";
 }
+
 
 vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
 {
@@ -88,18 +90,38 @@ vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_p
     for (const auto &motor_pair : motors)
     {
         interface_names.insert(motor_pair.second->interFaceName);
+
+        // 인터페이스 이름 출력
+        std::cout << "Motor: " << motor_pair.first << ", Interface: " << motor_pair.second->interFaceName << std::endl;
     }
+    
+    // 추출된 모든 인터페이스 이름 출력 (중복 제거 후)
+    std::cout << "Extracted interface names:" << std::endl;
+    for (const auto &ifname : interface_names)
+    {
+        std::cout << ifname << std::endl;
+    }
+
     return vector<string>(interface_names.begin(), interface_names.end());
 }
+
 
 void SendLoopTask::ActivateControlTask()
 {
     struct can_frame frame;
-
+    for (const auto &socketPair : canUtils.sockets)
+    {
+        int hsocket = socketPair.second;
+        if (set_socket_timeout(hsocket, 0, 10000) != 0)
+        {
+            // 타임아웃 설정 실패 처리
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
     if (!tmotors.empty())
     {
         // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
-        canUtils.set_all_sockets_timeout(0 /*sec*/, 10000 /*10ms*/);
+
         for (auto it = tmotors.begin(); it != tmotors.end();)
         {
             std::string name = it->first;
@@ -133,7 +155,15 @@ void SendLoopTask::ActivateControlTask()
         }
 
         // 두 번째 단계: 제어 모드 설정과 제로 설정 (5초 타임아웃)
-        canUtils.set_all_sockets_timeout(5 /*sec*/, 0);
+        for (const auto &socketPair : canUtils.sockets)
+    {
+        int hsocket = socketPair.second;
+        if (set_socket_timeout(hsocket, 5, 0) != 0)
+        {
+            // 타임아웃 설정 실패 처리
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
         for (const auto &motorPair : tmotors)
         {
             std::string name = motorPair.first;
@@ -249,7 +279,7 @@ void SendLoopTask::ActivateControlTask()
         std::cout << "No Maxon motors to process." << std::endl;
     }
 
-    //Sensor 동작 확인
+    // Sensor 동작 확인
     Sensor sensor;
 }
 
@@ -341,7 +371,7 @@ void SendLoopTask::DeactivateControlTask()
 bool SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    //canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    // canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
     for (const auto &socketPair : canUtils.sockets)
     {
         int hsocket = socketPair.second;
@@ -351,7 +381,7 @@ bool SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
             std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
         }
     }
-    
+
     canUtils.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
@@ -431,7 +461,7 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
     CheckCurrentPosition(motor);
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
     const double targetRadian = (degree * M_PI / 180.0) * direction + midpoint; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
-    int totalSteps = 8000 / 5; // 8초 동안 5ms 간격으로 나누기
+    int totalSteps = 8000 / 5;                                                  // 8초 동안 5ms 간격으로 나누기
 
     auto startTime = std::chrono::system_clock::now();
     for (int step = 0; step < totalSteps; ++step)
@@ -450,7 +480,6 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
         startTime = std::chrono::system_clock::now();
     }
 }
-
 
 struct MotorSettings
 {
@@ -515,7 +544,7 @@ void SendLoopTask::SetHome()
 
         if (motor_pair.first == "L_arm1" || motor_pair.first == "R_arm1")
         {
-            RotateMotor(motor, motor_pair.first, settings.direction, 90,0);
+            RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
         }
     }
 
@@ -845,6 +874,7 @@ void SendLoopTask::TuningLoopTask()
         }
         else if (userInput[0] == 'r')
         {
+            std::cout<<"In run mode of Tune\n";
             Tuning(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
         }
     }
