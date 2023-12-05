@@ -341,7 +341,17 @@ void SendLoopTask::DeactivateControlTask()
 bool SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    //canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    for (const auto &socketPair : canUtils.sockets)
+    {
+        int hsocket = socketPair.second;
+        if (set_socket_timeout(hsocket, 0, 5000) != 0)
+        {
+            // 타임아웃 설정 실패 처리
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
+    
     canUtils.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
