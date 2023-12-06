@@ -39,7 +39,10 @@ class SendLoopTask
 {
 public:
     // 생성자 선언
-    SendLoopTask(SystemState &systemStateRef, CanSocketUtils &canUtilsRef);
+    SendLoopTask(SystemState &systemStateRef, 
+                 CanSocketUtils &canUtilsRef, 
+                 std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotorsRef,
+                 queue<can_frame> &sendBufferRef);
 
     // operator() 함수 선언
     void operator()();
@@ -47,10 +50,10 @@ public:
 private:
     SystemState &systemState;
     CanSocketUtils &canUtils;
-    std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> tmotors; // 모터 배열
+    std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotors; // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
 
-    queue<can_frame> sendBuffer;
+    queue<can_frame> &sendBuffer;
 
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
@@ -58,6 +61,7 @@ private:
     // System Initiallize
     void initializeTMotors();
     void initializeCanUtils();
+    void initializePathManager();
     void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors);
     void DeactivateControlTask();

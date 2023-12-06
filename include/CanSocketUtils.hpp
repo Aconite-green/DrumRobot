@@ -30,7 +30,7 @@ public:
     CanSocketUtils();
     ~CanSocketUtils();
 
-    void startCAN(const std::vector<std::string> &ifnames);
+    void initializeCAN(const std::vector<std::string> &ifnames);
     void restart_all_can_ports();
     void set_all_sockets_timeout(int sec, int usec);
     void clear_all_can_buffers();

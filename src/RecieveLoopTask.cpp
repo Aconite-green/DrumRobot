@@ -36,6 +36,10 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
     canUtils.clear_all_can_buffers();
 
     Sensor sensor;
+    if (!sensor.IsInitialized())
+    {
+        cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
+    }
 
     while (systemState.runMode == RunMode::Running)
     {
@@ -46,9 +50,9 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
             continue;
         }
 
-        if ((sensor.ReadVal() & 1) != 0)
+        if (sensor.IsInitialized() && (sensor.ReadVal() & 1) != 0)
         {
-            cout << "Motors at Sensor Loacation please check!!!\n";
+            cout << "Motors at Sensor Location please check!!!\n";
             systemState.runMode = RunMode::Pause;
         }
 

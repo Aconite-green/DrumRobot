@@ -1,10 +1,10 @@
 #include "../include/SenSor.hpp"
 
-Sensor::Sensor()
+Sensor::Sensor(): isInitialized(false)
 {
     printf("USB I/O Library Version : %s\n", USBIO_GetLibraryVersion());
     res = USBIO_OpenDevice(DeviceID, BoardID, &DevNum);
-
+    isInitialized = (res == 0);
     if (res)
     {
         printf("open Device failed! Erro : 0x%x\r\n", res);
@@ -18,7 +18,8 @@ Sensor::Sensor()
     printf("%s DI number: %d\n\n", module_name, total_di);
 }
 
-Sensor::~Sensor(){
+Sensor::~Sensor()
+{
     res = USBIO_CloseDevice(DevNum);
 
     if (res)
@@ -27,11 +28,9 @@ Sensor::~Sensor(){
     }
 }
 
-DWORD Sensor::ReadVal(){
+DWORD Sensor::ReadVal()
+{
     USBIO_DI_ReadValue(DevNum, &DIValue);
 
     return DIValue;
 }
-
-
-

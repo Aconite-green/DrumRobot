@@ -1,8 +1,14 @@
 #include "../include/SendLoopTask.hpp"
 
-SendLoopTask::SendLoopTask(SystemState &systemStateRef, CanSocketUtils &canUtilsRef)
-    : systemState(systemStateRef), canUtils(canUtilsRef), pathManager(sendBuffer, tmotors)
+SendLoopTask::SendLoopTask(SystemState &systemStateRef, 
+                 CanSocketUtils &canUtilsRef, 
+                 std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotorsRef,
+                 queue<can_frame> &sendBufferRef)
+    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), sendBuffer(sendBufferRef),pathManager(sendBufferRef, tmotorsRef)
 {
+    initializeTMotors();
+    // tmotors 초기화 확인
+    cout << "tmotors size after initialization: " << tmotors.size() << endl;
 }
 
 void SendLoopTask::operator()()
@@ -15,6 +21,7 @@ void SendLoopTask::operator()()
             initializeTMotors();
             initializeCanUtils();
             ActivateControlTask();
+            initializePathManager();
             systemState.main = Main::Home; // 작업 완료 후 상태 변경
             break;
 
@@ -32,7 +39,10 @@ void SendLoopTask::operator()()
             break;
 
         case Main::Perform:
+            cout<<"In perform mode\n";
+            systemState.runMode = RunMode::Running;
             SendLoop();
+            systemState.runMode = RunMode::NotReady;
             systemState.homeMode = HomeMode::HomeReady;
             systemState.main = Main::Home;
             break;
@@ -43,7 +53,7 @@ void SendLoopTask::operator()()
                 pathManager.GetReadyArr();
             };
             SendReadyLoop();
-            systemState.homeMode = HomeMode::PosReady;
+            systemState.runMode = RunMode::Ready;
             systemState.main = Main::Home;
             break;
         case Main::Shutdown:
@@ -83,7 +93,13 @@ void SendLoopTask::initializeTMotors()
 
 void SendLoopTask::initializeCanUtils()
 {
-    canUtils.startCAN(extractIfnamesFromMotors(tmotors));
+    canUtils.initializeCAN(extractIfnamesFromMotors(tmotors));
+}
+
+void SendLoopTask::initializePathManager()
+{
+    pathManager.motorInitialize(tmotors);
+    pathManager.GetMusicSheet();
 }
 
 vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
@@ -478,7 +494,6 @@ void SendLoopTask::SetHome()
         // ... 다른 모터 설정 ...
     };
 
-    
     for (const auto &socketPair : canUtils.sockets)
     {
         int hsocket = socketPair.second;
@@ -526,8 +541,8 @@ void SendLoopTask::SetHome()
         // 그 상태에서 setzero 명령을 보냄(현재 position을 0으로 인식)
         fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
         SendCommandToMotor(motor, frameToProcess, motor_pair.first);
-        
-       //CheckCurrentPosition();
+
+        // CheckCurrentPosition();
 
         // 상태 확인
         fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForCheckMotor());
@@ -948,7 +963,7 @@ void SendLoopTask::SendLoop()
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::Stop)
+    while (systemState.runMode == RunMode::Running)
     {
 
         if (systemState.runMode == RunMode::Pause)
@@ -961,7 +976,7 @@ void SendLoopTask::SendLoop()
             if (pathManager.line < pathManager.end)
             {
                 std::cout << "line : " << pathManager.line << ", end : " << pathManager.end << "\n";
-                pathManager.PathLoopTask(sendBuffer);
+                pathManager.PathLoopTask();
                 std::cout << sendBuffer.size() << "\n";
                 pathManager.line++;
             }
@@ -1105,4 +1120,3 @@ void SendLoopTask::SendReadyLoop()
     }
     canUtils.clear_all_can_buffers();
 }
-//

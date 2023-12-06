@@ -57,12 +57,12 @@ void StateTask::displayAvailableCommands() const
         std::cout << "- homing: Start homing\n";
         std::cout << "- xhome : Make home state by user\n";
     }
-    else if (systemState.homeMode == HomeMode::HomeReady)
+    else if (systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::NotReady)
     {
         std::cout << "- tune: Start tuning\n";
         std::cout << "- ready: Go to ready position\n";
     }
-    else if (systemState.main == Main::Ready && systemState.homeMode == HomeMode::PosReady)
+    else if (systemState.main == Main::Home && systemState.runMode == RunMode::Ready)
     {
         std::cout << "- perform: Start performing\n";
     }
@@ -81,12 +81,15 @@ bool StateTask::processInput(const std::string &input)
         systemState.main = Main::Tune; // 상태 변경 예시
         return true;
     }
-    else if (input == "perform" && systemState.main == Main::Ready && systemState.homeMode == HomeMode::PosReady)
+    else if (input == "perform" && systemState.main == Main::Home 
+                                && systemState.runMode == RunMode::Ready)
     {
         systemState.main = Main::Perform; // 상태 변경 예시
         return true;
     }
-    else if (input == "ready" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady)
+    else if (input == "ready" && systemState.main == Main::Home 
+                              && systemState.homeMode == HomeMode::HomeReady
+                              && systemState.runMode == RunMode::NotReady)
     {
         systemState.main = Main::Ready;
         return true;

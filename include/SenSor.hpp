@@ -12,15 +12,14 @@ public:
     ~Sensor();
 
     DWORD ReadVal();
+    bool IsInitialized() const { return isInitialized; }
 
 private:
-    
+    bool isInitialized;
     int DeviceID = USB2051_32;
     BYTE BoardID = 0x02;
     BYTE total_di;
     int DevNum, res;
     char module_name[15];
     DWORD DIValue = 0, o_dwDICntValue[USBIO_DI_MAX_CHANNEL];
-
-    
 };

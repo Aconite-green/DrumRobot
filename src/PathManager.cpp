@@ -3,7 +3,13 @@
 PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef)
     : sendBuffer(sendBufferRef), tmotors(tmotorsRef)
 {
-    // 여기에 필요한 초기화 코드를 추가합니다.
+}
+
+void PathManager::motorInitialize(map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef)
+{
+    this->tmotors = tmotorsRef;
+    // 참조 확인
+    cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
 }
 
 string PathManager::trimWhitespace(const std::string &str)
@@ -399,18 +405,25 @@ void PathManager::GetMusicSheet()
 
 void PathManager::GetReadyArr()
 {
-    cout << "Get Ready..." << "\n";
+    cout << "Get Ready...\n";
     struct can_frame frame;
 
     vector<double> Qi;
     vector<vector<double>> q_ready;
+
+    // tmotors의 상태를 확인
+    cout << "tmotors size: " << tmotors.size() << "\n";
+    int cnt = 0;
     for (auto &entry : tmotors)
     {
+        cnt++;
+        cout << "cnt : " <<cnt <<endl;
         std::shared_ptr<TMotor> &motor = entry.second;
-        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        //c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
 
-    //// 준비자세 배열 생성
     int n = 800;
     for (int k = 0; k < n; k++)
     {
@@ -423,15 +436,17 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
             sendBuffer.push(frame);
-            cout << "Frame added for motor: " << entry.first << "\n";
+            // Frame이 추가됨을 확인
+            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
-        // cout << "\n";
     }
 
-    c_MotorAngle = q_ready.back();    
+    c_MotorAngle = q_ready.back();
+    // 최종적인 sendBuffer의 크기 출력
+    cout << "Final sendBuffer size: " << sendBuffer.size() << "\n";
 }
 
-void PathManager::PathLoopTask(queue<can_frame> &sendBuffer)
+void PathManager::PathLoopTask()
 {
     struct can_frame frame;
 

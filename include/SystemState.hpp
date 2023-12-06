@@ -19,13 +19,13 @@ enum class HomeMode
 {
     NotHome,
     Homing,   // Home 시작
-    HomeReady,
-    PosReady, // Home 완료
+    HomeReady, // Home 완료
     HomeError
 };
 
 enum class RunMode
-{
+{   NotReady,
+    Ready,
     Running,
     Pause,
     Stop,
@@ -40,5 +40,5 @@ struct SystemState
     
     SystemState() : main(Main::SystemInit), 
                     homeMode(HomeMode::NotHome), 
-                    runMode(RunMode::Running) {}
+                    runMode(RunMode::NotReady) {}
 };

@@ -16,7 +16,7 @@ CanSocketUtils::~CanSocketUtils()
     sockets.clear();
 }
 
-void CanSocketUtils::startCAN(const std::vector<std::string> &ifnames) {
+void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames) {
     this->ifnames = ifnames; // 클래스 멤버 변수 업데이트
     std::cout << "Updated interface names:" << std::endl;
     for (const auto &ifname : this->ifnames) {
