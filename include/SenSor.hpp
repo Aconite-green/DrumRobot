@@ -12,12 +12,12 @@ public:
     ~Sensor();
 
     DWORD ReadVal();
-    bool IsInitialized() const { return isInitialized; }
     bool OpenDeviceUntilSuccess();
     void closeDevice();
+    void connect();
+    bool connected = false;
 
 private:
-    bool isInitialized;
     int DeviceID = USB2051_32;
     BYTE BoardID = 0x02;
     BYTE total_di;
