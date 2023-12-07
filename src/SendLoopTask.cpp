@@ -2,7 +2,7 @@
 
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            CanSocketUtils &canUtilsRef,
-                           std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotorsRef,
+                           std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                            queue<can_frame> &sendBufferRef)
     : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef)
 {
@@ -123,7 +123,7 @@ void SendLoopTask::initializePathManager()
     pathManager.GetMusicSheet();
 }
 
-vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors)
+vector<string> SendLoopTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors)
 {
     set<string> interface_names;
     for (const auto &motor_pair : motors)
@@ -178,6 +178,9 @@ void SendLoopTask::ActivateControlTask()
                 ++it;
             }
         }
+
+// 구분자 추가
+            std::cout << "\n=================== Start Zeroing ====================" << std::endl;
 
         // 두 번째 단계: 제어 모드 설정과 제로 설정 (5초 타임아웃)
         canUtils.set_all_sockets_timeout(5, 0);

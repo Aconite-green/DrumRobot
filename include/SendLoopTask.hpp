@@ -41,7 +41,7 @@ public:
     // 생성자 선언
     SendLoopTask(SystemState &systemStateRef, 
                  CanSocketUtils &canUtilsRef, 
-                 std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotorsRef,
+                 std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                  queue<can_frame> &sendBufferRef);
 
     // operator() 함수 선언
@@ -50,7 +50,7 @@ public:
 private:
     SystemState &systemState;
     CanSocketUtils &canUtils;
-    std::map<std::string, std::shared_ptr<TMotor>, CustomCompare> &tmotors; // 모터 배열
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
 
     queue<can_frame> &sendBuffer;
@@ -64,7 +64,7 @@ private:
     void initializeCanUtils();
     void initializePathManager();
     void ActivateControlTask();
-    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>, CustomCompare> &motors);
+    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
     void DeactivateControlTask();
 
     // Home

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     SystemState systemState;
     CanSocketUtils canUtils;
     queue<can_frame> sendBuffer;
-    map<string, shared_ptr<TMotor>, CustomCompare> tmotors;
+    map<string, shared_ptr<TMotor>> tmotors;
 
     // Create Tasks for Threads
     StateTask stateTask(systemState);

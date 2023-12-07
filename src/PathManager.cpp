@@ -1,11 +1,11 @@
 #include "../include/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef)
     : sendBuffer(sendBufferRef), tmotors(tmotorsRef)
 {
 }
 
-void PathManager::motorInitialize(map<string, shared_ptr<TMotor>, CustomCompare> &tmotorsRef)
+void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef)
 {
     this->tmotors = tmotorsRef;
     // 참조 확인
