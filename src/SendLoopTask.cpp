@@ -136,7 +136,7 @@ void SendLoopTask::ActivateControlTask()
 {
     struct can_frame frame;
 
-    canUtils.set_all_sockets_timeout(0, 10000);
+    canUtils.set_all_sockets_timeout(0, 100000);
     if (!tmotors.empty())
     {
         // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
@@ -149,7 +149,7 @@ void SendLoopTask::ActivateControlTask()
             bool checkSuccess = true;
 
             // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                            [&checkSuccess](const std::string &motorName, bool result)
                            {
@@ -197,6 +197,10 @@ void SendLoopTask::ActivateControlTask()
                                {
                                    std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
                                }
+                               else
+                               {
+                                   std::cerr << "Motor [" << motorName << "] Connected." << std::endl;
+                               }
                            });
 
             // 제로 설정
@@ -208,10 +212,15 @@ void SendLoopTask::ActivateControlTask()
                                {
                                    std::cerr << "Failed to set zero for motor [" << motorName << "]." << std::endl;
                                }
+                               else
+                               {
+                                   std::cerr << "Motor [" << motorName << "] Now Zero." << std::endl;
+                               }
                            });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
+            getchar();
         }
     }
     else
