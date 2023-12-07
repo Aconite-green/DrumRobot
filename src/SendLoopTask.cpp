@@ -158,6 +158,9 @@ void SendLoopTask::ActivateControlTask()
                                    std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
                                    checkSuccess = false;
                                }
+                               else{
+                                std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
+                               }
                            });
 
             if (!checkSuccess)
@@ -187,17 +190,6 @@ void SendLoopTask::ActivateControlTask()
         {
             std::string name = motorPair.first;
             std::shared_ptr<TMotor> motor = motorPair.second;
-
-            // 제어 모드 설정
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (!success)
-                               {
-                                   std::cerr << "Failed to set control mode for motor [" << motorName << "]." << std::endl;
-                               }
-                           });
 
             // 제로 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForZeroing());
