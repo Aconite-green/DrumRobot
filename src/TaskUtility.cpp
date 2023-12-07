@@ -27,11 +27,12 @@ void sendAndReceive(
     struct can_frame &frame,
     std::function<void(const std::string &, bool)> customOutput)
 {
-    int canIn = frame.can_id;
+    
     ssize_t write_status = write(socket, &frame, sizeof(can_frame));
+    usleep(5000);
     ssize_t read_status = read(socket, &frame, sizeof(can_frame));
-    int canOut = frame.data[0];
-    bool success = write_status > 0 && read_status > 0 && (canIn == canOut);
+    
+    bool success = write_status > 0 && read_status > 0 ;
 
     customOutput(name, success);
 }

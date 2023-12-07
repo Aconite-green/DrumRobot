@@ -138,7 +138,7 @@ void SendLoopTask::ActivateControlTask()
 {
     struct can_frame frame;
 
-    canUtils.set_all_sockets_timeout(0, 100000);
+    canUtils.set_all_sockets_timeout(0, 5000);
     if (!tmotors.empty())
     {
         // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
