@@ -19,6 +19,8 @@ void SendLoopTask::operator()()
             initializeCanUtils();
             ActivateControlTask();
             initializePathManager();
+            std::cout << "Press Enter to go Home\n";
+            getchar();
             systemState.main = Main::Home; // 작업 완료 후 상태 변경
             break;
 
@@ -158,8 +160,9 @@ void SendLoopTask::ActivateControlTask()
                                    std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
                                    checkSuccess = false;
                                }
-                               else{
-                                std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
+                               else
+                               {
+                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
                                }
                            });
 
@@ -177,15 +180,7 @@ void SendLoopTask::ActivateControlTask()
         }
 
         // 두 번째 단계: 제어 모드 설정과 제로 설정 (5초 타임아웃)
-        for (const auto &socketPair : canUtils.sockets)
-        {
-            int hsocket = socketPair.second;
-            if (set_socket_timeout(hsocket, 5, 0) != 0)
-            {
-                // 타임아웃 설정 실패 처리
-                std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
-            }
-        }
+        canUtils.set_all_sockets_timeout(5, 0);
         for (const auto &motorPair : tmotors)
         {
             std::string name = motorPair.first;
@@ -208,7 +203,6 @@ void SendLoopTask::ActivateControlTask()
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
-            getchar();
         }
     }
     else
