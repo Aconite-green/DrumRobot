@@ -6,9 +6,6 @@ SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            queue<can_frame> &sendBufferRef)
     : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef)
 {
-    initializeTMotors();
-    // tmotors 초기화 확인
-    std::cout << "tmotors size after initialization: " << tmotors.size() << endl;
 }
 
 void SendLoopTask::operator()()
