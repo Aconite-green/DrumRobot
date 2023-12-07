@@ -13,6 +13,8 @@ public:
 
     DWORD ReadVal();
     bool IsInitialized() const { return isInitialized; }
+    bool OpenDeviceUntilSuccess();
+    void closeDevice();
 
 private:
     bool isInitialized;

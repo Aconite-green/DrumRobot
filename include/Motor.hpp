@@ -30,6 +30,8 @@ public:
     uint32_t nodeId;
 
     double currentPos;
+    float cwDir;
+    int sensorBit;
 
 
 
