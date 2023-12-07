@@ -149,7 +149,7 @@ void SendLoopTask::ActivateControlTask()
             std::shared_ptr<TMotor> motor = it->second;
 
             bool checkSuccess = true;
-
+            canUtils.clear_all_can_buffers();
             // 상태 확인
             fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
@@ -170,7 +170,7 @@ void SendLoopTask::ActivateControlTask()
             {
                 // 실패한 경우, 해당 모터를 배열에서 제거
                 it = tmotors.erase(it);
-                canUtils.clear_all_can_buffers();
+
                 continue;
             }
             else
@@ -179,8 +179,8 @@ void SendLoopTask::ActivateControlTask()
             }
         }
 
-// 구분자 추가
-            std::cout << "\n=================== Start Zeroing ====================" << std::endl;
+        // 구분자 추가
+        std::cout << "\n=================== Start Zeroing ====================" << std::endl;
 
         // 두 번째 단계: 제어 모드 설정과 제로 설정 (5초 타임아웃)
         canUtils.set_all_sockets_timeout(5, 0);
