@@ -547,90 +547,62 @@ struct MotorSettings
     int sensorBit;
 };
 
-void SendLoopTask::SetHome()
+void SendLoopTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName)
 {
     struct can_frame frameToProcess;
+
+    // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
+    double initialDirection = (motorName == "L_arm2" || motorName == "R_arm2") ? (-0.2) * motor->cwDir : 0.2 * motor->cwDir;
+
+    double additionalTorque = 0.0;
+    if (motorName == "L_arm2" || motorName == "R_arm2")
+    {
+        additionalTorque = motor->cwDir * (-2.2);
+    }
+    else if (motorName == "L_arm3" || motorName == "R_arm3")
+    {
+        additionalTorque = motor->cwDir * 1.0;
+    }
+
+    TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
+    SendCommandToMotor(motor, frameToProcess, motorName);
+
+    float midpoint = MoveMotorToSensorLocation(motor, motorName, motor->sensorBit);
+
+    cout << "\nPress Enter to move to Home Position\n";
+    getchar();
+
+    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.0;
+    midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
+    RotateMotor(motor, motorName, -motor->cwDir, degree, midpoint);
+
+    cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
+
+    // 모터를 멈추는 신호를 보냄
+    TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
+    SendCommandToMotor(motor, frameToProcess, motorName);
+
+    // 현재 position을 0으로 인식하는 명령을 보냄
+    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
+    SendCommandToMotor(motor, frameToProcess, motorName);
+
+    // 상태 확인
+    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
+    SendCommandToMotor(motor, frameToProcess, motorName);
+}
+
+void SendLoopTask::SetHome()
+{
     sensor.OpenDeviceUntilSuccess();
-
-    // 각 모터의 방향 및 센서 비트 설정
-    std::map<std::string, MotorSettings> motorSettings = {
-        {"R_arm1", {1.0, 0}}, // 예시: R_arm1 모터의 방향 1.0, 센서 비트 0
-        {"L_arm1", {1.0, 1}},
-        {"R_arm2", {1.0, 0}},
-        {"R_arm3", {1.0, 0}},
-        {"L_arm2", {-1.0, 0}},
-        {"L_arm3", {-1.0, 2}},
-        // ... 다른 모터 설정 ...
-    };
-
     canUtils.set_all_sockets_timeout(5, 0);
 
-    for (auto &motor_pair : tmotors)
-    {
+    for (auto &motor_pair : tmotors) {
         // 허리는 home 안잡음
-        if (motor_pair.first == "waist")
-            continue;
+        if (motor_pair.first == "waist") continue;
 
-        std::shared_ptr<TMotor> &motor = motor_pair.second;
-        MotorSettings &settings = motorSettings[motor_pair.first];
-        if (!PromptUserForHoming(motor_pair.first)) // 사용자에게 홈 설정을 묻는 함수
-            continue;
+        if (!PromptUserForHoming(motor_pair.first)) continue; // 사용자에게 홈 설정을 묻는 함수
 
-        // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
-        double initialDirection = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? (-0.2) * settings.direction : 0.2 * settings.direction;
-
-        double additionalTorque = 0.0;
-        if (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
-        {
-            additionalTorque = settings.direction * (-2.2);
-        }
-        else if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
-        {
-            additionalTorque = settings.direction * (1);
-        }
-        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
-        SendCommandToMotor(motor, frameToProcess, motor_pair.first);
-
-        float midpoint = MoveMotorToSensorLocation(motor, motor_pair.first, settings.sensorBit); // 모터를 센서 위치까지 이동시키는 함수, 센서 비트 전달
-                                                                                                 // 모터를 센서 위치까지 이동시키는 함수
-
-        cout << "\nPress Enter to move to Home Position\n";
-        getchar();
-
-        double degree = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? -30.0 : 90.0;
-        midpoint = (motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2") ? -midpoint : midpoint;
-        RotateMotor(motor, motor_pair.first, -settings.direction, degree, midpoint);
-
-        cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
-        // 모터를 멈추는 신호를 보냄
-        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
-        SendCommandToMotor(motor, frameToProcess, motor_pair.first);
-
-        // sleep(10);
-        //  그 상태에서 setzero 명령을 보냄(현재 position을 0으로 인식)
-        fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
-        SendCommandToMotor(motor, frameToProcess, motor_pair.first);
-
-        // 상태 확인
-        fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-        SendCommandToMotor(motor, frameToProcess, motor_pair.first);
-
-        if (motor_pair.first == "L_arm1" || motor_pair.first == "R_arm1")
-        {
-            CheckCurrentPosition(motor);
-            RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
-        }
-        /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
-        if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
-        {
-            CheckCurrentPosition(motor);
-            RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
-        }
-        if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
-        {
-            RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
-        }
-        */
+        HomeMotor(motor_pair.second, motor_pair.first);
     }
 
     cout << "All in Home\n";

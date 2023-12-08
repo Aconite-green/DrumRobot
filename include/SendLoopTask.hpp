@@ -69,6 +69,7 @@ private:
 
     // Home
     void SetHome();
+    void HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
     bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
     float MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint); 
