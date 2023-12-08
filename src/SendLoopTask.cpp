@@ -52,10 +52,11 @@ void SendLoopTask::operator()()
             if (CheckAllMotorsCurrentPosition())
             {
                 pathManager.GetReadyArr();
+                SendReadyLoop();
+                systemState.runMode = RunMode::Ready;
+                systemState.main = Main::Ideal;
             };
-            SendReadyLoop();
-            systemState.runMode = RunMode::Ready;
-            systemState.main = Main::Ideal;
+
             break;
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
@@ -86,9 +87,9 @@ void SendLoopTask::initializeTMotors()
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
     tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
 
-    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
-    tmotors["L_arm"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
     {
@@ -98,22 +99,22 @@ void SendLoopTask::initializeTMotors()
         if (motor_pair.first == "waist")
         {
             motor->cwDir = 1.0f;
-            motor->rMin = -M_PI * 0.75f;     // -120deg
-            motor->rMax = M_PI / 2.0f;      // 90deg
+            motor->rMin = -M_PI * 0.75f; // -120deg
+            motor->rMax = M_PI / 2.0f;   // 90deg
         }
         else if (motor_pair.first == "R_arm1")
         {
             motor->cwDir = 1.0f;
             motor->sensorBit = 1;
-            motor->rMin = 0.0f;        // 0deg
-            motor->rMax = M_PI;         // 180deg
+            motor->rMin = 0.0f; // 0deg
+            motor->rMax = M_PI; // 180deg
         }
         else if (motor_pair.first == "L_arm1")
         {
             motor->cwDir = 1.0f;
             motor->sensorBit = 1;
-            motor->rMin = 0.0f;        // 0deg
-            motor->rMax = M_PI;         // 180deg
+            motor->rMin = 0.0f; // 0deg
+            motor->rMax = M_PI; // 180deg
         }
         else if (motor_pair.first == "R_arm2")
         {
@@ -126,8 +127,8 @@ void SendLoopTask::initializeTMotors()
         {
             motor->cwDir = 1.0f;
             motor->sensorBit = 1;
-            motor->rMin = 0.0f;                // 0deg
-            motor->rMax = M_PI * 0.75f;   // 135deg
+            motor->rMin = 0.0f;         // 0deg
+            motor->rMax = M_PI * 0.75f; // 135deg
         }
         else if (motor_pair.first == "L_arm2")
         {
@@ -140,8 +141,8 @@ void SendLoopTask::initializeTMotors()
         {
             motor->cwDir = -1.0f;
             motor->sensorBit = 2;
-            motor->rMin = -M_PI * 0.75f;  // -135deg
-            motor->rMax = 0.0f;                 // 0deg
+            motor->rMin = -M_PI * 0.75f; // -135deg
+            motor->rMax = 0.0f;          // 0deg
         }
     }
 
@@ -619,7 +620,7 @@ void SendLoopTask::SetHome()
             CheckCurrentPosition(motor);
             RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
         }
-        /*
+        /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
         if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
         {
             CheckCurrentPosition(motor);
@@ -689,7 +690,7 @@ void SendLoopTask::FixMotorPosition()
     {
         std::string name = motorPair.first;
         std::shared_ptr<TMotor> motor = motorPair.second;
-        //CheckCurrentPosition(motor);
+        // CheckCurrentPosition(motor);
 
         TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
@@ -1147,6 +1148,8 @@ bool SendLoopTask::CheckAllMotorsCurrentPosition()
             allMotorsChecked = false;
         }
     }
+    std::cout << "Press Enter to Move On" << endl;
+    getchar();
     return allMotorsChecked;
 }
 
@@ -1157,6 +1160,7 @@ void SendLoopTask::SendReadyLoop()
 
     while (sendBuffer.size() != 0)
     {
+        std::cout << "In ready loop\n";
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
 

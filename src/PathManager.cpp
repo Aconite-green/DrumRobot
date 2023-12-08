@@ -432,6 +432,7 @@ void PathManager::GetReadyArr()
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
+    getchar();
 
     int n = 800;
     for (int k = 0; k < n; k++)
@@ -449,6 +450,7 @@ void PathManager::GetReadyArr()
             cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
     }
+    getchar();
 
     c_MotorAngle = Qi;
     // 최종적인 sendBuffer의 크기 출력
