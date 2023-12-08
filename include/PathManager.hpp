@@ -60,8 +60,8 @@ private:
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
 
-    // Ready Array : 0, 90, 90, 45, 75, 45, 75
-    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4};
+    // Ready Array : 0, 90, 90, 45, 75, -45, -75    (**모터 회전방향에 따라 부호 조절)
+    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, -M_PI / 4, -M_PI / 2.4};
 
     double p_R = 0; // 오른손 이전 악기 유무
     double p_L = 0; // 왼손 이전 악기 유무

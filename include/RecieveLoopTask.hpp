@@ -52,6 +52,7 @@ private:
     queue<can_frame> recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
+    Sensor sensor;
 
     const int NUM_FRAMES = 20;
     const int TIME_THRESHOLD_MS = 5;

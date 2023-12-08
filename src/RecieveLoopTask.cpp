@@ -9,9 +9,11 @@ void RecieveLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
+        usleep(2000);
         if (systemState.main == Main::Perform)
             RecieveLoop(recieveBuffer);
     }
+    std::cout<<"Out of Recv loop\n";
 }
 
 void RecieveLoopTask::checkUserInput()
@@ -35,7 +37,6 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
     canUtils.set_all_sockets_timeout(0, 50000);
     canUtils.clear_all_can_buffers();
 
-    Sensor sensor;
     sensor.connect();
     if (!sensor.connected)
     {

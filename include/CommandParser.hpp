@@ -5,6 +5,7 @@
 #include <linux/can.h>
 #include <cmath>
 #include <tuple>
+#include <iostream>
 
 class TMotor;
 
@@ -19,6 +20,8 @@ private:
     int float_to_uint(float x, float x_min, float x_max, unsigned int bits);
     float uint_to_float(int x_int, float x_min, float x_max, int bits);
 };
+
+
 
 class MaxonCommandParser
 {

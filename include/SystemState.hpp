@@ -7,12 +7,13 @@
 enum class Main
 {
     SystemInit, // 시스템 시작: CAN 포트 열기 및 모터 연결 상태 확인
-    Home,       // Home : Homing 동작 제어
+    Idle,
+    Homing,       // Home : Homing 동작 제어
     Ready,      // 로봇 준비 동작 
     Tune,       // 모터 뮤닝상태
-    Perform,    // 드럼 연주 진행중
+    Perform,
+    Check,    // 드럼 연주 진행중
     Shutdown  // 시스템 종료 및 모든 작업 마무리
-    
 };
 
 enum class HomeMode

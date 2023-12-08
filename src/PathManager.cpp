@@ -276,7 +276,13 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     for (int i = 0; i < 7; i++)
     {
-        Qf[i] = Q[i][index_theta0_med];
+        // 모터 방향에 따라 부호 결정
+        if(i == 5 || i == 6){
+            Qf[i] = -Q[i][index_theta0_med];
+        }
+        else{
+            Qf[i] = Q[i][index_theta0_med];
+        }
     }
 
     return Qf;
@@ -300,6 +306,9 @@ void PathManager::GetMusicSheet()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
+            if(i == 0 || i == 1 || i == 3 || i == 4){
+                inst_xyz[i][j] = inst_xyz[i][j] * 1.25;
+            }
         }
     }
 
@@ -419,7 +428,7 @@ void PathManager::GetReadyArr()
         cnt++;
         cout << "cnt : " <<cnt <<endl;
         std::shared_ptr<TMotor> &motor = entry.second;
-        //c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
@@ -434,14 +443,14 @@ void PathManager::GetReadyArr()
         {
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
             // Frame이 추가됨을 확인
             cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
     }
 
-    c_MotorAngle = q_ready.back();
+    c_MotorAngle = Qi;
     // 최종적인 sendBuffer의 크기 출력
     cout << "Final sendBuffer size: " << sendBuffer.size() << "\n";
 }
@@ -475,11 +484,11 @@ void PathManager::PathLoopTask()
             Q1 = c_MotorAngle;
             if (p_R == 1)
             {
-                Q1[4] = Q1[4] + M_PI / 18;
+                Q1[4] = Q1[4] + M_PI / 36;
             }
             if (p_L == 1)
             {
-                Q1[6] = Q1[6] + M_PI / 18;
+                Q1[6] = Q1[6] - M_PI / 36;
             }
             Q2 = Q1;
         }
@@ -489,20 +498,20 @@ void PathManager::PathLoopTask()
             Q2 = Q1;
             if (c_R == 0)
             { // 왼손만 침
-                Q1[4] = Q1[4] + M_PI / 18;
-                Q2[4] = Q2[4] + M_PI / 18;
-                Q1[6] = Q1[6] + M_PI / 6;
+                Q1[4] = Q1[4] + M_PI / 36;
+                Q2[4] = Q2[4] + M_PI / 36;
+                Q1[6] = Q1[6] - M_PI / 18;
             }
             if (c_L == 0)
             { // 오른손만 침
-                Q1[4] = Q1[4] + M_PI / 6;
-                Q2[6] = Q2[6] + M_PI / 18;
-                Q2[6] = Q2[6] + M_PI / 18;
+                Q1[4] = Q1[4] + M_PI / 18;
+                Q2[6] = Q2[6] - M_PI / 36;
+                Q2[6] = Q2[6] - M_PI / 36;
             }
             else
             { // 왼손 & 오른손 침
-                Q1[4] = Q1[4] + M_PI / 6;
-                Q1[6] = Q1[6] + M_PI / 6;
+                Q1[4] = Q1[4] + M_PI / 18;
+                Q1[6] = Q1[6] - M_PI / 18;
             }
         }
 
@@ -537,11 +546,11 @@ void PathManager::PathLoopTask()
         Q3 = c_MotorAngle;
         if (p_R == 1)
         {
-            Q3[4] = Q3[4] + M_PI / 18;
+            Q3[4] = Q3[4] + M_PI / 36;
         }
         if (p_L == 1)
         {
-            Q3[6] = Q3[6] + M_PI / 18;
+            Q3[6] = Q3[6] - M_PI / 36;
         }
         Q4 = Q3;
     }
@@ -551,20 +560,20 @@ void PathManager::PathLoopTask()
         Q4 = Q3;
         if (c_R == 0)
         { // 왼손만 침
-            Q3[4] = Q3[4] + M_PI / 18;
-            Q4[4] = Q4[4] + M_PI / 18;
-            Q3[6] = Q3[6] + M_PI / 6;
+            Q3[4] = Q3[4] + M_PI / 36;
+            Q4[4] = Q4[4] + M_PI / 36;
+            Q3[6] = Q3[6] - M_PI / 18;
         }
         if (c_L == 0)
         { // 오른손만 침
-            Q3[4] = Q3[4] + M_PI / 6;
-            Q4[6] = Q4[6] + M_PI / 18;
-            Q4[6] = Q4[6] + M_PI / 18;
+            Q3[4] = Q3[4] + M_PI / 18;
+            Q4[6] = Q4[6] - M_PI / 36;
+            Q4[6] = Q4[6] - M_PI / 36;
         }
         else
         { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + M_PI / 6;
-            Q3[6] = Q3[6] + M_PI / 6;
+            Q3[4] = Q3[4] + M_PI / 18;
+            Q3[6] = Q3[6] - M_PI / 18;
         }
     }
 
@@ -589,7 +598,21 @@ void PathManager::PathLoopTask()
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 50, 1, 0);
+            
+            if(p_des < motor->rMin){
+                cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
+                p_des = motor->rMin;
+                v_des = 0.0f;
+                getchar();
+            }
+            else if(p_des > motor->rMax){
+                cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
+                p_des = motor->rMax;
+                v_des = 0.0f;
+                getchar();
+            }
+            
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
     }
@@ -605,7 +628,21 @@ void PathManager::PathLoopTask()
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 50, 1, 0);
+            
+            if(p_des < motor->rMin){
+                cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
+                p_des = motor->rMin;
+                v_des = 0.0f;
+                getchar();
+            }
+            else if(p_des > motor->rMax){
+                cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
+                p_des = motor->rMax;
+                v_des = 0.0f;
+                getchar();
+            }
+            
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
     }
@@ -633,7 +670,7 @@ void PathManager::GetBackArr()
         {
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 50, 1, 0);
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
         // cout << "\n";

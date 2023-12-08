@@ -8,7 +8,7 @@ void StateTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        if (systemState.main == Main::Home)
+        if (systemState.main == Main::Idle)
         {
             int ret = system("clear");
             if (ret == -1)
@@ -27,6 +27,7 @@ void StateTask::operator()()
             }
         }
     }
+    std::cout<<"Out of StateTask Loop\n";
 }
 
 std::string StateTask::getStateName() const
@@ -35,7 +36,7 @@ std::string StateTask::getStateName() const
     {
     case Main::SystemInit:
         return "System Initialization";
-    case Main::Home:
+    case Main::Idle:
         return "Home";
     case Main::Tune:
         return "Tune";
@@ -62,39 +63,38 @@ void StateTask::displayAvailableCommands() const
         std::cout << "- tune: Start tuning\n";
         std::cout << "- ready: Go to ready position\n";
     }
-    else if (systemState.main == Main::Home && systemState.runMode == RunMode::Ready)
+    else if (systemState.main == Main::Idle && systemState.runMode == RunMode::Ready)
     {
         std::cout << "- perform: Start performing\n";
     }
     std::cout << "- shutdown: Shut down the system\n";
+     std::cout << "- check: Check Motors position\n";
 }
 
 bool StateTask::processInput(const std::string &input)
 {
-    if (input == "homing" && systemState.main == Main::Home && systemState.homeMode == HomeMode::NotHome)
+    if (input == "homing" && systemState.main == Main::Idle && systemState.homeMode == HomeMode::NotHome)
     {
-        systemState.homeMode = HomeMode::Homing; // 상태 변경 예시
+        systemState.main = Main::Homing; // 상태 변경 예시
+        std::cout << "Now In homing\n";
         return true;
     }
-    else if (input == "tune" && systemState.main == Main::Home && systemState.homeMode == HomeMode::HomeReady)
+    else if (input == "tune" && systemState.main == Main::Idle && systemState.homeMode == HomeMode::HomeReady)
     {
         systemState.main = Main::Tune; // 상태 변경 예시
         return true;
     }
-    else if (input == "perform" && systemState.main == Main::Home 
-                                && systemState.runMode == RunMode::Ready)
+    else if (input == "perform" && systemState.main == Main::Idle && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::Ready)
     {
         systemState.main = Main::Perform; // 상태 변경 예시
         return true;
     }
-    else if (input == "ready" && systemState.main == Main::Home 
-                              && systemState.homeMode == HomeMode::HomeReady
-                              && systemState.runMode == RunMode::NotReady)
+    else if (input == "ready" && systemState.main == Main::Idle && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::NotReady)
     {
         systemState.main = Main::Ready;
         return true;
     }
-    else if (input == "xhome" && systemState.main == Main::Home && systemState.homeMode == HomeMode::NotHome)
+    else if (input == "xhome" && systemState.main == Main::Idle && systemState.homeMode == HomeMode::NotHome)
     {
         systemState.homeMode = HomeMode::HomeReady; // 상태 변경 예시
         return true;
@@ -102,6 +102,11 @@ bool StateTask::processInput(const std::string &input)
     else if (input == "shutdown")
     {
         systemState.main = Main::Shutdown;
+        return true;
+    }
+    else if (input == "check")
+    {
+        systemState.main = Main::Check;
         return true;
     }
     return false;
