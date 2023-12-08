@@ -1149,7 +1149,6 @@ bool SendLoopTask::CheckAllMotorsCurrentPosition()
         }
     }
     std::cout << "Press Enter to Move On" << endl;
-    getchar();
     return allMotorsChecked;
 }
 
