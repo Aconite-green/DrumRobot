@@ -12,6 +12,7 @@ void SendLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
+        usleep(2000);
         switch (systemState.main.load())
         {
         case Main::SystemInit:
@@ -21,18 +22,18 @@ void SendLoopTask::operator()()
             initializePathManager();
             std::cout << "Press Enter to go Home\n";
             getchar();
-            systemState.main = Main::Idle; // 작업 완료 후 상태 변경
+            systemState.main = Main::Ideal; // 작업 완료 후 상태 변경
             break;
 
         case Main::Homing:
             SetHome();
             systemState.homeMode = HomeMode::HomeReady;
-            systemState.main = Main::Idle;
+            systemState.main = Main::Ideal;
             break;
 
         case Main::Tune:
             TuningLoopTask();
-            systemState.main = Main::Idle;
+            systemState.main = Main::Ideal;
             break;
 
         case Main::Perform:
@@ -41,9 +42,9 @@ void SendLoopTask::operator()()
                 std::cout << "In perform mode\n";
                 systemState.runMode = RunMode::Running;
                 SendLoop();
-                systemState.runMode = RunMode::NotReady;
+                systemState.runMode = RunMode::Stop;
                 systemState.homeMode = HomeMode::HomeReady;
-                systemState.main = Main::Idle;
+                systemState.main = Main::Ideal;
             }
             break;
 
@@ -54,7 +55,7 @@ void SendLoopTask::operator()()
             };
             SendReadyLoop();
             systemState.runMode = RunMode::Ready;
-            systemState.main = Main::Idle;
+            systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
@@ -63,10 +64,10 @@ void SendLoopTask::operator()()
             CheckAllMotorsCurrentPosition();
             std::cout << "Press Enter to Go home\n";
             getchar();
-            systemState.main = Main::Idle;
+            systemState.main = Main::Ideal;
             break;
         default:
-            systemState.main = Main::Idle;
+            systemState.main = Main::Ideal;
         }
     }
     DeactivateControlTask();
@@ -85,9 +86,9 @@ void SendLoopTask::initializeTMotors()
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
     tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
 
-    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
-    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["L_arm"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
     {
@@ -1033,7 +1034,7 @@ void SendLoopTask::SendLoop()
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode == RunMode::Running)
+    while (systemState.runMode != RunMode::Stop)
     {
 
         if (systemState.runMode == RunMode::Pause)

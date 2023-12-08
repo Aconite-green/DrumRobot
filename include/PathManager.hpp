@@ -55,7 +55,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
-    int bpm = 80;
+    int bpm = 20;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;

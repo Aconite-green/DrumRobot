@@ -23,8 +23,11 @@ void RecieveLoopTask::checkUserInput()
         char input = getchar();
         if (input == 'q')
             systemState.runMode = RunMode::Pause;
-        else if (input == 'e')
+        else if (input == 'e'){
             systemState.runMode = RunMode::Stop;
+            systemState.main = Main::Ideal;
+            canUtils.restart_all_can_ports();
+        }
         else if (input == 'r')
             systemState.runMode = RunMode::Running;
     }
@@ -43,7 +46,7 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
     }
 
-    while (systemState.runMode == RunMode::Running)
+    while (systemState.runMode != RunMode::Stop)
     {
         checkUserInput();
 
