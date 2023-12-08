@@ -58,60 +58,60 @@ void StateTask::displayAvailableCommands() const
         && systemState.homeMode == HomeMode::NotHome
         && systemState.runMode == RunMode::Stop)
     {
-        std::cout << "- homing: Start homing\n";
-        std::cout << "- xhome : Make home state by user\n";
+        std::cout << "- h : Start homing\n";
+        std::cout << "- x  : Make home state by user\n";
     }
     else if (systemState.main == Main::Ideal 
             && systemState.homeMode == HomeMode::HomeReady 
             && systemState.runMode == RunMode::Stop)
     {
-        std::cout << "- tune: Start tuning\n";
-        std::cout << "- ready: Go to ready position\n";
+        std::cout << "- t : Start tuning\n";
+        std::cout << "- r : Go to ready position\n";
     }
     else if (systemState.main == Main::Ideal
             && systemState.homeMode == HomeMode::HomeReady 
             && systemState.runMode == RunMode::Ready)
     {
-        std::cout << "- perform: Start performing\n";
+        std::cout << "- p : Start performing\n";
     }
-    std::cout << "- shutdown: Shut down the system\n";
-     std::cout << "- check: Check Motors position\n";
+    std::cout << "- s : Shut down the system\n";
+     std::cout << "- c : Check Motors position\n";
 }
 
 bool StateTask::processInput(const std::string &input)
 {
-    if (input == "homing" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::NotHome)
+    if (input == "h" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::NotHome)
     {
         systemState.main = Main::Homing; // 상태 변경 예시
         std::cout << "Now In homing\n";
         return true;
     }
-    else if (input == "tune" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady)
+    else if (input == "t" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady)
     {
         systemState.main = Main::Tune; // 상태 변경 예시
         return true;
     }
-    else if (input == "perform" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::Ready)
+    else if (input == "p" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::Ready)
     {
         systemState.main = Main::Perform; // 상태 변경 예시
         return true;
     }
-    else if (input == "ready" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::Stop)
+    else if (input == "r" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::HomeReady && systemState.runMode == RunMode::Stop)
     {
         systemState.main = Main::Ready;
         return true;
     }
-    else if (input == "xhome" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::NotHome)
+    else if (input == "x" && systemState.main == Main::Ideal && systemState.homeMode == HomeMode::NotHome)
     {
         systemState.homeMode = HomeMode::HomeReady; // 상태 변경 예시
         return true;
     }
-    else if (input == "shutdown")
+    else if (input == "s")
     {
         systemState.main = Main::Shutdown;
         return true;
     }
-    else if (input == "check")
+    else if (input == "c")
     {
         systemState.main = Main::Check;
         return true;
