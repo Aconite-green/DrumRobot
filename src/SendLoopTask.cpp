@@ -541,12 +541,6 @@ void SendLoopTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string
     CheckCurrentPosition(motor);
 }
 
-struct MotorSettings
-{
-    double direction;
-    int sensorBit;
-};
-
 void SendLoopTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName)
 {
     struct can_frame frameToProcess;
@@ -569,9 +563,6 @@ void SendLoopTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &
 
     float midpoint = MoveMotorToSensorLocation(motor, motorName, motor->sensorBit);
 
-    cout << "\nPress Enter to move to Home Position\n";
-    getchar();
-
     double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.0;
     midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
     RotateMotor(motor, motorName, -motor->cwDir, degree, midpoint);
@@ -589,6 +580,23 @@ void SendLoopTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &
     // 상태 확인
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
     SendCommandToMotor(motor, frameToProcess, motorName);
+
+    if (motorName == "L_arm1" || motorName == "R_arm1")
+    {
+        CheckCurrentPosition(motor);
+        RotateMotor(motor, motorName, motor->cwDir, 90, 0);
+    }
+    /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
+    if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
+    {
+        CheckCurrentPosition(motor);
+        RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
+    }
+    if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
+    {
+        RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
+    }
+    */
 }
 
 void SendLoopTask::SetHome()
@@ -596,11 +604,14 @@ void SendLoopTask::SetHome()
     sensor.OpenDeviceUntilSuccess();
     canUtils.set_all_sockets_timeout(5, 0);
 
-    for (auto &motor_pair : tmotors) {
+    for (auto &motor_pair : tmotors)
+    {
         // 허리는 home 안잡음
-        if (motor_pair.first == "waist") continue;
+        if (motor_pair.first == "waist")
+            continue;
 
-        if (!PromptUserForHoming(motor_pair.first)) continue; // 사용자에게 홈 설정을 묻는 함수
+        if (!PromptUserForHoming(motor_pair.first))
+            continue; // 사용자에게 홈 설정을 묻는 함수
 
         HomeMotor(motor_pair.second, motor_pair.first);
     }

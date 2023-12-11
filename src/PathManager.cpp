@@ -497,23 +497,25 @@ void PathManager::PathLoopTask()
         {
             Q1 = IKfun(P1, P2, R, s, z0);
             Q2 = Q1;
-            if (c_R == 0)
+            if (c_R != 0 && c_L != 0)
+            { // 왼손 & 오른손 침
+                Q1[4] = Q1[4] + M_PI / 18;
+                Q1[6] = Q1[6] - M_PI / 18;
+            }
+            else if (c_L != 0)
             { // 왼손만 침
                 Q1[4] = Q1[4] + M_PI / 36;
                 Q2[4] = Q2[4] + M_PI / 36;
                 Q1[6] = Q1[6] - M_PI / 18;
             }
-            if (c_L == 0)
+            else if (c_R != 0)
             { // 오른손만 침
                 Q1[4] = Q1[4] + M_PI / 18;
                 Q2[6] = Q2[6] - M_PI / 36;
                 Q2[6] = Q2[6] - M_PI / 36;
             }
-            else
-            { // 왼손 & 오른손 침
-                Q1[4] = Q1[4] + M_PI / 18;
-                Q1[6] = Q1[6] - M_PI / 18;
-            }
+            // 허리는 Q1 ~ Q2 동안 계속 이동
+            Q1[0] = (Q1[0] + c_MotorAngle[0]) / 2.0;
         }
 
         p_R = c_R;
@@ -544,7 +546,7 @@ void PathManager::PathLoopTask()
 
     if (c_R == 0 && c_L == 0)
     { // 왼손 & 오른손 안침
-        Q3 = c_MotorAngle;
+        Q3 = Q2;
         if (p_R == 1)
         {
             Q3[4] = Q3[4] + M_PI / 36;
@@ -559,23 +561,25 @@ void PathManager::PathLoopTask()
     {
         Q3 = IKfun(P1, P2, R, s, z0);
         Q4 = Q3;
-        if (c_R == 0)
+        if (c_R != 0 && c_L != 0)
+        { // 왼손 & 오른손 침
+            Q3[4] = Q3[4] + M_PI / 18;
+            Q3[6] = Q3[6] - M_PI / 18;
+        }
+        else if (c_L != 0)
         { // 왼손만 침
             Q3[4] = Q3[4] + M_PI / 36;
             Q4[4] = Q4[4] + M_PI / 36;
             Q3[6] = Q3[6] - M_PI / 18;
         }
-        if (c_L == 0)
+        else if (c_R != 0)
         { // 오른손만 침
             Q3[4] = Q3[4] + M_PI / 18;
             Q4[6] = Q4[6] - M_PI / 36;
             Q4[6] = Q4[6] - M_PI / 36;
         }
-        else
-        { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + M_PI / 18;
-            Q3[6] = Q3[6] - M_PI / 18;
-        }
+        // 허리는 Q3 ~ Q4 동안 계속 이동
+        Q3[0] = (Q3[0] + Q2[0]) / 2.0;
     }
 
     p_R = c_R;
