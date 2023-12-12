@@ -42,7 +42,8 @@ public:
 
     int end = 0;
     int line = 0;
-    vector<vector<double>> q;
+    vector<vector<double>> p;
+    vector<vector<double>> v;
 
 private:
     queue<can_frame> &sendBuffer;
@@ -55,7 +56,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
-    int bpm = 20;
+    int bpm = 80;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
@@ -86,8 +87,6 @@ private:
     double z0 = 0.000;
 
     vector<double> Q1, Q2, Q3, Q4;
-    vector<vector<double>> p;
-    vector<vector<double>> v;
 
     map<string, int> motor_mapping = {
         {"L_arm1", 2}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_arm1", 1}, {"R_arm2", 3}, {"R_arm3", 4}, {"waist", 0}

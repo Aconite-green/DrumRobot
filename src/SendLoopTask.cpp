@@ -1096,7 +1096,7 @@ void SendLoopTask::SendLoop()
     csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
-    for (const auto &row : pathManager.q)
+    for (const auto &row : pathManager.p)
     {
         for (const double cell : row)
         {
