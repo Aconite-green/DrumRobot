@@ -128,6 +128,7 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
 
 vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
+    double direction = -M_PI / 6.0;
     vector<double> Qf;
 
     double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
@@ -256,32 +257,28 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     Q.push_back(Q5);
     Q.push_back(Q6);
 
-    // Find the median index
     int num_columns = Q[0].size();
-    int index_theta0_min = 0, index_theta0_max = 0;
+    int index_theta0_min = 0;
 
-    // Find index of minimum and maximum values in the first row of A
+    // Find index of minimum absolute difference
     for (int i = 1; i < num_columns; i++)
     {
-        if (Q[0][i] > Q[0][index_theta0_max])
-            index_theta0_max = i;
-        if (Q[0][i] < Q[0][index_theta0_min])
+        if (abs(direction - Q[0][i]) < abs(direction - Q[0][index_theta0_min]))
             index_theta0_min = i;
     }
-
-    // Calculate the median index of the min and max
-    int index_theta0_med = round((index_theta0_min + index_theta0_max) / 2);
 
     Qf.resize(7);
 
     for (int i = 0; i < 7; i++)
     {
         // 모터 방향에 따라 부호 결정
-        if(i == 5 || i == 6){
-            Qf[i] = -Q[i][index_theta0_med];
+        if (i == 5 || i == 6)
+        {
+            Qf[i] = -Q[i][index_theta0_min];
         }
-        else{
-            Qf[i] = Q[i][index_theta0_med];
+        else
+        {
+            Qf[i] = Q[i][index_theta0_min];
         }
     }
 
@@ -306,7 +303,8 @@ void PathManager::GetMusicSheet()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
-            if(i == 0 || i == 1 || i == 3 || i == 4){
+            if (i == 0 || i == 1 || i == 3 || i == 4)
+            {
                 inst_xyz[i][j] = inst_xyz[i][j] * 1.25;
             }
         }
@@ -426,13 +424,12 @@ void PathManager::GetReadyArr()
     for (auto &entry : tmotors)
     {
         cnt++;
-        cout << "cnt : " <<cnt <<endl;
+        cout << "cnt : " << cnt << endl;
         std::shared_ptr<TMotor> &motor = entry.second;
         c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
-    
 
     int n = 800;
     for (int k = 0; k < n; k++)
@@ -603,20 +600,22 @@ void PathManager::PathLoopTask()
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
-            
-            if(p_des < motor->rMin){
+
+            if (p_des < motor->rMin)
+            {
                 cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
                 p_des = motor->rMin;
                 v_des = 0.0f;
                 getchar();
             }
-            else if(p_des > motor->rMax){
+            else if (p_des > motor->rMax)
+            {
                 cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
                 p_des = motor->rMax;
                 v_des = 0.0f;
                 getchar();
             }
-            
+
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
@@ -633,20 +632,22 @@ void PathManager::PathLoopTask()
             std::shared_ptr<TMotor> &motor = entry.second;
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
-            
-            if(p_des < motor->rMin){
+
+            if (p_des < motor->rMin)
+            {
                 cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
                 p_des = motor->rMin;
                 v_des = 0.0f;
                 getchar();
             }
-            else if(p_des > motor->rMax){
+            else if (p_des > motor->rMax)
+            {
                 cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
                 p_des = motor->rMax;
                 v_des = 0.0f;
                 getchar();
             }
-            
+
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
