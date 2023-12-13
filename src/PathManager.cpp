@@ -126,10 +126,14 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
     v.push_back(v_out);
 }
 
-vector<double> PathManager::IKfun_min(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
+vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
-    double direction = -M_PI / 6.0;
+    // 드럼위치의 중점 각도
+    double direction = -M_PI / 3.0;
+
+    // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
+    
     vector<double> Qf;
 
     double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
@@ -262,169 +266,10 @@ vector<double> PathManager::IKfun_min(vector<double> &P1, vector<double> &P2, ve
     Q.push_back(Q5);
     Q.push_back(Q6);
 
-    int num_columns = Q[0].size();
     int index_theta0_min = 0;
 
     // Find index of minimum absolute difference
-    for (int i = 1; i < num_columns; i++)
-    {
-        if (abs(direction - Q[0][i]) < abs(direction - Q[0][index_theta0_min]))
-            index_theta0_min = i;
-    }
-
-    Qf.resize(7);
-
-    for (int i = 0; i < 7; i++)
-    {
-        // 모터 방향에 따라 부호 결정
-        if (i == 5 || i == 6)
-        {
-            Qf[i] = -Q[i][index_theta0_min];
-        }
-        else
-        {
-            Qf[i] = Q[i][index_theta0_min];
-        }
-    }
-
-    return Qf;
-}
-
-vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
-{
-    double direction = -M_PI / 6.0;
-    double differ = M_PI / 6.0;
-    vector<double> Qf;
-
-    double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
-    double X2 = P2[0], Y2 = P2[1], z2 = P2[2];
-    double r1 = R[0], r2 = R[1], r3 = R[2], r4 = R[3];
-
-    int j = 0;
-    vector<double> the3(180);
-    for (int i = 0; i < 180; i++)
-    {
-        the3[i] = -M_PI / 2 + (M_PI * i) / 179;
-    }
-
-    double zeta = z0 - z2;
-
-    double det_the4;
-    double the34;
-    double the4;
-    double r;
-    double det_the1;
-    double the1;
-    double det_the0;
-    double the0;
-    double L;
-    double det_the2;
-    double the2;
-    double T;
-    double det_the5;
-    double sol;
-    double the5;
-    double alpha, beta, gamma;
-    double det_the6;
-    double rol;
-    double the6;
-    double Z;
-
-    vector<double> Q0;
-    vector<double> Q1;
-    vector<double> Q2;
-    vector<double> Q3;
-    vector<double> Q4;
-    vector<double> Q5;
-    vector<double> Q6;
-
-    for (int i = 0; i < 179; i++)
-    {
-        det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
-
-        if (det_the4 < 1 && det_the4 > -1)
-        {
-            the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
-            the4 = the34 - the3[i];
-
-            if (the4 > 0)
-            {
-                r = r1 * sin(the3[i]) + r2 * sin(the34);
-
-                det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
-                if (det_the1 < 1 && det_the1 > -1)
-                {
-                    the1 = acos(det_the1);
-                    alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
-                    det_the0 = (s / 4 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
-                    if (det_the0 < 1 && det_the0 > -1)
-                    {
-                        the0 = asin(det_the0) - alpha;
-
-                        L = sqrt(pow(X2 - 0.5 * s * cos(the0 + M_PI), 2) +
-                                 pow(Y2 - 0.5 * s * sin(the0 + M_PI), 2));
-                        det_the2 = (X2 + 0.5 * s * cos(the0)) / L;
-
-                        if (det_the2 < 1 && det_the2 > -1)
-                        {
-                            the2 = acos(det_the2) - the0;
-                            T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
-                            det_the5 = L * L + zeta * zeta - T * T;
-
-                            if (det_the5 > 0)
-                            {
-                                sol = T * L - abs(zeta) * sqrt(L * L + zeta * zeta - T * T);
-                                sol /= (L * L + zeta * zeta);
-                                the5 = asin(sol);
-
-                                alpha = L - r3 * sin(the5);
-                                beta = r4 * sin(the5);
-                                gamma = r4 * cos(the5);
-
-                                det_the6 = gamma * gamma + beta * beta - alpha * alpha;
-
-                                if (det_the6 > 0)
-                                {
-                                    rol = alpha * beta - abs(gamma) * sqrt(det_the6);
-                                    rol /= (beta * beta + gamma * gamma);
-                                    the6 = acos(rol);
-                                    Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
-
-                                    if (Z < z2 + 0.001 && Z > z2 - 0.001)
-                                    {
-                                        Q0.push_back(the0);
-                                        Q1.push_back(the1);
-                                        Q2.push_back(the2);
-                                        Q3.push_back(the3[i]);
-                                        Q4.push_back(the4);
-                                        Q5.push_back(the5);
-                                        Q6.push_back(the6);
-
-                                        j++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    vector<vector<double>> Q;
-    Q.push_back(Q0);
-    Q.push_back(Q1);
-    Q.push_back(Q2);
-    Q.push_back(Q3);
-    Q.push_back(Q4);
-    Q.push_back(Q5);
-    Q.push_back(Q6);
-
-    int num_columns = Q[0].size();
-    int index_theta0_min = 0;
-
-    // Find index of minimum absolute difference
-    for (int i = 1; i < num_columns; i++)
+    for (long unsigned int i = 1; i < Q[0].size(); i++)
     {
         if (abs(direction - Q[0][i]) < abs(direction - Q[0][index_theta0_min]))
             index_theta0_min = i;
@@ -466,9 +311,9 @@ void PathManager::GetMusicSheet()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
-            if (i == 0 || i == 1 || i == 3 || i == 4)
+            if (i == 0|| i == 3)
             {
-                inst_xyz[i][j] = inst_xyz[i][j] * 1.2;
+                inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
             }
         }
     }
@@ -524,7 +369,7 @@ void PathManager::GetMusicSheet()
 
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
-        {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 5}, {"7", 4}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
+        {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
 
     string score_path = "../include/codeConfession.txt";
 
