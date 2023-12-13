@@ -87,9 +87,9 @@ void SendLoopTask::initializeTMotors()
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
     tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
 
-    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
-    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["L_arm"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
     {
@@ -1137,12 +1137,12 @@ bool SendLoopTask::CheckAllMotorsCurrentPosition()
 
 void SendLoopTask::SendReadyLoop()
 {
+    cout << "Set Ready.\n";
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
     while (sendBuffer.size() != 0)
     {
-        std::cout << "In ready loop\n";
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
 

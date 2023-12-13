@@ -1,7 +1,7 @@
 #include "../include/RecieveLoopTask.hpp"
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef, std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,CanSocketUtils &canUtilsRef)
-    : systemState(systemStateRef), tmotors(tmotorsRef),canUtils(canUtilsRef)
+    : systemState(systemStateRef), tmotors(tmotorsRef), canUtils(canUtilsRef)
 {
 }
 
