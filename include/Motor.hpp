@@ -34,6 +34,8 @@ public:
     int sensorBit;
     float lastPosition; 
 
+
+
     float rMin, rMax;
     float pMin, pMax;
     float vMin, vMax;
