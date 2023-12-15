@@ -20,16 +20,18 @@ int main(int argc, char *argv[])
 {
 
     // Create Share Resource
+
     SystemState systemState;
     CanSocketUtils canUtils;
-    queue<can_frame> sendBuffer;
     map<string, shared_ptr<TMotor>> tmotors;
+    map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
+    queue<can_frame> sendBuffer;
+    queue<can_frame> recieveBuffer;
 
     // Create Tasks for Threads
     StateTask stateTask(systemState);
-    SendLoopTask sendLoopTask(systemState, canUtils, tmotors, sendBuffer);
-    RecieveLoopTask recieveLoopTask(systemState, tmotors,canUtils);
-    
+    SendLoopTask sendLoopTask(systemState, canUtils, tmotors, maxonMotors, sendBuffer);
+    RecieveLoopTask recieveLoopTask(systemState, canUtils, tmotors, maxonMotors, recieveBuffer);
 
     // Create Threads
     std::thread state_thread(stateTask);

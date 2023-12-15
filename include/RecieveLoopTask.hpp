@@ -38,21 +38,21 @@ class RecieveLoopTask
 {
 public:
     // 생성자 선언
-    RecieveLoopTask(SystemState &systemStateRef, std::map<std::string, 
-                    std::shared_ptr<TMotor>> &tmotorsRef,
-                    CanSocketUtils &canUtilsRef);
-
+    RecieveLoopTask(SystemState &systemStateRef,
+                    CanSocketUtils &canUtilsRef,
+                    std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                    queue<can_frame> &recieveBufferRef);
     // operator() 함수 선언
     void operator()();
 
 private:
     SystemState &systemState;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
     CanSocketUtils &canUtils;
-     // 모터 배열
-    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
-
-    queue<can_frame> recieveBuffer;
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
+    queue<can_frame> &recieveBuffer;
+    
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     Sensor sensor;

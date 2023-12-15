@@ -42,6 +42,7 @@ public:
     SendLoopTask(SystemState &systemStateRef, 
                  CanSocketUtils &canUtilsRef, 
                  std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
                  queue<can_frame> &sendBufferRef);
 
     // operator() 함수 선언
@@ -51,9 +52,9 @@ private:
     SystemState &systemState;
     CanSocketUtils &canUtils;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
-    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
-
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;        // 가정된 MaxonMotor 배열
     queue<can_frame> &sendBuffer;
+
 
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;

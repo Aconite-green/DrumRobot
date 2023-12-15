@@ -118,3 +118,18 @@ bool StateTask::processInput(const std::string &input)
     }
     return false;
 }
+
+void StateTask::homeModeLoop()
+{
+    // HomeMode와 관련된 로직
+}
+
+void StateTask::runModeLoop()
+{
+    // RunMode와 관련된 로직
+}
+
+void StateTask::idealStateRoutine()
+{
+    // 기존의 Ideal 상태에 대한 처리
+}

@@ -3,8 +3,9 @@
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            CanSocketUtils &canUtilsRef,
                            std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                           std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef, 
                            queue<can_frame> &sendBufferRef)
-    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef)
+    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef),sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef)
 {
 }
 

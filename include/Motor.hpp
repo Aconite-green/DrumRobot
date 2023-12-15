@@ -35,11 +35,6 @@ public:
     float lastPosition; 
 
     float rMin, rMax;
-    float pMin, pMax;
-    float vMin, vMax;
-    float kpMin, kpMax;
-    float kdMin, kdMax;
-    float tMin, tMax;
 
     std::string motorType;
     std::string interFaceName;

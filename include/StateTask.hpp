@@ -48,6 +48,10 @@ public:
 private:
     SystemState& systemState; // 상태 참조
 
+    void homeModeLoop();
+    void runModeLoop();
+    void idealStateRoutine();
+
     // 추가된 private 함수들
     void displayAvailableCommands() const;
     std::string getStateName() const;
