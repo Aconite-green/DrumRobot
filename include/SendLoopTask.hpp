@@ -69,4 +69,6 @@ private:
     bool CheckAllMotorsCurrentPosition();
     bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
     int writeFailCount;
+    void initializePathManager();
+
 };

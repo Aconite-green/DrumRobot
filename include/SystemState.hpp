@@ -24,8 +24,9 @@ enum class HomeMode
 };
 
 enum class RunMode
-{   NotReady,
-    Ready,  //연주 하기전상태
+{   PrePreparation,
+    Preparing,
+    Ready,
     Running,//연주중
     Pause,//일시정지
     Stop,//아예 멈춤
@@ -40,5 +41,5 @@ struct SystemState
 
     SystemState() : main(Main::SystemInit),
                     homeMode(HomeMode::NotHome),
-                    runMode(RunMode::NotReady) {}
+                    runMode(RunMode::PrePreparation) {}
 };

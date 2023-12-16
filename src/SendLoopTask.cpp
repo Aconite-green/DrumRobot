@@ -11,6 +11,7 @@ SendLoopTask::SendLoopTask(SystemState &systemStateRef,
 
 void SendLoopTask::operator()()
 {
+
     while (systemState.main != Main::Shutdown)
     {
         usleep(50000);
@@ -18,12 +19,14 @@ void SendLoopTask::operator()()
         {
             usleep(50000);
 
-            if (systemState.runMode == RunMode::Ready)
+            if (systemState.runMode == RunMode::Preparing)
             {
                 if (CheckAllMotorsCurrentPosition())
                 {
+                    initializePathManager();
                     pathManager.GetReadyArr();
                     SendReadyLoop();
+                    systemState.runMode = RunMode::Ready;
                 }
             }
             else if (systemState.runMode == RunMode::Running)
@@ -288,4 +291,10 @@ bool SendLoopTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
         cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
         return false;
     }
+}
+
+void SendLoopTask::initializePathManager()
+{
+    pathManager.motorInitialize(tmotors);
+    pathManager.GetMusicSheet();
 }

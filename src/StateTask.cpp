@@ -82,15 +82,16 @@ void StateTask::runModeLoop()
     {
         switch (systemState.runMode.load())
         {
-        case RunMode::NotReady:
+        case RunMode::PrePreparation:
             std::cout << "Press 'r' to set Ready mode: ";
             char input;
             std::cin >> input;
             if (input == 'r')
             {
-                systemState.runMode = RunMode::Ready;
-                std::cout << "RunMode set to Ready.\n";
+                systemState.runMode = RunMode::Preparing;
             }
+            break;
+        case RunMode::Preparing:
             break;
         case RunMode::Ready:
             std::cout << "Press 'p' to start performing: ";
@@ -98,13 +99,13 @@ void StateTask::runModeLoop()
             if (input == 'p')
             {
                 systemState.runMode = RunMode::Running;
-                std::cout << "RunMode set to Running. Performance started.\n";
             }
             break;
         case RunMode::Running:
             checkUserInput();
             break;
         case RunMode::Pause:
+            checkUserInput();
             break;
         case RunMode::Stop:
             systemState.homeMode = HomeMode::HomeDone;
@@ -114,7 +115,6 @@ void StateTask::runModeLoop()
             // 오류 처리
             break;
         }
-        // 추가적인 상태 처리 또는 작업
     }
 }
 
@@ -128,12 +128,12 @@ void StateTask::displayAvailableCommands() const
 
     if (systemState.main == Main::Ideal)
     {
-        if (systemState.homeMode == HomeMode::NotHome && systemState.runMode == RunMode::NotReady)
+        if (systemState.homeMode == HomeMode::NotHome && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- h : Start Homing Mode\n";
             std::cout << "- x  : Make home state by user\n";
         }
-        else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::NotReady)
+        else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- t : Start tuning\n";
             std::cout << "- p : Start Perform Mode\n";
@@ -422,19 +422,20 @@ void StateTask::ActivateControlTask()
         {
             std::string name = motorPair.first;
             std::shared_ptr<MaxonMotor> motor = motorPair.second;
-
+            bool checkSuccess = true;
             // 상태 확인
             fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
+                           [&checkSuccess](const std::string &motorName, bool result)
                            {
-                               if (success)
+                               if (!result)
                                {
-                                   std::cout << "Motor [" << motorName << "] status check passed." << std::endl;
+                                   std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
+                                   checkSuccess = false;
                                }
                                else
                                {
-                                   std::cerr << "Motor [" << motorName << "] status check failed." << std::endl;
+                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
                                }
                            });
 
@@ -467,16 +468,8 @@ void StateTask::ActivateControlTask()
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success)
-                        {
-                            if (success)
-                            {
-                                std::cout << "Enabled for motor [" << motorName << "]." << std::endl;
-                            }
-                            else
-                            {
-                                std::cerr << "Failed to Enable for motor [" << motorName << "]." << std::endl;
-                            }
+                        [](const std::string &motorName, bool success) {
+
                         });
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
