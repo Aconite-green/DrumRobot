@@ -122,22 +122,6 @@ void StateTask::runModeLoop()
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string StateTask::getStateName() const
-{
-    switch (systemState.main.load())
-    {
-    case Main::SystemInit:
-        return "System Initialization";
-    case Main::Ideal:
-        return "Ideal";
-    case Main::Tune:
-        return "Tune";
-    default:
-        return "Unknown";
-    }
-}
-
-
 void StateTask::displayAvailableCommands() const
 {
     std::cout << "Available Commands:\n";
@@ -214,7 +198,6 @@ void StateTask::idealStateRoutine()
     if (ret == -1)
         cout << "system clear error" << endl;
 
-    std::cout << "\nCurrent State: " << getStateName() << "\n";
     displayAvailableCommands();
 
     std::string input;

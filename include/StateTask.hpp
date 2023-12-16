@@ -57,7 +57,6 @@ private:
     Sensor sensor;
     // State Utility
     void displayAvailableCommands() const;
-    std::string getStateName() const;
     bool processInput(const std::string &input);
     void idealStateRoutine();
     void checkUserInput();
