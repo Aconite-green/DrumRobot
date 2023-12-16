@@ -61,7 +61,6 @@ private:
     const int TIME_THRESHOLD_MS = 5;
     int writeFailCount = 0;
 
-    void checkUserInput();
     void RecieveLoop(queue<can_frame> &recieveBuffer);
     void handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer);
     void parse_and_save_to_csv(const std::string &csv_file_name);

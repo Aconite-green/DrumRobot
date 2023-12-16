@@ -1,10 +1,10 @@
 #include "../include/RecieveLoopTask.hpp"
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
-                    CanSocketUtils &canUtilsRef,
-                    std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-                    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
-                    queue<can_frame> &recieveBufferRef): systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
+                                 CanSocketUtils &canUtilsRef,
+                                 std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
 {
 }
 
@@ -12,29 +12,19 @@ void RecieveLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        usleep(2000);
-        if (systemState.main == Main::Perform)
-            RecieveLoop(recieveBuffer);
+        usleep(50000);
+        while (systemState.main == Main::Perform)
+        {
+            usleep(50000);
+
+            if (systemState.runMode == RunMode::Running)
+            {
+                RecieveLoop(recieveBuffer);
+            }
+        }
     }
-    std::cout<<"Out of Recv loop\n";
 }
 
-void RecieveLoopTask::checkUserInput()
-{
-    if (kbhit())
-    {
-        char input = getchar();
-        if (input == 'q')
-            systemState.runMode = RunMode::Pause;
-        else if (input == 'e'){
-            systemState.runMode = RunMode::Stop;
-            systemState.main = Main::Ideal;
-            canUtils.restart_all_can_ports();
-        }
-        else if (input == 'r')
-            systemState.runMode = RunMode::Running;
-    }
-}
 
 void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
@@ -51,7 +41,6 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 
     while (systemState.runMode != RunMode::Stop)
     {
-        checkUserInput();
 
         if (systemState.runMode == RunMode::Pause)
         {

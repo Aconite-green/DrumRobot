@@ -29,31 +29,63 @@
 #include <chrono>
 #include <set>
 
-
-
 #include "SystemState.hpp"
+#include "SenSor.hpp"
 
 using namespace std;
 
-
-
-class StateTask {
+class StateTask
+{
 public:
     // 생성자 선언
-   StateTask(SystemState& systemStateRef);
+    StateTask(SystemState &systemStateRef,
+              CanSocketUtils &canUtilsRef,
+              std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+              std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
     // operator() 함수 선언
     void operator()();
 
 private:
-    SystemState& systemState; // 상태 참조
+    SystemState &systemState; // 상태 참조
+    CanSocketUtils &canUtils;
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
 
-    void homeModeLoop();
-    void runModeLoop();
-    void idealStateRoutine();
-
-    // 추가된 private 함수들
+    TMotorCommandParser TParser;
+    MaxonCommandParser MParser;
+    Sensor sensor;
+    // State Utility
     void displayAvailableCommands() const;
     std::string getStateName() const;
-    bool processInput(const std::string& input);
+    bool processInput(const std::string &input);
+    void idealStateRoutine();
+    void checkUserInput();
+
+    // System Initiallize
+    void initializeTMotors();
+    void initializeCanUtils();
+    void ActivateControlTask();
+    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
+    void DeactivateControlTask();
+
+    // Home
+    void homeModeLoop();
+    void SetHome();
+    void HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
+    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
+    float MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
+    void RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
+    void SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
+    bool PromptUserForHoming(const std::string &motorName);
+    bool CheckAllMotorsCurrentPosition();
+
+    // Tune
+    void FixMotorPosition();
+    void Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningLoopTask();
+    void InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
+
+    // Perform
+    void runModeLoop();
 };
