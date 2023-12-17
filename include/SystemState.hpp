@@ -17,8 +17,7 @@ enum class Main
 
 enum class HomeMode
 {
-    NotHome,    // Homing이 완료되춤지 않은 초기상태
-    Homing,    // Home 시작
+    NotHome,    // Homing이 완료되춤지 않은 초기상태  
     HomeDone,// Home 완료
     HomeError
 };

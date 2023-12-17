@@ -15,7 +15,8 @@ void StateTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
-        switch (systemState.main.load())
+        Main currentState = systemState.main.load();
+        switch (currentState)
         {
         case Main::SystemInit:
             initializeTMotors();
@@ -49,6 +50,11 @@ void StateTask::operator()()
             break;
         default:
             systemState.main = Main::Ideal;
+            break;
+        }
+        if (currentState != systemState.main.load())
+        {
+            emit stateChanged(systemState.main.load());
         }
     }
     DeactivateControlTask();
@@ -58,21 +64,43 @@ void StateTask::homeModeLoop()
 {
     while (systemState.main == Main::Homing)
     {
-        switch (systemState.homeMode.load())
+        displayHomingStatus();
+
+        std::string motorName;
+        std::cout << "Enter the name of the motor to home , or 'all' to home all motors: ";
+        std::cin >> motorName;
+
+        if (motorName == "all")
         {
-        case HomeMode::NotHome:
-            break;
-        case HomeMode::Homing:
-            SetHome();
-            systemState.homeMode = HomeMode::HomeDone;
-            systemState.main = Main::Ideal;
-            break;
-        case HomeMode::HomeDone:
-            break;
-        case HomeMode::HomeError:
-            break;
+            // 우선순위가 높은 모터 먼저 홈
+            std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
+            for (const auto &pmotorName : priorityMotors)
+            {
+                if (tmotors.find(pmotorName) != tmotors.end())
+                {
+                    SetHome(tmotors[pmotorName], pmotorName);
+                }
+            }
+
+            // 나머지 모터 홈
+            for (auto &motor_pair : tmotors)
+            {
+                if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end())
+                {
+                    SetHome(motor_pair.second, motor_pair.first);
+                }
+            }
         }
-        // 추가적인 상태 처리 또는 작업
+        else if (tmotors.find(motorName) != tmotors.end())
+        {
+            SetHome(tmotors[motorName], motorName);
+        }
+        else
+        {
+            std::cout << "Motor not found: " << motorName << std::endl;
+        }
+
+        UpdateHomingStatus();
     }
 }
 
@@ -231,6 +259,7 @@ void StateTask::checkUserInput()
 
     usleep(500000);
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 SYSTEM                                     */
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,6 +286,7 @@ void StateTask::initializeTMotors()
             motor->cwDir = 1.0f;
             motor->rMin = -M_PI * 0.75f; // -120deg
             motor->rMax = M_PI / 2.0f;   // 90deg
+            motor->isHomed = true;
         }
         else if (motor_pair.first == "R_arm1")
         {
@@ -264,6 +294,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 1;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
+            motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm1")
         {
@@ -271,6 +302,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 1;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
+            motor->isHomed = false;
         }
         else if (motor_pair.first == "R_arm2")
         {
@@ -278,6 +310,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 1;
             motor->rMin = -M_PI / 4.0f; // -45deg
             motor->rMax = M_PI / 2.0f;  // 90deg
+            motor->isHomed = false;
         }
         else if (motor_pair.first == "R_arm3")
         {
@@ -285,6 +318,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 1;
             motor->rMin = 0.0f;         // 0deg
             motor->rMax = M_PI * 0.75f; // 135deg
+            motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm2")
         {
@@ -292,6 +326,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 0;
             motor->rMin = -M_PI / 2.0f; // -90deg
             motor->rMax = M_PI / 4.0f;  // 45deg
+            motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm3")
         {
@@ -299,6 +334,7 @@ void StateTask::initializeTMotors()
             motor->sensorBit = 2;
             motor->rMin = -M_PI * 0.75f; // -135deg
             motor->rMax = 0.0f;          // 0deg
+            motor->isHomed = false;
         }
     }
 
@@ -569,9 +605,23 @@ void StateTask::DeactivateControlTask()
     }
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-/*                                  HOME                                      */
-///////////////////////////////////////////////////////////////////////////////
+bool StateTask::CheckAllMotorsCurrentPosition()
+{
+    std::cout << "Checking all positions for motors" << endl;
+    bool allMotorsChecked = true;
+    for (const auto &motor_pair : tmotors)
+    {
+        std::shared_ptr<TMotor> motor = motor_pair.second;
+        bool motorChecked = CheckCurrentPosition(motor);
+        if (!motorChecked)
+        {
+            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+            allMotorsChecked = false;
+        }
+    }
+    std::cout << "Press Enter to Move On" << endl;
+    return allMotorsChecked;
+}
 
 bool StateTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
 {
@@ -614,6 +664,10 @@ bool StateTask::CheckCurrentPosition(std::shared_ptr<TMotor> motor)
         return false;
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                  HOME                                      */
+///////////////////////////////////////////////////////////////////////////////
 
 void StateTask::SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName)
 {
@@ -742,24 +796,22 @@ void StateTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &mot
     */
 }
 
-void StateTask::SetHome()
+void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName)
 {
     sensor.OpenDeviceUntilSuccess();
     canUtils.set_all_sockets_timeout(5, 0);
 
-    for (auto &motor_pair : tmotors)
+    // 허리는 home 안잡음
+    if (motorName != "waist")
     {
-        // 허리는 home 안잡음
-        if (motor_pair.first == "waist")
-            continue;
-
-        if (!PromptUserForHoming(motor_pair.first))
-            continue; // 사용자에게 홈 설정을 묻는 함수
-
-        HomeMotor(motor_pair.second, motor_pair.first);
+        if (PromptUserForHoming(motorName))
+        {
+            HomeMotor(motor, motorName);
+            motor->isHomed = true; // 홈잉 상태 업데이트
+        }
     }
 
-    cout << "All in Home\n";
+    cout << "Homing completed for " << motorName << "\n";
     sensor.closeDevice();
 }
 
@@ -805,24 +857,38 @@ float StateTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const
     return positionDifference;
 }
 
-bool StateTask::CheckAllMotorsCurrentPosition()
+void StateTask::displayHomingStatus()
 {
-    std::cout << "Checking all positions for motors" << endl;
-    bool allMotorsChecked = true;
+    std::cout << "Homing Status of Motors:\n";
     for (const auto &motor_pair : tmotors)
     {
-        std::shared_ptr<TMotor> motor = motor_pair.second;
-        bool motorChecked = CheckCurrentPosition(motor);
-        if (!motorChecked)
-        {
-            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-            allMotorsChecked = false;
-        }
+        std::cout << motor_pair.first << ": "
+                  << (motor_pair.second->isHomed ? "Homed" : "Not Homed") << std::endl;
     }
-    std::cout << "Press Enter to Move On" << endl;
-    return allMotorsChecked;
 }
 
+void StateTask::UpdateHomingStatus()
+{
+    bool allMotorsHomed = true;
+    for (const auto &motor_pair : tmotors)
+    {
+        if (!motor_pair.second->isHomed)
+        {
+            allMotorsHomed = false;
+            break;
+        }
+    }
+
+    if (allMotorsHomed)
+    {
+        systemState.homeMode = HomeMode::HomeDone;
+        systemState.main = Main::Ideal;
+    }
+    else
+    {
+        systemState.homeMode = HomeMode::NotHome;
+    }
+}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////

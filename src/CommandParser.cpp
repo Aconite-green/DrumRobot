@@ -14,6 +14,10 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
     kd = fminf(fmaxf(GLOBAL_KD_MIN, kd), GLOBAL_KD_MAX);
     t_ff = fminf(fmaxf(GLOBAL_T_MIN, t_ff), GLOBAL_T_MAX);
 
+    motor.desPos = p_des;
+    motor.desVel = v_des;
+    motor.desTor = t_ff;
+
     // 계산된 변수를 이용하여 unsigned int로 변환
     int p_int = float_to_uint(p_des, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
     int v_int = float_to_uint(v_des, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
@@ -93,12 +97,11 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
     }
 }
 
-
 std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
 {
     int id;
     float position, speed, torque;
-     setMotorLimits(motor);
+    setMotorLimits(motor);
     /// unpack ints from can buffer ///
     id = frame->data[0];
     int p_int = (frame->data[1] << 8) | frame->data[2];
@@ -108,7 +111,11 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     /// convert ints to floats ///
     position = uint_to_float(p_int, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
     speed = uint_to_float(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
-    torque = uint_to_float(i_int,GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
+    torque = uint_to_float(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
+
+    motor.outPos = position;
+    motor.outVel = speed;
+    motor.outTor = torque;
 
     return std::make_tuple(id, position, speed, torque);
 }

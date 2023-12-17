@@ -1,12 +1,6 @@
 #pragma once
 
 #include <stdio.h>
-#include "../include/CanSocketUtils.hpp"
-#include "../include/CommandParser.hpp"
-#include "../include/ErrorHandle.hpp"
-#include "../include/Motor.hpp"
-#include "../include/TaskUtility.hpp"
-#include "../include/Global.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -31,11 +25,24 @@
 
 #include "SystemState.hpp"
 #include "SenSor.hpp"
+#include "../include/CanSocketUtils.hpp"
+#include "../include/CommandParser.hpp"
+#include "../include/ErrorHandle.hpp"
+#include "../include/Motor.hpp"
+#include "../include/TaskUtility.hpp"
+#include "../include/Global.hpp"
+
+#include <QObject>
 
 using namespace std;
 
-class StateTask
+class StateTask : public QObject
 {
+    Q_OBJECT
+
+signals:
+    void stateChanged(Main newState);
+
 public:
     // 생성자 선언
     StateTask(SystemState &systemStateRef,
@@ -55,6 +62,7 @@ private:
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     Sensor sensor;
+
     // State Utility
     void displayAvailableCommands() const;
     bool processInput(const std::string &input);
@@ -67,17 +75,19 @@ private:
     void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
     void DeactivateControlTask();
+    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
+    bool CheckAllMotorsCurrentPosition();
 
     // Home
     void homeModeLoop();
-    void SetHome();
+    void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
     void HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
-    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
     float MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
     void SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
     bool PromptUserForHoming(const std::string &motorName);
-    bool CheckAllMotorsCurrentPosition();
+    void displayHomingStatus();
+    void UpdateHomingStatus();
 
     // Tune
     void FixMotorPosition();
