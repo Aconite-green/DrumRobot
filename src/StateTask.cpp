@@ -52,10 +52,10 @@ void StateTask::operator()()
             systemState.main = Main::Ideal;
             break;
         }
-        if (currentState != systemState.main.load())
+        /*if (currentState != systemState.main.load())
         {
             emit stateChanged(systemState.main.load());
-        }
+        }*/
     }
     DeactivateControlTask();
 }

@@ -65,8 +65,8 @@
     },
     "makefile.launchConfigurations": [
         {
-            "cwd": "/home/syp/DrumRobot2",
-            "binaryPath": "/home/syp/DrumRobot2/main.out",
+            "cwd": "/home/shy//DrumRobot_v1.0",
+            "binaryPath": "/home/shy//DrumRobot_v1.0/main.out",
             "binaryArgs": []
         }
     ]

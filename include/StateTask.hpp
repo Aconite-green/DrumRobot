@@ -32,16 +32,16 @@
 #include "../include/TaskUtility.hpp"
 #include "../include/Global.hpp"
 
-#include <QObject>
+//#include <QObject>
 
 using namespace std;
 
-class StateTask : public QObject
+class StateTask /*: public QObject*/
 {
-    Q_OBJECT
+    //Q_OBJECT
 
-signals:
-    void stateChanged(Main newState);
+/*signals:
+    void stateChanged(Main newState);*/
 
 public:
     // 생성자 선언
