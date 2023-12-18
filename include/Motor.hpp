@@ -32,22 +32,15 @@ public:
     double currentPos;
     float cwDir;
     int sensorBit;
-    float lastPosition; 
+    bool isHomed;
 
-
-
+    float desPos, desVel, desTor, outPos, outVel, outTor;
     float rMin, rMax;
-    float pMin, pMax;
-    float vMin, vMax;
-    float kpMin, kpMax;
-    float kdMin, kdMax;
-    float tMin, tMax;
 
     std::string motorType;
     std::string interFaceName;
 
 private:
-    void setLimits();
 };
 
 class MaxonMotor
@@ -57,16 +50,14 @@ public:
     uint32_t canSendId;
     uint32_t canReceiveId;
 
-
     uint32_t txPdoIds[4];
     uint32_t rxPdoIds[4];
 
+    MaxonMotor(uint32_t nodeId,
+               const std::vector<uint32_t> &txPdoIds,
+               const std::vector<uint32_t> &rxPdoIds,
+               const std::string &interFaceName);
 
-    MaxonMotor(uint32_t nodeId, 
-    const std::vector<uint32_t> &txPdoIds,
-    const std::vector<uint32_t> &rxPdoIds,
-    const std::string &interFaceName);
-    
     std::string interFaceName;
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
@@ -88,8 +79,6 @@ public:
     CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
     // Sync(PDO)
     CanFrameInfo getCanFrameForSync();
-
-    
 };
 
 #endif

@@ -1,35 +1,41 @@
 #include "../include/RecieveLoopTask.hpp"
 
-RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef, std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,CanSocketUtils &canUtilsRef)
-    : systemState(systemStateRef), tmotors(tmotorsRef), canUtils(canUtilsRef)
+RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
+                                 CanSocketUtils &canUtilsRef,
+                                 std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
 {
 }
 
 void RecieveLoopTask::operator()()
 {
+    auto lastCheckTime = std::chrono::steady_clock::now();
+
     while (systemState.main != Main::Shutdown)
     {
-        usleep(2000);
-        if (systemState.main == Main::Perform)
-            RecieveLoop(recieveBuffer);
-    }
-    std::cout<<"Out of Recv loop\n";
-}
-
-void RecieveLoopTask::checkUserInput()
-{
-    if (kbhit())
-    {
-        char input = getchar();
-        if (input == 'q')
-            systemState.runMode = RunMode::Pause;
-        else if (input == 'e'){
-            systemState.runMode = RunMode::Stop;
-            systemState.main = Main::Ideal;
-            canUtils.restart_all_can_ports();
+        auto currentTime = std::chrono::steady_clock::now();
+        if (systemState.main != Main::Perform)
+        {
+            if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
+            {
+                
+                /*if(!canUtils.checkCanPortsStatus() || !checkMotors()){
+                    systemState.main = Main::Shutdown;
+                }*/
+                lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+            }
         }
-        else if (input == 'r')
-            systemState.runMode = RunMode::Running;
+        else
+        {
+            usleep(50000); // Perform 상태일 때의 처리
+
+            if (systemState.runMode == RunMode::Running)
+            {
+                RecieveLoop(recieveBuffer);
+            }
+        }
+        usleep(50000); // 다음 루프 대기
     }
 }
 
@@ -46,9 +52,8 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
     }
 
-    while (systemState.runMode != RunMode::Stop)
+    while (systemState.runMode != RunMode::PrePreparation)
     {
-        checkUserInput();
 
         if (systemState.runMode == RunMode::Pause)
         {
@@ -141,3 +146,40 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
 
     ofs.close();
 }
+
+int RecieveLoopTask::checkMotors() {
+    struct can_frame frame;
+
+    canUtils.set_all_sockets_timeout(0, 5000);
+    if (!tmotors.empty()) {
+        for (auto it = tmotors.begin(); it != tmotors.end();) {
+            std::string name = it->first;
+            std::shared_ptr<TMotor> motor = it->second;
+
+            bool checkSuccess = true;
+            canUtils.clear_all_can_buffers();
+
+            // 상태 확인
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [&checkSuccess](const std::string &motorName, bool result) {
+                               if (!result) {
+                                   checkSuccess = false;
+                               }
+                           });
+
+            if (!checkSuccess) {
+                // 실패한 경우, 해당 모터를 배열에서 제거하고 0 반환
+                it = tmotors.erase(it);
+                std::cout << "Motor connection failed for " << name << ". Please check the motor." << std::endl;
+                return 0;
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    // 모든 모터가 정상적으로 확인된 경우
+    return 1;
+}
+

@@ -4,21 +4,26 @@
 
 void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *frame, int canId, int dlc, float p_des, float v_des, float kp, float kd, float t_ff)
 {
+    // 모터 타입에 따른 제한값 설정
+    setMotorLimits(motor);
 
-   
     // 기존 변수를 계산
-    p_des = fminf(fmaxf(motor.pMin, p_des), motor.pMax);
-    v_des = fminf(fmaxf(motor.vMin, v_des), motor.vMax);
-    kp = fminf(fmaxf(motor.kpMin, kp), motor.kpMax);
-    kd = fminf(fmaxf(motor.kdMin, kd), motor.kdMax);
-    t_ff = fminf(fmaxf(motor.tMin, t_ff), motor.tMax); 
+    p_des = fminf(fmaxf(GLOBAL_P_MIN, p_des), GLOBAL_P_MAX);
+    v_des = fminf(fmaxf(GLOBAL_V_MIN, v_des), GLOBAL_V_MAX);
+    kp = fminf(fmaxf(GLOBAL_KP_MIN, kp), GLOBAL_KP_MAX);
+    kd = fminf(fmaxf(GLOBAL_KD_MIN, kd), GLOBAL_KD_MAX);
+    t_ff = fminf(fmaxf(GLOBAL_T_MIN, t_ff), GLOBAL_T_MAX);
+
+    motor.desPos = p_des;
+    motor.desVel = v_des;
+    motor.desTor = t_ff;
 
     // 계산된 변수를 이용하여 unsigned int로 변환
-    int p_int = float_to_uint(p_des, motor.pMin, motor.pMax, 16); // motor.P_MIN 대신 motor.pMin 사용
-    int v_int = float_to_uint(v_des, motor.vMin, motor.vMax, 12); // motor.V_MIN 대신 motor.vMin 사용
-    int kp_int = float_to_uint(kp, motor.kpMin, motor.kpMax, 12); // motor.Kp_MIN 대신 motor.kpMin 사용
-    int kd_int = float_to_uint(kd, motor.kdMin, motor.kdMax, 12); // motor.Kd_MIN 대신 motor.kdMin 사용
-    int t_int = float_to_uint(t_ff, motor.tMin, motor.tMax, 12);  // motor.T_MIN 대신 motor.tMin 사용
+    int p_int = float_to_uint(p_des, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
+    int v_int = float_to_uint(v_des, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
+    int kp_int = float_to_uint(kp, GLOBAL_KP_MIN, GLOBAL_KP_MAX, 12);
+    int kd_int = float_to_uint(kd, GLOBAL_KD_MIN, GLOBAL_KD_MAX, 12);
+    int t_int = float_to_uint(t_ff, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
 
     // Set CAN frame id and data length code
     frame->can_id = canId & CAN_SFF_MASK; // Replace YOUR_CAN_ID with the appropriate id
@@ -35,10 +40,68 @@ void TMotorCommandParser::parseSendCommand(TMotor &motor, struct can_frame *fram
     frame->data[7] = t_int & 0xff;                         // torque 4 bit lower
 }
 
+void TMotorCommandParser::setMotorLimits(TMotor &motor)
+{
+    if (motor.motorType == "AK10_9")
+    {
+        GLOBAL_V_MIN = -50;
+        GLOBAL_V_MAX = 50;
+        GLOBAL_T_MIN = -65;
+        GLOBAL_T_MAX = 65;
+    }
+    else if (motor.motorType == "AK70_10")
+    {
+        GLOBAL_V_MIN = -50;
+        GLOBAL_V_MAX = 50;
+        GLOBAL_T_MIN = -25;
+        GLOBAL_T_MAX = 25;
+    }
+    else if (motor.motorType == "AK60_6")
+    {
+        GLOBAL_V_MIN = -45;
+        GLOBAL_V_MAX = 45;
+        GLOBAL_T_MIN = -15;
+        GLOBAL_T_MAX = 15;
+    }
+    else if (motor.motorType == "AK80_6")
+    {
+        GLOBAL_V_MIN = -76;
+        GLOBAL_V_MAX = 76;
+        GLOBAL_T_MIN = -12;
+        GLOBAL_T_MAX = 12;
+    }
+    else if (motor.motorType == "AK80_9")
+    {
+        GLOBAL_V_MIN = -50;
+        GLOBAL_V_MAX = 50;
+        GLOBAL_T_MIN = -18;
+        GLOBAL_T_MAX = 18;
+    }
+    else if (motor.motorType == "AK80_80" || motor.motorType == "AK80_64")
+    {
+        GLOBAL_V_MIN = -8;
+        GLOBAL_V_MAX = 8;
+        GLOBAL_T_MIN = -144;
+        GLOBAL_T_MAX = 144;
+    }
+    else if (motor.motorType == "AK80_8")
+    {
+        GLOBAL_V_MIN = -37.5;
+        GLOBAL_V_MAX = 37.5;
+        GLOBAL_T_MIN = -32;
+        GLOBAL_T_MAX = 32;
+    }
+    else
+    {
+        std::cout << "Error: Invalid motor motorType entered!" << std::endl;
+    }
+}
+
 std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TMotor &motor, struct can_frame *frame)
 {
     int id;
     float position, speed, torque;
+    setMotorLimits(motor);
     /// unpack ints from can buffer ///
     id = frame->data[0];
     int p_int = (frame->data[1] << 8) | frame->data[2];
@@ -46,9 +109,13 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     int i_int = ((frame->data[4] & 0xF) << 8) | frame->data[5];
 
     /// convert ints to floats ///
-    position = uint_to_float(p_int, motor.pMin, motor.pMax, 16);
-    speed = uint_to_float(v_int, motor.vMin, motor.vMax, 12);
-    torque = uint_to_float(i_int, motor.tMin, motor.tMax, 12);
+    position = uint_to_float(p_int, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
+    speed = uint_to_float(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
+    torque = uint_to_float(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
+
+    motor.outPos = position;
+    motor.outVel = speed;
+    motor.outTor = torque;
 
     return std::make_tuple(id, position, speed, torque);
 }

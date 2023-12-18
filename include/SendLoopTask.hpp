@@ -39,9 +39,10 @@ class SendLoopTask
 {
 public:
     // 생성자 선언
-    SendLoopTask(SystemState &systemStateRef, 
-                 CanSocketUtils &canUtilsRef, 
+    SendLoopTask(SystemState &systemStateRef,
+                 CanSocketUtils &canUtilsRef,
                  std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
+                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
                  queue<can_frame> &sendBufferRef);
 
     // operator() 함수 선언
@@ -50,37 +51,13 @@ public:
 private:
     SystemState &systemState;
     CanSocketUtils &canUtils;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
-    std::map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;        // 가정된 MaxonMotor 배열
-
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;         // 모터 배열
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
     queue<can_frame> &sendBuffer;
 
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     Sensor sensor;
-
-    // System Initiallize
-    void initializeTMotors();
-    void initializeCanUtils();
-    void initializePathManager();
-    void ActivateControlTask();
-    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
-    void DeactivateControlTask();
-
-    // Home
-    void SetHome();
-    void HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
-    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
-    float MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
-    void RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint); 
-    void SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
-    bool PromptUserForHoming(const std::string &motorName);
-
-    // Tune
-    void FixMotorPosition();
-    void Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-    void TuningLoopTask();
-    void InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
 
     // Perform
     template <typename MotorMap>
@@ -90,6 +67,8 @@ private:
     PathManager pathManager;
     void SendReadyLoop();
     bool CheckAllMotorsCurrentPosition();
-
+    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
     int writeFailCount;
+    void initializePathManager();
+
 };
