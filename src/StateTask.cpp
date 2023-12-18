@@ -271,11 +271,12 @@ void StateTask::initializeTMotors()
 
     tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
-    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
 
-    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
-    tmotors["L_arm"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
     {
