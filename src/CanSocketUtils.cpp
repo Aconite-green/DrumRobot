@@ -1,10 +1,9 @@
 #include "../include/CanSocketUtils.hpp"
 CanSocketUtils::CanSocketUtils() {}
 
-
 CanSocketUtils::~CanSocketUtils()
 {
-    
+
     for (const auto &kv : sockets)
     {
         int hsocket = kv.second;
@@ -16,24 +15,41 @@ CanSocketUtils::~CanSocketUtils()
     sockets.clear();
 }
 
-void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames) {
-    this->ifnames = ifnames; // 클래스 멤버 변수 업데이트
+void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames)
+{
+    this->ifnames = ifnames;
     std::cout << "Updated interface names:" << std::endl;
-    for (const auto &ifname : this->ifnames) {
-        std::cout << ifname << std::endl; // 업데이트된 인터페이스 이름 출력
-    }
     list_and_activate_available_can_ports();
-    for (const auto &ifname : this->ifnames) {
+    for (const auto &ifname : this->ifnames)
+    {
         std::cout << "Processing interface: " << ifname << std::endl;
         int hsocket = create_socket(ifname);
-        if (hsocket < 0) {
+        if (hsocket < 0)
+        {
             std::cerr << "Socket creation error for interface: " << ifname << std::endl;
             exit(EXIT_FAILURE);
         }
         sockets[ifname] = hsocket;
+        portStatus[ifname] = true; 
         std::cout << "Socket created for " << ifname << ": " << hsocket << std::endl;
     }
 }
+
+int CanSocketUtils::checkCanPortsStatus() {
+    for (const auto &port : ifnames) {
+        bool isUp = is_port_up(port.c_str());
+        portStatus[port] = isUp; // 포트 상태 업데이트
+
+        if (!isUp) {
+            std::cout << "Port " << port << " is DOWN" << std::endl;
+            return 0; // 포트가 다운된 경우 즉시 0 반환
+        }
+    }
+
+    // 모든 포트가 UP인 경우
+    return 1;
+}
+
 
 int CanSocketUtils::create_socket(const std::string &ifname)
 {
@@ -310,15 +326,5 @@ void CanSocketUtils::releaseBusyResources()
             // 포트를 다시 활성화
             activate_port(ifname.c_str());
         }
-    }
-}
-
-void CanSocketUtils::checkCanPortsStatus()
-{
-    for (const auto &port : ifnames)
-    {
-        bool isUp = is_port_up(port.c_str());
-        portStatus[port] = isUp;
-        std::cout << "Port " << port << " is " << (isUp ? "UP" : "DOWN") << std::endl;
     }
 }
