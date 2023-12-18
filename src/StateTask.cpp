@@ -67,8 +67,20 @@ void StateTask::homeModeLoop()
         displayHomingStatus();
 
         std::string motorName;
-        std::cout << "Enter the name of the motor to home , or 'all' to home all motors: ";
+        std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
         std::cin >> motorName;
+
+        // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
+        if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
+        {
+            std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
+            continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
+        }
+        else if ((motorName == "R_arm2" || motorName == "R_arm3") && !tmotors["R_arm1"]->isHomed)
+        {
+            std::cout << "Error: R_arm1 must be homed before " << motorName << std::endl;
+            continue;
+        }
 
         if (motorName == "all")
         {
