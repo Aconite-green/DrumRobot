@@ -312,3 +312,13 @@ void CanSocketUtils::releaseBusyResources()
         }
     }
 }
+
+void CanSocketUtils::checkCanPortsStatus()
+{
+    for (const auto &port : ifnames)
+    {
+        bool isUp = is_port_up(port.c_str());
+        portStatus[port] = isUp;
+        std::cout << "Port " << port << " is " << (isUp ? "UP" : "DOWN") << std::endl;
+    }
+}

@@ -10,21 +10,32 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
+    auto lastCheckTime = std::chrono::steady_clock::now();
+
     while (systemState.main != Main::Shutdown)
     {
-        usleep(50000);
-        while (systemState.main == Main::Perform)
+        auto currentTime = std::chrono::steady_clock::now();
+        if (systemState.main != Main::Perform)
         {
-            usleep(50000);
+            if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 2)
+            {
+                checkMotors();
+                canUtils.checkCanPortsStatus();
+                lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+            }
+        }
+        else
+        {
+            usleep(50000); // Perform 상태일 때의 처리
 
             if (systemState.runMode == RunMode::Running)
             {
                 RecieveLoop(recieveBuffer);
             }
         }
+        usleep(50000); // 다음 루프 대기
     }
 }
-
 
 void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
@@ -132,4 +143,47 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     }
 
     ofs.close();
+}
+
+void RecieveLoopTask::checkMotors()
+{
+    struct can_frame frame;
+
+    canUtils.set_all_sockets_timeout(0, 5000);
+    if (!tmotors.empty())
+    {
+        // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
+
+        for (auto it = tmotors.begin(); it != tmotors.end();)
+        {
+            std::string name = it->first;
+            std::shared_ptr<TMotor> motor = it->second;
+
+            bool checkSuccess = true;
+            canUtils.clear_all_can_buffers();
+
+            // 상태 확인
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [&checkSuccess](const std::string &motorName, bool result)
+                           {
+                               if (!result)
+                               {
+                                   checkSuccess = false;
+                               }
+                                                      });
+
+            if (!checkSuccess)
+            {
+                // 실패한 경우, 해당 모터를 배열에서 제거
+                it = tmotors.erase(it);
+
+                continue;
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
 }

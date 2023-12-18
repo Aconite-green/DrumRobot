@@ -365,6 +365,7 @@ void StateTask::initializeTMotors()
 void StateTask::initializeCanUtils()
 {
     canUtils.initializeCAN(extractIfnamesFromMotors(tmotors));
+    canUtils.checkCanPortsStatus();
 }
 
 vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors)
