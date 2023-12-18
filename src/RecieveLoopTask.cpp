@@ -39,7 +39,7 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
     }
 
-    while (systemState.runMode != RunMode::Stop)
+    while (systemState.runMode != RunMode::PrePreparation)
     {
 
         if (systemState.runMode == RunMode::Pause)

@@ -120,6 +120,7 @@ void StateTask::runModeLoop()
             }
             break;
         case RunMode::Preparing:
+            checkUserInput();
             break;
         case RunMode::Ready:
             std::cout << "Press 'p' to start performing: ";
@@ -194,7 +195,7 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Tune;
             return true;
         }
-        else if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Stop)
+        else if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             systemState.main = Main::Perform;
             return true;
@@ -249,7 +250,7 @@ void StateTask::checkUserInput()
             systemState.runMode = RunMode::Pause;
         else if (input == 'e')
         {
-            systemState.runMode = RunMode::Stop;
+            systemState.runMode = RunMode::PrePreparation;
             systemState.main = Main::Ideal;
             canUtils.restart_all_can_ports();
         }
