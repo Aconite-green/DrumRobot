@@ -67,8 +67,20 @@ void StateTask::homeModeLoop()
         displayHomingStatus();
 
         std::string motorName;
-        std::cout << "Enter the name of the motor to home , or 'all' to home all motors: ";
+        std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
         std::cin >> motorName;
+
+        // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
+        if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
+        {
+            std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
+            continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
+        }
+        else if ((motorName == "R_arm2" || motorName == "R_arm3") && !tmotors["R_arm1"]->isHomed)
+        {
+            std::cout << "Error: R_arm1 must be homed before " << motorName << std::endl;
+            continue;
+        }
 
         if (motorName == "all")
         {
@@ -76,7 +88,7 @@ void StateTask::homeModeLoop()
             std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
             for (const auto &pmotorName : priorityMotors)
             {
-                if (tmotors.find(pmotorName) != tmotors.end())
+                if (tmotors.find(pmotorName) != tmotors.end() && !tmotors[pmotorName]->isHomed)
                 {
                     SetHome(tmotors[pmotorName], pmotorName);
                 }
@@ -85,19 +97,19 @@ void StateTask::homeModeLoop()
             // 나머지 모터 홈
             for (auto &motor_pair : tmotors)
             {
-                if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end())
+                if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
                     SetHome(motor_pair.second, motor_pair.first);
                 }
             }
         }
-        else if (tmotors.find(motorName) != tmotors.end())
+        else if (tmotors.find(motorName) != tmotors.end() && !tmotors[motorName]->isHomed)
         {
             SetHome(tmotors[motorName], motorName);
         }
         else
         {
-            std::cout << "Motor not found: " << motorName << std::endl;
+            std::cout << "Motor not found or already homed: " << motorName << std::endl;
         }
 
         UpdateHomingStatus();
@@ -354,6 +366,7 @@ void StateTask::initializeTMotors()
 void StateTask::initializeCanUtils()
 {
     canUtils.initializeCAN(extractIfnamesFromMotors(tmotors));
+    canUtils.checkCanPortsStatus();
 }
 
 vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors)
@@ -804,14 +817,9 @@ void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motor
     canUtils.set_all_sockets_timeout(5, 0);
 
     // 허리는 home 안잡음
-    if (motorName != "waist")
-    {
-        if (PromptUserForHoming(motorName))
-        {
-            HomeMotor(motor, motorName);
-            motor->isHomed = true; // 홈잉 상태 업데이트
-        }
-    }
+
+    HomeMotor(motor, motorName);
+    motor->isHomed = true; // 홈잉 상태 업데이트
 
     cout << "Homing completed for " << motorName << "\n";
     sensor.closeDevice();
