@@ -36,54 +36,43 @@ void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames)
 }
 
 int CanSocketUtils::checkCanPortsStatus() {
-    for (const auto &port : ifnames) {
-        bool isUp = is_port_up(port.c_str());
-        portStatus[port] = isUp; // 포트 상태 업데이트
+    bool allPortsConnected = true;
 
-        if (!isUp) {
-            std::cout << "Port " << port << " is DOWN" << std::endl;
-            return 0; // 포트가 다운된 경우 즉시 0 반환
+    for (const auto &port : ifnames) {
+        bool isConnected = is_port_connected(port.c_str());
+        portStatus[port] = isConnected; // 포트 연결 상태 업데이트
+
+        if (!isConnected) {
+            std::cout << "Port " << port << " is NOT CONNECTED" << std::endl;
+            allPortsConnected = false;
         }
     }
 
-    // 모든 포트가 UP인 경우
-    return 1;
+    // 모든 포트가 연결된 경우 1, 아니면 0 반환
+    return allPortsConnected ? 1 : 0;
 }
 
-
-int CanSocketUtils::create_socket(const std::string &ifname)
+bool CanSocketUtils::is_port_connected(const char *port)
 {
-    int result;
-    struct sockaddr_can addr;
-    struct ifreq ifr;
+    char command[50];
+    snprintf(command, sizeof(command), "ifconfig %s", port);
 
-    int localSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW); // 지역 변수로 소켓 생성
-    if (localSocket < 0)
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
     {
-        return ERR_SOCKET_CREATE_FAILURE;
+        perror("Error opening pipe");
+        return false;
     }
 
-    memset(&ifr, 0, sizeof(struct ifreq));
-    memset(&addr, 0, sizeof(struct sockaddr_can));
-
-    strcpy(ifr.ifr_name, ifname.c_str());
-    result = ioctl(localSocket, SIOCGIFINDEX, &ifr);
-    if (result < 0)
+    char output[1024];
+    if (fgets(output, sizeof(output) - 1, fp) == NULL)
     {
-        close(localSocket);
-        return ERR_SOCKET_CREATE_FAILURE;
+        pclose(fp);
+        return false; // 포트가 시스템에 없으면 연결되지 않은 것으로 간주
     }
 
-    addr.can_ifindex = ifr.ifr_ifindex;
-    addr.can_family = AF_CAN;
-
-    if (bind(localSocket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        close(localSocket);
-        return ERR_SOCKET_CREATE_FAILURE;
-    }
-
-    return localSocket; // 생성된 소켓 디스크립터 반환
+    pclose(fp);
+    return true; // 포트가 시스템에 있으면 연결된 것으로 간주
 }
 
 bool CanSocketUtils::is_port_up(const char *port)
@@ -120,6 +109,43 @@ bool CanSocketUtils::is_port_up(const char *port)
         return false;
     }
 }
+
+int CanSocketUtils::create_socket(const std::string &ifname)
+{
+    int result;
+    struct sockaddr_can addr;
+    struct ifreq ifr;
+
+    int localSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW); // 지역 변수로 소켓 생성
+    if (localSocket < 0)
+    {
+        return ERR_SOCKET_CREATE_FAILURE;
+    }
+
+    memset(&ifr, 0, sizeof(struct ifreq));
+    memset(&addr, 0, sizeof(struct sockaddr_can));
+
+    strcpy(ifr.ifr_name, ifname.c_str());
+    result = ioctl(localSocket, SIOCGIFINDEX, &ifr);
+    if (result < 0)
+    {
+        close(localSocket);
+        return ERR_SOCKET_CREATE_FAILURE;
+    }
+
+    addr.can_ifindex = ifr.ifr_ifindex;
+    addr.can_family = AF_CAN;
+
+    if (bind(localSocket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        close(localSocket);
+        return ERR_SOCKET_CREATE_FAILURE;
+    }
+
+    return localSocket; // 생성된 소켓 디스크립터 반환
+}
+
+
 
 void CanSocketUtils::activate_port(const char *port)
 {

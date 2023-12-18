@@ -147,12 +147,15 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     ofs.close();
 }
 
-int RecieveLoopTask::checkMotors() {
+int RecieveLoopTask::checkMotors()
+{
     struct can_frame frame;
 
     canUtils.set_all_sockets_timeout(0, 5000);
-    if (!tmotors.empty()) {
-        for (auto it = tmotors.begin(); it != tmotors.end();) {
+    if (!tmotors.empty())
+    {
+        for (auto it = tmotors.begin(); it != tmotors.end();)
+        {
             std::string name = it->first;
             std::shared_ptr<TMotor> motor = it->second;
 
@@ -162,18 +165,23 @@ int RecieveLoopTask::checkMotors() {
             // 상태 확인
             fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result) {
-                               if (!result) {
+                           [&checkSuccess](const std::string &motorName, bool result)
+                           {
+                               if (!result)
+                               {
                                    checkSuccess = false;
                                }
                            });
 
-            if (!checkSuccess) {
+            if (!checkSuccess)
+            {
                 // 실패한 경우, 해당 모터를 배열에서 제거하고 0 반환
-                it = tmotors.erase(it);
+                // it = tmotors.erase(it);
                 std::cout << "Motor connection failed for " << name << ". Please check the motor." << std::endl;
                 return 0;
-            } else {
+            }
+            else
+            {
                 ++it;
             }
         }
@@ -182,4 +190,3 @@ int RecieveLoopTask::checkMotors() {
     // 모든 모터가 정상적으로 확인된 경우
     return 1;
 }
-
