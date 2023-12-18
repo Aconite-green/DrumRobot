@@ -34,7 +34,7 @@ void SendLoopTask::operator()()
                 if (CheckAllMotorsCurrentPosition())
                 {
                     SendLoop();
-                    systemState.runMode = RunMode::Stop;
+                    systemState.runMode = RunMode::PrePreparation;
                 }
             }
         }
@@ -91,7 +91,7 @@ void SendLoopTask::SendLoop()
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::Stop)
+    while (systemState.runMode != RunMode::PrePreparation)
     {
 
         if (systemState.runMode == RunMode::Pause)
