@@ -91,7 +91,7 @@ void SendLoopTask::SendLoop()
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::PrePreparation && systemState.runMode != RunMode::Stop)
+    while (systemState.runMode != RunMode::PrePreparation)
     {
 
         if (systemState.runMode == RunMode::Pause)
@@ -117,7 +117,8 @@ void SendLoopTask::SendLoop()
             else if (sendBuffer.size() == 0)
             {
                 std::cout << "Performance is Over\n";
-                systemState.runMode = RunMode::Stop;
+                systemState.runMode = RunMode::PrePreparation;
+                systemState.main = Main::Ideal;
             }
         }
 
@@ -166,7 +167,7 @@ void SendLoopTask::SendLoop()
     }
 
     // 헤더 추가
-    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006\n";
+    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x007,0x008\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
     for (const auto &row : pathManager.p)
