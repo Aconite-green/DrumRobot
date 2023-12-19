@@ -170,13 +170,13 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     double the6;
     double Z;
 
-    vector<double> Q0;
-    vector<double> Q1;
-    vector<double> Q2;
-    vector<double> Q3;
-    vector<double> Q4;
-    vector<double> Q5;
-    vector<double> Q6;
+    vector<double> q0;
+    vector<double> q1;
+    vector<double> q2;
+    vector<double> q3;
+    vector<double> q4;
+    vector<double> q5;
+    vector<double> q6;
 
     for (int i = 0; i < 179; i++)
     {
@@ -236,13 +236,13 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
                                             if (Z < z2 + 0.001 && Z > z2 - 0.001)
                                             {
-                                                Q0.push_back(the0);
-                                                Q1.push_back(the1);
-                                                Q2.push_back(the2);
-                                                Q3.push_back(the3[i]);
-                                                Q4.push_back(the4);
-                                                Q5.push_back(the5);
-                                                Q6.push_back(the6);
+                                                q0.push_back(the0);
+                                                q1.push_back(the1);
+                                                q2.push_back(the2);
+                                                q3.push_back(the3[i]);
+                                                q4.push_back(the4);
+                                                q5.push_back(the5);
+                                                q6.push_back(the6);
 
                                                 j++;
                                             }
@@ -258,13 +258,13 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     }
 
     vector<vector<double>> Q;
-    Q.push_back(Q0);
-    Q.push_back(Q1);
-    Q.push_back(Q2);
-    Q.push_back(Q3);
-    Q.push_back(Q4);
-    Q.push_back(Q5);
-    Q.push_back(Q6);
+    Q.push_back(q0);
+    Q.push_back(q1);
+    Q.push_back(q2);
+    Q.push_back(q3);
+    Q.push_back(q4);
+    Q.push_back(q5);
+    Q.push_back(q6);
 
     int index_theta0_min = 0;
 
@@ -415,7 +415,7 @@ void PathManager::GetMusicSheet()
 
     file.close();
 
-    end = RF.size();
+    total = RF.size();
 }
 
 void PathManager::GetReadyArr()
@@ -517,8 +517,8 @@ void PathManager::PathLoopTask()
         else
         {
             Q1 = IKfun(P1, P2, R, s, z0);
-            Q1[7] = r_wrist;
-            Q1[8] = l_wrist;
+            Q1.push_back(r_wrist);
+            Q1.push_back(l_wrist);
             Q2 = Q1;
             if (c_R != 0 && c_L != 0)
             { // 왼손 & 오른손 침
@@ -596,8 +596,8 @@ void PathManager::PathLoopTask()
     else
     {
         Q3 = IKfun(P1, P2, R, s, z0);
-        Q3[7] = r_wrist;
-        Q3[8] = l_wrist;
+        Q3.push_back(r_wrist);
+        Q3.push_back(l_wrist);
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
