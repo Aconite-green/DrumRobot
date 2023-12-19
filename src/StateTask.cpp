@@ -1023,7 +1023,7 @@ void StateTask::FixMotorPosition()
     }
 }
 
-void StateTask::Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
+void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
     canUtils.set_all_sockets_timeout(0, 50000);
 
@@ -1059,7 +1059,7 @@ void StateTask::Tuning(float kp, float kd, float sine_t, const std::string selec
     }
 
     // 헤더 추가
-    csvFileOut << "CAN_ID,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
@@ -1160,13 +1160,149 @@ void StateTask::Tuning(float kp, float kd, float sine_t, const std::string selec
     csvFileOut.close();
 }
 
+void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
+{
+    canUtils.set_all_sockets_timeout(0, 50000);
+
+    std::string FileName1 = "../../READ/" + selectedMotor + "_in.txt";
+
+    std::ofstream csvFileIn(FileName1);
+
+    if (!csvFileIn.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+
+    // 헤더 추가
+    csvFileIn << "Start file"
+              << "\n";
+
+    // CSV 파일명 설정
+    std::string FileName2 = "../../READ/" + selectedMotor + "_out.txt";
+
+    // CSV 파일 열기
+    std::ofstream csvFileOut(FileName2);
+
+    if (!csvFileOut.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
+
+    struct can_frame frame;
+
+    float peakRadian = peakAngle * M_PI / 180.0; // 피크 각도를 라디안으로 변환
+    float amplitude = peakRadian;
+
+    float sample_time = 0.005;
+    int max_samples = static_cast<int>(sine_t / sample_time);
+    float v_des = 0, p_des = 0;
+    float tff_des = 0;
+    float p_act, v_act, tff_act;
+
+    for (int cycle = 0; cycle < cycles; cycle++)
+    {
+        for (int i = 0; i < max_samples; i++)
+        {
+            float time = i * sample_time;
+
+            for (auto &entry : maxonMotors)
+            {
+                if (entry.first != selectedMotor)
+                    continue;
+
+                std::shared_ptr<MaxonMotor> &motor = entry.second;
+
+                if ((int)motor->nodeId == 7)
+                {
+                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
+                }
+                else
+                {
+                    for (int i = 0; i < (int)motor->nodeId; i++)
+                    {
+                        csvFileIn << "0,";
+                    }
+                    csvFileIn << std::dec << p_des << ",";
+                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
+                    {
+                        csvFileIn << "0,";
+                    }
+                }
+
+                float local_time = std::fmod(time, sine_t);
+                if (pathType == 1) // 1-cos 경로
+                {
+                    p_des = amplitude * (1 - cosf(2 * M_PI * local_time / sine_t)) / 2;
+                }
+                else if (pathType == 2) // 1-cos 및 -1+cos 결합 경로
+                {
+                    if (local_time < sine_t / 2)
+                        p_des = amplitude * (1 - cosf(4 * M_PI * local_time / sine_t)) / 2;
+                    else
+                        p_des = amplitude * (-1 + cosf(4 * M_PI * (local_time - sine_t / 2) / sine_t)) / 2;
+                }
+
+                MParser.parseSendCommand(*motor, &frame, p_des);
+                csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId;
+
+                chrono::system_clock::time_point external = std::chrono::system_clock::now();
+                while (1)
+                {
+                    chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+                    chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+                    if (elapsed_time.count() >= 5000)
+                    {
+
+                        ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                        if (bytesWritten == -1)
+                        {
+                            std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                        }
+
+                        MParser.makeSync(&frame);
+                        bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                        if (bytesWritten == -1)
+                        {
+                            std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                        }
+                        ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+
+                        if (bytesRead == -1)
+                        {
+                            std::cerr << "Failed to read from socket for interface: " << motor->interFaceName << std::endl;
+                            return;
+                        }
+                        else
+                        {
+                            std::tuple<int, float> result = MParser.parseRecieveCommand(&frame);
+
+                            p_act = std::get<1>(result);
+                            //v_act = std::get<1>(result);
+                            //tff_act = std::get<3>(result);
+                            //tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                            csvFileOut << ',' << std::dec << p_act << ',' <<'\n';
+                            break;
+                        }
+                    }
+                }
+            }
+            csvFileIn << "\n";
+        }
+    }
+    csvFileIn.close();
+    csvFileOut.close();
+}
+
 void StateTask::TuningLoopTask()
 {
     FixMotorPosition();
     std::string userInput, selectedMotor, fileName;
     float kp, kd, peakAngle;
     float sine_t = 4.0;
-    int cycles = 2, pathType, controlType;
+    int cycles = 2, pathType;
 
     if (!tmotors.empty())
     {
@@ -1177,7 +1313,7 @@ void StateTask::TuningLoopTask()
         selectedMotor = maxonMotors.begin()->first;
     }
 
-    InitializeTuningParameters(selectedMotor, kp, kd, peakAngle, pathType);
+    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType);
     while (true)
     {
         int result = system("clear");
@@ -1219,8 +1355,12 @@ void StateTask::TuningLoopTask()
         std::cout << "Sine Period: " << sine_t << " | Cycles: " << cycles << " | Hz: " << 1 / sine_t << "\n";
         std::cout << "Peak Angle: " << peakAngle << " | Path Type: " << pathTypeDescription << "\n";
         std::cout << "\nCommands:\n";
-        std::cout << "[S]elect Motor | [KP] | [KD] | [Peak] | [Type]\n";
-        std::cout << "[P]eriod | [C]ycles | [R]un | [A]nalyze | [E]xit\n";
+        if (!isMaxonMotor)
+        {
+            std::cout << "[KP] | [KD] |";
+        }
+        std::cout << "[S]elect Motor | [Peak] | [Type]\n";
+        std::cout << "[P]eriod | [C]ycles | [R]un | [E]xit\n";
         std::cout << "=============================================\n";
         std::cout << "Enter Command: ";
         std::cin >> userInput;
@@ -1238,13 +1378,8 @@ void StateTask::TuningLoopTask()
                 std::cin >> selectedMotor;
                 if (tmotors.find(selectedMotor) != tmotors.end())
                 {
-                    InitializeTuningParameters(selectedMotor, kp, kd, peakAngle, pathType);
+                    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType);
                     break;
-                }
-                else if (maxonMotors.find(selectedMotor) != maxonMotors.end()) // 추가된 부분
-                {
-                    //InitializeMaxonParameters(selectedMotor, controlType, peakAngle, pathType); // 추가된 부분
-                    break;                                                                      // 추가된 부분
                 }
                 else
                 {
@@ -1252,12 +1387,12 @@ void StateTask::TuningLoopTask()
                 }
             }
         }
-        else if (userInput == "kp")
+        else if (userInput == "kp" && !isMaxonMotor)
         {
             std::cout << "Enter Desired Kp: ";
             std::cin >> kp;
         }
-        else if (userInput == "kd")
+        else if (userInput == "kd" && !isMaxonMotor)
         {
             std::cout << "Enter Desired Kd: ";
             std::cin >> kd;
@@ -1293,19 +1428,19 @@ void StateTask::TuningLoopTask()
         }
         else if (userInput[0] == 'r')
         {
-            if (tmotors.find(selectedMotor) != tmotors.end()) // Tmotor일 경우
+            if (!isMaxonMotor) // Tmotor일 경우
             {
-                Tuning(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
+                TuningTmotor(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
             }
-            else if (maxonMotors.find(selectedMotor) != maxonMotors.end()) // MaxonMotor일 경우
+            else // MaxonMotor일 경우
             {
-                //TuningMaxon(sine_t, selectedMotor, cycles, peakAngle, pathType, controlType);
+                TuningMaxon(sine_t, selectedMotor, cycles, peakAngle, pathType);
             }
         }
     }
 }
 
-void StateTask::InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType)
+void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType)
 {
     if (selectedMotor == "waist")
     {
@@ -1316,11 +1451,15 @@ void StateTask::InitializeTuningParameters(const std::string selectedMotor, floa
     }
     else if (selectedMotor == "R_arm1" || selectedMotor == "L_arm1" ||
              selectedMotor == "R_arm2" || selectedMotor == "R_arm3" ||
-             selectedMotor == "L_arm2" || selectedMotor == "L_arm3" ||
-             selectedMotor == "L_wrist" || selectedMotor == "R_wrist")
+             selectedMotor == "L_arm2" || selectedMotor == "L_arm3")
     {
         kp = 50.0; // 예시 값, 실제 필요한 값으로 조정
         kd = 1.0;  // 예시 값, 실제 필요한 값으로 조정
+        peakAngle = 90;
+        pathType = 1;
+    }
+    else if (selectedMotor == "L_wrist" || selectedMotor == "R_wrist")
+    {
         peakAngle = 90;
         pathType = 1;
     }
