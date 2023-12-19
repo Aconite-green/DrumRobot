@@ -75,7 +75,8 @@ private:
     void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
     void DeactivateControlTask();
-    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
+    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
+    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     bool CheckAllMotorsCurrentPosition();
 
     // Home
