@@ -1187,7 +1187,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     {
         std::cerr << "Error opening CSV file." << std::endl;
     }
-    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
