@@ -91,7 +91,7 @@ void SendLoopTask::SendLoop()
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::PrePreparation)
+    while (systemState.runMode != RunMode::PrePreparation && systemState.runMode != RunMode::Stop)
     {
 
         if (systemState.runMode == RunMode::Pause)
@@ -116,8 +116,8 @@ void SendLoopTask::SendLoop()
             }
             else if (sendBuffer.size() == 0)
             {
-                systemState.runMode = RunMode::Stop;
                 std::cout << "Performance is Over\n";
+                systemState.runMode = RunMode::Stop;
             }
         }
 
