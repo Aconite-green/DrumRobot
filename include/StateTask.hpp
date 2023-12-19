@@ -92,10 +92,11 @@ private:
 
     // Tune
     void FixMotorPosition();
-    void Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
-    void InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
-
+    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
+    
     // Perform
     void runModeLoop();
 };
