@@ -40,7 +40,7 @@ public:
     void PathLoopTask();
     void GetBackArr();
 
-    int end = 0;
+    int total = 0;
     int line = 0;
     vector<vector<double>> p;
     vector<vector<double>> v;
@@ -89,8 +89,7 @@ private:
     double s = 0.600;
     double z0 = 0.000;
 
-    vector<double> Q1 = c_MotorAngle;
-    vector<double> Q2, Q3, Q4;
+    vector<double> Q1, Q2, Q3, Q4;
 
     // 각 악기별 손목 각도
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
