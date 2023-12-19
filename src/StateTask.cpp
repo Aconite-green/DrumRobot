@@ -1196,9 +1196,10 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
 
     float sample_time = 0.005;
     int max_samples = static_cast<int>(sine_t / sample_time);
-    float v_des = 0, p_des = 0;
-    float tff_des = 0;
-    float p_act, v_act, tff_act;
+    float p_des = 0;
+    float p_act;
+    // float tff_des = 0,v_des = 0;
+    //float v_act, tff_act;
 
     for (int cycle = 0; cycle < cycles; cycle++)
     {
@@ -1280,10 +1281,10 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                             std::tuple<int, float> result = MParser.parseRecieveCommand(&frame);
 
                             p_act = std::get<1>(result);
-                            //v_act = std::get<1>(result);
-                            //tff_act = std::get<3>(result);
-                            //tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFileOut << ',' << std::dec << p_act << ',' <<'\n';
+                            // v_act = std::get<1>(result);
+                            // tff_act = std::get<3>(result);
+                            // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                            csvFileOut << ',' << std::dec << p_act << ',' << '\n';
                             break;
                         }
                     }
