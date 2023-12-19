@@ -668,6 +668,7 @@ void PathManager::PathLoopTask()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
+        /* Maxon Motor Parsing Add */
     }
 
     V0 = v.back();
@@ -701,6 +702,7 @@ void PathManager::PathLoopTask()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
+        /* Maxon Motor Parsing Add */
     }
     c_MotorAngle = p.back();
     Q1 = Q3;
@@ -729,6 +731,6 @@ void PathManager::GetBackArr()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
-        // cout << "\n";
+        /* Maxon Motor Parsing Add */
     }
 }
