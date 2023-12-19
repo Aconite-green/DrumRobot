@@ -52,7 +52,7 @@ private:
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
 
     // Functions for DrumRobot PathGenerating
-    vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0};
+    vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
@@ -61,8 +61,9 @@ private:
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
 
-    // Ready Array : 0, 90, 90, 45, 75, -45, -75    (**모터 회전방향에 따라 부호 조절)
-    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, -M_PI / 4, -M_PI / 2.4};
+    //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
+    //                      : 0    , 90    , 90    , 45    , 75    , -45   , -75   , 0      , 0        (**모터 회전방향에 따라 부호 조절)
+    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
 
     double p_R = 0; // 오른손 이전 악기 유무
     double p_L = 0; // 왼손 이전 악기 유무
@@ -80,16 +81,22 @@ private:
     */
     vector<double> P1 = {0.3, -0.45, -0.0866};  // RightArm Standby
     vector<double> P2 = {-0.3, -0.45, -0.0866}; // LeftArm Standby
+    double r_wrist = 0.0;
+    double l_wrist = 0.0;
     int n_inst = 10;
 
     vector<double> R = {0.500, 0.400, 0.500, 0.400};
     double s = 0.600;
     double z0 = 0.000;
 
-    vector<double> Q1, Q2, Q3, Q4;
+    vector<double> Q1 = c_MotorAngle;
+    vector<double> Q2, Q3, Q4;
 
+    // 각 악기별 손목 각도
+    vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    
     map<string, int> motor_mapping = {
-        {"L_arm1", 2}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_arm1", 1}, {"R_arm2", 3}, {"R_arm3", 4}, {"waist", 0}
+        {"L_arm1", 2}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_arm1", 1}, {"R_arm2", 3}, {"R_arm3", 4}, {"waist", 0}, {"R_wrist", 7}, {"L_wrist", 8}
     };
 
     string trimWhitespace(const std::string &str);

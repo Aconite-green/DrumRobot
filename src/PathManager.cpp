@@ -429,6 +429,8 @@ void PathManager::GetReadyArr()
     // tmotors의 상태를 확인
     cout << "tmotors size: " << tmotors.size() << "\n";
     int cnt = 0;
+
+    // 각 모터의 현재위치 값 불러오기
     for (auto &entry : tmotors)
     {
         cnt++;
@@ -438,6 +440,14 @@ void PathManager::GetReadyArr()
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
+    /* Get Maxon Motor Angle */
+    // 임의로 손목각도 설정 => 차후 모터 현재각도 값 불러와서 연결
+    r_wrist = 0.0;
+    l_wrist = 0.0;
+
+    // 준비동작 동안 손목 변화X
+    standby[7] = r_wrist;
+    standby[8] = l_wrist;
 
     int n = 800;
     for (int k = 0; k < n; k++)
@@ -454,6 +464,7 @@ void PathManager::GetReadyArr()
             // Frame이 추가됨을 확인
             cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
+        /* Maxon Motor Parsing Add */
     }
 
     c_MotorAngle = Qi;
@@ -473,14 +484,17 @@ void PathManager::PathLoopTask()
 
         for (int j = 0; j < n_inst; ++j)
         {
+            // 악기에 맞는 오/왼 손목 위치 및 손목 각도
             if (RA[line][j] != 0)
             {
                 P1 = right_inst[j];
+                r_wrist = wrist[j];
                 c_R = 1;
             }
             if (LA[line][j] != 0)
             {
                 P2 = left_inst[j];
+                l_wrist = wrist[j];
                 c_L = 1;
             }
         }
@@ -491,36 +505,48 @@ void PathManager::PathLoopTask()
             if (p_R == 1)
             {
                 Q1[4] = Q1[4] + M_PI / 36;
+                Q1[7] = Q1[7] + M_PI / 36;
             }
             if (p_L == 1)
             {
                 Q1[6] = Q1[6] - M_PI / 36;
+                Q1[8] = Q1[8] + M_PI / 36;
             }
             Q2 = Q1;
         }
         else
         {
             Q1 = IKfun(P1, P2, R, s, z0);
+            Q1[7] = r_wrist;
+            Q1[8] = l_wrist;
             Q2 = Q1;
             if (c_R != 0 && c_L != 0)
             { // 왼손 & 오른손 침
                 Q1[4] = Q1[4] + M_PI / 18;
                 Q1[6] = Q1[6] - M_PI / 18;
+                Q1[7] = Q1[7] + M_PI / 18;
+                Q1[8] = Q1[8] + M_PI / 18;
             }
             else if (c_L != 0)
             { // 왼손만 침
                 Q1[4] = Q1[4] + M_PI / 36;
                 Q2[4] = Q2[4] + M_PI / 36;
                 Q1[6] = Q1[6] - M_PI / 18;
+                Q1[7] = Q1[7] + M_PI / 36;
+                Q2[7] = Q2[7] + M_PI / 36;
+                Q1[8] = Q1[8] + M_PI / 18;
             }
             else if (c_R != 0)
             { // 오른손만 침
                 Q1[4] = Q1[4] + M_PI / 18;
+                Q1[6] = Q1[6] - M_PI / 36;
                 Q2[6] = Q2[6] - M_PI / 36;
-                Q2[6] = Q2[6] - M_PI / 36;
+                Q1[7] = Q1[7] + M_PI / 18;
+                Q1[8] = Q1[8] + M_PI / 36;
+                Q2[8] = Q2[8] + M_PI / 36;
             }
             // 허리는 Q1 ~ Q2 동안 계속 이동
-            Q1[0] = (Q1[0] + c_MotorAngle[0]) / 2.0;
+            Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
         }
 
         p_R = c_R;
@@ -529,7 +555,7 @@ void PathManager::PathLoopTask()
         line++;
 
         p.push_back(c_MotorAngle);
-        v.push_back({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        v.push_back({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     }
 
     c_R = 0;
@@ -537,14 +563,17 @@ void PathManager::PathLoopTask()
 
     for (int j = 0; j < n_inst; ++j)
     {
+        // 악기에 맞는 오/왼 손목 위치 및 손목 각도
         if (RA[line][j] != 0)
         {
             P1 = right_inst[j];
+            r_wrist = wrist[j];
             c_R = 1;
         }
         if (LA[line][j] != 0)
         {
             P2 = left_inst[j];
+            l_wrist = wrist[j];
             c_L = 1;
         }
     }
@@ -555,36 +584,48 @@ void PathManager::PathLoopTask()
         if (p_R == 1)
         {
             Q3[4] = Q3[4] + M_PI / 36;
+            Q3[7] = Q3[7] + M_PI / 36;
         }
         if (p_L == 1)
         {
             Q3[6] = Q3[6] - M_PI / 36;
+            Q3[8] = Q3[8] + M_PI / 36;
         }
         Q4 = Q3;
     }
     else
     {
         Q3 = IKfun(P1, P2, R, s, z0);
+        Q3[7] = r_wrist;
+        Q3[8] = l_wrist;
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
             Q3[4] = Q3[4] + M_PI / 18;
             Q3[6] = Q3[6] - M_PI / 18;
+            Q3[7] = Q3[7] + M_PI / 18;
+            Q3[8] = Q3[8] + M_PI / 18;
         }
         else if (c_L != 0)
         { // 왼손만 침
             Q3[4] = Q3[4] + M_PI / 36;
             Q4[4] = Q4[4] + M_PI / 36;
             Q3[6] = Q3[6] - M_PI / 18;
+            Q3[7] = Q3[7] + M_PI / 36;
+            Q4[7] = Q4[7] + M_PI / 36;
+            Q3[8] = Q3[8] + M_PI / 18;
         }
         else if (c_R != 0)
         { // 오른손만 침
             Q3[4] = Q3[4] + M_PI / 18;
+            Q3[6] = Q3[6] - M_PI / 36;
             Q4[6] = Q4[6] - M_PI / 36;
-            Q4[6] = Q4[6] - M_PI / 36;
+            Q3[7] = Q3[7] + M_PI / 18;
+            Q3[8] = Q3[8] + M_PI / 36;
+            Q4[8] = Q4[8] + M_PI / 36;
         }
         // 허리는 Q3 ~ Q4 동안 계속 이동
-        Q3[0] = (Q3[0] + Q2[0]) / 2.0;
+        Q3[0] = (Q4[0] + Q2[0]) / 2.0;
     }
 
     p_R = c_R;
@@ -628,6 +669,7 @@ void PathManager::PathLoopTask()
             sendBuffer.push(frame);
         }
     }
+
     V0 = v.back();
     for (int i = 0; i < n; i++)
     {
@@ -669,7 +711,7 @@ void PathManager::GetBackArr()
 {
     struct can_frame frame;
 
-    vector<double> Q0(7, 0);
+    vector<double> Q0(9, 0);
     vector<vector<double>> q_finish;
 
     //// 끝나는자세 배열 생성
