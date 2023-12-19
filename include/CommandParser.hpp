@@ -33,7 +33,7 @@ private:
 class MaxonCommandParser
 {
 public:
-    void parseSendCommand(MaxonMotor &motor, struct can_frame *frame, int p_des);
+    void parseSendCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians);
     std::tuple<int, float> parseRecieveCommand(struct can_frame *frame);
     void makeSync(struct can_frame *frame);
 };
