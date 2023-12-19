@@ -32,9 +32,10 @@ class PathManager
 {
 
 public:
-    PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef);
+    PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
-    void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef);
+    void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+
     void GetMusicSheet();
     void GetReadyArr();
     void PathLoopTask();
@@ -50,6 +51,7 @@ private:
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};
