@@ -371,7 +371,7 @@ void PathManager::GetMusicSheet()
     map<string, int> instrument_mapping = {
         {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
 
-    string score_path = "../include/codeConfession_test.txt";
+    string score_path = "../include/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
