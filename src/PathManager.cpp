@@ -434,21 +434,22 @@ void PathManager::GetReadyArr()
     // 각 모터의 현재위치 값 불러오기
     for (auto &entry : tmotors)
     {
-        cnt++;
-        cout << "cnt : " << cnt << endl;
         std::shared_ptr<TMotor> &motor = entry.second;
         c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
-    /* Get Maxon Motor Angle */
-    // 임의로 손목각도 설정 => 차후 모터 현재각도 값 불러와서 연결
-    r_wrist = 0.0;
-    l_wrist = 0.0;
+    for (auto &entry : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
+    }
 
     // 준비동작 동안 손목 변화X
-    standby[7] = r_wrist;
-    standby[8] = l_wrist;
+    standby[7] = c_MotorAngle[7];
+    standby[8] = c_MotorAngle[8];
 
     int n = 800;
     for (int k = 0; k < n; k++)
