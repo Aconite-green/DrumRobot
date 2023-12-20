@@ -101,14 +101,14 @@ void SendLoopTask::SendLoop()
 
         if (sendBuffer.size() <= 10)
         {
-            if (pathManager.line < pathManager.end)
+            if (pathManager.line < pathManager.total)
             {
-                std::cout << "line : " << pathManager.line << ", end : " << pathManager.end << "\n";
+                std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
                 pathManager.PathLoopTask();
                 std::cout << sendBuffer.size() << "\n";
                 pathManager.line++;
             }
-            else if (pathManager.line == pathManager.end)
+            else if (pathManager.line == pathManager.total)
             {
                 std::cout << "Turn Back\n";
                 pathManager.GetBackArr();
@@ -116,9 +116,9 @@ void SendLoopTask::SendLoop()
             }
             else if (sendBuffer.size() == 0)
             {
+                std::cout << "Performance is Over\n";
                 systemState.runMode = RunMode::PrePreparation;
                 systemState.main = Main::Ideal;
-                std::cout << "Performance is Over\n";
             }
         }
 
@@ -167,7 +167,7 @@ void SendLoopTask::SendLoop()
     }
 
     // 헤더 추가
-    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006\n";
+    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x007,0x008\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
     for (const auto &row : pathManager.p)
