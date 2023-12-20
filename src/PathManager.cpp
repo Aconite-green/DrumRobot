@@ -466,7 +466,15 @@ void PathManager::GetReadyArr()
             // Frame이 추가됨을 확인
             cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
-        /* Maxon Motor Parsing Add */
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Qi[motor_mapping[entry.first]];
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+            // Frame이 추가됨을 확인
+            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
+        }
     }
 
     c_MotorAngle = Qi;
