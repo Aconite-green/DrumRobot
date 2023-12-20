@@ -352,7 +352,7 @@ void StateTask::initializeTMotors()
         }
     }
 
-    map<string, shared_ptr<MaxonMotor>> maxonMotors;
+    
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x001,
                                                      vector<uint32_t>{0x201, 0x301},
                                                      vector<uint32_t>{0x181},
