@@ -139,17 +139,21 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
 //////////////////////////////////////////////////////
 // Maxon Parser definition
 /////////////////////////////////////////////////////
-void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, int p_des)
+
+void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians)
 {
-    /*4096 * 35 => 1 revolve*/
-    unsigned char posByte0 = p_des & 0xFF;         // 하위 8비트
-    unsigned char posByte1 = (p_des >> 8) & 0xFF;  // 다음 8비트
-    unsigned char posByte2 = (p_des >> 16) & 0xFF; // 다음 8비트
-    unsigned char posByte3 = (p_des >> 24) & 0xFF; // 최상위 8비트
+    // 라디안 값을 인코더 값으로 변환
+    float p_des_degrees = p_des_radians * (180.0f / M_PI); // 라디안을 도로 변환
+    int p_des_enc = static_cast<int>(p_des_degrees * (35.0f * 4096.0f) / 360.0f); // 도를 인코더 값으로 변환
+
+    unsigned char posByte0 = p_des_enc & 0xFF;         // 하위 8비트
+    unsigned char posByte1 = (p_des_enc >> 8) & 0xFF;  // 다음 8비트
+    unsigned char posByte2 = (p_des_enc >> 16) & 0xFF; // 다음 8비트
+    unsigned char posByte3 = (p_des_enc >> 24) & 0xFF; // 최상위 8비트
 
     // Set CAN frame id and data length code
-    frame->can_id = motor.txPdoIds[1]; // Replace YOUR_CAN_ID with the appropriate id
-    frame->can_dlc = 4;                // Data Length Code is set to maximum allowed length
+    frame->can_id = motor.txPdoIds[1];
+    frame->can_dlc = 4;
 
     /// pack ints into the can buffer ///
     frame->data[0] = posByte0;
@@ -162,6 +166,8 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
+
+
 std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
 {
     int id = frame->can_id;
@@ -172,10 +178,12 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
     currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
 
-    float currentPositionFloat = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
+    float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
+    float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f); // 각도를 라디안으로 변환
 
-    return std::make_tuple(id, currentPositionFloat);
+    return std::make_tuple(id, currentPositionRadians);
 }
+
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {

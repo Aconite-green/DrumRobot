@@ -55,6 +55,7 @@ private:
 
     // Recieve Buffer Uitility
     void clearCanBuffer(int canSocket);
+    bool is_port_connected(const char *port);
 };
 
 #endif // CAN_SOCKET_UTILS_H

@@ -75,7 +75,8 @@ private:
     void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
     void DeactivateControlTask();
-    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
+    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
+    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     bool CheckAllMotorsCurrentPosition();
 
     // Home
@@ -91,10 +92,11 @@ private:
 
     // Tune
     void FixMotorPosition();
-    void Tuning(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
-    void InitializeTuningParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
-
+    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
+    
     // Perform
     void runModeLoop();
 };

@@ -67,7 +67,8 @@ private:
     PathManager pathManager;
     void SendReadyLoop();
     bool CheckAllMotorsCurrentPosition();
-    bool CheckCurrentPosition(std::shared_ptr<TMotor> motor);
+    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
+    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     int writeFailCount;
     void initializePathManager();
 
