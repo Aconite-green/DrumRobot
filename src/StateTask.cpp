@@ -19,7 +19,7 @@ void StateTask::operator()()
         switch (currentState)
         {
         case Main::SystemInit:
-            initializeTMotors();
+            initializeMotors();
             initializeCanUtils();
             ActivateControlTask();
             std::cout << "Press Enter to go Home\n";
@@ -277,7 +277,7 @@ void StateTask::checkUserInput()
 /*                                 SYSTEM                                     */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::initializeTMotors()
+void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
@@ -352,12 +352,11 @@ void StateTask::initializeTMotors()
         }
     }
 
-    
-    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x001,
+    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x001,
                                                      vector<uint32_t>{0x201, 0x301},
                                                      vector<uint32_t>{0x181},
                                                      "can0");
-    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x002,
+    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x002,
                                                      vector<uint32_t>{0x202, 0x302},
                                                      vector<uint32_t>{0x182},
                                                      "can0");
@@ -365,14 +364,18 @@ void StateTask::initializeTMotors()
 
 void StateTask::initializeCanUtils()
 {
-    canUtils.initializeCAN(extractIfnamesFromMotors(tmotors));
+    canUtils.initializeCAN(extractIfnamesFromMotors(tmotors, maxonMotors));
     canUtils.checkCanPortsStatus();
 }
 
-vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors)
+vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &tmotors, const map<string, shared_ptr<MaxonMotor>> &maxonMotors)
 {
     set<string> interface_names;
-    for (const auto &motor_pair : motors)
+    for (const auto &motor_pair : tmotors)
+    {
+        interface_names.insert(motor_pair.second->interFaceName);
+    }
+    for (const auto &motor_pair : maxonMotors)
     {
         interface_names.insert(motor_pair.second->interFaceName);
     }
@@ -385,53 +388,53 @@ void StateTask::ActivateControlTask()
     struct can_frame frame;
 
     canUtils.set_all_sockets_timeout(0, 5000);
+
+    // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
+
+    for (auto it = tmotors.begin(); it != tmotors.end();)
+    {
+        std::string name = it->first;
+        std::shared_ptr<TMotor> motor = it->second;
+
+        bool checkSuccess = true;
+        canUtils.clear_all_can_buffers();
+        // 상태 확인
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [&checkSuccess](const std::string &motorName, bool result) {
+
+                       });
+
+        // 상태 확인
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [&checkSuccess](const std::string &motorName, bool result)
+                       {
+                           if (!result)
+                           {
+                               std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
+                               checkSuccess = false;
+                           }
+                           else
+                           {
+                               std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
+                           }
+                       });
+
+        if (!checkSuccess)
+        {
+            // 실패한 경우, 해당 모터를 배열에서 제거
+            it = tmotors.erase(it);
+
+            continue;
+        }
+        else
+        {
+            ++it;
+        }
+    }
     if (!tmotors.empty())
     {
-        // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
-
-        for (auto it = tmotors.begin(); it != tmotors.end();)
-        {
-            std::string name = it->first;
-            std::shared_ptr<TMotor> motor = it->second;
-
-            bool checkSuccess = true;
-            canUtils.clear_all_can_buffers();
-            // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result) {
-
-                           });
-
-            // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result)
-                           {
-                               if (!result)
-                               {
-                                   std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
-                                   checkSuccess = false;
-                               }
-                               else
-                               {
-                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
-                               }
-                           });
-
-            if (!checkSuccess)
-            {
-                // 실패한 경우, 해당 모터를 배열에서 제거
-                it = tmotors.erase(it);
-
-                continue;
-            }
-            else
-            {
-                ++it;
-            }
-        }
-
         // 구분자 추가
         std::cout << "\n=================== Start Zeroing ====================" << std::endl;
 
@@ -468,45 +471,47 @@ void StateTask::ActivateControlTask()
 
     // MaxonMotor
     canUtils.set_all_sockets_timeout(0, 5000);
+
+    for (auto it = maxonMotors.begin(); it != maxonMotors.end();)
+    {
+        std::string name = it->first;
+        std::shared_ptr<MaxonMotor> motor = it->second;
+
+        bool checkSuccess = true;
+        canUtils.clear_all_can_buffers();
+
+        // 상태 확인
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [&checkSuccess](const std::string &motorName, bool result)
+                       {
+                           if (!result)
+                           {
+                               std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
+                               checkSuccess = false;
+                           }
+                           else
+                           {
+                               std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
+                           }
+                       });
+
+        if (!checkSuccess)
+        {
+            // 실패한 경우, 해당 모터를 배열에서 제거
+            it = maxonMotors.erase(it);
+
+            continue;
+        }
+        else
+        {
+            ++it;
+        }
+    }
     if (!maxonMotors.empty())
     {
-        for (auto it = maxonMotors.begin(); it != maxonMotors.end();)
-        {
-            std::string name = it->first;
-            std::shared_ptr<MaxonMotor> motor = it->second;
 
-            bool checkSuccess = true;
-            canUtils.clear_all_can_buffers();
-
-            // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result)
-                           {
-                               if (!result)
-                               {
-                                   std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
-                                   checkSuccess = false;
-                               }
-                               else
-                               {
-                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
-                               }
-                           });
-
-            if (!checkSuccess)
-            {
-                // 실패한 경우, 해당 모터를 배열에서 제거
-                it = maxonMotors.erase(it);
-
-                continue;
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        canUtils.set_all_sockets_timeout(0, 500000);
+        canUtils.set_all_sockets_timeout(0, 50000);
         for (const auto &motorPair : maxonMotors)
         {
             std::string name = motorPair.first;
@@ -1199,7 +1204,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     float p_des = 0;
     float p_act;
     // float tff_des = 0,v_des = 0;
-    //float v_act, tff_act;
+    // float v_act, tff_act;
 
     for (int cycle = 0; cycle < cycles; cycle++)
     {

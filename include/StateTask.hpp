@@ -70,10 +70,10 @@ private:
     void checkUserInput();
 
     // System Initiallize
-    void initializeTMotors();
+    void initializeMotors();
     void initializeCanUtils();
     void ActivateControlTask();
-    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &motors);
+    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &tmotors, const map<string, shared_ptr<MaxonMotor>> &maxonMotors);
     void DeactivateControlTask();
     bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
     bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
