@@ -134,7 +134,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
-    
+
     vector<double> Qf;
 
     double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
@@ -312,7 +312,7 @@ void PathManager::GetMusicSheet()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
-            if (i == 0|| i == 3)
+            if (i == 0 || i == 3)
             {
                 inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
             }
@@ -465,7 +465,17 @@ void PathManager::GetReadyArr()
             // Frame이 추가됨을 확인
             cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
-        /* Maxon Motor Parsing Add */
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Qi[motor_mapping[entry.first]];
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+            // Frame이 추가됨을 확인
+            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
+        }
+        MParser.makeSync(&frame);
+        sendBuffer.push(frame);
     }
 
     c_MotorAngle = Qi;
@@ -677,7 +687,16 @@ void PathManager::PathLoopTask()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
-        /* Maxon Motor Parsing Add */
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Pi[motor_mapping[entry.first]];
+
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+        }
+        MParser.makeSync(&frame);
+        sendBuffer.push(frame);
     }
 
     V0 = v.back();
@@ -711,7 +730,16 @@ void PathManager::PathLoopTask()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
-        /* Maxon Motor Parsing Add */
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Pi[motor_mapping[entry.first]];
+
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+        }
+        MParser.makeSync(&frame);
+        sendBuffer.push(frame);
     }
     c_MotorAngle = p.back();
     Q1 = Q3;
@@ -740,6 +768,14 @@ void PathManager::GetBackArr()
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
         }
-        /* Maxon Motor Parsing Add */
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Qi[motor_mapping[entry.first]];
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+        }
+        MParser.makeSync(&frame);
+        sendBuffer.push(frame);
     }
 }
