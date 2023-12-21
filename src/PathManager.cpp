@@ -1,13 +1,14 @@
 #include "../include/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef)
-    : sendBuffer(sendBufferRef), tmotors(tmotorsRef)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+    : sendBuffer(sendBufferRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
 {
 }
 
-void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef)
+void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef,std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
 {
     this->tmotors = tmotorsRef;
+    this->maxonMotors = maxonMotorsRef;
     // 참조 확인
     cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
 }

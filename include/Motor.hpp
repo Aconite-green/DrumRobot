@@ -59,6 +59,7 @@ public:
                const std::string &interFaceName);
 
     std::string interFaceName;
+    double currentPos;
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
     // CSP mode(SDO)
