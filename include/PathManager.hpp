@@ -58,7 +58,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
-    int bpm = 100;
+    int bpm = 20;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
@@ -95,10 +95,10 @@ private:
 
     // 각 악기별 손목 각도
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    
+
     map<string, int> motor_mapping = {
-        {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}
-    };
+
+        {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
 
     string trimWhitespace(const std::string &str);
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
