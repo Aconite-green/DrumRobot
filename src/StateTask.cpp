@@ -352,11 +352,11 @@ void StateTask::initializeMotors()
         }
     }
 
-    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x001,
-                                                     vector<uint32_t>{0x201, 0x301},
-                                                     vector<uint32_t>{0x181},
+    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
+                                                     vector<uint32_t>{0x209, 0x309},
+                                                     vector<uint32_t>{0x189},
                                                      "can0");
-    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x002,
+    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x202, 0x302},
                                                      vector<uint32_t>{0x182},
                                                      "can0");
@@ -470,7 +470,7 @@ void StateTask::ActivateControlTask()
     }
 
     // MaxonMotor
-    canUtils.set_all_sockets_timeout(0, 5000);
+    canUtils.set_all_sockets_timeout(0, 50000);
 
     for (auto it = maxonMotors.begin(); it != maxonMotors.end();)
     {
@@ -511,7 +511,7 @@ void StateTask::ActivateControlTask()
     if (!maxonMotors.empty())
     {
 
-        canUtils.set_all_sockets_timeout(0, 50000);
+        canUtils.set_all_sockets_timeout(0, 500000);
         for (const auto &motorPair : maxonMotors)
         {
             std::string name = motorPair.first;
@@ -748,7 +748,7 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float> parsedData = MParser.parseRecieveCommand(&frame);
+        std::tuple<int, float, int> parsedData = MParser.parseRecieveCommand(&frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
@@ -1064,7 +1064,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     }
 
     // 헤더 추가
-    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
@@ -1204,7 +1204,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     float p_des = 0;
     float p_act;
     // float tff_des = 0,v_des = 0;
-    // float v_act, tff_act;
+    float tff_act;
 
     for (int cycle = 0; cycle < cycles; cycle++)
     {
@@ -1219,9 +1219,9 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
 
                 std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                if ((int)motor->nodeId == 7)
+                if ((int)motor->nodeId == 9)
                 {
-                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
+                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0,0,0";
                 }
                 else
                 {
@@ -1230,7 +1230,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         csvFileIn << "0,";
                     }
                     csvFileIn << std::dec << p_des << ",";
-                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
+                    for (int i = 0; i < (8 - (int)motor->nodeId); i++)
                     {
                         csvFileIn << "0,";
                     }
@@ -1283,13 +1283,13 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         }
                         else
                         {
-                            std::tuple<int, float> result = MParser.parseRecieveCommand(&frame);
+                            std::tuple<int, float, float> result = MParser.parseRecieveCommand(&frame);
 
                             p_act = std::get<1>(result);
                             // v_act = std::get<1>(result);
-                            // tff_act = std::get<3>(result);
+                            tff_act = std::get<2>(result);
                             // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFileOut << ',' << std::dec << p_act << ',' << '\n';
+                            csvFileOut << ',' << std::dec << p_act << ',' << tff_act<< '\n';
                             break;
                         }
                     }
