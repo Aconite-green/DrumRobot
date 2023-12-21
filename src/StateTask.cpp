@@ -748,7 +748,7 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float> parsedData = MParser.parseRecieveCommand(&frame);
+        std::tuple<int, float, int> parsedData = MParser.parseRecieveCommand(&frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
@@ -1064,7 +1064,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     }
 
     // 헤더 추가
-    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_act,tff_des,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
@@ -1204,7 +1204,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     float p_des = 0;
     float p_act;
     // float tff_des = 0,v_des = 0;
-    // float v_act, tff_act;
+    float tff_act;
 
     for (int cycle = 0; cycle < cycles; cycle++)
     {
@@ -1283,13 +1283,13 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         }
                         else
                         {
-                            std::tuple<int, float> result = MParser.parseRecieveCommand(&frame);
+                            std::tuple<int, float, float> result = MParser.parseRecieveCommand(&frame);
 
                             p_act = std::get<1>(result);
                             // v_act = std::get<1>(result);
-                            // tff_act = std::get<3>(result);
+                            tff_act = std::get<2>(result);
                             // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFileOut << ',' << std::dec << p_act << ',' << '\n';
+                            csvFileOut << ',' << std::dec << p_act << ',' << tff_act<< '\n';
                             break;
                         }
                     }

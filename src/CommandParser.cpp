@@ -168,22 +168,29 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
 
 
 
-std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
-{
+std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame) {
     int id = frame->can_id;
 
-    int currentPosition = 0;                                             // 결과값을 저장할 변수, 32비트 signed int
-    currentPosition |= static_cast<unsigned char>(frame->data[2]);       // 최하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;  // 그 다음 하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
-    
+    int currentPosition = 0;
+    currentPosition |= static_cast<unsigned char>(frame->data[2]);
+    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;
+    currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16;
+    currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24;
 
+    int torqueRaw = 0;
+    torqueRaw |= static_cast<unsigned char>(frame->data[6]);
+    torqueRaw |= static_cast<unsigned char>(frame->data[7]) << 8;
+
+    // 가정: torqueRaw 값이 실제 토크 값에 대한 비율을 나타낸다고 가정함
+    // 실제 토크 계산을 위한 비율이나 공식을 여기에 적용
+    float currentRawTorque = static_cast<float>(torqueRaw);
+    float currentTorque = (static_cast<float>(currentRawTorque) / (35.0f * 4096.0f));
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
-    float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f); // 각도를 라디안으로 변환
+    float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-    return std::make_tuple(id, currentPositionRadians);
+    return std::make_tuple(id, currentPositionRadians, currentTorque);
 }
+
 
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
