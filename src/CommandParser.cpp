@@ -143,7 +143,7 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
 void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians)
 {
     // 라디안 값을 인코더 값으로 변환
-    float p_des_degrees = p_des_radians * (180.0f / M_PI); // 라디안을 도로 변환
+    float p_des_degrees = p_des_radians * (180.0f / M_PI);                        // 라디안을 도로 변환
     int p_des_enc = static_cast<int>(p_des_degrees * (35.0f * 4096.0f) / 360.0f); // 도를 인코더 값으로 변환
 
     unsigned char posByte0 = p_des_enc & 0xFF;         // 하위 8비트
@@ -166,9 +166,8 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
-
-
-std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame) {
+std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
+{
     int id = frame->can_id;
 
     int currentPosition = 0;
@@ -184,14 +183,13 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can
     // 가정: torqueRaw 값이 실제 토크 값에 대한 비율을 나타낸다고 가정함
     // 실제 토크 계산을 위한 비율이나 공식을 여기에 적용
     float currentRawTorque = static_cast<float>(torqueRaw);
-    float currentTorque = (static_cast<float>(currentRawTorque) / (35.0f * 4096.0f));
+    float currentTorque = (static_cast<float>(currentRawTorque) / (4096.0f));
+
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
     return std::make_tuple(id, currentPositionRadians, currentTorque);
 }
-
-
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {
