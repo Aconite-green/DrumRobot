@@ -116,8 +116,6 @@ void SendLoopTask::SendLoop()
             }
             else if (sendBuffer.size() == 0)
             {
-                systemState.runMode = RunMode::PrePreparation;
-                systemState.main = Main::Ideal;
                 std::cout << "Performance is Over\n";
                 systemState.runMode = RunMode::PrePreparation;
                 systemState.main = Main::Ideal;

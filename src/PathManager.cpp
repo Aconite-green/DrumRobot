@@ -429,26 +429,26 @@ void PathManager::GetReadyArr()
 
     // tmotors의 상태를 확인
     cout << "tmotors size: " << tmotors.size() << "\n";
-    int cnt = 0;
 
     // 각 모터의 현재위치 값 불러오기
     for (auto &entry : tmotors)
     {
-        cnt++;
-        cout << "cnt : " << cnt << endl;
         std::shared_ptr<TMotor> &motor = entry.second;
         c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
     }
-    /* Get Maxon Motor Angle */
-    // 임의로 손목각도 설정 => 차후 모터 현재각도 값 불러와서 연결
-    r_wrist = 0.0;
-    l_wrist = 0.0;
+    for (auto &entry : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
+    }
 
     // 준비동작 동안 손목 변화X
-    standby[7] = r_wrist;
-    standby[8] = l_wrist;
+    standby[7] = c_MotorAngle[7];
+    standby[8] = c_MotorAngle[8];
 
     int n = 800;
     for (int k = 0; k < n; k++)
@@ -546,8 +546,12 @@ void PathManager::PathLoopTask()
                 Q1[8] = Q1[8] + M_PI / 36;
                 Q2[8] = Q2[8] + M_PI / 36;
             }
-            // 허리는 Q1 ~ Q2 동안 계속 이동
+            // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
             Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
+            Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
+            Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
+            Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
+            Q1[5] = (Q2[4] + c_MotorAngle[5]) / 2.0;
         }
 
         p_R = c_R;
@@ -625,8 +629,12 @@ void PathManager::PathLoopTask()
             Q3[8] = Q3[8] + M_PI / 36;
             Q4[8] = Q4[8] + M_PI / 36;
         }
-        // 허리는 Q3 ~ Q4 동안 계속 이동
+        // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
         Q3[0] = (Q4[0] + Q2[0]) / 2.0;
+        Q3[1] = (Q4[1] + Q2[1]) / 2.0;
+        Q3[2] = (Q4[2] + Q2[2]) / 2.0;
+        Q3[3] = (Q4[3] + Q2[3]) / 2.0;
+        Q3[5] = (Q4[4] + Q2[5]) / 2.0;
     }
 
     p_R = c_R;
