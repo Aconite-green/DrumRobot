@@ -19,10 +19,11 @@ void RecieveLoopTask::operator()()
         {
             if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
             {
-                
-                /*if(!canUtils.checkCanPortsStatus() || !checkMotors()){
-                    systemState.main = Main::Shutdown;
-                }*/
+
+                if (!canUtils.checkCanPortsStatus() || !checkMotors())
+                {
+                    canUtils.restart_all_can_ports();
+                }
                 lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
             }
         }

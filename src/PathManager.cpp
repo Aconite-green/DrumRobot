@@ -5,7 +5,7 @@ PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr
 {
 }
 
-void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef,std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
 {
     this->tmotors = tmotorsRef;
     this->maxonMotors = maxonMotorsRef;
@@ -556,8 +556,12 @@ void PathManager::PathLoopTask()
                 Q1[8] = Q1[8] + M_PI / 36;
                 Q2[8] = Q2[8] + M_PI / 36;
             }
-            // 허리는 Q1 ~ Q2 동안 계속 이동
+            // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
             Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
+            Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
+            Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
+            Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
+            Q1[5] = (Q2[4] + c_MotorAngle[5]) / 2.0;
         }
 
         p_R = c_R;
@@ -635,8 +639,12 @@ void PathManager::PathLoopTask()
             Q3[8] = Q3[8] + M_PI / 36;
             Q4[8] = Q4[8] + M_PI / 36;
         }
-        // 허리는 Q3 ~ Q4 동안 계속 이동
+        // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
         Q3[0] = (Q4[0] + Q2[0]) / 2.0;
+        Q3[1] = (Q4[1] + Q2[1]) / 2.0;
+        Q3[2] = (Q4[2] + Q2[2]) / 2.0;
+        Q3[3] = (Q4[3] + Q2[3]) / 2.0;
+        Q3[5] = (Q4[4] + Q2[5]) / 2.0;
     }
 
     p_R = c_R;
