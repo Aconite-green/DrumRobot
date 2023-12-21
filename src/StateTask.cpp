@@ -352,11 +352,11 @@ void StateTask::initializeMotors()
         }
     }
 
-    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x001,
-                                                     vector<uint32_t>{0x201, 0x301},
-                                                     vector<uint32_t>{0x181},
+    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
+                                                     vector<uint32_t>{0x209, 0x309},
+                                                     vector<uint32_t>{0x189},
                                                      "can0");
-    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x002,
+    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x202, 0x302},
                                                      vector<uint32_t>{0x182},
                                                      "can0");
@@ -470,7 +470,7 @@ void StateTask::ActivateControlTask()
     }
 
     // MaxonMotor
-    canUtils.set_all_sockets_timeout(0, 5000);
+    canUtils.set_all_sockets_timeout(0, 50000);
 
     for (auto it = maxonMotors.begin(); it != maxonMotors.end();)
     {
@@ -511,7 +511,7 @@ void StateTask::ActivateControlTask()
     if (!maxonMotors.empty())
     {
 
-        canUtils.set_all_sockets_timeout(0, 50000);
+        canUtils.set_all_sockets_timeout(0, 500000);
         for (const auto &motorPair : maxonMotors)
         {
             std::string name = motorPair.first;
@@ -1219,9 +1219,9 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
 
                 std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                if ((int)motor->nodeId == 7)
+                if ((int)motor->nodeId == 9)
                 {
-                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
+                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0,0,0";
                 }
                 else
                 {
@@ -1230,7 +1230,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         csvFileIn << "0,";
                     }
                     csvFileIn << std::dec << p_des << ",";
-                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
+                    for (int i = 0; i < (8 - (int)motor->nodeId); i++)
                     {
                         csvFileIn << "0,";
                     }

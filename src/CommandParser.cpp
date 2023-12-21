@@ -177,6 +177,7 @@ std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame 
     currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;  // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
     currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
+    
 
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f); // 각도를 라디안으로 변환
