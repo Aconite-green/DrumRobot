@@ -15,11 +15,24 @@ void RecieveLoopTask::operator()()
         usleep(50000);
         while (systemState.main == Main::Perform)
         {
-            usleep(50000);
-
-            if (systemState.runMode == RunMode::Running)
+            /*
+            if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
             {
-                RecieveLoop(recieveBuffer);
+
+                if (!canUtils.checkCanPortsStatus() || !checkMotors())
+                {
+                    canUtils.restart_all_can_ports();
+                }
+                lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+            }
+            else*/
+            {
+                usleep(50000); // Perform 상태일 때의 처리
+
+                if (systemState.runMode == RunMode::Running)
+                {
+                    RecieveLoop(recieveBuffer);
+                }
             }
         }
     }
