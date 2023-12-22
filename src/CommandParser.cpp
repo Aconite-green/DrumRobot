@@ -170,20 +170,20 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can
 {
     int id = frame->can_id;
 
-    int currentPosition = 0;
-    currentPosition |= static_cast<unsigned char>(frame->data[2]);
-    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;
-    currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16;
-    currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24;
+    int32_t currentPosition = 0;
+    currentPosition |= static_cast<uint8_t>(frame->data[2]);
+    currentPosition |= static_cast<uint8_t>(frame->data[3]) << 8;
+    currentPosition |= static_cast<uint8_t>(frame->data[4]) << 16;
+    currentPosition |= static_cast<uint8_t>(frame->data[5]) << 24;
 
-    int torqueRaw = 0;
-    torqueRaw |= static_cast<unsigned char>(frame->data[6]);
-    torqueRaw |= static_cast<unsigned char>(frame->data[7]) << 8;
+    int16_t torqueRaw = 0;
+    torqueRaw |= static_cast<uint8_t>(frame->data[6]);
+    torqueRaw |= static_cast<uint8_t>(frame->data[7]) << 8;
 
     // 가정: torqueRaw 값이 실제 토크 값에 대한 비율을 나타낸다고 가정함
     // 실제 토크 계산을 위한 비율이나 공식을 여기에 적용
     float currentRawTorque = static_cast<float>(torqueRaw);
-    float currentTorque = (static_cast<float>(currentRawTorque) / (4096.0f));
+    float currentTorque = (static_cast<float>(currentRawTorque));
 
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
