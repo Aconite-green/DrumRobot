@@ -10,6 +10,8 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
+    auto lastCheckTime = std::chrono::steady_clock::now();
+
     while (systemState.main != Main::Shutdown)
     {
         usleep(50000);
@@ -35,6 +37,7 @@ void RecieveLoopTask::operator()()
                 }
             }
         }
+        usleep(50000); // 다음 루프 대기
     }
 }
 

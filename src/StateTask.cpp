@@ -1091,7 +1091,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
 
                 if ((int)motor->nodeId == 7)
                 {
-                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
+                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0,0,0";
                 }
                 else
                 {
@@ -1100,7 +1100,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
                         csvFileIn << "0,";
                     }
                     csvFileIn << std::dec << p_des << ",";
-                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
+                    for (int i = 0; i < (8 - (int)motor->nodeId); i++)
                     {
                         csvFileIn << "0,";
                     }
@@ -1219,9 +1219,9 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
 
                 std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                if ((int)motor->nodeId == 9)
+                if ((int)motor->nodeId == 7)
                 {
-                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0,0,0";
+                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
                 }
                 else
                 {
@@ -1230,12 +1230,12 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         csvFileIn << "0,";
                     }
                     csvFileIn << std::dec << p_des << ",";
-                    for (int i = 0; i < (8 - (int)motor->nodeId); i++)
+                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
                     {
                         csvFileIn << "0,";
                     }
                 }
-
+                
                 float local_time = std::fmod(time, sine_t);
                 if (pathType == 1) // 1-cos 경로
                 {
