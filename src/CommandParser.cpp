@@ -176,20 +176,23 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can
     currentPosition |= static_cast<uint8_t>(frame->data[4]) << 16;
     currentPosition |= static_cast<uint8_t>(frame->data[5]) << 24;
 
-    int16_t torqueRaw = 0;
-    torqueRaw |= static_cast<uint8_t>(frame->data[6]);
-    torqueRaw |= static_cast<uint8_t>(frame->data[7]) << 8;
+    int16_t torqueActualValue = 0;
+    torqueActualValue |= static_cast<uint8_t>(frame->data[6]);
+    torqueActualValue |= static_cast<uint8_t>(frame->data[7]) << 8;
 
-    // 가정: torqueRaw 값이 실제 토크 값에 대한 비율을 나타낸다고 가정함
-    // 실제 토크 계산을 위한 비율이나 공식을 여기에 적용
-    float currentRawTorque = static_cast<float>(torqueRaw);
-    float currentTorque = (static_cast<float>(currentRawTorque));
+    // Motor rated torque 값을 N·m 단위로 변환 (mNm -> N·m)
+    const float motorRatedTorqueNm = 0.127f; // 127 mNm = 0.127 N·m
 
-    float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
+    // 실제 토크 값을 N·m 단위로 계산
+    // Torque actual value는 천분의 일 단위이므로, 실제 토크 값은 (torqueActualValue / 1000) * motorRatedTorqueNm
+    float currentTorqueNm = (static_cast<float>(torqueActualValue) / 1000.0f) * motorRatedTorqueNm;
+
+    float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-    return std::make_tuple(id, currentPositionRadians, currentTorque);
+    return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
+
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {
