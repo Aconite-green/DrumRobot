@@ -187,9 +187,8 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
         {
             the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             the4 = the34 - the3[i];
-
-            if (the4 > 0)
-            {
+            if (the4 > 0 && the4 < M_PI * 0.75)
+            {   // 오른팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
                 r = r1 * sin(the3[i]) + r2 * sin(the34);
 
                 det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
@@ -233,19 +232,22 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                             rol = alpha * beta - abs(gamma) * sqrt(det_the6);
                                             rol /= (beta * beta + gamma * gamma);
                                             the6 = acos(rol);
-                                            Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
+                                            if (the6 > 0 && the6 < M_PI * 0.75)
+                                            {   // 왼팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
+                                                Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
-                                            if (Z < z2 + 0.001 && Z > z2 - 0.001)
-                                            {
-                                                q0.push_back(the0);
-                                                q1.push_back(the1);
-                                                q2.push_back(the2);
-                                                q3.push_back(the3[i]);
-                                                q4.push_back(the4);
-                                                q5.push_back(the5);
-                                                q6.push_back(the6);
+                                                if (Z < z2 + 0.001 && Z > z2 - 0.001)
+                                                {
+                                                    q0.push_back(the0);
+                                                    q1.push_back(the1);
+                                                    q2.push_back(the2);
+                                                    q3.push_back(the3[i]);
+                                                    q4.push_back(the4);
+                                                    q5.push_back(the5);
+                                                    q6.push_back(the6);
 
-                                                j++;
+                                                    j++;
+                                                }
                                             }
                                         }
                                     }
