@@ -32,16 +32,16 @@
 #include "../include/TaskUtility.hpp"
 #include "../include/Global.hpp"
 
-//#include <QObject>
+// #include <QObject>
 
 using namespace std;
 
 class StateTask /*: public QObject*/
 {
-    //Q_OBJECT
+    // Q_OBJECT
 
-/*signals:
-    void stateChanged(Main newState);*/
+    /*signals:
+        void stateChanged(Main newState);*/
 
 public:
     // 생성자 선언
@@ -81,14 +81,20 @@ private:
 
     // Home
     void homeModeLoop();
-    void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
-    void HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
-    float MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
-    void RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
-    void SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
-    bool PromptUserForHoming(const std::string &motorName);
     void displayHomingStatus();
     void UpdateHomingStatus();
+    /*Tmotor*/
+
+    void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
+    void HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
+    float MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
+    void RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
+    void SendCommandToTMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
+    bool PromptUserForHoming(const std::string &motorName);
+
+    /*Maxon*/
+    void SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &motorName);
+    void SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName);
 
     // Tune
     void FixMotorPosition();
@@ -96,7 +102,7 @@ private:
     void TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
     void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
-    
+
     // Perform
     void runModeLoop();
 };
