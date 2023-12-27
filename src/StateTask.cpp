@@ -572,6 +572,28 @@ void StateTask::ActivateControlTask()
                                 [](const std::string &motorName, bool success) {
 
                                 });
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success) {
+
+                                });
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success) {
+
+                                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
