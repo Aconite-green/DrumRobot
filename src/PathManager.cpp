@@ -130,7 +130,7 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
 vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
     // 드럼위치의 중점 각도
-    double direction = -M_PI / 3.0;
+    double direction = 0.0;
 
     // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
@@ -296,7 +296,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
 void PathManager::GetMusicSheet()
 {
-    ifstream inputFile("../include/rT.txt");
+    ifstream inputFile("../include/rT_rotate.txt");
 
     if (!inputFile.is_open())
     {
