@@ -1352,21 +1352,14 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
 
                 std::shared_ptr<MaxonMotor> &motor = entry.second;
 
-                if ((int)motor->nodeId == 7)
+                for (int i = 0; i < (int)motor->nodeId - 1; i++)
                 {
-                    csvFileIn << std::dec << p_des << "0,0,0,0,0,0";
+                    csvFileIn << "0,";
                 }
-                else
+                csvFileIn << std::dec << p_des << ",";
+                for (int i = 0; i < (9 - (int)motor->nodeId); i++)
                 {
-                    for (int i = 0; i < (int)motor->nodeId; i++)
-                    {
-                        csvFileIn << "0,";
-                    }
-                    csvFileIn << std::dec << p_des << ",";
-                    for (int i = 0; i < (6 - (int)motor->nodeId); i++)
-                    {
-                        csvFileIn << "0,";
-                    }
+                    csvFileIn << "0,";
                 }
 
                 float local_time = std::fmod(time, sine_t);
