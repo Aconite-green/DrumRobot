@@ -60,6 +60,8 @@ public:
 
     std::string interFaceName;
     double currentPos;
+    float cwDir;
+    bool isHomed;
     
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
