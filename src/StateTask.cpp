@@ -793,6 +793,35 @@ void StateTask::SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_fr
     }
 }
 
+void StateTask::SendCommandToMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName)
+{
+    auto interface_name = motor->interFaceName;
+    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    {
+        int socket_descriptor = canUtils.sockets.at(interface_name);
+
+        // 명령을 소켓으로 전송합니다.
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(struct can_frame));
+        if (bytesWritten == -1)
+        {
+            std::cerr << "Failed to write to socket for interface: " << interface_name << std::endl;
+            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+            return;
+        }
+        // 명령에 대한 응답을 기다립니다.
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(struct can_frame));
+        if (bytesRead == -1)
+        {
+            std::cerr << "Failed to read from socket for interface: " << interface_name << std::endl;
+            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Socket not found for interface: " << interface_name << std::endl;
+    }
+}
+
 bool StateTask::PromptUserForHoming(const std::string &motorName)
 {
     char userResponse;
@@ -883,12 +912,12 @@ void StateTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &mot
     {
         CheckTmotorPosition(motor);
         RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
-    }
-    if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
+    }*/
+    if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
+        RotateMotor(motor, motorName, motor->cwDir, 90, 0);
     }
-    */
+    
 }
 
 void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName)

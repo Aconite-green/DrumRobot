@@ -10,7 +10,7 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
-    auto lastCheckTime = std::chrono::steady_clock::now();
+    //auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (systemState.main != Main::Shutdown)
     {
