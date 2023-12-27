@@ -954,16 +954,73 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 {
     struct can_frame frame;
 
+    canUtils.clear_all_can_buffers();
+    canUtils.set_all_sockets_timeout(2, 0);
     for (const auto &motor_pair : maxonMotors)
     {
         std::string name = motor_pair.first;
         std::shared_ptr<MaxonMotor> motor = motor_pair.second;
-        
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
 
-                           });
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForHomeMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+    
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        
+        fillCanFrameFromInfo(&frame, motor->getHomingMethod());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getHomeoffsetDistance());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        /*fillCanFrameFromInfo(&frame, motor->getHomingAcceleration());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getSpeedForSwitchSearch());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });*/
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCurrentThreshold());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getHomePosition());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        
+        //Start to Move by homing method (일단은 SDO)
+        fillCanFrameFromInfo(&frame, motor->getStartHoming());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
     }
 }
 
