@@ -81,6 +81,30 @@ public:
     CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
     // Sync(PDO)
     CanFrameInfo getCanFrameForSync();
+
+    //////////////// Homing
+    CanFrameInfo getCanFrameForHomeMode();
+
+    CanFrameInfo getFlowingErrorWindow();
+
+    CanFrameInfo getHomeoffsetDistance();
+
+    CanFrameInfo getMaxProfileVelocity();
+
+    CanFrameInfo getQuickStopDeceleration();
+
+    CanFrameInfo getSpeedForSwitchSearch();
+
+    CanFrameInfo getSpeedForZeroSearch();
+
+    CanFrameInfo getHomingAcceleration();
+
+    CanFrameInfo getHomePosition();
+
+    CanFrameInfo getHomingMethod();
+
+    CanFrameInfo getStartHoming();
+
 };
 
 #endif

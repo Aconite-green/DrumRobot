@@ -5,9 +5,7 @@
 TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)
     : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName)
 {
-    
 }
-
 
 CanFrameInfo TMotor::getCanFrameForCheckMotor()
 {
@@ -125,4 +123,61 @@ CanFrameInfo MaxonMotor::getCanFrameForSync()
 CanFrameInfo MaxonMotor::getCanFrameForQuickStop()
 {
     return {this->txPdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+////////////////////Homing
+
+CanFrameInfo MaxonMotor::getCanFrameForHomeMode()
+{
+    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x06, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getFlowingErrorWindow()
+{
+    return {this->canSendId, 8, {0x22, 0x65, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getHomeoffsetDistance()
+{
+    return {this->canSendId, 8, {0x22, 0xB1, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getMaxProfileVelocity()
+{
+    return {this->canSendId, 8, {0x22, 0x7F, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getQuickStopDeceleration()
+{
+    return {this->canSendId, 8, {0x22, 0x85, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getSpeedForSwitchSearch()
+{
+    return {this->canSendId, 8, {0x22, 0x99, 0x60, 0x01, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getSpeedForZeroSearch()
+{
+    return {this->canSendId, 8, {0x22, 0x99, 0x60, 0x02, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getHomingAcceleration()
+{
+    return {this->canSendId, 8, {0x22, 0x9A, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getHomePosition()
+{
+    return {this->canSendId, 8, {0x22, 0xB0, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getHomingMethod()
+{
+    return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFD, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getStartHoming()
+{
+    return {this->canSendId, 8, {0x22, 0x40, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
