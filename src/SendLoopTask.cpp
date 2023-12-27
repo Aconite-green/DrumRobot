@@ -156,7 +156,7 @@ void SendLoopTask::SendLoop()
     }
 
     // CSV 파일명 설정
-    std::string csvFileName = "TuningData/DrumData_in.txt";
+    std::string csvFileName = "../../READ/DrumData_in.txt";
 
     // CSV 파일 열기
     std::ofstream csvFile(csvFileName);
@@ -167,7 +167,7 @@ void SendLoopTask::SendLoop()
     }
 
     // 헤더 추가
-    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x007,0x008\n";
+    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
     for (const auto &row : pathManager.p)

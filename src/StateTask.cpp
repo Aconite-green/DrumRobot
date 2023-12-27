@@ -1182,8 +1182,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     }
 
     // 헤더 추가
-    csvFileIn << "Start file"
-              << "\n";
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // CSV 파일명 설정
     std::string FileName2 = "../../READ/" + parameter + "_out.txt";
@@ -1312,8 +1311,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     }
 
     // 헤더 추가
-    csvFileIn << "Start file"
-              << "\n";
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // CSV 파일명 설정
     std::string FileName2 = "../../READ/" + selectedMotor + "_out.txt";

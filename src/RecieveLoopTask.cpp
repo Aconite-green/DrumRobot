@@ -83,7 +83,7 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         }
     }
 
-    parse_and_save_to_csv("TuningData/DrumData_out.txt");
+    parse_and_save_to_csv("../../READ/DrumData_out.txt");
 }
 
 void RecieveLoopTask::handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer)
