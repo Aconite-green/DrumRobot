@@ -572,12 +572,11 @@ void StateTask::ActivateControlTask()
                                 [](const std::string &motorName, bool success) {
 
                                 });
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
 
                         });
-
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
@@ -999,13 +998,13 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                        [](const std::string &motorName, bool success) {
 
                        });
-    
+
         fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
 
                        });
-        
+
         fillCanFrameFromInfo(&frame, motor->getHomingMethod());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
@@ -1036,8 +1035,8 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                        [](const std::string &motorName, bool success) {
 
                        });
-        
-        //Start to Move by homing method (일단은 SDO)
+
+        // Start to Move by homing method (일단은 SDO)
         fillCanFrameFromInfo(&frame, motor->getStartHoming());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
