@@ -174,7 +174,8 @@ CanFrameInfo MaxonMotor::getHomePosition()
 
 CanFrameInfo MaxonMotor::getHomingMethod()
 {
-    return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFD, 0x00, 0x00, 0x00}};
+    return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFD, 0xFF, 0xFF, 0xFF}};
+    /*-4로 하고 싶은 경우 FD -> FC로 바꾸기*/
 }
 
 CanFrameInfo MaxonMotor::getStartHoming()
