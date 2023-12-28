@@ -374,11 +374,33 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can1");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x202, 0x302},
                                                      vector<uint32_t>{0x182},
-                                                     "can0");
+                                                     "can1");
+
+    for (auto &motor_pair : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> &motor = motor_pair.second;
+
+        // 각 모터 이름에 따른 멤버 변수 설정
+        if (motor_pair.first == "L_wirst")
+        {
+            motor->cwDir = 1.0f;
+            motor->rMin = -M_PI * 0.75f; // -120deg
+            motor->rMax = M_PI / 2.0f;   // 90deg
+            motor->isHomed = false;
+        }
+        else if (motor_pair.first == "R_wirst")
+        {
+            motor->cwDir = 1.0f;
+            motor->rMin = 0.0f; // 0deg
+            motor->rMax = M_PI; // 180deg
+            motor->isHomed = false;
+        }
+        
+    }
 };
 
 void StateTask::initializeCanUtils()
@@ -1071,7 +1093,6 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
             usleep(100000); // 예시로 10ms 대기
         }
-
     }
 }
 

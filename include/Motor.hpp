@@ -62,6 +62,7 @@ public:
     double currentPos;
     float cwDir;
     bool isHomed;
+    float rMin, rMax;
     
     // Send all zero(SDO)
     CanFrameInfo getCanFrameForCheckMotor();
