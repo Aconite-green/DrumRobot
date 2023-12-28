@@ -900,11 +900,16 @@ bool StateTask::PromptUserForHoming(const std::string &motorName)
 
 void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
+
     struct can_frame frameToProcess;
     chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, motor->currentPos, 0, 150, 1, 0);
     SendCommandToTMotor(motor, frameToProcess, motorName);
+    int kp;
 
+    if(motorName == "L_arm1" || motorName =="R_arm1") kp = 250;
+    else if(motorName == "L_arm2" || motorName =="R_arm2") kp = 350;
+    else if(motorName == "L_arm3" || motorName =="R_arm3") kp = 300;
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
     const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
     int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
@@ -922,7 +927,7 @@ void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
         double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
-        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, 250, 2.5, 0);
+        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
         SendCommandToTMotor(motor, frameToProcess, motorName);
 
         startTime = std::chrono::system_clock::now();
@@ -983,6 +988,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     }*/
     if (motorName == "L_arm3" || motorName == "R_arm3")
     {
+        CheckTmotorPosition(motor);
         RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
 }
