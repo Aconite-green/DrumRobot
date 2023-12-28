@@ -464,8 +464,6 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
-            // Frame이 추가됨을 확인
-            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
         for (auto &entry : maxonMotors)
         {
@@ -473,8 +471,6 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             MParser.parseSendCommand(*motor, &frame, p_des);
             sendBuffer.push(frame);
-            // Frame이 추가됨을 확인
-            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
         MParser.makeSync(&frame);
         sendBuffer.push(frame);
