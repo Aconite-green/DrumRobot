@@ -126,6 +126,10 @@ void StateTask::homeModeLoop()
         {
             SetHome(tmotors[motorName], motorName);
         }
+        else if (maxonMotors.find(motorName) != maxonMotors.end() && !maxonMotors[motorName]->isHomed)
+        {
+            SetHome(maxonMotors[motorName], motorName);
+        }
         else
         {
             std::cout << "Motor not found or already homed: " << motorName << std::endl;
@@ -936,11 +940,11 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.4);
+        additionalTorque = motor->cwDir * (-2.5);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 1.7;
+        additionalTorque = motor->cwDir * 1.9;
     }
 
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
