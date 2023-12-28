@@ -112,6 +112,8 @@ void StateTask::homeModeLoop()
                     SetHome(motor_pair.second, motor_pair.first);
                 }
             }
+
+            // 나머지 Maxon모터 홈홈
             for (auto &motor_pair : maxonMotors)
             {
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
@@ -528,7 +530,7 @@ void StateTask::ActivateControlTask()
     if (!maxonMotors.empty())
     {
 
-        canUtils.set_all_sockets_timeout(0, 500000);
+        canUtils.set_all_sockets_timeout(2, 0);
         for (const auto &motorPair : maxonMotors)
         {
             std::string name = motorPair.first;
@@ -572,16 +574,19 @@ void StateTask::ActivateControlTask()
                                 [](const std::string &motorName, bool success) {
 
                                 });
+
             fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
 
                         });
+
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
 
                                 });
+
             fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
@@ -1042,6 +1047,31 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                        [](const std::string &motorName, bool success) {
 
                        });
+
+        // 홈 위치에 도달할 때까지 반복
+
+        while (!motor->isHomed)
+        {
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [&frame, &motor](const std::string &motorName, bool success)
+                           {
+                               if (success)
+                               {
+                                   // Statusword 비트 15 확인
+                                   if (frame.data[1] & 0x80) // 비트 15 확인
+                                   {
+                                       motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                       cout << "Homing completed for " << motorName << "\n";
+                                   }
+                               }
+                           });
+            canUtils.clear_all_can_buffers();
+
+            usleep(100000); // 예시로 10ms 대기
+        }
+
     }
 }
 
