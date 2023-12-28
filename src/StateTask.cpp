@@ -399,7 +399,6 @@ void StateTask::initializeMotors()
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
         }
-        
     }
 };
 
@@ -993,6 +992,7 @@ void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motor
 
     HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
+    FixMotorPosition(motor);
 
     cout << "Homing completed for " << motorName << "\n";
     sensor.closeDevice();
@@ -1077,21 +1077,22 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&frame, &motor](const std::string &motorName, bool success)
+                           [this, &frame, &motor, &name](const std::string &motorName, bool success)
                            {
                                if (success)
                                {
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
-                                       motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                       motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                       this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
                                        cout << "Homing completed for " << motorName << "\n";
                                    }
                                }
                            });
             canUtils.clear_all_can_buffers();
 
-            usleep(100000); // 예시로 10ms 대기
+            usleep(100000); // 100ms 대기
         }
     }
 }
@@ -1184,6 +1185,35 @@ void StateTask::UpdateHomingStatus()
         systemState.homeMode = HomeMode::NotHome;
     }
 }
+
+void StateTask::FixMotorPosition(std::shared_ptr<TMotor> &motor)
+{
+    struct can_frame frame;
+
+    CheckTmotorPosition(motor);
+
+    TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
+                   [](const std::string &motorName, bool success)
+                   {
+                       // 여기에 필요한 코드 추가
+                   });
+}
+
+void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
+{
+    struct can_frame frame;
+
+    CheckMaxonPosition(motor);
+
+    MParser.parseSendCommand(*motor, &frame, motor->currentPos);
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
+                   [](const std::string &motorName, bool success)
+                   {
+                       // 여기에 필요한 코드 추가
+                   });
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////

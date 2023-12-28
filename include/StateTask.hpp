@@ -83,19 +83,20 @@ private:
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
+    
     /*Tmotor*/
-
     void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
     void HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
     float MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
     void SendCommandToTMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
     bool PromptUserForHoming(const std::string &motorName);
+    void FixMotorPosition(std::shared_ptr<TMotor> &motor);
 
     /*Maxon*/
     void SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &motorName);
     void SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName);
-
+    void FixMotorPosition(std::shared_ptr<MaxonMotor> &motor);
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
