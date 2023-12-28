@@ -86,11 +86,11 @@ void StateTask::homeModeLoop()
             std::cout << "Error: R_arm3 must be homed before " << motorName << std::endl;
             continue;
         }
-        else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
+        /*else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
         {
             std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
             continue;
-        }
+        }*/
 
         if (motorName == "all")
         {
@@ -903,13 +903,11 @@ void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &
 
     struct can_frame frameToProcess;
     chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-    TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, motor->currentPos, 0, 150, 1, 0);
-    SendCommandToTMotor(motor, frameToProcess, motorName);
-    int kp;
+    int kp = 250;
 
     if(motorName == "L_arm1" || motorName =="R_arm1") kp = 250;
     else if(motorName == "L_arm2" || motorName =="R_arm2") kp = 350;
-    else if(motorName == "L_arm3" || motorName =="R_arm3") kp = 300;
+    else if(motorName == "L_arm3" || motorName =="R_arm3") kp = 350;
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
     const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
     int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
@@ -967,13 +965,14 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
+    canUtils.set_all_sockets_timeout(2,0);
     // 현재 position을 0으로 인식하는 명령을 보냄
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
     // 상태 확인
-    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-    SendCommandToTMotor(motor, frameToProcess, motorName);
+    /*fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
+    SendCommandToTMotor(motor, frameToProcess, motorName);*/
 
     if (motorName == "L_arm1" || motorName == "R_arm1")
     {
@@ -1002,6 +1001,7 @@ void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motor
 
     HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
+    sleep(1);
     FixMotorPosition(motor);
 
     cout << "Homing completed for " << motorName << "\n";
@@ -1201,6 +1201,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<TMotor> &motor)
     struct can_frame frame;
 
     CheckTmotorPosition(motor);
+    cout << "Fix Motor.\n";
 
     TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
     sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
@@ -1215,6 +1216,8 @@ void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
     struct can_frame frame;
 
     CheckMaxonPosition(motor);
+
+    cout << "FixMotor\n";
 
     MParser.parseSendCommand(*motor, &frame, motor->currentPos);
     sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,

@@ -10,12 +10,9 @@ Sensor::~Sensor()
 
 DWORD Sensor::ReadVal()
 {
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    
 
     USBIO_DI_ReadValue(DevNum, &DIValue);
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    duration = get_nano_seconds(&start, &end);
-    printf("USBIO_DI_ReadValue execution time: %ld ns\n", duration);
 
     return DIValue;
 }
