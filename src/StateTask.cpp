@@ -963,12 +963,9 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
+    canUtils.set_all_sockets_timeout(2,0);
     // 현재 position을 0으로 인식하는 명령을 보냄
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
-    SendCommandToTMotor(motor, frameToProcess, motorName);
-
-    // 상태 확인
-    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
     if (motorName == "L_arm1" || motorName == "R_arm1")
