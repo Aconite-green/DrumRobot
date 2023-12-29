@@ -378,11 +378,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can1");
+                                                     "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can1");
+                                                     "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -1095,7 +1095,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
                                        motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                       this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
+                                       //this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
                                        cout << "Homing completed for " << motorName << "\n";
                                    }
                                }
