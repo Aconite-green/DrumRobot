@@ -139,7 +139,7 @@ CanFrameInfo MaxonMotor::getFlowingErrorWindow()
 
 CanFrameInfo MaxonMotor::getHomeoffsetDistance()
 {
-    return {this->canSendId, 8, {0x22, 0xB1, 0x30, 0x00, 0x00, 0x8C, 0x00, 0x00}};
+    return {this->canSendId, 8, {0x22, 0xB1, 0x30, 0x00, 0x00, 0x90, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getMaxProfileVelocity()
@@ -185,5 +185,5 @@ CanFrameInfo MaxonMotor::getStartHoming()
 
 CanFrameInfo MaxonMotor::getCanFrameForCurrentThreshold()
 {
-    return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xDC, 0x05, 0x00, 0x00}};
+    return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xE8, 0x03, 0x00, 0x00}};
 }
