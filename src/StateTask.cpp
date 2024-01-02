@@ -378,11 +378,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can1");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can1");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -600,7 +600,7 @@ void StateTask::ActivateControlTask()
 
                                 });
 
-            /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
 
@@ -622,7 +622,7 @@ void StateTask::ActivateControlTask()
             writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
 
-                                });*/
+                                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
@@ -979,12 +979,12 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
         CheckTmotorPosition(motor);
         RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
-    /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
-    if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
+      // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
+    if(motorName == "L_arm2" || motorName == "R_arm2")
     {
         CheckTmotorPosition(motor);
-        RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
-    }*/
+        RotateTMotor(motor, motorName, motor->cwDir, -30, 0);
+    }
     if (motorName == "L_arm3" || motorName == "R_arm3")
     {
         CheckTmotorPosition(motor);
@@ -1145,6 +1145,10 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, cons
     // 1번과 2번 위치의 차이의 절반을 저장
     float positionDifference = abs((secondPosition - firstPosition) / 2.0f);
     std::cout << motorName << " midpoint position: " << positionDifference << endl;
+    
+    if(motorName == "L_arm1" || motorName == "R_arm1") positionDifference = positionDifference + 0.0085;
+    else if(motorName == "L_arm2" || motorName == "R_arm2") positionDifference = positionDifference + 0.03;
+    else if(motorName == "L_arm3" || motorName == "R_arm3") positionDifference = positionDifference + 0.0085;
 
     return positionDifference;
 }
