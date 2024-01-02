@@ -46,17 +46,15 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
     return Qi;
 }
 
-// 행렬의 determinant 계산 함수
 double determinant(double mat[3][3])
-{
+{   // 행렬의 determinant 계산 함수
     return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
            mat[0][1] * (mat[1][0] * mat[2][2] - mat[2][0] * mat[1][2]) +
            mat[0][2] * (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]);
 }
 
-// 역행렬 계산 함수
 void inverseMatrix(double mat[3][3], double inv[3][3])
-{
+{   // 역행렬 계산 함수
     double det = determinant(mat);
 
     if (det == 0)

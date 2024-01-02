@@ -41,8 +41,11 @@ public:
     void PathLoopTask();
     void GetBackArr();
 
+    // 실시간X, 전체 악보 처리 후 연주
     int total = 0;
     int line = 0;
+
+    // 악보에 따른 position & velocity 값 저장 (5ms 단위)
     vector<vector<double>> p;
     vector<vector<double>> v;
 
@@ -58,7 +61,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
-    int bpm = 100;
+    int bpm = 20;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
@@ -72,28 +75,29 @@ private:
     double c_R = 0; // 오른손 현재 악기 유무
     double c_L = 0; // 왼손 현재 악기 유무
 
-    /*
-    vector<double> P1 = {0.265, -0.6187, -0.0532};	 // RightArm Standby
-    vector<double> P2 = {-0.265, -0.6187, -0.0532}; // LeftArm Standby
-    int n_inst = 10;
-
-    vector<double> R = {0.368, 0.414, 0.368, 0.414};
-    double s = 0.530;
-    double z0 = 0.000;
-    */
-    vector<double> P1 = {0.3, -0.45, -0.0866};  // RightArm Standby
-    vector<double> P2 = {-0.3, -0.45, -0.0866}; // LeftArm Standby
     double r_wrist = 0.0;
     double l_wrist = 0.0;
     int n_inst = 10;
 
+    /* 실측값
+    vector<double> P1 = {0.265, -0.6187, -0.0532};	 // RightArm Standby
+    vector<double> P2 = {-0.265, -0.6187, -0.0532}; // LeftArm Standby
+    vector<double> R = {0.368, 0.414, 0.368, 0.414};
+    double s = 0.530;
+    double z0 = 0.000;
+    */
+
+    // 임의값
+    vector<double> P1 = {0.3, -0.45, -0.0866};  // RightArm Standby
+    vector<double> P2 = {-0.3, -0.45, -0.0866}; // LeftArm Standby
     vector<double> R = {0.500, 0.400, 0.500, 0.400};
     double s = 0.600;
     double z0 = 0.000;
 
+    // Current ->
     vector<double> Q1, Q2, Q3, Q4;
 
-    // 각 악기별 손목 각도
+    // 각 악기별 치는 손목 각도
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     
     map<string, int> motor_mapping = {
