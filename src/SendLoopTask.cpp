@@ -158,8 +158,14 @@ void SendLoopTask::SendLoop()
     // CSV 파일명 설정
     std::string csvFileName = "../../READ/DrumData_in.txt";
 
+    // input 파일 저장
+    save_to_txt_inputData(csvFileName);
+}
+
+void SendLoopTask::save_to_txt_inputData(const string &csv_file_name)
+{
     // CSV 파일 열기
-    std::ofstream csvFile(csvFileName);
+    std::ofstream csvFile(csv_file_name);
 
     if (!csvFile.is_open())
     {
@@ -186,12 +192,10 @@ void SendLoopTask::SendLoop()
     // CSV 파일 닫기
     csvFile.close();
 
-    std::cout << "연주 CSV 파일이 생성되었습니다: " << csvFileName << std::endl;
+    std::cout << "연주 CSV 파일이 생성되었습니다: " << csv_file_name << std::endl;
 
     std::cout << "SendLoop terminated\n";
 }
-
-
 
 void SendLoopTask::SendReadyLoop()
 {
@@ -236,14 +240,12 @@ void SendLoopTask::SendReadyLoop()
     canUtils.clear_all_can_buffers();
 }
 
-
-
 void SendLoopTask::initializePathManager()
 {
     pathManager.motorInitialize(tmotors, maxonMotors);
+    pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
 }
-
 
 bool SendLoopTask::CheckAllMotorsCurrentPosition()
 {

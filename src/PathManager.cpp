@@ -13,17 +13,6 @@ void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef,st
     cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
 }
 
-string PathManager::trimWhitespace(const std::string &str)
-{
-    size_t first = str.find_first_not_of(" \t");
-    if (std::string::npos == first)
-    {
-        return str;
-    }
-    size_t last = str.find_last_not_of(" \t");
-    return str.substr(first, (last - first + 1));
-}
-
 vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int k, int n)
 {
     vector<double> Qi;
@@ -294,7 +283,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     return Qf;
 }
 
-void PathManager::GetMusicSheet()
+void PathManager::GetDrumPositoin()
 {
     ifstream inputFile("../include/rT_rotate.txt");
 
@@ -368,6 +357,21 @@ void PathManager::GetMusicSheet()
     right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
     left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
 
+}
+
+string trimWhitespace(const std::string &str)
+{
+    size_t first = str.find_first_not_of(" \t");
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(" \t");
+    return str.substr(first, (last - first + 1));
+}
+
+void PathManager::GetMusicSheet()
+{
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
         {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
@@ -450,12 +454,14 @@ void PathManager::GetReadyArr()
     standby[7] = c_MotorAngle[7];
     standby[8] = c_MotorAngle[8];
 
-    int n = 800;
+    int n = 800;    // 5ms * 800 = 4s
     for (int k = 0; k < n; k++)
     {
+        // Make Ready Array
         Qi = connect(c_MotorAngle, standby, k, n);
         q_ready.push_back(Qi);
 
+        // Send to Buffer
         for (auto &entry : tmotors)
         {
             std::shared_ptr<TMotor> &motor = entry.second;
@@ -475,90 +481,99 @@ void PathManager::GetReadyArr()
     }
 
     c_MotorAngle = Qi;
+
     // 최종적인 sendBuffer의 크기 출력
     cout << "Final sendBuffer size: " << sendBuffer.size() << "\n";
+}
+
+void PathManager::getDrummingPosAndAng()
+{
+    for (int j = 0; j < n_inst; ++j)
+    {   // 악기에 맞는 오/왼 손목 위치 및 손목 각도
+        if (RA[line][j] != 0)
+        {
+            P1 = right_inst[j];
+            r_wrist = wrist[j];
+            c_R = 1;
+        }
+        if (LA[line][j] != 0)
+        {
+            P2 = left_inst[j];
+            l_wrist = wrist[j];
+            c_L = 1;
+        }
+    }
+}
+
+void PathManager::getQ1AndQ2()
+{
+    if (c_R == 0 && c_L == 0)
+    {   // 왼손 & 오른손 안침
+        Q1 = c_MotorAngle;
+        if (p_R == 1)
+        {
+            Q1[4] = Q1[4] + M_PI / 36;
+            Q1[7] = Q1[7] - M_PI / 36;
+        }
+        if (p_L == 1)
+        {
+            Q1[6] = Q1[6] - M_PI / 36;
+            Q1[8] = Q1[8] - M_PI / 36;
+        }
+        Q2 = Q1;
+    }
+    else
+    {
+        Q1 = IKfun(P1, P2, R, s, z0);
+        Q1.push_back(r_wrist);
+        Q1.push_back(l_wrist);
+        Q2 = Q1;
+        if (c_R != 0 && c_L != 0)
+        { // 왼손 & 오른손 침
+            Q1[4] = Q1[4] + M_PI / 18;
+            Q1[6] = Q1[6] - M_PI / 18;
+            Q1[7] = Q1[7] - M_PI / 18;
+            Q1[8] = Q1[8] - M_PI / 18;
+        }
+        else if (c_L != 0)
+        { // 왼손만 침
+            Q1[4] = Q1[4] + M_PI / 36;
+            Q2[4] = Q2[4] + M_PI / 36;
+            Q1[6] = Q1[6] - M_PI / 18;
+            Q1[7] = Q1[7] - M_PI / 36;
+            Q2[7] = Q2[7] - M_PI / 36;
+            Q1[8] = Q1[8] - M_PI / 18;
+        }
+        else if (c_R != 0)
+        { // 오른손만 침
+            Q1[4] = Q1[4] + M_PI / 18;
+            Q1[6] = Q1[6] - M_PI / 36;
+            Q2[6] = Q2[6] - M_PI / 36;
+            Q1[7] = Q1[7] - M_PI / 18;
+            Q1[8] = Q1[8] - M_PI / 36;
+            Q2[8] = Q2[8] - M_PI / 36;
+        }
+        // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
+        Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
+        Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
+        Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
+        Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
+        Q1[5] = (Q2[4] + c_MotorAngle[5]) / 2.0;
+    }
 }
 
 void PathManager::PathLoopTask()
 {
     struct can_frame frame;
 
-    // 처음 시작할 때 Q2, Q4 모두 계산
+    // 연주 시작할 때 Q2, Q4 계산
     if (line == 0)
     {
         c_R = 0;
         c_L = 0;
 
-        for (int j = 0; j < n_inst; ++j)
-        {
-            // 악기에 맞는 오/왼 손목 위치 및 손목 각도
-            if (RA[line][j] != 0)
-            {
-                P1 = right_inst[j];
-                r_wrist = wrist[j];
-                c_R = 1;
-            }
-            if (LA[line][j] != 0)
-            {
-                P2 = left_inst[j];
-                l_wrist = wrist[j];
-                c_L = 1;
-            }
-        }
-
-        if (c_R == 0 && c_L == 0)
-        { // 왼손 & 오른손 안침
-            Q1 = c_MotorAngle;
-            if (p_R == 1)
-            {
-                Q1[4] = Q1[4] + M_PI / 36;
-                Q1[7] = Q1[7] - M_PI / 36;
-            }
-            if (p_L == 1)
-            {
-                Q1[6] = Q1[6] - M_PI / 36;
-                Q1[8] = Q1[8] - M_PI / 36;
-            }
-            Q2 = Q1;
-        }
-        else
-        {
-            Q1 = IKfun(P1, P2, R, s, z0);
-            Q1.push_back(r_wrist);
-            Q1.push_back(l_wrist);
-            Q2 = Q1;
-            if (c_R != 0 && c_L != 0)
-            { // 왼손 & 오른손 침
-                Q1[4] = Q1[4] + M_PI / 18;
-                Q1[6] = Q1[6] - M_PI / 18;
-                Q1[7] = Q1[7] - M_PI / 18;
-                Q1[8] = Q1[8] - M_PI / 18;
-            }
-            else if (c_L != 0)
-            { // 왼손만 침
-                Q1[4] = Q1[4] + M_PI / 36;
-                Q2[4] = Q2[4] + M_PI / 36;
-                Q1[6] = Q1[6] - M_PI / 18;
-                Q1[7] = Q1[7] - M_PI / 36;
-                Q2[7] = Q2[7] - M_PI / 36;
-                Q1[8] = Q1[8] - M_PI / 18;
-            }
-            else if (c_R != 0)
-            { // 오른손만 침
-                Q1[4] = Q1[4] + M_PI / 18;
-                Q1[6] = Q1[6] - M_PI / 36;
-                Q2[6] = Q2[6] - M_PI / 36;
-                Q1[7] = Q1[7] - M_PI / 18;
-                Q1[8] = Q1[8] - M_PI / 36;
-                Q2[8] = Q2[8] - M_PI / 36;
-            }
-            // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
-            Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
-            Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
-            Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
-            Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
-            Q1[5] = (Q2[4] + c_MotorAngle[5]) / 2.0;
-        }
+        getDrummingPosAndAng();
+        getQ1AndQ2();
 
         p_R = c_R;
         p_L = c_L;

@@ -36,6 +36,7 @@ public:
 
     void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
+    void GetDrumPositoin();
     void GetMusicSheet();
     void GetReadyArr();
     void PathLoopTask();
@@ -94,18 +95,19 @@ private:
     double s = 0.600;
     double z0 = 0.000;
 
-    // Current ->
+    // Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
     vector<double> Q1, Q2, Q3, Q4;
 
     // 각 악기별 치는 손목 각도
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
+    // 각 관절에 해당하는 열
     map<string, int> motor_mapping = {
-
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
 
-    string trimWhitespace(const std::string &str);
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
+    void getDrummingPosAndAng();
+    void getQ1AndQ2();
 };
