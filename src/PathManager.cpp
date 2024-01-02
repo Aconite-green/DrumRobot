@@ -128,7 +128,7 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
 vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
     // 드럼위치의 중점 각도
-    double direction = -M_PI / 3.0;
+    double direction = 0.0; //-M_PI / 3.0;
 
     // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
@@ -185,9 +185,8 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
         {
             the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             the4 = the34 - the3[i];
-
-            if (the4 > 0)
-            {
+            if (the4 > 0 && the4 < M_PI * 0.75)
+            {   // 오른팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
                 r = r1 * sin(the3[i]) + r2 * sin(the34);
 
                 det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
@@ -231,19 +230,22 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                             rol = alpha * beta - abs(gamma) * sqrt(det_the6);
                                             rol /= (beta * beta + gamma * gamma);
                                             the6 = acos(rol);
-                                            Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
+                                            if (the6 > 0 && the6 < M_PI * 0.75)
+                                            {   // 왼팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
+                                                Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
-                                            if (Z < z2 + 0.001 && Z > z2 - 0.001)
-                                            {
-                                                q0.push_back(the0);
-                                                q1.push_back(the1);
-                                                q2.push_back(the2);
-                                                q3.push_back(the3[i]);
-                                                q4.push_back(the4);
-                                                q5.push_back(the5);
-                                                q6.push_back(the6);
+                                                if (Z < z2 + 0.001 && Z > z2 - 0.001)
+                                                {
+                                                    q0.push_back(the0);
+                                                    q1.push_back(the1);
+                                                    q2.push_back(the2);
+                                                    q3.push_back(the3[i]);
+                                                    q4.push_back(the4);
+                                                    q5.push_back(the5);
+                                                    q6.push_back(the6);
 
-                                                j++;
+                                                    j++;
+                                                }
                                             }
                                         }
                                     }
@@ -294,7 +296,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
 void PathManager::GetMusicSheet()
 {
-    ifstream inputFile("../include/rT.txt");
+    ifstream inputFile("../include/rT_rotate.txt");
 
     if (!inputFile.is_open())
     {
@@ -460,8 +462,6 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
             sendBuffer.push(frame);
-            // Frame이 추가됨을 확인
-            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
         for (auto &entry : maxonMotors)
         {
@@ -469,8 +469,6 @@ void PathManager::GetReadyArr()
             float p_des = Qi[motor_mapping[entry.first]];
             MParser.parseSendCommand(*motor, &frame, p_des);
             sendBuffer.push(frame);
-            // Frame이 추가됨을 확인
-            cout << "Frame added for motor: " << entry.first << ", sendBuffer size: " << sendBuffer.size() << "\n";
         }
         MParser.makeSync(&frame);
         sendBuffer.push(frame);
@@ -514,12 +512,12 @@ void PathManager::PathLoopTask()
             if (p_R == 1)
             {
                 Q1[4] = Q1[4] + M_PI / 36;
-                Q1[7] = Q1[7] + M_PI / 36;
+                Q1[7] = Q1[7] - M_PI / 36;
             }
             if (p_L == 1)
             {
                 Q1[6] = Q1[6] - M_PI / 36;
-                Q1[8] = Q1[8] + M_PI / 36;
+                Q1[8] = Q1[8] - M_PI / 36;
             }
             Q2 = Q1;
         }
@@ -533,26 +531,26 @@ void PathManager::PathLoopTask()
             { // 왼손 & 오른손 침
                 Q1[4] = Q1[4] + M_PI / 18;
                 Q1[6] = Q1[6] - M_PI / 18;
-                Q1[7] = Q1[7] + M_PI / 18;
-                Q1[8] = Q1[8] + M_PI / 18;
+                Q1[7] = Q1[7] - M_PI / 18;
+                Q1[8] = Q1[8] - M_PI / 18;
             }
             else if (c_L != 0)
             { // 왼손만 침
                 Q1[4] = Q1[4] + M_PI / 36;
                 Q2[4] = Q2[4] + M_PI / 36;
                 Q1[6] = Q1[6] - M_PI / 18;
-                Q1[7] = Q1[7] + M_PI / 36;
-                Q2[7] = Q2[7] + M_PI / 36;
-                Q1[8] = Q1[8] + M_PI / 18;
+                Q1[7] = Q1[7] - M_PI / 36;
+                Q2[7] = Q2[7] - M_PI / 36;
+                Q1[8] = Q1[8] - M_PI / 18;
             }
             else if (c_R != 0)
             { // 오른손만 침
                 Q1[4] = Q1[4] + M_PI / 18;
                 Q1[6] = Q1[6] - M_PI / 36;
                 Q2[6] = Q2[6] - M_PI / 36;
-                Q1[7] = Q1[7] + M_PI / 18;
-                Q1[8] = Q1[8] + M_PI / 36;
-                Q2[8] = Q2[8] + M_PI / 36;
+                Q1[7] = Q1[7] - M_PI / 18;
+                Q1[8] = Q1[8] - M_PI / 36;
+                Q2[8] = Q2[8] - M_PI / 36;
             }
             // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
             Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
@@ -597,12 +595,12 @@ void PathManager::PathLoopTask()
         if (p_R == 1)
         {
             Q3[4] = Q3[4] + M_PI / 36;
-            Q3[7] = Q3[7] + M_PI / 36;
+            Q3[7] = Q3[7] - M_PI / 36;
         }
         if (p_L == 1)
         {
             Q3[6] = Q3[6] - M_PI / 36;
-            Q3[8] = Q3[8] + M_PI / 36;
+            Q3[8] = Q3[8] - M_PI / 36;
         }
         Q4 = Q3;
     }
@@ -616,26 +614,26 @@ void PathManager::PathLoopTask()
         { // 왼손 & 오른손 침
             Q3[4] = Q3[4] + M_PI / 18;
             Q3[6] = Q3[6] - M_PI / 18;
-            Q3[7] = Q3[7] + M_PI / 18;
-            Q3[8] = Q3[8] + M_PI / 18;
+            Q3[7] = Q3[7] - M_PI / 18;
+            Q3[8] = Q3[8] - M_PI / 18;
         }
         else if (c_L != 0)
         { // 왼손만 침
             Q3[4] = Q3[4] + M_PI / 36;
             Q4[4] = Q4[4] + M_PI / 36;
             Q3[6] = Q3[6] - M_PI / 18;
-            Q3[7] = Q3[7] + M_PI / 36;
-            Q4[7] = Q4[7] + M_PI / 36;
-            Q3[8] = Q3[8] + M_PI / 18;
+            Q3[7] = Q3[7] - M_PI / 36;
+            Q4[7] = Q4[7] - M_PI / 36;
+            Q3[8] = Q3[8] - M_PI / 18;
         }
         else if (c_R != 0)
         { // 오른손만 침
             Q3[4] = Q3[4] + M_PI / 18;
             Q3[6] = Q3[6] - M_PI / 36;
             Q4[6] = Q4[6] - M_PI / 36;
-            Q3[7] = Q3[7] + M_PI / 18;
-            Q3[8] = Q3[8] + M_PI / 36;
-            Q4[8] = Q4[8] + M_PI / 36;
+            Q3[7] = Q3[7] - M_PI / 18;
+            Q3[8] = Q3[8] - M_PI / 36;
+            Q4[8] = Q4[8] - M_PI / 36;
         }
         // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
         Q3[0] = (Q4[0] + Q2[0]) / 2.0;

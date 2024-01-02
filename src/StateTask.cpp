@@ -81,10 +81,20 @@ void StateTask::homeModeLoop()
             std::cout << "Error: R_arm1 must be homed before " << motorName << std::endl;
             continue;
         }
+        else if ((motorName == "R_wrist") && !tmotors["R_arm3"]->isHomed)
+        {
+            std::cout << "Error: R_arm3 must be homed before " << motorName << std::endl;
+            continue;
+        }
+        /*else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
+        {
+            std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
+            continue;
+        }*/
 
         if (motorName == "all")
         {
-            // 우선순위가 높은 모터 먼저 홈
+            // 우선순위가 높은 T모터 먼저 홈
             std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
             for (const auto &pmotorName : priorityMotors)
             {
@@ -94,8 +104,17 @@ void StateTask::homeModeLoop()
                 }
             }
 
-            // 나머지 모터 홈
+            // 나머지 T모터 홈
             for (auto &motor_pair : tmotors)
+            {
+                if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
+                {
+                    SetHome(motor_pair.second, motor_pair.first);
+                }
+            }
+
+            // 나머지 Maxon모터 홈홈
+            for (auto &motor_pair : maxonMotors)
             {
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
@@ -106,6 +125,10 @@ void StateTask::homeModeLoop()
         else if (tmotors.find(motorName) != tmotors.end() && !tmotors[motorName]->isHomed)
         {
             SetHome(tmotors[motorName], motorName);
+        }
+        else if (maxonMotors.find(motorName) != maxonMotors.end() && !maxonMotors[motorName]->isHomed)
+        {
+            SetHome(maxonMotors[motorName], motorName);
         }
         else
         {
@@ -352,14 +375,35 @@ void StateTask::initializeMotors()
         }
     }
 
-    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
-                                                     vector<uint32_t>{0x201, 0x301},
-                                                     vector<uint32_t>{0x181},
-                                                     "can0");
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
-                                                     vector<uint32_t>{0x202, 0x302},
-                                                     vector<uint32_t>{0x182},
+                                                     vector<uint32_t>{0x209, 0x309},
+                                                     vector<uint32_t>{0x189},
                                                      "can0");
+    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
+                                                     vector<uint32_t>{0x208, 0x308},
+                                                     vector<uint32_t>{0x188},
+                                                     "can0");
+
+    for (auto &motor_pair : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> &motor = motor_pair.second;
+
+        // 각 모터 이름에 따른 멤버 변수 설정
+        if (motor_pair.first == "L_wirst")
+        {
+            motor->cwDir = 1.0f;
+            motor->rMin = -M_PI * 0.75f; // -120deg
+            motor->rMax = M_PI / 2.0f;   // 90deg
+            motor->isHomed = false;
+        }
+        else if (motor_pair.first == "R_wirst")
+        {
+            motor->cwDir = 1.0f;
+            motor->rMin = 0.0f; // 0deg
+            motor->rMax = M_PI; // 180deg
+            motor->isHomed = false;
+        }
+    }
 };
 
 void StateTask::initializeCanUtils()
@@ -470,7 +514,7 @@ void StateTask::ActivateControlTask()
     }
 
     // MaxonMotor
-    canUtils.set_all_sockets_timeout(0, 5000);
+    canUtils.set_all_sockets_timeout(0, 50000);
 
     for (auto it = maxonMotors.begin(); it != maxonMotors.end();)
     {
@@ -511,7 +555,7 @@ void StateTask::ActivateControlTask()
     if (!maxonMotors.empty())
     {
 
-        canUtils.set_all_sockets_timeout(0, 50000);
+        canUtils.set_all_sockets_timeout(2, 0);
         for (const auto &motorPair : maxonMotors)
         {
             std::string name = motorPair.first;
@@ -555,6 +599,30 @@ void StateTask::ActivateControlTask()
                                 [](const std::string &motorName, bool success) {
 
                                 });
+
+            /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success) {
+
+                                });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                        [](const std::string &motorName, bool success) {
+
+                        });
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                                [](const std::string &motorName, bool success) {
+
+                                });*/
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
@@ -748,7 +816,7 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float> parsedData = MParser.parseRecieveCommand(&frame);
+        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(&frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
@@ -764,7 +832,36 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::SendCommandToMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName)
+void StateTask::SendCommandToTMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName)
+{
+    auto interface_name = motor->interFaceName;
+    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    {
+        int socket_descriptor = canUtils.sockets.at(interface_name);
+
+        // 명령을 소켓으로 전송합니다.
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(struct can_frame));
+        if (bytesWritten == -1)
+        {
+            std::cerr << "Failed to write to socket for interface: " << interface_name << std::endl;
+            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+            return;
+        }
+        // 명령에 대한 응답을 기다립니다.
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(struct can_frame));
+        if (bytesRead == -1)
+        {
+            std::cerr << "Failed to read from socket for interface: " << interface_name << std::endl;
+            std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Socket not found for interface: " << interface_name << std::endl;
+    }
+}
+
+void StateTask::SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName)
 {
     auto interface_name = motor->interFaceName;
     if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
@@ -801,13 +898,16 @@ bool StateTask::PromptUserForHoming(const std::string &motorName)
     return userResponse == 'y';
 }
 
-void StateTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
+void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
+
     struct can_frame frameToProcess;
     chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-    TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, motor->currentPos, 0, 150, 1, 0);
-    SendCommandToMotor(motor, frameToProcess, motorName);
+    int kp = 250;
 
+    if(motorName == "L_arm1" || motorName =="R_arm1") kp = 250;
+    else if(motorName == "L_arm2" || motorName =="R_arm2") kp = 350;
+    else if(motorName == "L_arm3" || motorName =="R_arm3") kp = 350;
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
     const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
     int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
@@ -825,15 +925,15 @@ void StateTask::RotateMotor(std::shared_ptr<TMotor> &motor, const std::string &m
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
         double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
-        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, 250, 2.5, 0);
-        SendCommandToMotor(motor, frameToProcess, motorName);
+        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
+        SendCommandToTMotor(motor, frameToProcess, motorName);
 
         startTime = std::chrono::system_clock::now();
     }
     CheckTmotorPosition(motor);
 }
 
-void StateTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName)
+void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName)
 {
     struct can_frame frameToProcess;
 
@@ -843,52 +943,53 @@ void StateTask::HomeMotor(std::shared_ptr<TMotor> &motor, const std::string &mot
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.2);
+        additionalTorque = motor->cwDir * (-2.7);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 1.0;
+        additionalTorque = motor->cwDir * 2.1;
     }
 
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
-    SendCommandToMotor(motor, frameToProcess, motorName);
+    SendCommandToTMotor(motor, frameToProcess, motorName);
 
-    float midpoint = MoveMotorToSensorLocation(motor, motorName, motor->sensorBit);
+    float midpoint = MoveTMotorToSensorLocation(motor, motorName, motor->sensorBit);
 
     double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.0;
     midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
-    RotateMotor(motor, motorName, -motor->cwDir, degree, midpoint);
+    RotateTMotor(motor, motorName, -motor->cwDir, degree, midpoint);
 
     cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
 
     // 모터를 멈추는 신호를 보냄
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
-    SendCommandToMotor(motor, frameToProcess, motorName);
+    SendCommandToTMotor(motor, frameToProcess, motorName);
 
+    canUtils.set_all_sockets_timeout(2,0);
     // 현재 position을 0으로 인식하는 명령을 보냄
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
-    SendCommandToMotor(motor, frameToProcess, motorName);
+    SendCommandToTMotor(motor, frameToProcess, motorName);
 
     // 상태 확인
-    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-    SendCommandToMotor(motor, frameToProcess, motorName);
+    /*fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
+    SendCommandToTMotor(motor, frameToProcess, motorName);*/
 
     if (motorName == "L_arm1" || motorName == "R_arm1")
     {
         CheckTmotorPosition(motor);
-        RotateMotor(motor, motorName, motor->cwDir, 90, 0);
+        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
     /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
     if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
     {
         CheckTmotorPosition(motor);
         RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
-    }
-    if (motor_pair.first == "L_arm3" || motor_pair.first == "R_arm3")
+    }*/
+    if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        RotateMotor(motor, motor_pair.first, settings.direction, 90, 0);
+        CheckTmotorPosition(motor);
+        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
-    */
 }
 
 void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName)
@@ -898,14 +999,115 @@ void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motor
 
     // 허리는 home 안잡음
 
-    HomeMotor(motor, motorName);
+    HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
+    sleep(1);
+    FixMotorPosition(motor);
 
     cout << "Homing completed for " << motorName << "\n";
     sensor.closeDevice();
 }
 
-float StateTask::MoveMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit)
+void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &motorName)
+{
+    struct can_frame frame;
+
+    canUtils.clear_all_can_buffers();
+    canUtils.set_all_sockets_timeout(2, 0);
+    for (const auto &motor_pair : maxonMotors)
+    {
+        std::string name = motor_pair.first;
+        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForHomeMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        fillCanFrameFromInfo(&frame, motor->getHomingMethod());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getHomeoffsetDistance());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        /*fillCanFrameFromInfo(&frame, motor->getHomingAcceleration());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getSpeedForSwitchSearch());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });*/
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCurrentThreshold());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        fillCanFrameFromInfo(&frame, motor->getHomePosition());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        // Start to Move by homing method (일단은 SDO)
+        fillCanFrameFromInfo(&frame, motor->getStartHoming());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        // 홈 위치에 도달할 때까지 반복
+
+        while (!motor->isHomed)
+        {
+
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [this, &frame, &motor, &name](const std::string &motorName, bool success)
+                           {
+                               if (success)
+                               {
+                                   // Statusword 비트 15 확인
+                                   if (frame.data[1] & 0x80) // 비트 15 확인
+                                   {
+                                       motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                       //this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
+                                       cout << "Homing completed for " << motorName << "\n";
+                                   }
+                               }
+                           });
+            canUtils.clear_all_can_buffers();
+
+            usleep(100000); // 100ms 대기
+        }
+    }
+}
+
+float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit)
 {
     float firstPosition = 0.0f, secondPosition = 0.0f;
     bool firstSensorTriggered = false;
@@ -955,12 +1157,26 @@ void StateTask::displayHomingStatus()
         std::cout << motor_pair.first << ": "
                   << (motor_pair.second->isHomed ? "Homed" : "Not Homed") << std::endl;
     }
+    for (const auto &motor_pair : maxonMotors)
+    {
+        std::cout << motor_pair.first << ": "
+                  << (motor_pair.second->isHomed ? "Homed" : "Not Homed") << std::endl;
+    }
 }
 
 void StateTask::UpdateHomingStatus()
 {
     bool allMotorsHomed = true;
     for (const auto &motor_pair : tmotors)
+    {
+        if (!motor_pair.second->isHomed)
+        {
+            allMotorsHomed = false;
+            break;
+        }
+    }
+
+    for (const auto &motor_pair : maxonMotors)
     {
         if (!motor_pair.second->isHomed)
         {
@@ -979,6 +1195,38 @@ void StateTask::UpdateHomingStatus()
         systemState.homeMode = HomeMode::NotHome;
     }
 }
+
+void StateTask::FixMotorPosition(std::shared_ptr<TMotor> &motor)
+{
+    struct can_frame frame;
+
+    CheckTmotorPosition(motor);
+    cout << "Fix Motor.\n";
+
+    TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
+                   [](const std::string &motorName, bool success)
+                   {
+                       // 여기에 필요한 코드 추가
+                   });
+}
+
+void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
+{
+    struct can_frame frame;
+
+    CheckMaxonPosition(motor);
+
+    cout << "FixMotor\n";
+
+    MParser.parseSendCommand(*motor, &frame, motor->currentPos);
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
+                   [](const std::string &motorName, bool success)
+                   {
+                       // 여기에 필요한 코드 추가
+                   });
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////
@@ -1049,8 +1297,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     }
 
     // 헤더 추가
-    csvFileIn << "Start file"
-              << "\n";
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // CSV 파일명 설정
     std::string FileName2 = "../../READ/" + parameter + "_out.txt";
@@ -1064,7 +1311,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     }
 
     // 헤더 추가
-    csvFileOut << "CAN_ID,p_des,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_act,v_act,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
@@ -1149,10 +1396,10 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
                             std::tuple<int, float, float, float> result = TParser.parseRecieveCommand(*motor, &frame);
 
                             p_act = std::get<1>(result);
-                            v_act = std::get<1>(result);
+                            v_act = std::get<2>(result);
                             tff_act = std::get<3>(result);
-                            tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFileOut << ',' << std::dec << p_act << ',' << tff_des << ',' << tff_act << '\n';
+                            // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                            csvFileOut << ',' << std::dec << p_act << ',' << v_act << ',' << tff_act << '\n';
                             break;
                         }
                     }
@@ -1179,8 +1426,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     }
 
     // 헤더 추가
-    csvFileIn << "Start file"
-              << "\n";
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // CSV 파일명 설정
     std::string FileName2 = "../../READ/" + selectedMotor + "_out.txt";
@@ -1192,7 +1438,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     {
         std::cerr << "Error opening CSV file." << std::endl;
     }
-    csvFileOut << "CAN_ID,p_act,tff_des,tff_act\n"; // CSV 헤더
+    csvFileOut << "CAN_ID,p_act,v_act,tff_act\n"; // CSV 헤더
 
     struct can_frame frame;
 
@@ -1204,7 +1450,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
     float p_des = 0;
     float p_act;
     // float tff_des = 0,v_des = 0;
-    // float v_act, tff_act;
+    float tff_act;
 
     for (int cycle = 0; cycle < cycles; cycle++)
     {
@@ -1228,7 +1474,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                 {
                     csvFileIn << "0,";
                 }
-                
+
                 float local_time = std::fmod(time, sine_t);
                 if (pathType == 1) // 1-cos 경로
                 {
@@ -1276,13 +1522,12 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         }
                         else
                         {
-                            std::tuple<int, float> result = MParser.parseRecieveCommand(&frame);
+                            std::tuple<int, float, float> result = MParser.parseRecieveCommand(&frame);
 
                             p_act = std::get<1>(result);
-                            // v_act = std::get<1>(result);
-                            // tff_act = std::get<3>(result);
+                            tff_act = std::get<2>(result);
                             // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                            csvFileOut << ',' << std::dec << p_act << ',' << '\n';
+                            csvFileOut << ',' << std::dec << p_act << ", ," << tff_act << '\n';
                             break;
                         }
                     }

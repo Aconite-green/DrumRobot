@@ -10,13 +10,14 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
-    auto lastCheckTime = std::chrono::steady_clock::now();
+    //auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (systemState.main != Main::Shutdown)
     {
-        auto currentTime = std::chrono::steady_clock::now();
-        if (systemState.main != Main::Perform)
+        usleep(50000);
+        while (systemState.main == Main::Perform)
         {
+            /*
             if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
             {
 
@@ -26,19 +27,20 @@ void RecieveLoopTask::operator()()
                 }
                 lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
             }
-        }
-        else
-        {
-            usleep(50000); // Perform 상태일 때의 처리
-
-            if (systemState.runMode == RunMode::Running)
+            else*/
             {
-                RecieveLoop(recieveBuffer);
+                usleep(50000); // Perform 상태일 때의 처리
+
+                if (systemState.runMode == RunMode::Running)
+                {
+                    RecieveLoop(recieveBuffer);
+                }
             }
         }
         usleep(50000); // 다음 루프 대기
     }
 }
+
 
 void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
@@ -81,7 +83,7 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         }
     }
 
-    parse_and_save_to_csv("TuningData/DrumData_out.txt");
+    parse_and_save_to_csv("../../READ/DrumData_out.txt");
 }
 
 void RecieveLoopTask::handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer)
@@ -143,51 +145,22 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
                     << position << "," << speed << "," << torque << "\n";
             }
         }
-    }
-
-    ofs.close();
-}
-
-int RecieveLoopTask::checkMotors()
-{
-    struct can_frame frame;
-
-    canUtils.set_all_sockets_timeout(0, 5000);
-    if (!tmotors.empty())
-    {
-        for (auto it = tmotors.begin(); it != tmotors.end();)
+        for (auto &entry : maxonMotors)
         {
-            std::string name = it->first;
-            std::shared_ptr<TMotor> motor = it->second;
-
-            bool checkSuccess = true;
-            canUtils.clear_all_can_buffers();
-
-            // 상태 확인
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result)
-                           {
-                               if (!result)
-                               {
-                                   checkSuccess = false;
-                               }
-                           });
-
-            if (!checkSuccess)
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            if (motor->nodeId == frame.data[0])
             {
-                // 실패한 경우, 해당 모터를 배열에서 제거하고 0 반환
-                // it = tmotors.erase(it);
-                std::cout << "Motor connection failed for " << name << ". Please check the motor." << std::endl;
-                return 0;
-            }
-            else
-            {
-                ++it;
+                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(&frame);
+                id = std::get<0>(parsedData);
+                position = std::get<1>(parsedData);
+                torque = std::get<2>(parsedData);
+
+                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                    << std::dec
+                    << position << "," << " " << "," << torque << "\n";
             }
         }
     }
 
-    // 모든 모터가 정상적으로 확인된 경우
-    return 1;
+    ofs.close();
 }

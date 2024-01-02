@@ -143,7 +143,7 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
 void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians)
 {
     // 라디안 값을 인코더 값으로 변환
-    float p_des_degrees = p_des_radians * (180.0f / M_PI); // 라디안을 도로 변환
+    float p_des_degrees = p_des_radians * (180.0f / M_PI);                        // 라디안을 도로 변환
     int p_des_enc = static_cast<int>(p_des_degrees * (35.0f * 4096.0f) / 360.0f); // 도를 인코더 값으로 변환
 
     unsigned char posByte0 = p_des_enc & 0xFF;         // 하위 8비트
@@ -166,22 +166,31 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
-
-
-std::tuple<int, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
+std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
 {
     int id = frame->can_id;
 
-    int currentPosition = 0;                                             // 결과값을 저장할 변수, 32비트 signed int
-    currentPosition |= static_cast<unsigned char>(frame->data[2]);       // 최하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[3]) << 8;  // 그 다음 하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[4]) << 16; // 그 다음 하위 바이트
-    currentPosition |= static_cast<unsigned char>(frame->data[5]) << 24; // 최상위 바이트 (부호 확장)
+    int32_t currentPosition = 0;
+    currentPosition |= static_cast<uint8_t>(frame->data[2]);
+    currentPosition |= static_cast<uint8_t>(frame->data[3]) << 8;
+    currentPosition |= static_cast<uint8_t>(frame->data[4]) << 16;
+    currentPosition |= static_cast<uint8_t>(frame->data[5]) << 24;
 
-    float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360;
-    float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f); // 각도를 라디안으로 변환
+    int16_t torqueActualValue = 0;
+    torqueActualValue |= static_cast<uint8_t>(frame->data[6]);
+    torqueActualValue |= static_cast<uint8_t>(frame->data[7]) << 8;
 
-    return std::make_tuple(id, currentPositionRadians);
+    // Motor rated torque 값을 N·m 단위로 변환 (mNm -> N·m)
+    const float motorRatedTorqueNm = 0.127f; // 127 mNm = 0.127 N·m
+
+    // 실제 토크 값을 N·m 단위로 계산
+    // Torque actual value는 천분의 일 단위이므로, 실제 토크 값은 (torqueActualValue / 1000) * motorRatedTorqueNm
+    float currentTorqueNm = (static_cast<float>(torqueActualValue) / 1000.0f) * motorRatedTorqueNm;
+
+    float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
+    float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
+
+    return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
 
 
