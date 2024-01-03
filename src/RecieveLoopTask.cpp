@@ -10,11 +10,11 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
-    auto lastCheckTime = std::chrono::steady_clock::now();
+    //auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (systemState.main != Main::Shutdown)
     {
-        auto currentTime = std::chrono::steady_clock::now();
+        /*auto currentTime = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
         {
 
@@ -23,7 +23,7 @@ void RecieveLoopTask::operator()()
                 canUtils.restart_all_can_ports();
             }
             lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
-        }
+        }*/
 
         while (systemState.main == Main::Perform)
         {
