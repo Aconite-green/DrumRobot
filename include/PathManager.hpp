@@ -110,4 +110,7 @@ private:
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
     void getDrummingPosAndAng();
     void getQ1AndQ2();
+    void getQ3AndQ4();
+    void Tmotor_sendBuffer();
+    void Mmotor_sendBuffer();
 };
