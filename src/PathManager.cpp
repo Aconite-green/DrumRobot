@@ -9,7 +9,7 @@ PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef,std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
 {
     this->tmotors = tmotorsRef;
     this->maxonMotors = maxonMotorsRef;
@@ -102,14 +102,14 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
 }
 
 double determinant(double mat[3][3])
-{   // 행렬의 determinant 계산 함수
+{ // 행렬의 determinant 계산 함수
     return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
            mat[0][1] * (mat[1][0] * mat[2][2] - mat[2][0] * mat[1][2]) +
            mat[0][2] * (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]);
 }
 
 void inverseMatrix(double mat[3][3], double inv[3][3])
-{   // 역행렬 계산 함수
+{ // 역행렬 계산 함수
     double det = determinant(mat);
 
     if (det == 0)
@@ -241,7 +241,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
             the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             the4 = the34 - the3[i];
             if (the4 > 0 && the4 < M_PI * 0.75)
-            {   // 오른팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
+            { // 오른팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
                 r = r1 * sin(the3[i]) + r2 * sin(the34);
 
                 det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
@@ -286,7 +286,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                             rol /= (beta * beta + gamma * gamma);
                                             the6 = acos(rol);
                                             if (the6 > 0 && the6 < M_PI * 0.75)
-                                            {   // 왼팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
+                                            { // 왼팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
                                                 Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
                                                 if (Z < z2 + 0.001 && Z > z2 - 0.001)
@@ -363,7 +363,7 @@ string trimWhitespace(const std::string &str)
 void PathManager::getDrummingPosAndAng()
 {
     for (int j = 0; j < n_inst; ++j)
-    {   // 악기에 맞는 오/왼 손목 위치 및 손목 각도
+    { // 악기에 맞는 오/왼 손목 위치 및 손목 각도
         if (RA[line][j] != 0)
         {
             P1 = right_inst[j];
@@ -382,7 +382,7 @@ void PathManager::getDrummingPosAndAng()
 void PathManager::getQ1AndQ2()
 {
     if (c_R == 0 && c_L == 0)
-    {   // 왼손 & 오른손 안침
+    { // 왼손 & 오른손 안침
         Q1 = c_MotorAngle;
         if (p_R == 1)
         {
@@ -570,7 +570,6 @@ void PathManager::GetDrumPositoin()
     // Combine the elements into right_inst and left_inst
     right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
     left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
-
 }
 
 void PathManager::GetMusicSheet()
@@ -600,23 +599,30 @@ void PathManager::GetMusicSheet()
             columns.push_back(item);
         }
 
-        vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-        time_arr.push_back(stod(columns[1]) * 100 / bpm);
-
-        if (columns[2] != "0")
-        {
-            inst_arr_R[instrument_mapping[columns[2]]] = 1;
+        if (lineIndex == 0)
+        {   // 첫번째 행엔 bpm에 대한 정보
+            bpm = stod(columns[0]);
         }
-        if (columns[3] != "0")
+        else
         {
-            inst_arr_L[instrument_mapping[columns[3]]] = 1;
+            vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
+            time_arr.push_back(stod(columns[1]) * 100 / bpm);
+
+            if (columns[2] != "0")
+            {
+                inst_arr_R[instrument_mapping[columns[2]]] = 1;
+            }
+            if (columns[3] != "0")
+            {
+                inst_arr_L[instrument_mapping[columns[3]]] = 1;
+            }
+
+            RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
+            LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+
+            RA.push_back(inst_arr_R);
+            LA.push_back(inst_arr_L);
         }
-
-        RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-        LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-
-        RA.push_back(inst_arr_R);
-        LA.push_back(inst_arr_L);
 
         lineIndex++;
     }
@@ -657,7 +663,7 @@ void PathManager::GetReadyArr()
     standby[7] = c_MotorAngle[7];
     standby[8] = c_MotorAngle[8];
 
-    int n = 800;    // 5ms * 800 = 4s
+    int n = 800; // 5ms * 800 = 4s
     for (int k = 0; k < n; k++)
     {
         // Make Ready Array
@@ -745,7 +751,7 @@ void PathManager::GetBackArr()
 {
     struct can_frame frame;
 
-    vector<double> Q0(9, 0);    // 연주 종료 후 돌아가는 각도 값
+    vector<double> Q0(9, 0); // 연주 종료 후 돌아가는 각도 값
     vector<vector<double>> q_finish;
     vector<double> Qi;
     int n = 800;

@@ -62,7 +62,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
-    int bpm = 100;
+    double bpm = 20.00;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
     vector<int> RF, LF;
