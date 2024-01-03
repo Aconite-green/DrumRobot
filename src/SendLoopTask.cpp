@@ -192,7 +192,7 @@ void SendLoopTask::save_to_txt_inputData(const string &csv_file_name)
     // CSV 파일 닫기
     csvFile.close();
 
-    std::cout << "연주 CSV 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 txt_InData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 
     std::cout << "SendLoop terminated\n";
 }
