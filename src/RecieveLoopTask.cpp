@@ -162,4 +162,6 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     }
 
     ofs.close();
+
+    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
