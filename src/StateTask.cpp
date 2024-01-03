@@ -970,10 +970,6 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
-    // 상태 확인
-    /*fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-    SendCommandToTMotor(motor, frameToProcess, motorName);*/
-
     if (motorName == "L_arm1" || motorName == "R_arm1")
     {
         CheckTmotorPosition(motor);

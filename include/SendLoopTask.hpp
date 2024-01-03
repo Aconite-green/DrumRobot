@@ -63,6 +63,7 @@ private:
     template <typename MotorMap>
     void writeToSocket(MotorMap &motorMap, const std::map<std::string, int> &sockets);
     void SendLoop();
+    void save_to_txt_inputData(const string &csv_file_name);
 
     PathManager pathManager;
     void SendReadyLoop();
