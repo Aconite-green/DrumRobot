@@ -600,23 +600,31 @@ void PathManager::GetMusicSheet()
             columns.push_back(item);
         }
 
-        vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-        time_arr.push_back(stod(columns[1]) * 100 / bpm);
-
-        if (columns[2] != "0")
-        {
-            inst_arr_R[instrument_mapping[columns[2]]] = 1;
+        if (lineIndex == 0)
+        {   // 첫번째 행엔 bpm에 대한 정보
+            bpm = stod(columns[0].substr(4));
+            cout << "bpm = " << bpm << "\n";
         }
-        if (columns[3] != "0")
+        else
         {
-            inst_arr_L[instrument_mapping[columns[3]]] = 1;
+            vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
+            time_arr.push_back(stod(columns[1]) * 100 / bpm);
+
+            if (columns[2] != "0")
+            {
+                inst_arr_R[instrument_mapping[columns[2]]] = 1;
+            }
+            if (columns[3] != "0")
+            {
+                inst_arr_L[instrument_mapping[columns[3]]] = 1;
+            }
+
+            RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
+            LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+
+            RA.push_back(inst_arr_R);
+            LA.push_back(inst_arr_L);
         }
-
-        RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-        LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-
-        RA.push_back(inst_arr_R);
-        LA.push_back(inst_arr_L);
 
         lineIndex++;
     }
