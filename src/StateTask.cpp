@@ -600,7 +600,7 @@ void StateTask::ActivateControlTask()
 
                                 });
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
 
@@ -622,7 +622,7 @@ void StateTask::ActivateControlTask()
             writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
 
-                                });
+                                });*/
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
@@ -943,11 +943,11 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.5);
+        additionalTorque = motor->cwDir * (-2.7);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 1.9;
+        additionalTorque = motor->cwDir * 2.1;
     }
 
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
@@ -1091,7 +1091,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
                                        motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                       this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
+                                       //this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
                                        cout << "Homing completed for " << motorName << "\n";
                                    }
                                }
