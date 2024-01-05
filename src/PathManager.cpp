@@ -601,7 +601,8 @@ void PathManager::GetMusicSheet()
 
         if (lineIndex == 0)
         {   // 첫번째 행엔 bpm에 대한 정보
-            bpm = stod(columns[0]);
+            bpm = stod(columns[0].substr(4));
+            cout << "bpm = " << bpm << "\n";
         }
         else
         {
