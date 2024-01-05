@@ -14,30 +14,33 @@ void RecieveLoopTask::operator()()
 
     while (systemState.main != Main::Shutdown)
     {
-        /*auto currentTime = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
-        {
-
-            if (!canUtils.checkCanPortsStatus() || !checkMotors())
-            {
-                canUtils.restart_all_can_ports();
-            }
-            lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
-        }*/
-
+        usleep(50000);
         while (systemState.main == Main::Perform)
         {
-
-            usleep(50000); // Perform 상태일 때의 처리
-
-            if (systemState.runMode == RunMode::Running)
+            /*
+            if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
             {
-                RecieveLoop(recieveBuffer);
+
+                if (!canUtils.checkCanPortsStatus() || !checkMotors())
+                {
+                    canUtils.restart_all_can_ports();
+                }
+                lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+            }
+            else*/
+            {
+                usleep(50000); // Perform 상태일 때의 처리
+
+                if (systemState.runMode == RunMode::Running)
+                {
+                    RecieveLoop(recieveBuffer);
+                }
             }
         }
         usleep(50000); // 다음 루프 대기
     }
 }
+
 
 void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
@@ -154,9 +157,7 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
 
                 ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
                     << std::dec
-                    << position << ","
-                    << " "
-                    << "," << torque << "\n";
+                    << position << "," << " " << "," << torque << "\n";
             }
         }
     }
