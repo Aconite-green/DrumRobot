@@ -71,7 +71,7 @@ void StateTask::homeModeLoop()
         std::cin >> motorName;
 
         // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
-        if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
+        /*if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
         {
             std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
             continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
@@ -86,7 +86,7 @@ void StateTask::homeModeLoop()
             std::cout << "Error: R_arm3 must be homed before " << motorName << std::endl;
             continue;
         }
-        /*else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
+        else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
         {
             std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
             continue;
@@ -956,7 +956,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
 
     float midpoint = MoveTMotorToSensorLocation(motor, motorName, motor->sensorBit);
 
-    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.0;
+    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.5;
     midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
     RotateTMotor(motor, motorName, -motor->cwDir, degree, midpoint);
 
@@ -981,10 +981,10 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
         RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
     /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
-    if(motor_pair.first == "L_arm2" || motor_pair.first == "R_arm2")
+    if(motorName == "L_arm2" || motorName == "R_arm2")
     {
         CheckTmotorPosition(motor);
-        RotateMotor(motor, motor_pair.first, settings.direction, -30, 0);
+        RotateTMotor(motor, motorName, motor->cwDir, -30, 0);
     }*/
     if (motorName == "L_arm3" || motorName == "R_arm3")
     {
