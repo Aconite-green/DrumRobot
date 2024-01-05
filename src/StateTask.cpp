@@ -118,7 +118,8 @@ void StateTask::homeModeLoop()
             {
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
-                    SetHome(motor_pair.second, motor_pair.first);
+                    motor_pair.second->isHomed = true;
+                    //SetHome(motor_pair.second, motor_pair.first);
                 }
             }
         }
@@ -378,11 +379,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can1");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can1");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -998,13 +999,14 @@ void StateTask::SetHome(std::shared_ptr<TMotor> &motor, const std::string &motor
     canUtils.set_all_sockets_timeout(5, 0);
 
     // 허리는 home 안잡음
+    cout << "\n<< Homing for " << motorName << " >>\n";
 
     HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
     sleep(1);
     FixMotorPosition(motor);
 
-    cout << "Homing completed for " << motorName << "\n";
+    cout << "-- Homing completed for " << motorName << " --\n\n";
     sensor.closeDevice();
 }
 
@@ -1018,6 +1020,8 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
     {
         std::string name = motor_pair.first;
         std::shared_ptr<MaxonMotor> motor = motor_pair.second;
+
+        cout << "\n<< Homing for " << motorName << " >>\n";
 
         fillCanFrameFromInfo(&frame, motor->getCanFrameForHomeMode());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
@@ -1096,7 +1100,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    {
                                        motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
                                        //this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
-                                       cout << "Homing completed for " << motorName << "\n";
+                                       cout << "-- Homing completed for " << motorName << " --\n\n";
                                    }
                                }
                            });

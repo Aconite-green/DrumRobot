@@ -63,11 +63,11 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
             continue;
         }
 
-        if (sensor.connected && (sensor.ReadVal() & 1) != 0)
+        /*if (sensor.connected && (sensor.ReadVal() & 1) != 0)
         {
             cout << "Motors at Sensor Location please check!!!\n";
             systemState.runMode = RunMode::Pause;
-        }
+        }*/
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::milliseconds elapsed_time = chrono::duration_cast<chrono::milliseconds>(internal - external);
