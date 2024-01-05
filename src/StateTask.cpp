@@ -336,7 +336,7 @@ void StateTask::initializeMotors()
         else if (motor_pair.first == "L_arm1")
         {
             motor->cwDir = 1.0f;
-            motor->sensorBit = 1;
+            motor->sensorBit = 0;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
@@ -360,7 +360,7 @@ void StateTask::initializeMotors()
         else if (motor_pair.first == "L_arm2")
         {
             motor->cwDir = -1.0f;
-            motor->sensorBit = 0;
+            motor->sensorBit = 1;
             motor->rMin = -M_PI / 2.0f; // -90deg
             motor->rMax = M_PI / 4.0f;  // 45deg
             motor->isHomed = false;
