@@ -699,7 +699,7 @@ void PathManager::GetReadyArr()
 
 void PathManager::PathLoopTask()
 {
-    // 연주 처음 시작할 때 Q2, Q4 계산
+    // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
     {
         c_R = 0;

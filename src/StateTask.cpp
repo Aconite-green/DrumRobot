@@ -305,13 +305,13 @@ void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["L_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["L_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");  //
     tmotors["_L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
 
     tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
-    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");  //
 
-    tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
+    tmotors["_L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
     tmotors["_L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
@@ -601,7 +601,7 @@ void StateTask::ActivateControlTask()
 
                                 });
 
-            /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
             sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success) {
 
@@ -623,7 +623,7 @@ void StateTask::ActivateControlTask()
             writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
 
-                                });*/
+                                });
 
             // 구분자 추가
             std::cout << "=======================================" << std::endl;
