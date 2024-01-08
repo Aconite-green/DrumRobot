@@ -119,7 +119,7 @@ void StateTask::homeModeLoop()
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
                     motor_pair.second->isHomed = true;
-                    //SetHome(motor_pair.second, motor_pair.first);
+                    // SetHome(motor_pair.second, motor_pair.first);
                 }
             }
         }
@@ -305,14 +305,14 @@ void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["L_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");  //
-    tmotors["_L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
+    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
 
     tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
-    tmotors["L_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");  //
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
 
-    tmotors["_L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
-    tmotors["_L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
+    tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
+    tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
 
     for (auto &motor_pair : tmotors)
     {
@@ -906,9 +906,12 @@ void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &
     chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     int kp = 250;
 
-    if(motorName == "L_arm1" || motorName =="R_arm1") kp = 250;
-    else if(motorName == "L_arm2" || motorName =="R_arm2") kp = 350;
-    else if(motorName == "L_arm3" || motorName =="R_arm3") kp = 350;
+    if (motorName == "L_arm1" || motorName == "R_arm1")
+        kp = 250;
+    else if (motorName == "L_arm2" || motorName == "R_arm2")
+        kp = 350;
+    else if (motorName == "L_arm3" || motorName == "R_arm3")
+        kp = 350;
     // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
     const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
     int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
@@ -966,7 +969,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
-    canUtils.set_all_sockets_timeout(2,0);
+    canUtils.set_all_sockets_timeout(2, 0);
     // 현재 position을 0으로 인식하는 명령을 보냄
     fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
     SendCommandToTMotor(motor, frameToProcess, motorName);
@@ -1098,8 +1101,8 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
-                                       motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                       //this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
+                                       motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                       // this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
                                        cout << "-- Homing completed for " << motorName << " --\n\n";
                                    }
                                }
@@ -1380,6 +1383,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
                     chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
                     if (elapsed_time.count() >= 5000)
                     {
+                        
 
                         ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
                         if (bytesWritten == -1)
@@ -1389,7 +1393,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
                         }
 
                         ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
-
+                        
                         if (bytesRead == -1)
                         {
                             std::cerr << "Failed to read from socket for interface: " << motor->interFaceName << std::endl;
@@ -1397,6 +1401,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
                         }
                         else
                         {
+
                             std::tuple<int, float, float, float> result = TParser.parseRecieveCommand(*motor, &frame);
 
                             p_act = std::get<1>(result);
@@ -1503,6 +1508,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                     if (elapsed_time.count() >= 5000)
                     {
 
+
                         ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
                         if (bytesWritten == -1)
                         {
@@ -1518,6 +1524,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                             std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
                         }
                         ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                        
 
                         if (bytesRead == -1)
                         {
@@ -1526,6 +1533,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         }
                         else
                         {
+
                             std::tuple<int, float, float> result = MParser.parseRecieveCommand(&frame);
 
                             p_act = std::get<1>(result);

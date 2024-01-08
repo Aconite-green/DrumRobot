@@ -432,7 +432,7 @@ void PathManager::getQ1AndQ2()
         Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
         Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
         Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
-        Q1[5] = (Q2[4] + c_MotorAngle[5]) / 2.0;
+        Q1[5] = (Q2[5] + c_MotorAngle[5]) / 2.0;
     }
 }
 
@@ -489,7 +489,7 @@ void PathManager::getQ3AndQ4()
         Q3[1] = (Q4[1] + Q2[1]) / 2.0;
         Q3[2] = (Q4[2] + Q2[2]) / 2.0;
         Q3[3] = (Q4[3] + Q2[3]) / 2.0;
-        Q3[5] = (Q4[4] + Q2[5]) / 2.0;
+        Q3[5] = (Q4[5] + Q2[5]) / 2.0;
     }
 }
 

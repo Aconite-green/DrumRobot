@@ -57,7 +57,7 @@ private:
     MaxonCommandParser MParser;
     Sensor sensor;
 
-    const int NUM_FRAMES = 20;
+    const int NUM_FRAMES = 10;
     const int TIME_THRESHOLD_MS = 5;
     int writeFailCount = 0;
 
