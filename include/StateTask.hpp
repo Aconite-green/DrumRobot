@@ -24,13 +24,13 @@
 #include <set>
 
 #include "SystemState.hpp"
-#include "SenSor.hpp"
+#include "../include/usbio/SenSor.hpp"
 #include "../include/CanSocketUtils.hpp"
 #include "../include/CommandParser.hpp"
 #include "../include/ErrorHandle.hpp"
 #include "../include/Motor.hpp"
 #include "../include/TaskUtility.hpp"
-#include "../include/Global.hpp"
+#include "../include/usbio/Global.hpp"
 
 // #include <QObject>
 
@@ -97,14 +97,15 @@ private:
     void SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &motorName);
     void SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName);
     void FixMotorPosition(std::shared_ptr<MaxonMotor> &motor);
+    
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
     void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType,int &controlType);
     void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-    void TuningMaxonCSV(/*필요시 추가*/);
-    void TuningMaxonCST(/*필요시 추가*/);
+    void TuningMaxonCSV(const std::string selectedMotor);
+    void TuningMaxonCST(const std::string selectedMotor);
     void MaxonCSPSetting();
     void MaxonCSVSetting();
     void MaxonCSTSetting();

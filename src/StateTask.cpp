@@ -1737,11 +1737,11 @@ void StateTask::TuningLoopTask()
                 }
                 else if (controlType == 2)
                 {
-                    TuningMaxonCSV();
+                    TuningMaxonCSV(selectedMotor);
                 }
                 else
                 {
-                    TuningMaxonCST();
+                    TuningMaxonCST(selectedMotor);
                 }
             }
         }
@@ -1775,12 +1775,12 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
     // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
 }
 
-void StateTask::TuningMaxonCSV()
+void StateTask::TuningMaxonCSV(const std::string selectedMotor)
 {
     //
 }
 
-void StateTask::TuningMaxonCST()
+void StateTask::TuningMaxonCST(const std::string selectedMotor)
 {
     //
 }

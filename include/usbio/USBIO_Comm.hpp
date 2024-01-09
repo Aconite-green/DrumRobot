@@ -13,6 +13,9 @@
 #pragma pack(push)				/* push current alignment to stack */
 #pragma pack(1)					/* set alignment to 1 byte boundary */
 
+#include "ICPDAS_USBIO.hpp"
+#include "USBIO_Object_Layout.hpp"
+
 typedef struct BulkPktBuffer_St {
 	BYTE Packet[USBIO_MAX_PACKET_LENGTH];
 } BulkPktBuffer;
