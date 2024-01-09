@@ -30,26 +30,25 @@ void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames)
             exit(EXIT_FAILURE);
         }
         sockets[ifname] = hsocket;
-        portStatus[ifname] = true; 
+        isConnected[ifname] = true; 
         std::cout << "Socket created for " << ifname << ": " << hsocket << std::endl;
     }
 }
 
-int CanSocketUtils::checkCanPortsStatus() {
-    bool allPortsConnected = true;
+void CanSocketUtils::checkCanPortsStatus() {
 
-    for (const auto &port : ifnames) {
-        bool isConnected = is_port_connected(port.c_str());
-        portStatus[port] = isConnected; // 포트 연결 상태 업데이트
 
-        if (!isConnected) {
-            std::cout << "Port " << port << " is NOT CONNECTED" << std::endl;
-            allPortsConnected = false;
+    for (const auto &ifname : this->ifnames) {
+        isConnected[ifname] = is_port_connected(ifname.c_str()); 
+
+        if (!isConnected[ifname]) {
+            std::cout << "Port " << ifname << " is NOT CONNECTED" << std::endl;
+            
         }
     }
 
     // 모든 포트가 연결된 경우 1, 아니면 0 반환
-    return allPortsConnected ? 1 : 0;
+    
 }
 
 bool CanSocketUtils::is_port_connected(const char *port)

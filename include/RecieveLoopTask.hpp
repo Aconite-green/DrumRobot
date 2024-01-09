@@ -64,5 +64,7 @@ private:
     void RecieveLoop(queue<can_frame> &recieveBuffer);
     void handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer);
     void parse_and_save_to_csv(const std::string &csv_file_name);
-    int checkMotors();
+    void checkMotors();
+    bool checkTmotors(std::shared_ptr<TMotor> motor);
+    bool checkMmotors(std::shared_ptr<MaxonMotor> motor);
 };
