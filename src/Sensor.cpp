@@ -1,4 +1,4 @@
-#include "../include/SenSor.hpp"
+#include "../include/usbio/SenSor.hpp"
 
 Sensor::Sensor()
 {

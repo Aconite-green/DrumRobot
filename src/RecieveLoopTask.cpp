@@ -10,37 +10,31 @@ RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
 
 void RecieveLoopTask::operator()()
 {
-    //auto lastCheckTime = std::chrono::steady_clock::now();
+    auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (systemState.main != Main::Shutdown)
     {
+        auto currentTime = std::chrono::steady_clock::now();
         usleep(50000);
+        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
+        {
+
+            canUtils.checkCanPortsStatus();
+            checkMotors();
+            lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+        }
         while (systemState.main == Main::Perform)
         {
-            /*
-            if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
-            {
 
-                if (!canUtils.checkCanPortsStatus() || !checkMotors())
-                {
-                    canUtils.restart_all_can_ports();
-                }
-                lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
-            }
-            else*/
-            {
-                usleep(50000); // Perform 상태일 때의 처리
+            usleep(50000); // Perform 상태일 때의 처리
 
-                if (systemState.runMode == RunMode::Running)
-                {
-                    RecieveLoop(recieveBuffer);
-                }
+            if (systemState.runMode == RunMode::Running)
+            {
+                RecieveLoop(recieveBuffer);
             }
         }
-        usleep(50000); // 다음 루프 대기
     }
 }
-
 
 void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
@@ -150,14 +144,16 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
             std::shared_ptr<MaxonMotor> motor = entry.second;
             if (motor->nodeId == frame.data[0])
             {
-                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor,&frame);
+                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
                 id = std::get<0>(parsedData);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
 
                 ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
                     << std::dec
-                    << position << "," << " " << "," << torque << "\n";
+                    << position << ","
+                    << " "
+                    << "," << torque << "\n";
             }
         }
     }
@@ -165,4 +161,106 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     ofs.close();
 
     std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+}
+
+void RecieveLoopTask::checkMotors()
+{
+
+    for (const auto &motor_pair : tmotors)
+    {
+        std::shared_ptr<TMotor> motor = motor_pair.second;
+        bool motorChecked = checkTmotors(motor);
+        if (!motorChecked)
+        {
+            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+            motor->isConected = false;
+        }
+    }
+    for (const auto &motor_pair : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
+        bool motorChecked = checkMmotors(motor);
+        if (!motorChecked)
+        {
+            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+            motor->isConected = false;
+        }
+    }
+}
+
+bool RecieveLoopTask::checkTmotors(std::shared_ptr<TMotor> motor)
+{
+    struct can_frame frame;
+    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+
+    canUtils.clear_all_can_buffers();
+    auto interface_name = motor->interFaceName;
+
+    // canUtils.restart_all_can_ports();
+    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    {
+        int socket_descriptor = canUtils.sockets.at(interface_name);
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
+
+        if (bytesWritten == -1)
+        {
+            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
+        if (bytesRead == -1)
+        {
+            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+        return true;
+    }
+    else
+    {
+        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
+        return false;
+    }
+}
+
+bool RecieveLoopTask::checkMmotors(std::shared_ptr<MaxonMotor> motor)
+{
+
+    struct can_frame frame;
+    fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+
+    canUtils.clear_all_can_buffers();
+    auto interface_name = motor->interFaceName;
+
+    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    {
+        int socket_descriptor = canUtils.sockets.at(interface_name);
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
+
+        if (bytesWritten == -1)
+        {
+            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
+        if (bytesRead == -1)
+        {
+            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        return true;
+    }
+    else
+    {
+        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
+        return false;
+    }
 }

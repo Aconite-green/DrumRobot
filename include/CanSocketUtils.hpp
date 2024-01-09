@@ -34,13 +34,13 @@ public:
     void restart_all_can_ports();
     void set_all_sockets_timeout(int sec, int usec);
     void clear_all_can_buffers();
-    int checkCanPortsStatus();
+    void checkCanPortsStatus();
 
     std::map<std::string, int> sockets;
+    std::map<std::string, bool> isConnected;
 
 private:
     std::vector<std::string> ifnames;
-    std::map<std::string, bool> portStatus;
 
     // Port
     bool is_port_up(const char *port);

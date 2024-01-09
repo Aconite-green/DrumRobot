@@ -32,7 +32,7 @@ public:
     double currentPos;
     float cwDir;
     int sensorBit;
-    bool isHomed;
+    bool isHomed, isConected;
 
     float desPos, desVel, desTor, outPos, outVel, outTor;
     float rMin, rMax;
@@ -61,7 +61,7 @@ public:
     std::string interFaceName;
     double currentPos;
     float cwDir;
-    bool isHomed;
+    bool isHomed, isConected;
     float rMin, rMax;
     float outPos, outTor;
     
