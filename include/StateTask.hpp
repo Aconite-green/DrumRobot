@@ -83,6 +83,7 @@ private:
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
+    void MaxonHMMSetting();
     
     /*Tmotor*/
     void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
