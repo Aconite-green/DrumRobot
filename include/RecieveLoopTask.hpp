@@ -6,7 +6,7 @@
 #include "../include/ErrorHandle.hpp"
 #include "../include/Motor.hpp"
 #include "../include/TaskUtility.hpp"
-#include "../include/Global.hpp"
+#include "../include/usbio/Global.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -30,7 +30,7 @@
 #include <set>
 
 #include "SystemState.hpp"
-#include "SenSor.hpp"
+#include "../include/usbio/SenSor.hpp"
 
 using namespace std;
 

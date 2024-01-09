@@ -1,4 +1,4 @@
-#include "../include/PathManager.hpp" // 적절한 경로로 변경하세요.
+#include "../include/path_manager/PathManager.hpp" // 적절한 경로로 변경하세요.
 
 PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
     : sendBuffer(sendBufferRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
@@ -499,7 +499,7 @@ void PathManager::getQ3AndQ4()
 
 void PathManager::GetDrumPositoin()
 {
-    ifstream inputFile("../include/rT_rotate.txt");
+    ifstream inputFile("../include/path_manager/rT_rotate.txt");
 
     if (!inputFile.is_open())
     {
@@ -579,7 +579,7 @@ void PathManager::GetMusicSheet()
     map<string, int> instrument_mapping = {
         {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
 
-    string score_path = "../include/codeConfession.txt";
+    string score_path = "../include/path_manager/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())

@@ -3,7 +3,7 @@
 #include "../include/CommandParser.hpp"
 #include "../include/Motor.hpp"
 #include "../include/TaskUtility.hpp"
-#include "../include/Global.hpp"
+#include "../include/usbio/Global.hpp"
 #include <map>
 #include <memory>
 #include <string>
