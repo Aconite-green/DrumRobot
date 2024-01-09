@@ -379,11 +379,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can1");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can1");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -948,7 +948,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.8);
+        additionalTorque = motor->cwDir * (-2.9);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
