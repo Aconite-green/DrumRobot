@@ -100,10 +100,16 @@ private:
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-    void TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
-    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType);
-
+    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType,int &controlType);
+    void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningMaxonCSV(/*필요시 추가*/);
+    void TuningMaxonCST(/*필요시 추가*/);
+    void MaxonCSPSetting();
+    void MaxonCSVSetting();
+    void MaxonCSTSetting();
+    
     // Perform
     void runModeLoop();
+    
 };

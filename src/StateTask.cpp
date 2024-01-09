@@ -71,7 +71,7 @@ void StateTask::homeModeLoop()
         std::cin >> motorName;
 
         // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
-        if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
+        /*if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
         {
             std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
             continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
@@ -90,7 +90,7 @@ void StateTask::homeModeLoop()
         {
             std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
             continue;
-        }
+        }*/
 
         if (motorName == "all")
         {
@@ -118,7 +118,6 @@ void StateTask::homeModeLoop()
             {
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
-                    motor_pair.second->isHomed = true;
                     SetHome(motor_pair.second, motor_pair.first);
                 }
             }
@@ -379,11 +378,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can1");
+                                                     "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can1");
+                                                     "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -561,26 +560,6 @@ void StateTask::ActivateControlTask()
         {
             std::string name = motorPair.first;
             std::shared_ptr<MaxonMotor> motor = motorPair.second;
-
-            // 제어 모드 설정
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
-
-                           });
-
-            // 제어 모드 설정
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForPosOffset());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
-
-                           });
-            // 제어 모드 설정
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
-
-                           });
 
             // 제어 모드 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
@@ -1089,7 +1068,13 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                        [](const std::string &motorName, bool success) {
 
                        });
+        usleep(50000);
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
 
+                       });
+        sleep(10);
         // 홈 위치에 도달할 때까지 반복
         while (!motor->isHomed)
         {
@@ -1113,6 +1098,25 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
             sleep(1); // 100ms 대기
         }
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        usleep(50000);
+        // Start to Move by homing method (일단은 PDO)
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        usleep(50000);
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
     }
 }
 
@@ -1422,8 +1426,9 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     csvFileOut.close();
 }
 
-void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
+void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
+    MaxonCSPSetting();
     canUtils.set_all_sockets_timeout(0, 50000);
 
     std::string FileName1 = "../../READ/" + selectedMotor + "_in.txt";
@@ -1557,7 +1562,7 @@ void StateTask::TuningLoopTask()
     std::string userInput, selectedMotor, fileName;
     float kp, kd, peakAngle;
     float sine_t = 4.0;
-    int cycles = 2, pathType;
+    int cycles = 2, pathType, controlType;
 
     if (!tmotors.empty())
     {
@@ -1568,7 +1573,7 @@ void StateTask::TuningLoopTask()
         selectedMotor = maxonMotors.begin()->first;
     }
 
-    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType);
+    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType);
     while (true)
     {
         int result = system("clear");
@@ -1585,6 +1590,20 @@ void StateTask::TuningLoopTask()
         else if (pathType == 2)
         {
             pathTypeDescription = "2: 1 - cos & cos - 1 (0 -> peak -> 0 -> -peak -> 0)";
+        }
+
+        std::string controlTypeDescription;
+        if (controlType == 1)
+        {
+            controlTypeDescription = "CSP";
+        }
+        else if (controlType == 2)
+        {
+            controlTypeDescription = "CSV";
+        }
+        else if (controlType == 3)
+        {
+            controlTypeDescription = "CST";
         }
 
         std::cout << "================ Tuning Menu ================\n";
@@ -1607,25 +1626,33 @@ void StateTask::TuningLoopTask()
         {
             std::cout << "Kp: " << kp << " | Kd: " << kd << "\n";
         }
+        else
+        {
+            std::cout << "Control Type : " << controlTypeDescription << "\n";
+        };
         std::cout << "Sine Period: " << sine_t << " | Cycles: " << cycles << " | Hz: " << 1 / sine_t << "\n";
-        std::cout << "Peak Angle: " << peakAngle << " | Path Type: " << pathTypeDescription << "\n";
+        std::cout << "Peak Angle: " << peakAngle << " | Path Type [Pos]: " << pathTypeDescription << "\n";
         std::cout << "\nCommands:\n";
         if (!isMaxonMotor)
         {
-            std::cout << "[KP] | [KD] |";
+            std::cout << "[a]: kp | [b]: kd |";
         }
-        std::cout << "[S]elect Motor | [Peak] | [Type]\n";
-        std::cout << "[P]eriod | [C]ycles | [R]un | [E]xit\n";
+        else
+        {
+            std::cout << "[c]: Control |";
+        }
+        std::cout << "[d]: Select Motor | [e]: Peak | [f]: Path\n";
+        std::cout << "[g]: Period | [h]: Cycles | [i]: Run | [j]: Exit\n";
         std::cout << "=============================================\n";
         std::cout << "Enter Command: ";
         std::cin >> userInput;
         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
 
-        if (userInput[0] == 'e')
+        if (userInput[0] == 'j')
         {
             break;
         }
-        else if (userInput[0] == 's')
+        else if (userInput[0] == 'd')
         {
             while (true)
             {
@@ -1633,7 +1660,7 @@ void StateTask::TuningLoopTask()
                 std::cin >> selectedMotor;
                 if (tmotors.find(selectedMotor) != tmotors.end())
                 {
-                    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType);
+                    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType);
                     break;
                 }
                 else
@@ -1642,22 +1669,22 @@ void StateTask::TuningLoopTask()
                 }
             }
         }
-        else if (userInput == "kp" && !isMaxonMotor)
+        else if (userInput == "a" && !isMaxonMotor)
         {
             std::cout << "Enter Desired Kp: ";
             std::cin >> kp;
         }
-        else if (userInput == "kd" && !isMaxonMotor)
+        else if (userInput == "b" && !isMaxonMotor)
         {
             std::cout << "Enter Desired Kd: ";
             std::cin >> kd;
         }
-        else if (userInput == "peak")
+        else if (userInput == "e")
         {
             std::cout << "Enter Desired Peak Angle: ";
             std::cin >> peakAngle;
         }
-        else if (userInput == "type")
+        else if (userInput == "f")
         {
             std::cout << "Select Path Type:\n";
             std::cout << "1: 1 - cos (0 -> peak -> 0)\n";
@@ -1671,17 +1698,32 @@ void StateTask::TuningLoopTask()
                 pathType = 1;
             }
         }
-        else if (userInput[0] == 'p')
+        else if (userInput[0] == 'g')
         {
             std::cout << "Enter Desired Sine Period: ";
             std::cin >> sine_t;
         }
-        else if (userInput[0] == 'c')
+        else if (userInput[0] == 'h')
         {
             std::cout << "Enter Desired Cycles: ";
             std::cin >> cycles;
         }
-        else if (userInput[0] == 'r')
+        else if (userInput == "c")
+        {
+            std::cout << "Select Control Type:\n";
+            std::cout << "1: Cyclic Synchronous Position Mode (CSP)\n";
+            std::cout << "2: Cyclic Synchronous Velocity Mode (CSV)\n";
+            std::cout << "3: Cyclic Synchronous Torque Mode (CST)\n";
+            std::cout << "Enter Path Type (1 or 2 or 3): ";
+            std::cin >> controlType;
+
+            if (controlType != 1 && controlType != 2 && controlType != 3)
+            {
+                std::cout << "Invalid path type. Please enter 1 or 2.\n";
+                controlType = 1;
+            }
+        }
+        else if (userInput[0] == 'i')
         {
             if (!isMaxonMotor) // Tmotor일 경우
             {
@@ -1689,13 +1731,24 @@ void StateTask::TuningLoopTask()
             }
             else // MaxonMotor일 경우
             {
-                TuningMaxon(sine_t, selectedMotor, cycles, peakAngle, pathType);
+                if (controlType == 1)
+                {
+                    TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
+                }
+                else if (controlType == 2)
+                {
+                    TuningMaxonCSV();
+                }
+                else
+                {
+                    TuningMaxonCST();
+                }
             }
         }
     }
 }
 
-void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType)
+void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType)
 {
     if (selectedMotor == "waist")
     {
@@ -1717,6 +1770,56 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
     {
         peakAngle = 90;
         pathType = 1;
+        controlType = 1;
     }
     // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
+}
+
+void StateTask::TuningMaxonCSV()
+{
+    //
+}
+
+void StateTask::TuningMaxonCST()
+{
+    //
+}
+
+void StateTask::MaxonCSPSetting()
+{
+
+    struct can_frame frame;
+
+    for (const auto &motorPair : maxonMotors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        // 제어 모드 설정
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForPosOffset());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+        // 제어 모드 설정
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+    }
+}
+
+void StateTask::MaxonCSVSetting(){
+    //
+}
+
+void StateTask::MaxonCSTSetting(){
+    //
 }
