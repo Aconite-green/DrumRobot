@@ -378,11 +378,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can1");
+                                                     "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can1");
+                                                     "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -1099,6 +1099,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                            {
                                if (success)
                                {
+                                   //cout << "frame.data : " << frame.data[1] << "\n";
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
