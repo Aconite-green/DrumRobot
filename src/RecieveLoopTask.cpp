@@ -20,7 +20,7 @@ void RecieveLoopTask::operator()()
         {
 
             canUtils.checkCanPortsStatus();
-            checkMotors();
+            //checkMotors();
             lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
         }
         while (systemState.main == Main::Perform)
