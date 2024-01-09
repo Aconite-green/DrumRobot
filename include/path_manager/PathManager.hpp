@@ -70,6 +70,8 @@ private:
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      : 0    , 90    , 90    , 45    , 75    , -45   , -75   , 0      , 0        (**모터 회전방향에 따라 부호 조절)
     vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
+    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, 0, 0};
+    
 
     double p_R = 0; // 오른손 이전 악기 유무
     double p_L = 0; // 왼손 이전 악기 유무
@@ -109,6 +111,7 @@ private:
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
     void getDrummingPosAndAng();
+    void getMotorPos();
     void getQ1AndQ2();
     void getQ3AndQ4();
     void Tmotor_sendBuffer();

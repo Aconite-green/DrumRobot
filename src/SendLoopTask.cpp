@@ -5,13 +5,12 @@ SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                            std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
                            queue<can_frame> &sendBufferRef)
-    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef,maxonMotorsRef)
+    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef, maxonMotorsRef)
 {
 }
 
 void SendLoopTask::operator()()
 {
-
     while (systemState.main != Main::Shutdown)
     {
         usleep(50000);
@@ -37,6 +36,15 @@ void SendLoopTask::operator()()
                     systemState.runMode = RunMode::PrePreparation;
                 }
             }
+        }
+    }
+
+    if (systemState.main == Main::Shutdown)
+    {
+        if (CheckAllMotorsCurrentPosition())
+        {
+            pathManager.GetBackArr();
+            SendReadyLoop();
         }
     }
 }
@@ -111,6 +119,7 @@ void SendLoopTask::SendLoop()
             else if (pathManager.line == pathManager.total)
             {
                 std::cout << "Turn Back\n";
+                CheckAllMotorsCurrentPosition();
                 pathManager.GetBackArr();
                 pathManager.line++;
             }
@@ -199,7 +208,7 @@ void SendLoopTask::save_to_txt_inputData(const string &csv_file_name)
 
 void SendLoopTask::SendReadyLoop()
 {
-    cout << "Set Ready.\n";
+    cout << "Settig...\n";
     struct can_frame frameToProcess;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
@@ -348,7 +357,7 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor,&frame);
+        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;

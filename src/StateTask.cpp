@@ -58,6 +58,7 @@ void StateTask::operator()()
             emit stateChanged(systemState.main.load());
         }*/
     }
+    
     DeactivateControlTask();
 }
 

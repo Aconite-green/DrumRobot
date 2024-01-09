@@ -101,6 +101,25 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
     return Qi;
 }
 
+void PathManager::getMotorPos()
+{
+    // 각 모터의 현재위치 값 불러오기
+    for (auto &entry : tmotors)
+    {
+        std::shared_ptr<TMotor> &motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
+    }
+    for (auto &entry : maxonMotors)
+    {
+        std::shared_ptr<MaxonMotor> motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
+    }
+}
+
 double determinant(double mat[3][3])
 {   // 행렬의 determinant 계산 함수
     return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
@@ -645,25 +664,7 @@ void PathManager::GetReadyArr()
     // tmotors의 상태를 확인
     cout << "tmotors size: " << tmotors.size() << "\n";
 
-    // 각 모터의 현재위치 값 불러오기
-    for (auto &entry : tmotors)
-    {
-        std::shared_ptr<TMotor> &motor = entry.second;
-        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
-        // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
-    }
-    for (auto &entry : maxonMotors)
-    {
-        std::shared_ptr<MaxonMotor> motor = entry.second;
-        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
-        // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
-    }
-
-    // 준비동작 동안 손목 변화X
-    standby[7] = c_MotorAngle[7];
-    standby[8] = c_MotorAngle[8];
+    getMotorPos();
 
     int n = 800;    // 5ms * 800 = 4s
     for (int k = 0; k < n; k++)
@@ -751,16 +752,19 @@ void PathManager::PathLoopTask()
 
 void PathManager::GetBackArr()
 {
+    cout << "Get Back...\n";
     struct can_frame frame;
 
-    vector<double> Q0(9, 0);    // 연주 종료 후 돌아가는 각도 값
-    vector<vector<double>> q_finish;
     vector<double> Qi;
+    vector<vector<double>> q_finish;
+    
+    getMotorPos();
+    
     int n = 800;
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
-        Qi = connect(c_MotorAngle, Q0, k, n);
+        Qi = connect(c_MotorAngle, backarr, k, n);
         q_finish.push_back(Qi);
 
         // Send to Buffer
