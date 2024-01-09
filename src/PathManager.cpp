@@ -518,7 +518,7 @@ void PathManager::getQ3AndQ4()
 
 void PathManager::GetDrumPositoin()
 {
-    ifstream inputFile("../include/path_manager/rT_rotate.txt");
+    ifstream inputFile("../include/path_manager/rT.txt");
 
     if (!inputFile.is_open())
     {
