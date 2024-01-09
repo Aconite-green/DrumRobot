@@ -13,6 +13,18 @@ void SendLoopTask::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
+        if (systemState.main == Main::Back)
+        {
+            if (CheckAllMotorsCurrentPosition())
+            {
+                clearBuffer();
+                cout << "Get Back...\n";
+                pathManager.GetArr(pathManager.backarr);
+                SendReadyLoop();
+                systemState.main = Main::Shutdown;
+            }
+        }
+        
         usleep(50000);
         while (systemState.main == Main::Perform)
         {
@@ -40,16 +52,7 @@ void SendLoopTask::operator()()
         }
     }
 
-    if (systemState.main == Main::Shutdown)
-    {
-        if (CheckAllMotorsCurrentPosition())
-        {
-            clearBuffer();
-            cout << "Get Back...\n";
-            pathManager.GetArr(pathManager.backarr);
-            SendReadyLoop();
-        }
-    }
+    
 }
 
 /////////////////////////////////////////////////////////////////////////////////
