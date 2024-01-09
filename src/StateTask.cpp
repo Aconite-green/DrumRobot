@@ -378,11 +378,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can1");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can1");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -913,6 +913,27 @@ void StateTask::RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &
 
         startTime = std::chrono::system_clock::now();
     }
+    
+    totalSteps = 500 / 5;
+    for (int step = 1; step <= totalSteps; ++step)
+    {
+        while (1)
+        {
+            chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+            if (chrono::duration_cast<chrono::microseconds>(currentTime - startTime).count() > 5000)
+                break;
+        }
+
+        startTime = std::chrono::system_clock::now();
+
+        // 5ms마다 목표 위치 계산 및 프레임 전송
+        double targetPosition = targetRadian + motor->currentPos;
+        TParser.parseSendCommand(*motor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
+        SendCommandToTMotor(motor, frameToProcess, motorName);
+
+        startTime = std::chrono::system_clock::now();
+    }
+
     CheckTmotorPosition(motor);
 }
 
@@ -926,7 +947,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.7);
+        additionalTorque = motor->cwDir * (-2.8);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
@@ -938,7 +959,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
 
     float midpoint = MoveTMotorToSensorLocation(motor, motorName, motor->sensorBit);
 
-    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90.5;
+    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90;
     midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
     RotateTMotor(motor, motorName, -motor->cwDir, degree, midpoint);
 
@@ -1084,7 +1105,6 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                            {
                                if (success)
                                {
-                                   cout << "frame.data : " << frame.data[1] << "\n";
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
