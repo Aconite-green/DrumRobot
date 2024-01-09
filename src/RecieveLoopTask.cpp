@@ -150,7 +150,7 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
             std::shared_ptr<MaxonMotor> motor = entry.second;
             if (motor->nodeId == frame.data[0])
             {
-                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(&frame);
+                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor,&frame);
                 id = std::get<0>(parsedData);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
