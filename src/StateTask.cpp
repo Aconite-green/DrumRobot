@@ -1078,14 +1078,13 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
         // 홈 위치에 도달할 때까지 반복
         while (!motor->isHomed)
         {
-
             fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                            [this, &frame, &motor, &name](const std::string &motorName, bool success)
                            {
                                if (success)
                                {
-                                   //cout << "frame.data : " << frame.data[1] << "\n";
+                                   cout << "frame.data : " << frame.data[1] << "\n";
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
