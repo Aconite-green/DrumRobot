@@ -23,7 +23,8 @@ void SendLoopTask::operator()()
                 if (CheckAllMotorsCurrentPosition())
                 {
                     initializePathManager();
-                    pathManager.GetReadyArr();
+                    cout << "Get Ready...\n";
+                    pathManager.GetArr(pathManager.standby);
                     SendReadyLoop();
                     systemState.runMode = RunMode::Ready;
                 }
@@ -43,7 +44,8 @@ void SendLoopTask::operator()()
     {
         if (CheckAllMotorsCurrentPosition())
         {
-            pathManager.GetBackArr();
+            cout << "Get Back...\n";
+            pathManager.GetArr(pathManager.backarr);
             SendReadyLoop();
         }
     }

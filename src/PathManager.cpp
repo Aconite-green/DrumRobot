@@ -661,9 +661,6 @@ void PathManager::GetReadyArr()
     vector<double> Qi;
     vector<vector<double>> q_ready;
 
-    // tmotors의 상태를 확인
-    cout << "tmotors size: " << tmotors.size() << "\n";
-
     getMotorPos();
 
     int n = 800;    // 5ms * 800 = 4s
@@ -693,9 +690,6 @@ void PathManager::GetReadyArr()
     }
 
     c_MotorAngle = Qi;
-
-    // 최종적인 sendBuffer의 크기 출력
-    cout << "Final sendBuffer size: " << sendBuffer.size() << "\n";
 }
 
 void PathManager::PathLoopTask()
@@ -766,6 +760,45 @@ void PathManager::GetBackArr()
         // Make GetBack Array
         Qi = connect(c_MotorAngle, backarr, k, n);
         q_finish.push_back(Qi);
+
+        // Send to Buffer
+        for (auto &entry : tmotors)
+        {
+            std::shared_ptr<TMotor> &motor = entry.second;
+            float p_des = Qi[motor_mapping[entry.first]];
+            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+            sendBuffer.push(frame);
+        }
+        for (auto &entry : maxonMotors)
+        {
+            std::shared_ptr<MaxonMotor> motor = entry.second;
+            float p_des = Qi[motor_mapping[entry.first]];
+            MParser.parseSendCommand(*motor, &frame, p_des);
+            sendBuffer.push(frame);
+        }
+        MParser.makeSync(&frame);
+        sendBuffer.push(frame);
+    }
+
+    c_MotorAngle = Qi;
+}
+
+void PathManager::GetArr(vector<double> &arr)
+{
+    cout << "Get Array...\n";
+    struct can_frame frame;
+
+    vector<double> Qi;
+    vector<vector<double>> q_setting;
+    
+    getMotorPos();
+    
+    int n = 800;
+    for (int k = 0; k < n; ++k)
+    {
+        // Make GetBack Array
+        Qi = connect(c_MotorAngle, arr, k, n);
+        q_setting.push_back(Qi);
 
         // Send to Buffer
         for (auto &entry : tmotors)
