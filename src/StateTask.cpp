@@ -33,7 +33,6 @@ void StateTask::operator()()
             homeModeLoop();
             break;
         case Main::Perform:
-            MaxonCSPSetting();
             runModeLoop();
             break;
         case Main::Check:
@@ -1055,7 +1054,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
                                        motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                       this->FixMotorPosition(motor); // 'this'를 사용하여 멤버 함수 호출
+                                        // 'this'를 사용하여 멤버 함수 호출
                                        cout << "-- Homing completed for " << motorName << " --\n\n";
                                    }
                                }
@@ -1078,6 +1077,10 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
                        });
         usleep(50000);
+
+        MaxonCSPSetting();
+        FixMotorPosition(motor);
+
     }
 }
 
@@ -1199,6 +1202,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
                    {
                        // 여기에 필요한 코드 추가
                    });
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1774,7 +1778,7 @@ void StateTask::MaxonCSPSetting()
                        [](const std::string &motorName, bool success) {
 
                        });
-        // 제어 모드 설정
+        /*// 제어 모드 설정
         fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
         sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                     [](const std::string &motorName, bool success) {
@@ -1791,7 +1795,7 @@ void StateTask::MaxonCSPSetting()
         writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                             [](const std::string &motorName, bool success) {
 
-                            });
+                            });*/
 
         fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
         sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
