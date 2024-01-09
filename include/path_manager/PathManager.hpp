@@ -38,9 +38,7 @@ public:
 
     void GetDrumPositoin();
     void GetMusicSheet();
-    void GetReadyArr();
     void PathLoopTask();
-    void GetBackArr();
     void GetArr(vector<double> &arr);
 
     // 실시간X, 전체 악보 처리 후 연주
@@ -54,7 +52,7 @@ public:
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      : 0    , 90    , 90    , 45    , 75    , -45   , -75   , 0      , 0        (**모터 회전방향에 따라 부호 조절)
     vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
-    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, 0, 0};
+    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, -M_PI / 3, -M_PI / 3};
 
 private:
     queue<can_frame> &sendBuffer;

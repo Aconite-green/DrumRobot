@@ -653,45 +653,6 @@ void PathManager::GetMusicSheet()
     total = RF.size();
 }
 
-void PathManager::GetReadyArr()
-{
-    cout << "Get Ready...\n";
-    struct can_frame frame;
-
-    vector<double> Qi;
-    vector<vector<double>> q_ready;
-
-    getMotorPos();
-
-    int n = 800;    // 5ms * 800 = 4s
-    for (int k = 0; k < n; k++)
-    {
-        // Make Ready Array
-        Qi = connect(c_MotorAngle, standby, k, n);
-        q_ready.push_back(Qi);
-
-        // Send to Buffer
-        for (auto &entry : tmotors)
-        {
-            std::shared_ptr<TMotor> &motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-            sendBuffer.push(frame);
-        }
-        for (auto &entry : maxonMotors)
-        {
-            std::shared_ptr<MaxonMotor> motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            MParser.parseSendCommand(*motor, &frame, p_des);
-            sendBuffer.push(frame);
-        }
-        MParser.makeSync(&frame);
-        sendBuffer.push(frame);
-    }
-
-    c_MotorAngle = Qi;
-}
-
 void PathManager::PathLoopTask()
 {
     // 연주 처음 시작할 때 Q1, Q2 계산
@@ -742,45 +703,6 @@ void PathManager::PathLoopTask()
     c_MotorAngle = p.back();
     Q1 = Q3;
     Q2 = Q4;
-}
-
-void PathManager::GetBackArr()
-{
-    cout << "Get Back...\n";
-    struct can_frame frame;
-
-    vector<double> Qi;
-    vector<vector<double>> q_finish;
-    
-    getMotorPos();
-    
-    int n = 800;
-    for (int k = 0; k < n; ++k)
-    {
-        // Make GetBack Array
-        Qi = connect(c_MotorAngle, backarr, k, n);
-        q_finish.push_back(Qi);
-
-        // Send to Buffer
-        for (auto &entry : tmotors)
-        {
-            std::shared_ptr<TMotor> &motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-            sendBuffer.push(frame);
-        }
-        for (auto &entry : maxonMotors)
-        {
-            std::shared_ptr<MaxonMotor> motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            MParser.parseSendCommand(*motor, &frame, p_des);
-            sendBuffer.push(frame);
-        }
-        MParser.makeSync(&frame);
-        sendBuffer.push(frame);
-    }
-
-    c_MotorAngle = Qi;
 }
 
 void PathManager::GetArr(vector<double> &arr)

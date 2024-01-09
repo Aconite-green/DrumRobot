@@ -44,6 +44,7 @@ void SendLoopTask::operator()()
     {
         if (CheckAllMotorsCurrentPosition())
         {
+            clearBuffer();
             cout << "Get Back...\n";
             pathManager.GetArr(pathManager.backarr);
             SendReadyLoop();
@@ -122,7 +123,7 @@ void SendLoopTask::SendLoop()
             {
                 std::cout << "Turn Back\n";
                 CheckAllMotorsCurrentPosition();
-                pathManager.GetBackArr();
+                pathManager.GetArr(pathManager.backarr);
                 pathManager.line++;
             }
             else if (sendBuffer.size() == 0)
@@ -368,5 +369,11 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
     {
         cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
         return false;
+    }
+}
+
+void SendLoopTask::clearBuffer() {
+    while (!sendBuffer.empty()) {
+        sendBuffer.pop();
     }
 }

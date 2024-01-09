@@ -72,5 +72,5 @@ private:
     bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     int writeFailCount;
     void initializePathManager();
-
+    void clearBuffer();
 };
