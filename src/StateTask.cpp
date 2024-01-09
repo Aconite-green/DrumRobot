@@ -118,7 +118,6 @@ void StateTask::homeModeLoop()
             {
                 if (std::find(priorityMotors.begin(), priorityMotors.end(), motor_pair.first) == priorityMotors.end() && !motor_pair.second->isHomed)
                 {
-                    motor_pair.second->isHomed = true;
                     SetHome(motor_pair.second, motor_pair.first);
                 }
             }
@@ -817,7 +816,7 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(&frame);
+        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
@@ -1533,7 +1532,7 @@ void StateTask::TuningMaxon(float sine_t, const std::string selectedMotor, int c
                         else
                         {
 
-                            std::tuple<int, float, float> result = MParser.parseRecieveCommand(&frame);
+                            std::tuple<int, float, float> result = MParser.parseRecieveCommand(*motor,&frame);
 
                             p_act = std::get<1>(result);
                             tff_act = std::get<2>(result);

@@ -348,7 +348,7 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(&frame);
+        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor,&frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;

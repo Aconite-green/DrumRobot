@@ -166,7 +166,7 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
-std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can_frame *frame)
+std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor,struct can_frame *frame)
 {
     int id = frame->can_id;
 
@@ -189,6 +189,10 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(struct can
 
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
+
+
+    motor.outPos = currentPositionRadians;
+    motor.outTor = currentTorqueNm;
 
     return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
