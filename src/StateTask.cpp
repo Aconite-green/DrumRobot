@@ -141,6 +141,8 @@ void StateTask::homeModeLoop()
 
 void StateTask::runModeLoop()
 {
+    MaxonEnable();
+    MaxonCSPSetting();
     while (systemState.main == Main::Perform)
     {
         switch (systemState.runMode.load())
@@ -492,20 +494,9 @@ void StateTask::ActivateControlTask()
             // 제로 설정
             fillCanFrameFromInfo(&frame, motor->getCanFrameForZeroing());
             sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (!success)
-                               {
-                                   std::cerr << "Failed to set zero for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Motor [" << motorName << "] Now Zero." << std::endl;
-                               }
-                           });
+                           [](const std::string &motorName, bool success) {
 
-            // 구분자 추가
-            std::cout << "=======================================" << std::endl;
+                           });
         }
     }
     else
@@ -552,63 +543,7 @@ void StateTask::ActivateControlTask()
             ++it;
         }
     }
-    if (!maxonMotors.empty())
-    {
-
-        canUtils.set_all_sockets_timeout(2, 0);
-        for (const auto &motorPair : maxonMotors)
-        {
-            std::string name = motorPair.first;
-            std::shared_ptr<MaxonMotor> motor = motorPair.second;
-
-            // 제어 모드 설정
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
-            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success) {
-
-                        });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success) {
-
-                        });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                                [](const std::string &motorName, bool success) {
-
-                                });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
-            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success) {
-
-                        });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                                [](const std::string &motorName, bool success) {
-
-                                });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-            sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success) {
-
-                        });
-
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                                [](const std::string &motorName, bool success) {
-
-                                });
-
-            // 구분자 추가
-            std::cout << "=======================================" << std::endl;
-        }
-    }
-    else
+    if (maxonMotors.empty())
     {
         std::cout << "No Maxon motors to process." << std::endl;
     }
@@ -1019,8 +954,9 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
     canUtils.clear_all_can_buffers();
     canUtils.set_all_sockets_timeout(2, 0);
+    MaxonEnable();
     MaxonHMMSetting();
-    
+
     for (const auto &motor_pair : maxonMotors)
     {
         std::string name = motor_pair.first;
@@ -1053,8 +989,8 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                                    // Statusword 비트 15 확인
                                    if (frame.data[1] & 0x80) // 비트 15 확인
                                    {
-                                       motor->isHomed = true;         // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                        // 'this'를 사용하여 멤버 함수 호출
+                                       motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                                              // 'this'를 사용하여 멤버 함수 호출
                                        cout << "-- Homing completed for " << motorName << " --\n\n";
                                    }
                                }
@@ -1064,7 +1000,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
             sleep(1); // 100ms 대기
         }
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+        /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
 
@@ -1076,10 +1012,7 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
                        [](const std::string &motorName, bool success) {
 
                        });
-        usleep(50000);
-
-        MaxonCSPSetting();
-        FixMotorPosition(motor);
+        usleep(50000);*/
 
     }
 }
@@ -1202,7 +1135,6 @@ void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
                    {
                        // 여기에 필요한 코드 추가
                    });
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1393,9 +1325,9 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
 
 void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
+
     MaxonCSPSetting();
     canUtils.set_all_sockets_timeout(0, 50000);
-
     std::string FileName1 = "../../READ/" + selectedMotor + "_in.txt";
 
     std::ofstream csvFileIn(FileName1);
@@ -1750,6 +1682,60 @@ void StateTask::TuningMaxonCST(const std::string selectedMotor)
     //
 }
 
+void StateTask::MaxonEnable()
+{
+    struct can_frame frame;
+    canUtils.set_all_sockets_timeout(2, 0);
+
+    // 제어 모드 설정
+    for (const auto &motorPair : maxonMotors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
+        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                    [](const std::string &motorName, bool success) {
+
+                    });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                    [](const std::string &motorName, bool success) {
+
+                    });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                            [](const std::string &motorName, bool success) {
+
+                            });
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                    [](const std::string &motorName, bool success) {
+
+                    });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                            [](const std::string &motorName, bool success) {
+
+                            });
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
+        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
+                    [](const std::string &motorName, bool success) {
+
+                    });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                            [](const std::string &motorName, bool success) {
+
+                            });
+
+    }
+};
+
 void StateTask::MaxonCSPSetting()
 {
 
@@ -1778,48 +1764,6 @@ void StateTask::MaxonCSPSetting()
                        [](const std::string &motorName, bool success) {
 
                        });
-        /*// 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForOperational());
-        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                    [](const std::string &motorName, bool success) {
-
-                    });
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                    [](const std::string &motorName, bool success) {
-
-                    });
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                            [](const std::string &motorName, bool success) {
-
-                            });*/
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
-        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                    [](const std::string &motorName, bool success) {
-
-                    });
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                            [](const std::string &motorName, bool success) {
-
-                            });
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
-        sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
-                    [](const std::string &motorName, bool success) {
-
-                    });
-
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
-                            [](const std::string &motorName, bool success) {
-
-                            });
     }
 }
 
@@ -1836,7 +1780,7 @@ void StateTask::MaxonCSTSetting()
 void StateTask::MaxonHMMSetting()
 {
     struct can_frame frame;
-
+    
     canUtils.clear_all_can_buffers();
     canUtils.set_all_sockets_timeout(2, 0);
     for (const auto &motor_pair : maxonMotors)

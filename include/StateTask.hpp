@@ -110,6 +110,7 @@ private:
     void MaxonCSPSetting();
     void MaxonCSVSetting();
     void MaxonCSTSetting();
+    void MaxonEnable();
     
     // Perform
     void runModeLoop();
