@@ -386,7 +386,7 @@ void StateTask::initializeMotors()
     }
 
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
-                                                     vector<uint32_t>{0x209, 0x309},
+                                                     vector<uint32_t>{0x209, 0x309, 0x409},
                                                      vector<uint32_t>{0x189},
                                                      "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
@@ -1757,7 +1757,7 @@ void StateTask::MaxonCSPSetting()
         std::string name = motorPair.first;
         std::shared_ptr<MaxonMotor> motor = motorPair.second;
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCSPMode());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
 

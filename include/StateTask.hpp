@@ -112,6 +112,7 @@ private:
     void MaxonCSTSetting();
     void MaxonEnable();
     void MaxonDrumTest();
+    
     // Perform
     void runModeLoop();
     

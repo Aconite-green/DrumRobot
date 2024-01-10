@@ -68,22 +68,15 @@ MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &txPdoIds, c
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+/*                                     System                                    */
+//////////////////////////////////////////////////////////////////////////////////
 CanFrameInfo MaxonMotor::getCanFrameForCheckMotor()
 {
     return {this->canSendId, 8, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForControlMode()
-{
-    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x08, 0x00, 0x00, 0x00}};
-}
-
-CanFrameInfo MaxonMotor::getCanFrameForPosOffset()
-{
-    return {this->canSendId, 8, {0x22, 0xB0, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
-}
-
-CanFrameInfo MaxonMotor::getCanFrameForExit()
+CanFrameInfo MaxonMotor::getCanFrameForStop()
 {
     return {0x00, 8, {0x02, this->nodeId, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
@@ -96,6 +89,29 @@ CanFrameInfo MaxonMotor::getCanFrameForOperational()
 CanFrameInfo MaxonMotor::getCanFrameForEnable()
 {
     return {this->txPdoIds[0], 8, {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForSync()
+{
+    return {0x80, 1, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForQuickStop()
+{
+    return {this->txPdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+/*                                     CSP                                       */
+//////////////////////////////////////////////////////////////////////////////////
+CanFrameInfo MaxonMotor::getCanFrameForCSPMode()
+{
+    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x08, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForPosOffset()
+{
+    return {this->canSendId, 8, {0x22, 0xB0, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForTorqueOffset()
@@ -115,17 +131,9 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetPosition(int targetPosition)
     return {this->txPdoIds[1], 4, {posByte0, posByte1, posByte2, posByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getCanFrameForSync()
-{
-    return {0x80, 1, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-}
-
-CanFrameInfo MaxonMotor::getCanFrameForQuickStop()
-{
-    return {this->txPdoIds[0], 8, {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-}
-
-////////////////////Homing
+////////////////////////////////////////////////////////////////////////////////////
+/*                                     HMM                                       */
+//////////////////////////////////////////////////////////////////////////////////
 
 CanFrameInfo MaxonMotor::getCanFrameForHomeMode()
 {
@@ -138,7 +146,7 @@ CanFrameInfo MaxonMotor::getFlowingErrorWindow()
 }
 
 CanFrameInfo MaxonMotor::getHomeoffsetDistance()
-{   // 95deg
+{ // 95deg
     return {this->canSendId, 8, {0x22, 0xB1, 0x30, 0x00, 0xc7, 0x93, 0x00, 0x00}};
 }
 
@@ -177,14 +185,40 @@ CanFrameInfo MaxonMotor::getHomingMethod()
     return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFD, 0xFF, 0xFF, 0xFF}};
     /*-4로 하고 싶은 경우 FD -> FC로 바꾸기*/
 }
-//SDO
+
 CanFrameInfo MaxonMotor::getStartHoming()
 {
-    //return {this->canSendId, 8, {0x22, 0x40, 0x60, 0x00, 0x1F, 0x00, 0x00, 0x00}};
+    // return {this->canSendId, 8, {0x22, 0x40, 0x60, 0x00, 0x1F, 0x00, 0x00, 0x00}};
     return {this->txPdoIds[0], 8, {0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
 CanFrameInfo MaxonMotor::getCanFrameForCurrentThreshold()
-{   // 1000 = 3E8
+{ // 1000 = 3E8
     return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xE8, 0x03, 0x00, 0x00}};
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+/*                                     CSV                                       */
+//////////////////////////////////////////////////////////////////////////////////
+
+CanFrameInfo MaxonMotor::getCanFrameForCSVMode()
+{
+    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x09, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForVelOffset()
+{
+    return {this->canSendId, 8, {0x22, 0xB1, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForTargetVelocity(int targetVelocity)
+{
+    // 10진수 targetPosition을 16진수로 변환
+    // 1[revolve] = 4096[inc] * 35[gear ratio]
+    unsigned char velByte0 = targetVelocity & 0xFF;         // 하위 8비트
+    unsigned char velByte1 = (targetVelocity >> 8) & 0xFF;  // 다음 8비트
+    unsigned char velByte2 = (targetVelocity >> 16) & 0xFF; // 다음 8비트
+    unsigned char velByte3 = (targetVelocity >> 24) & 0xFF; // 최상위 8비트
+
+    return {this->txPdoIds[2], 8, {velByte0, velByte1, velByte2, velByte3, 0x00, 0x00, 0x00, 0x00}};
 }

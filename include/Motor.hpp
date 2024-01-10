@@ -64,29 +64,31 @@ public:
     bool isHomed, isConected;
     float rMin, rMax;
     float outPos, outTor;
-    
-    // Send all zero(SDO)
+
+    /////////////////////////////// SYSTEM
+
     CanFrameInfo getCanFrameForCheckMotor();
-    // CSP mode(SDO)
-    CanFrameInfo getCanFrameForControlMode();
-    // Set pos offset(SDO)
-    CanFrameInfo getCanFrameForPosOffset();
-    // Operational -> Stop(NMT)
-    CanFrameInfo getCanFrameForExit();
-    // ControlWord Shutdown(PDO)
+
+    CanFrameInfo getCanFrameForStop();
+
     CanFrameInfo getCanFrameForQuickStop();
-    // pre-operation, Stop -> oprational(MNT)
+
     CanFrameInfo getCanFrameForOperational();
-    // Set TorqueOffset(SDO)
-    CanFrameInfo getCanFrameForTorqueOffset();
-    // ControlWold Enable(PDO)
+
     CanFrameInfo getCanFrameForEnable();
-    // Set targetPosition(PDO)
-    CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
-    // Sync(PDO)
+
     CanFrameInfo getCanFrameForSync();
 
-    //////////////// Homing
+    /////////////////////////////// CSP
+    CanFrameInfo getCanFrameForCSPMode();
+
+    CanFrameInfo getCanFrameForTorqueOffset();
+
+    CanFrameInfo getCanFrameForPosOffset();
+
+    CanFrameInfo getCanFrameForTargetPosition(int targetPosition);
+
+    /////////////////////////////// HMM
     CanFrameInfo getCanFrameForHomeMode();
 
     CanFrameInfo getFlowingErrorWindow();
@@ -111,6 +113,13 @@ public:
 
     CanFrameInfo getCanFrameForCurrentThreshold();
 
+    /////////////////////////////// CSV
+    CanFrameInfo getCanFrameForCSVMode();
+
+    CanFrameInfo getCanFrameForVelOffset();
+
+    CanFrameInfo getCanFrameForTargetVelocity(int targetVelocity);
+    /////////////////////////////// CST
 };
 
 #endif
