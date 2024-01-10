@@ -42,7 +42,7 @@ void StateTask::operator()()
             systemState.main = Main::Ideal;
             break;
         case Main::Tune:
-
+            MaxonEnable();
             TuningLoopTask();
             systemState.main = Main::Ideal;
             break;
@@ -392,11 +392,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309, 0x409},
                                                      vector<uint32_t>{0x189},
-                                                     "can1");
+                                                     "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can1");
+                                                     "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -1501,25 +1501,25 @@ void StateTask::TuningLoopTask()
         if (controlType == 1)
         {
             controlTypeDescription = "CSP";
-            MaxonEnable();
+
             MaxonCSPSetting();
         }
         else if (controlType == 2)
         {
             controlTypeDescription = "CSV";
-            MaxonEnable();
+
             MaxonCSVSetting();
         }
         else if (controlType == 3)
         {
             controlTypeDescription = "CST";
-            MaxonEnable();
+
             MaxonCSTSetting();
         }
         else if (controlType == 4)
         {
             controlTypeDescription = "Drum Test";
-            MaxonEnable();
+
             MaxonCSPSetting();
         }
 
@@ -1584,6 +1584,7 @@ void StateTask::TuningLoopTask()
 
         if (userInput[0] == 'j')
         {
+            MaxonDisable();
             break;
         }
         else if (userInput[0] == 'd')
@@ -1686,6 +1687,7 @@ void StateTask::TuningLoopTask()
         }
         else if (userInput[0] == 'i')
         {
+            
             if (!isMaxonMotor) // Tmotor일 경우
             {
                 TuningTmotor(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
@@ -1696,24 +1698,20 @@ void StateTask::TuningLoopTask()
                 {
 
                     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
-                    MaxonDisable();
                 }
                 else if (controlType == 2)
                 {
 
                     TuningMaxonCSV(selectedMotor, des_vel, direction);
-                    MaxonDisable();
                 }
                 else if (controlType == 3)
                 {
 
                     TuningMaxonCST(selectedMotor);
-                    MaxonDisable();
                 }
                 else if (controlType == 4)
                 {
                     MaxonDrumTest();
-                    MaxonDisable();
                 }
             }
         }
@@ -1752,7 +1750,13 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
 
 void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction)
 {
-    direction = direction * 35;
+    des_vel = des_vel * 35;
+
+    if (direction == 1)
+        des_vel *= 1;
+    else
+        des_vel *= -1;
+
     canUtils.set_all_sockets_timeout(0, 50000);
     std::string FileName1 = "../../READ/" + selectedMotor + "_csv_in.txt";
 
