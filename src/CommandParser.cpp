@@ -140,7 +140,7 @@ float TMotorCommandParser::uint_to_float(int x_int, float x_min, float x_max, in
 // Maxon Parser definition
 /////////////////////////////////////////////////////
 
-void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians)
+void MaxonCommandParser::parsePosCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians)
 {
     // 라디안 값을 인코더 값으로 변환
     float p_des_degrees = p_des_radians * (180.0f / M_PI);                        // 라디안을 도로 변환
@@ -166,7 +166,50 @@ void MaxonCommandParser::parseSendCommand(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0x00;
 }
 
-std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor,struct can_frame *frame)
+void MaxonCommandParser::parseVelCommand(MaxonMotor &motor, struct can_frame *frame, int targetVelocity)
+{
+    unsigned char velByte0 = targetVelocity & 0xFF;         // 하위 8비트
+    unsigned char velByte1 = (targetVelocity >> 8) & 0xFF;  // 다음 8비트
+    unsigned char velByte2 = (targetVelocity >> 16) & 0xFF; // 다음 8비트
+    unsigned char velByte3 = (targetVelocity >> 24) & 0xFF; // 최상위 8비트
+
+    // Set CAN frame id and data length code
+    frame->can_id = motor.txPdoIds[2];
+    frame->can_dlc = 4;
+
+    /// pack ints into the can buffer ///
+    frame->data[0] = velByte0;
+    frame->data[1] = velByte1;
+    frame->data[2] = velByte2;
+    frame->data[3] = velByte3;
+    frame->data[4] = 0x00;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
+}
+
+void MaxonCommandParser::parseTorCommand(MaxonMotor &motor, struct can_frame *frame, int targetTorque)
+{
+    unsigned char torByte0 = targetTorque & 0xFF;         // 하위 8비트
+    unsigned char torByte1 = (targetTorque >> 8) & 0xFF;  // 다음 8비트
+
+
+    // Set CAN frame id and data length code
+    frame->can_id = motor.txPdoIds[3];
+    frame->can_dlc = 2;
+
+    /// pack ints into the can buffer ///
+    frame->data[0] = torByte0;
+    frame->data[1] = torByte1;
+    frame->data[2] = 0x00;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0x00;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
+}
+
+std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
 {
     int id = frame->can_id;
 
@@ -190,13 +233,11 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-
     motor.outPos = currentPositionRadians;
     motor.outTor = currentTorqueNm;
 
     return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
-
 
 void MaxonCommandParser::makeSync(struct can_frame *frame)
 {

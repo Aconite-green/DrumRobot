@@ -68,7 +68,7 @@ void PathManager::Mmotor_sendBuffer()
         std::shared_ptr<MaxonMotor> motor = entry.second;
         float p_des = Pi[motor_mapping[entry.first]];
 
-        MParser.parseSendCommand(*motor, &frame, p_des);
+        MParser.parsePosCommand(*motor, &frame, p_des);
         sendBuffer.push(frame);
     }
     MParser.makeSync(&frame);
@@ -734,7 +734,7 @@ void PathManager::GetArr(vector<double> &arr)
         {
             std::shared_ptr<MaxonMotor> motor = entry.second;
             float p_des = Qi[motor_mapping[entry.first]];
-            MParser.parseSendCommand(*motor, &frame, p_des);
+            MParser.parsePosCommand(*motor, &frame, p_des);
             sendBuffer.push(frame);
         }
         MParser.makeSync(&frame);
