@@ -256,7 +256,8 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Shutdown;
             return true;
         }
-        else if(input == "b" && systemState.homeMode == HomeMode::HomeDone){
+        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
+        {
             systemState.main = Main::Back;
             return true;
         }
@@ -1332,7 +1333,6 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
 void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
 
-    MaxonCSPSetting();
     canUtils.set_all_sockets_timeout(0, 50000);
     std::string FileName1 = "../../READ/" + selectedMotor + "_in.txt";
 
@@ -1617,7 +1617,8 @@ void StateTask::TuningLoopTask()
             std::cout << "1: Cyclic Synchronous Position Mode (CSP)\n";
             std::cout << "2: Cyclic Synchronous Velocity Mode (CSV)\n";
             std::cout << "3: Cyclic Synchronous Torque Mode (CST)\n";
-            std::cout << "Enter Path Type (1 or 2 or 3): ";
+            std::cout << "4: Maxon Drum Test (CSP)\n";
+            std::cout << "Enter Path Type (1 or 2 or 3 or 4): ";
             std::cin >> controlType;
 
             if (controlType != 1 && controlType != 2 && controlType != 3)
@@ -1636,15 +1637,20 @@ void StateTask::TuningLoopTask()
             {
                 if (controlType == 1)
                 {
+                    MaxonCSPSetting();
                     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
                 }
                 else if (controlType == 2)
-                {
+                {   MaxonCSVSetting();
                     TuningMaxonCSV(selectedMotor);
                 }
-                else
-                {
+                else if (controlType == 3)
+                {   MaxonCSTSetting();
                     TuningMaxonCST(selectedMotor);
+                }
+                else if (controlType == 4){
+                    MaxonCSPSetting();
+                    MaxonDrumTest();
                 }
             }
         }
@@ -1850,4 +1856,8 @@ void StateTask::MaxonHMMSetting()
 
                        });
     }
+}
+
+void StateTask::MaxonDrumTest(){
+    //
 }
