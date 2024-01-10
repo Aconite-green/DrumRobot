@@ -48,6 +48,8 @@ void StateTask::operator()()
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
             break;
+        case Main::Back:
+            break;
         default:
             systemState.main = Main::Ideal;
             break;
@@ -57,7 +59,7 @@ void StateTask::operator()()
             emit stateChanged(systemState.main.load());
         }*/
     }
-    
+
     DeactivateControlTask();
 }
 
@@ -198,12 +200,13 @@ void StateTask::displayAvailableCommands() const
         if (systemState.homeMode == HomeMode::NotHome && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- h : Start Homing Mode\n";
-            std::cout << "- x  : Make home state by user\n";
+            std::cout << "- x : Make home state by user\n";
         }
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- t : Start tuning\n";
             std::cout << "- p : Start Perform Mode\n";
+            std::cout << "- b : Back to Zero Postion\n";
         }
     }
     else if (systemState.main == Main::Homing)
@@ -243,17 +246,20 @@ bool StateTask::processInput(const std::string &input)
             systemState.homeMode = HomeMode::HomeDone;
             return true;
         }
-    }
-    if (input == "c")
-    {
-        systemState.main = Main::Check;
-        return true;
-    }
-
-    if (input == "s")
-    {
-        systemState.main = Main::Back;
-        return true;
+        else if (input == "c")
+        {
+            systemState.main = Main::Check;
+            return true;
+        }
+        else if (input == "s")
+        {
+            systemState.main = Main::Shutdown;
+            return true;
+        }
+        else if(input == "b" && systemState.homeMode == HomeMode::HomeDone){
+            systemState.main = Main::Back;
+            return true;
+        }
     }
 
     return false;
@@ -1014,7 +1020,6 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
                        });
         usleep(50000);*/
-
     }
 }
 
@@ -1733,7 +1738,6 @@ void StateTask::MaxonEnable()
                             [](const std::string &motorName, bool success) {
 
                             });
-
     }
 };
 
@@ -1781,7 +1785,7 @@ void StateTask::MaxonCSTSetting()
 void StateTask::MaxonHMMSetting()
 {
     struct can_frame frame;
-    
+
     canUtils.clear_all_can_buffers();
     canUtils.set_all_sockets_timeout(2, 0);
     for (const auto &motor_pair : maxonMotors)

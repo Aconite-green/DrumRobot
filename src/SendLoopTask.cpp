@@ -21,7 +21,7 @@ void SendLoopTask::operator()()
                 cout << "Get Back...\n";
                 pathManager.GetArr(pathManager.backarr);
                 SendReadyLoop();
-                systemState.main = Main::Shutdown;
+                systemState.main = Main::Ideal;
             }
         }
         
