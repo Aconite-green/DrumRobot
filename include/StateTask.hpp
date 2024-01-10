@@ -111,7 +111,7 @@ private:
     void MaxonCSVSetting();
     void MaxonCSTSetting();
     void MaxonEnable();
-    void MaxonDisable();
+    void MaxonQuickStopEnable();
     void MaxonDrumTest();
     
     // Perform
