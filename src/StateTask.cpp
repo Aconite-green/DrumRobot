@@ -555,7 +555,11 @@ void StateTask::ActivateControlTask()
             ++it;
         }
     }
-    if (maxonMotors.empty())
+    if (!maxonMotors.empty())
+    {
+        MaxonEnable();
+    }
+    else
     {
         std::cout << "No Maxon motors to process." << std::endl;
     }
@@ -1584,7 +1588,7 @@ void StateTask::TuningLoopTask()
 
         if (userInput[0] == 'j')
         {
-            MaxonQuickStopEnable();
+
             break;
         }
         else if (userInput[0] == 'd')
@@ -1687,7 +1691,6 @@ void StateTask::TuningLoopTask()
         }
         else if (userInput[0] == 'i')
         {
-            MaxonQuickStopEnable();
             if (!isMaxonMotor) // Tmotor일 경우
             {
                 TuningTmotor(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
@@ -1713,6 +1716,7 @@ void StateTask::TuningLoopTask()
                 {
                     MaxonDrumTest();
                 }
+                MaxonQuickStopEnable();
             }
         }
     }
