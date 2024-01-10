@@ -84,7 +84,7 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
     vector<double> Qi;
     std::vector<double> A, B;
 
-    // Compute A and B
+    // Compute A and Bk
     for (long unsigned int i = 0; i < Q1.size(); ++i)
     {
         A.push_back(0.5 * (Q1[i] - Q2[i]));
@@ -354,8 +354,8 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     for (int i = 0; i < 7; i++)
     {
-        // 모터 방향에 따라 부호 결정
-        if (i == 5 || i == 6)
+        // *** 모터 방향에 따라 부호 결정 ***
+        if (i == 1 || i == 4 || i == 5 || i == 6)
         {
             Qf[i] = -Q[i][index_theta0_min];
         }
@@ -405,7 +405,7 @@ void PathManager::getQ1AndQ2()
         Q1 = c_MotorAngle;
         if (p_R == 1)
         {
-            Q1[4] = Q1[4] + M_PI / 36;
+            Q1[4] = Q1[4] - M_PI / 36;
             Q1[7] = Q1[7] - M_PI / 36;
         }
         if (p_L == 1)
@@ -423,15 +423,15 @@ void PathManager::getQ1AndQ2()
         Q2 = Q1;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + M_PI / 18;
+            Q1[4] = Q1[4] - M_PI / 18;
             Q1[6] = Q1[6] - M_PI / 18;
             Q1[7] = Q1[7] - M_PI / 18;
             Q1[8] = Q1[8] - M_PI / 18;
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q1[4] = Q1[4] + M_PI / 36;
-            Q2[4] = Q2[4] + M_PI / 36;
+            Q1[4] = Q1[4] - M_PI / 36;
+            Q2[4] = Q2[4] - M_PI / 36;
             Q1[6] = Q1[6] - M_PI / 18;
             Q1[7] = Q1[7] - M_PI / 36;
             Q2[7] = Q2[7] - M_PI / 36;
@@ -439,7 +439,7 @@ void PathManager::getQ1AndQ2()
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q1[4] = Q1[4] + M_PI / 18;
+            Q1[4] = Q1[4] - M_PI / 18;
             Q1[6] = Q1[6] - M_PI / 36;
             Q2[6] = Q2[6] - M_PI / 36;
             Q1[7] = Q1[7] - M_PI / 18;
@@ -462,7 +462,7 @@ void PathManager::getQ3AndQ4()
         Q3 = Q2;
         if (p_R == 1)
         {
-            Q3[4] = Q3[4] + M_PI / 36;
+            Q3[4] = Q3[4] - M_PI / 36;
             Q3[7] = Q3[7] - M_PI / 36;
         }
         if (p_L == 1)
@@ -480,15 +480,15 @@ void PathManager::getQ3AndQ4()
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + M_PI / 18;
+            Q3[4] = Q3[4] - M_PI / 18;
             Q3[6] = Q3[6] - M_PI / 18;
             Q3[7] = Q3[7] - M_PI / 18;
             Q3[8] = Q3[8] - M_PI / 18;
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q3[4] = Q3[4] + M_PI / 36;
-            Q4[4] = Q4[4] + M_PI / 36;
+            Q3[4] = Q3[4] - M_PI / 36;
+            Q4[4] = Q4[4] - M_PI / 36;
             Q3[6] = Q3[6] - M_PI / 18;
             Q3[7] = Q3[7] - M_PI / 36;
             Q4[7] = Q4[7] - M_PI / 36;
@@ -496,7 +496,7 @@ void PathManager::getQ3AndQ4()
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q3[4] = Q3[4] + M_PI / 18;
+            Q3[4] = Q3[4] - M_PI / 18;
             Q3[6] = Q3[6] - M_PI / 36;
             Q4[6] = Q4[6] - M_PI / 36;
             Q3[7] = Q3[7] - M_PI / 18;

@@ -392,11 +392,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309, 0x409},
                                                      vector<uint32_t>{0x189},
-                                                     "can1");
+                                                     "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308},
                                                      vector<uint32_t>{0x188},
-                                                     "can1");
+                                                     "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
