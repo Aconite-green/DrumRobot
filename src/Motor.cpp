@@ -220,5 +220,5 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetVelocity(int targetVelocity)
     unsigned char velByte2 = (targetVelocity >> 16) & 0xFF; // 다음 8비트
     unsigned char velByte3 = (targetVelocity >> 24) & 0xFF; // 최상위 8비트
 
-    return {this->txPdoIds[2], 8, {velByte0, velByte1, velByte2, velByte3, 0x00, 0x00, 0x00, 0x00}};
+    return {this->txPdoIds[2], 4, {velByte0, velByte1, velByte2, velByte3, 0x00, 0x00, 0x00, 0x00}};
 }

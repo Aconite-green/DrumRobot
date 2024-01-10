@@ -42,6 +42,7 @@ void StateTask::operator()()
             systemState.main = Main::Ideal;
             break;
         case Main::Tune:
+            MaxonEnable();
             TuningLoopTask();
             systemState.main = Main::Ideal;
             break;
@@ -65,6 +66,9 @@ void StateTask::operator()()
 
 void StateTask::homeModeLoop()
 {
+
+    MaxonEnable();
+    MaxonHMMSetting();
     while (systemState.main == Main::Homing)
     {
         displayHomingStatus();
@@ -962,8 +966,6 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
 
     canUtils.clear_all_can_buffers();
     canUtils.set_all_sockets_timeout(2, 0);
-    MaxonEnable();
-    MaxonHMMSetting();
 
     for (const auto &motor_pair : maxonMotors)
     {
@@ -1136,7 +1138,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
 
     cout << "FixMotor\n";
 
-    MParser.parseSendCommand(*motor, &frame, motor->currentPos);
+    MParser.parsePosCommand(*motor, &frame, motor->currentPos);
     sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
                    [](const std::string &motorName, bool success)
                    {
@@ -1177,7 +1179,7 @@ void StateTask::FixMotorPosition()
         std::shared_ptr<MaxonMotor> motor = motorPair.second;
         CheckMaxonPosition(motor);
 
-        MParser.parseSendCommand(*motor, &frame, motor->currentPos);
+        MParser.parsePosCommand(*motor, &frame, motor->currentPos);
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success)
                        {
@@ -1406,7 +1408,7 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
                         p_des = amplitude * (-1 + cosf(4 * M_PI * (local_time - sine_t / 2) / sine_t)) / 2;
                 }
 
-                MParser.parseSendCommand(*motor, &frame, p_des);
+                MParser.parsePosCommand(*motor, &frame, p_des);
                 csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId;
 
                 chrono::system_clock::time_point external = std::chrono::system_clock::now();
@@ -1465,7 +1467,7 @@ void StateTask::TuningLoopTask()
     std::string userInput, selectedMotor, fileName;
     float kp, kd, peakAngle;
     float sine_t = 4.0;
-    int cycles = 2, pathType, controlType;
+    int cycles = 2, pathType, controlType, des_vel, des_tff, direction;
 
     if (!tmotors.empty())
     {
@@ -1476,7 +1478,7 @@ void StateTask::TuningLoopTask()
         selectedMotor = maxonMotors.begin()->first;
     }
 
-    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType);
+    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType, des_vel, des_tff, direction);
     while (true)
     {
         int result = system("clear");
@@ -1499,14 +1501,32 @@ void StateTask::TuningLoopTask()
         if (controlType == 1)
         {
             controlTypeDescription = "CSP";
+            MaxonCSPSetting();
         }
         else if (controlType == 2)
         {
             controlTypeDescription = "CSV";
+            MaxonCSVSetting();
         }
         else if (controlType == 3)
         {
             controlTypeDescription = "CST";
+            MaxonCSTSetting();
+        }
+        else if (controlType == 4)
+        {
+            controlTypeDescription = "Drum Test";
+            MaxonCSPSetting();
+        }
+
+        std::string directionDescription;
+        if (direction == 1)
+        {
+            directionDescription = "CW";
+        }
+        else if (controlType == 2)
+        {
+            controlTypeDescription = "CCW";
         }
 
         std::cout << "================ Tuning Menu ================\n";
@@ -1531,10 +1551,12 @@ void StateTask::TuningLoopTask()
         }
         else
         {
-            std::cout << "Control Type : " << controlTypeDescription << "\n";
+            std::cout << "Control Type : " << controlTypeDescription;
+            std::cout << " | Vel [rpm]: " << des_vel << " | Des Torque: " << des_tff << "\n";
         };
         std::cout << "Sine Period: " << sine_t << " | Cycles: " << cycles << " | Hz: " << 1 / sine_t << "\n";
         std::cout << "Peak Angle: " << peakAngle << " | Path Type [Pos]: " << pathTypeDescription << "\n";
+        std::cout << "Direction: " << directionDescription << "\n";
         std::cout << "\nCommands:\n";
         if (!isMaxonMotor)
         {
@@ -1542,10 +1564,15 @@ void StateTask::TuningLoopTask()
         }
         else
         {
-            std::cout << "[c]: Control |";
+            std::cout << "[a]: des_vel | [b]: des_tff | [c]: Control |\n";
         }
         std::cout << "[d]: Select Motor | [e]: Peak | [f]: Path\n";
-        std::cout << "[g]: Period | [h]: Cycles | [i]: Run | [j]: Exit\n";
+        std::cout << "[g]: Period | [h]: Cycles | [i]: Run \n";
+        if (isMaxonMotor)
+        {
+            std::cout << "[k]: Direction | ";
+        }
+        std::cout << "[j]: Exit\n";
         std::cout << "=============================================\n";
         std::cout << "Enter Command: ";
         std::cin >> userInput;
@@ -1563,7 +1590,7 @@ void StateTask::TuningLoopTask()
                 std::cin >> selectedMotor;
                 if (tmotors.find(selectedMotor) != tmotors.end())
                 {
-                    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType);
+                    InitializeParameters(selectedMotor, kp, kd, peakAngle, pathType, controlType, des_vel, des_tff, direction);
                     break;
                 }
                 else
@@ -1571,6 +1598,22 @@ void StateTask::TuningLoopTask()
                     std::cout << "Invalid motor name. Please enter a valid motor name.\n";
                 }
             }
+        }
+        else if (userInput == "k" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Direction: ";
+            std::cout << "1: Clock Wise\n";
+            std::cout << "2: Counter Clock Wise\n";
+            std::cout << "Enter Path Type (1 or 2): ";
+            std::cin >> direction;
+
+            if (direction != 1 && direction != 2)
+            {
+                std::cout << "Invalid direction type. Please enter 1 or 2.\n";
+                pathType = 1;
+            }
+
+            std::cin >> direction;
         }
         else if (userInput == "a" && !isMaxonMotor)
         {
@@ -1581,6 +1624,16 @@ void StateTask::TuningLoopTask()
         {
             std::cout << "Enter Desired Kd: ";
             std::cin >> kd;
+        }
+        else if (userInput == "a" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Velocity: ";
+            std::cin >> des_vel;
+        }
+        else if (userInput == "b" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Torque: ";
+            std::cin >> des_tff;
         }
         else if (userInput == "e")
         {
@@ -1611,7 +1664,7 @@ void StateTask::TuningLoopTask()
             std::cout << "Enter Desired Cycles: ";
             std::cin >> cycles;
         }
-        else if (userInput == "c")
+        else if (userInput == "c" && isMaxonMotor)
         {
             std::cout << "Select Control Type:\n";
             std::cout << "1: Cyclic Synchronous Position Mode (CSP)\n";
@@ -1637,19 +1690,22 @@ void StateTask::TuningLoopTask()
             {
                 if (controlType == 1)
                 {
-                    MaxonCSPSetting();
+
                     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
                 }
                 else if (controlType == 2)
-                {   MaxonCSVSetting();
-                    TuningMaxonCSV(selectedMotor);
+                {
+
+                    TuningMaxonCSV(selectedMotor, des_vel, direction);
                 }
                 else if (controlType == 3)
-                {   MaxonCSTSetting();
+                {
+
                     TuningMaxonCST(selectedMotor);
                 }
-                else if (controlType == 4){
-                    MaxonCSPSetting();
+                else if (controlType == 4)
+                {
+
                     MaxonDrumTest();
                 }
             }
@@ -1657,7 +1713,7 @@ void StateTask::TuningLoopTask()
     }
 }
 
-void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType)
+void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction)
 {
     if (selectedMotor == "waist")
     {
@@ -1680,13 +1736,146 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
         peakAngle = 90;
         pathType = 1;
         controlType = 1;
+        direction = 1;
+        des_vel = 0;
+        des_tff = 0;
     }
     // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
 }
 
-void StateTask::TuningMaxonCSV(const std::string selectedMotor)
+void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction)
 {
-    //
+    direction = direction * 35;
+    canUtils.set_all_sockets_timeout(0, 50000);
+    std::string FileName1 = "../../READ/" + selectedMotor + "_csv_in.txt";
+
+    std::ofstream csvFileIn(FileName1);
+
+    if (!csvFileIn.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+
+    // 헤더 추가
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+
+    // CSV 파일명 설정
+    std::string FileName2 = "../../READ/" + selectedMotor + "_csv_out.txt";
+
+    // CSV 파일 열기
+    std::ofstream csvFileOut(FileName2);
+
+    if (!csvFileOut.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+    csvFileOut << "CAN_ID,pos_act,tff_act\n"; // CSV 헤더
+
+    struct can_frame frame;
+
+    float p_act, tff_act;
+    char input = 'a';
+    for (auto &entry : maxonMotors)
+    {
+        if (entry.first != selectedMotor)
+            continue;
+
+        std::shared_ptr<MaxonMotor> &motor = entry.second;
+
+        for (int i = 0; i < (int)motor->nodeId - 1; i++)
+        {
+            csvFileIn << "0,";
+        }
+        csvFileIn << std::dec << des_vel << ",";
+        for (int i = 0; i < (9 - (int)motor->nodeId); i++)
+        {
+            csvFileIn << "0,";
+        }
+
+        MParser.parseVelCommand(*motor, &frame, des_vel);
+
+        chrono::system_clock::time_point external = std::chrono::system_clock::now();
+        while (1)
+        {
+
+            if (kbhit())
+            {
+                input = getchar();
+            }
+
+            if (input == 'q')
+                continue;
+            else if (input == 'e')
+            {
+                MParser.parseVelCommand(*motor, &frame, 0);
+                ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+
+                MParser.makeSync(&frame);
+                bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+                ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+
+                if (bytesRead == -1)
+                {
+                    std::cerr << "Failed to read from socket for interface: " << motor->interFaceName << std::endl;
+                    return;
+                }
+
+                break;
+            }
+
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+            if (elapsed_time.count() >= 5000)
+            {
+
+                ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+
+                MParser.makeSync(&frame);
+                bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+                ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+
+                if (bytesRead == -1)
+                {
+                    std::cerr << "Failed to read from socket for interface: " << motor->interFaceName << std::endl;
+                    return;
+                }
+                else
+                {
+
+                    std::tuple<int, float, float> result = MParser.parseRecieveCommand(*motor, &frame);
+
+                    p_act = std::get<1>(result);
+                    tff_act = std::get<2>(result);
+                    // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                    csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId;
+                    csvFileOut << ',' << std::dec << p_act << ", ," << tff_act << '\n';
+                }
+            }
+        }
+    }
+
+    csvFileIn.close();
+    csvFileOut.close();
 }
 
 void StateTask::TuningMaxonCST(const std::string selectedMotor)
@@ -1780,7 +1969,26 @@ void StateTask::MaxonCSPSetting()
 
 void StateTask::MaxonCSVSetting()
 {
-    //
+    struct can_frame frame;
+    canUtils.set_all_sockets_timeout(2, 0);
+    for (const auto &motorPair : maxonMotors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCSVMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        // 제어 모드 설정
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForVelOffset());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+    }
 }
 
 void StateTask::MaxonCSTSetting()
@@ -1858,6 +2066,7 @@ void StateTask::MaxonHMMSetting()
     }
 }
 
-void StateTask::MaxonDrumTest(){
+void StateTask::MaxonDrumTest()
+{
     //
 }
