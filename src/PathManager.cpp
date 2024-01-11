@@ -357,19 +357,6 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
         Qf[motor_mapping[entry.first]] = Q[motor_mapping[entry.first]][index_theta0_min] * entry.second->cwDir;
     }
 
-    for (int i = 0; i < 7; i++)
-    {
-        // *** 모터 방향에 따라 부호 결정 ***
-        if (i == 1 || i == 4 || i == 5 || i == 6)
-        {
-            Qf[i] = -Q[i][index_theta0_min];
-        }
-        else
-        {
-            Qf[i] = Q[i][index_theta0_min];
-        }
-    }
-
     return Qf;
 }
 

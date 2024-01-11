@@ -104,6 +104,9 @@ private:
     // 각 관절에 해당하는 열
     map<string, int> motor_mapping = {
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
+    // 각 열에 해당하는 관절
+    map<int, string> motor_column_mapping = {
+        {0, "waist"}, {1, "R_arm1"}, {2, "L_arm1"}, {3, "R_arm2"}, {4, "R_arm3"}, {5, "L_arm2"}, {6, "L_arm3"}, {7, "R_wrist"}, {8, "L_wrist"}};
 
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
