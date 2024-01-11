@@ -352,6 +352,11 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     Qf.resize(7);
 
+    for (auto &entry : tmotors)
+    {
+
+    }
+    
     for (int i = 0; i < 7; i++)
     {
         // *** 모터 방향에 따라 부호 결정 ***
