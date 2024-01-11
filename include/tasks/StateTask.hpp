@@ -25,11 +25,10 @@
 
 #include "SystemState.hpp"
 #include "../include/usbio/SenSor.hpp"
-#include "../include/CanSocketUtils.hpp"
-#include "../include/CommandParser.hpp"
-#include "../include/ErrorHandle.hpp"
-#include "../include/Motor.hpp"
-#include "../include/TaskUtility.hpp"
+#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/motors/CommandParser.hpp"
+#include "../include/motors/Motor.hpp"
+#include "../include/tasks/TaskUtility.hpp"
 #include "../include/usbio/Global.hpp"
 
 // #include <QObject>

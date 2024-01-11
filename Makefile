@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -O2 -g -std=c++17 -fPIC
-INCLUDE = -I./include -I./lib -I./include/usbio -I./include/path_manager
+INCLUDE = -I./include -I./lib -I./include/usbio -I./include/path_manager -I./include/motors -I./include/tasks
 LDFLAGS = -lm -lpthread -lstdc++fs -L./lib -lUSBIO_64
 SRCDIR = ./src
 BINDIR = ./src/main.out
