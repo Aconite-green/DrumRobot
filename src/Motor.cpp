@@ -1,5 +1,5 @@
 // motor.c 파일
-#include "../include/Motor.hpp" // Include header file
+#include "../include/motors/Motor.hpp" // Include header file
 #include <iostream>
 
 TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)

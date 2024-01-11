@@ -1,4 +1,4 @@
-#include "../include/StateTask.hpp"
+#include "../include/tasks/StateTask.hpp"
 
 // StateTask 클래스의 생성자
 StateTask::StateTask(SystemState &systemStateRef,
@@ -341,10 +341,10 @@ void StateTask::initializeMotors()
         }
         else if (motor_pair.first == "R_arm1")
         {
-            motor->cwDir = 1.0f;
-            motor->sensorBit = 1;
-            motor->rMin = 0.0f; // 0deg
-            motor->rMax = M_PI; // 180deg
+            motor->cwDir = -1.0f;
+            motor->sensorBit = 3;
+            motor->rMin = -M_PI; // -180deg
+            motor->rMax = 0.0f; // 0deg
             motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm1")
@@ -358,17 +358,17 @@ void StateTask::initializeMotors()
         else if (motor_pair.first == "R_arm2")
         {
             motor->cwDir = 1.0f;
-            motor->sensorBit = 1;
+            motor->sensorBit = 4;
             motor->rMin = -M_PI / 4.0f; // -45deg
             motor->rMax = M_PI / 2.0f;  // 90deg
             motor->isHomed = false;
         }
         else if (motor_pair.first == "R_arm3")
         {
-            motor->cwDir = 1.0f;
-            motor->sensorBit = 1;
-            motor->rMin = 0.0f;         // 0deg
-            motor->rMax = M_PI * 0.75f; // 135deg
+            motor->cwDir = -1.0f;
+            motor->sensorBit = 5;
+            motor->rMin = -M_PI * 0.75f; // -135deg
+            motor->rMax = 0.0f;          // 0deg
             motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm2")
@@ -405,14 +405,14 @@ void StateTask::initializeMotors()
         // 각 모터 이름에 따른 멤버 변수 설정
         if (motor_pair.first == "L_wirst")
         {
-            motor->cwDir = 1.0f;
+            motor->cwDir = -1.0f;
             motor->rMin = -M_PI * 0.75f; // -120deg
             motor->rMax = M_PI / 2.0f;   // 90deg
             motor->isHomed = false;
         }
         else if (motor_pair.first == "R_wirst")
         {
-            motor->cwDir = 1.0f;
+            motor->cwDir = -1.0f;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;

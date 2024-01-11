@@ -5,10 +5,10 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/src/main.out",
+            "program": "${workspaceFolder}/bin/main.out",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src",
+            "cwd": "${workspaceFolder}/bin",
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
