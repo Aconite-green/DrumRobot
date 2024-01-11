@@ -6,12 +6,12 @@
 #include <memory>
 #include <map>
 
-#include "../include/Motor.hpp"
+#include "../include/motors/Motor.hpp"
 
-#include "../include/StateTask.hpp"
-#include "../include/SystemState.hpp"
-#include "../include/SendLoopTask.hpp"
-#include "../include/RecieveLoopTask.hpp"
+#include "../include/tasks/StateTask.hpp"
+#include "../include/tasks/SystemState.hpp"
+#include "../include/tasks/SendLoopTask.hpp"
+#include "../include/tasks/RecieveLoopTask.hpp"
 #include <atomic>
 
 using namespace std;

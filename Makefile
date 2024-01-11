@@ -1,27 +1,30 @@
 CC = g++
 CFLAGS = -Wall -O2 -g -std=c++17 -fPIC
 INCLUDE = -I./include -I./lib -I./include/usbio -I./include/path_manager -I./include/motors -I./include/tasks
-LDFLAGS = -lm -lpthread -lstdc++fs -L./lib -lUSBIO_64
+LDFLAGS = -lm -lpthread -lstdc++fs -L./lib -lUSBIO_64 -Wl,-rpath,/home/shy/DrumRobot_v1.0/lib
+
 SRCDIR = ./src
-BINDIR = ./src/main.out
+OBJDIR = ./obj
+BINDIR = ./bin
+EXECUTABLE = main.out
 
 # Automatically include all .cpp files from the src directory
 SOURCES := $(wildcard $(SRCDIR)/*.cpp)
-OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
+OBJFILES := $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SOURCES))
 
 # Build target
-all: $(BINDIR)
+all: $(BINDIR)/$(EXECUTABLE)
 
-$(BINDIR): $(OBJFILES)
+$(BINDIR)/$(EXECUTABLE): $(OBJFILES)
 	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) $(LDFLAGS)
 
 # Pattern rules
-%.o: %.cpp
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 # Clean rule
 clean:
-	rm -f $(SRCDIR)/*.o $(BINDIR)
+	rm -f $(OBJDIR)/*.o $(BINDIR)/$(EXECUTABLE)
 
 # Qt 관련 설정 (현재 사용하지 않으므로 주석 처리)
 # MOC = moc
