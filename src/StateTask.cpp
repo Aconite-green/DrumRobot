@@ -555,7 +555,11 @@ void StateTask::ActivateControlTask()
             ++it;
         }
     }
-    if (maxonMotors.empty())
+    if (!maxonMotors.empty())
+    {
+        MaxonEnable();
+    }
+    else
     {
         std::cout << "No Maxon motors to process." << std::endl;
     }
@@ -1584,7 +1588,7 @@ void StateTask::TuningLoopTask()
 
         if (userInput[0] == 'j')
         {
-            MaxonDisable();
+
             break;
         }
         else if (userInput[0] == 'd')
@@ -1687,7 +1691,6 @@ void StateTask::TuningLoopTask()
         }
         else if (userInput[0] == 'i')
         {
-            
             if (!isMaxonMotor) // Tmotor일 경우
             {
                 TuningTmotor(kp, kd, sine_t, selectedMotor, cycles, peakAngle, pathType);
@@ -1713,6 +1716,7 @@ void StateTask::TuningLoopTask()
                 {
                     MaxonDrumTest();
                 }
+                MaxonQuickStopEnable();
             }
         }
     }
@@ -1922,7 +1926,7 @@ void StateTask::MaxonEnable()
     }
 };
 
-void StateTask::MaxonDisable()
+void StateTask::MaxonQuickStopEnable()
 {
     struct can_frame frame;
     canUtils.set_all_sockets_timeout(2, 0);
@@ -1942,11 +1946,17 @@ void StateTask::MaxonDisable()
                             [](const std::string &motorName, bool success) {
 
                             });
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForStop());
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForEnable());
         sendNotRead(canUtils.sockets.at(motor->interFaceName), name, frame,
                     [](const std::string &motorName, bool success) {
 
                     });
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+        writeAndReadForSync(canUtils.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
+                            [](const std::string &motorName, bool success) {
+
+                            });
     }
 }
 
