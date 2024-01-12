@@ -318,11 +318,11 @@ void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can1");
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
 
-    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
-    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can1");
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can1");
 
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
     tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
@@ -392,11 +392,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309, 0x409,0x509},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can2");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308, 0x408, 0x508},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can2");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -1703,7 +1703,6 @@ void StateTask::TuningLoopTask()
                 }
                 else if (controlType == 2)
                 {
-
                     TuningMaxonCSV(selectedMotor, des_vel, direction);
                 }
                 else if (controlType == 3)
@@ -2217,5 +2216,5 @@ void StateTask::MaxonHMMSetting()
 
 void StateTask::MaxonDrumTest()
 {
-    //
+    
 }

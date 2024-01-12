@@ -50,9 +50,9 @@ public:
     vector<vector<double>> v;
 
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      : 0    , -90    , 90    , 45    , -75    , -45   , -75   , 0      , 0        (***모터 회전방향에 따라 부호 조절)
-    vector<double> standby = {0, -M_PI / 2, M_PI / 2, M_PI / 4, -M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
-    vector<double> backarr = {0, -M_PI / 2, M_PI / 2, 0, 0, 0, 0, -M_PI / 3, -M_PI / 3};
+    //                      : 0    , 90    , 90    , 45    , 75    , 45    , 75    , 0      , 0
+    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, 0, 0};
+    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
 private:
     queue<can_frame> &sendBuffer;
@@ -104,10 +104,11 @@ private:
     // 각 관절에 해당하는 열
     map<string, int> motor_mapping = {
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
-    // 각 열에 해당하는 관절
-    map<int, string> motor_column_mapping = {
-        {0, "waist"}, {1, "R_arm1"}, {2, "L_arm1"}, {3, "R_arm2"}, {4, "R_arm3"}, {5, "L_arm2"}, {6, "L_arm3"}, {7, "R_wrist"}, {8, "L_wrist"}};
+    // 각 열에 해당하는 관절방향
+    map<int, int> motor_dir = {     // 1 : CW , -1 : CCW
+        {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
 
+    void ApplyDir();
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
