@@ -2223,13 +2223,31 @@ void StateTask::MaxonDrumTest(float sine_t, const std::string selectedMotor, int
     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
 
     cout << "Change Mode (CSP => CSV)\n";
-    
 
+    canUtils.clear_all_can_buffers();
+    canUtils.set_all_sockets_timeout(2, 0);
+    for (const auto &motor_pair : maxonMotors)
+    {
+        std::string name = motor_pair.first;
+        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
 
-    
-    chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-    chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-    cout << elapsed_time.count() << "micro sec\n";
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCSVMode());
+        chrono::system_clock::time_point external = std::chrono::system_clock::now();
+        ssize_t write_status = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(can_frame));
+        if (write_status > 0)
+        {
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+            cout << elapsed_time.count() << "micro sec_write\n";
+        }
+        ssize_t read_status = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(can_frame));
+        if (read_status > 0)
+        {
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+            cout << elapsed_time.count() << "micro sec_write_read\n";
+        }
+    }
 
     TuningMaxonCSV(selectedMotor, des_vel, direction);
 }
