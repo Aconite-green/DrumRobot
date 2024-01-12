@@ -1680,7 +1680,7 @@ void StateTask::TuningLoopTask()
             std::cout << "Enter Path Type (1 or 2 or 3 or 4): ";
             std::cin >> controlType;
 
-            if (controlType != 1 && controlType != 2 && controlType != 3)
+            if (controlType != 1 && controlType != 2 && controlType != 3 && controlType != 4)
             {
                 std::cout << "Invalid path type. Please enter 1 or 2 or 3 or 4.\n";
                 controlType = 1;
@@ -2110,11 +2110,11 @@ void StateTask::MaxonCSVSetting()
                        });
 
         // 제어 모드 설정
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForVelOffset());
+        /*fillCanFrameFromInfo(&frame, motor->getCanFrameForVelOffset());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {
 
-                       });
+                       });*/
     }
 }
 
@@ -2217,12 +2217,13 @@ void StateTask::MaxonDrumTest(float sine_t, const std::string selectedMotor, int
     MaxonCSPSetting();
 
     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
+    
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
     cout << "Change Mode (CSP => CSV)\n";
     MaxonCSVSetting();
     chrono::system_clock::time_point internal = std::chrono::system_clock::now();
     chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-    cout << elapsed_time.count() << "micro sec\n";
+    cout << elapsed_time.count() << " micro sec\n";
 
     TuningMaxonCSV(selectedMotor, des_vel, direction);
 }

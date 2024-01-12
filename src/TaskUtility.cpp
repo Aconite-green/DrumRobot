@@ -29,7 +29,7 @@ void sendAndReceive(
 {
     
     ssize_t write_status = write(socket, &frame, sizeof(can_frame));
-    usleep(5000);
+    //usleep(5000);
     ssize_t read_status = read(socket, &frame, sizeof(can_frame));
     
     bool success = write_status > 0 && read_status > 0 ;
