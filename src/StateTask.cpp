@@ -390,11 +390,11 @@ void StateTask::initializeMotors()
     }
 
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
-                                                     vector<uint32_t>{0x209, 0x309, 0x409},
+                                                     vector<uint32_t>{0x209, 0x309, 0x409,0x509},
                                                      vector<uint32_t>{0x189},
                                                      "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
-                                                     vector<uint32_t>{0x208, 0x308},
+                                                     vector<uint32_t>{0x208, 0x308, 0x408, 0x508},
                                                      vector<uint32_t>{0x188},
                                                      "can0");
 
@@ -1532,9 +1532,9 @@ void StateTask::TuningLoopTask()
         {
             directionDescription = "CW";
         }
-        else if (controlType == 2)
+        else if (direction == 2)
         {
-            controlTypeDescription = "CCW";
+            directionDescription = "CCW";
         }
 
         std::cout << "================ Tuning Menu ================\n";
@@ -1588,7 +1588,6 @@ void StateTask::TuningLoopTask()
 
         if (userInput[0] == 'j')
         {
-
             break;
         }
         else if (userInput[0] == 'd')
@@ -1685,7 +1684,7 @@ void StateTask::TuningLoopTask()
 
             if (controlType != 1 && controlType != 2 && controlType != 3)
             {
-                std::cout << "Invalid path type. Please enter 1 or 2.\n";
+                std::cout << "Invalid path type. Please enter 1 or 2 or 3 or 4.\n";
                 controlType = 1;
             }
         }
@@ -1710,7 +1709,7 @@ void StateTask::TuningLoopTask()
                 else if (controlType == 3)
                 {
 
-                    TuningMaxonCST(selectedMotor);
+                    TuningMaxonCST(selectedMotor, des_tff, direction);
                 }
                 else if (controlType == 4)
                 {
@@ -1868,9 +1867,116 @@ void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int
     csvFileOut.close();
 }
 
-void StateTask::TuningMaxonCST(const std::string selectedMotor)
+void StateTask::TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction)
 {
-    //
+    if (direction == 1)
+        des_tff *= 1;
+    else
+        des_tff *= -1;
+
+    canUtils.set_all_sockets_timeout(0, 50000);
+    std::string FileName1 = "../../READ/" + selectedMotor + "_cst_in.txt";
+
+    std::ofstream csvFileIn(FileName1);
+
+    if (!csvFileIn.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+
+    // 헤더 추가
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+
+    // CSV 파일명 설정
+    std::string FileName2 = "../../READ/" + selectedMotor + "_cst_out.txt";
+
+    // CSV 파일 열기
+    std::ofstream csvFileOut(FileName2);
+
+    if (!csvFileOut.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+    csvFileOut << "CAN_ID,pos_act,tff_act\n"; // CSV 헤더
+
+    struct can_frame frame;
+
+    float p_act, tff_act;
+    char input = 'a';
+    for (auto &entry : maxonMotors)
+    {
+        if (entry.first != selectedMotor)
+            continue;
+
+        std::shared_ptr<MaxonMotor> &motor = entry.second;
+
+        for (int i = 0; i < (int)motor->nodeId - 1; i++)
+        {
+            csvFileIn << "0,";
+        }
+        csvFileIn << std::dec << des_tff << ",";
+        for (int i = 0; i < (9 - (int)motor->nodeId); i++)
+        {
+            csvFileIn << "0,";
+        }
+
+        MParser.parseTrqCommand(*motor, &frame, des_tff);
+
+        chrono::system_clock::time_point external = std::chrono::system_clock::now();
+        while (1)
+        {
+
+            if (kbhit())
+            {
+                input = getchar();
+            }
+
+            if (input == 'e')
+                break;
+
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+            if (elapsed_time.count() >= 5000)
+            {
+
+                ssize_t bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+
+                MParser.makeSync(&frame);
+                bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+                if (bytesWritten == -1)
+                {
+                    std::cerr << "Failed to write to socket for interface: " << motor->interFaceName << std::endl;
+                    std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
+                }
+                ssize_t bytesRead = read(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
+
+                if (bytesRead == -1)
+                {
+                    std::cerr << "Failed to read from socket for interface: " << motor->interFaceName << std::endl;
+                    return;
+                }
+                else
+                {
+
+                    std::tuple<int, float, float> result = MParser.parseRecieveCommand(*motor, &frame);
+
+                    p_act = std::get<1>(result);
+                    tff_act = std::get<2>(result);
+                    // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                    csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId;
+                    csvFileOut << ',' << std::dec << p_act << ", ," << tff_act << '\n';
+                }
+            }
+        }
+    }
+
+    csvFileIn.close();
+    csvFileOut.close();
 }
 
 void StateTask::MaxonEnable()
@@ -2017,7 +2123,26 @@ void StateTask::MaxonCSVSetting()
 
 void StateTask::MaxonCSTSetting()
 {
-    //
+    struct can_frame frame;
+    canUtils.set_all_sockets_timeout(2, 0);
+    for (const auto &motorPair : maxonMotors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<MaxonMotor> motor = motorPair.second;
+
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForCSTMode());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+
+        // 제어 모드 설정
+        fillCanFrameFromInfo(&frame, motor->getCanFrameForTorqueOffset());
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                       [](const std::string &motorName, bool success) {
+
+                       });
+    }
 }
 
 void StateTask::MaxonHMMSetting()
