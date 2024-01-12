@@ -119,7 +119,12 @@ public:
     CanFrameInfo getCanFrameForVelOffset();
 
     CanFrameInfo getCanFrameForTargetVelocity(int targetVelocity);
+    
     /////////////////////////////// CST
+    CanFrameInfo getCanFrameForCSTMode();
+
+    CanFrameInfo getCanFrameForTargetTorque(int targetTorque);
+
 };
 
 #endif

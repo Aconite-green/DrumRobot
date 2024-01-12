@@ -105,7 +105,7 @@ private:
     void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);
     void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
-    void TuningMaxonCST(const std::string selectedMotor);
+    void TuningMaxonCST(const std::string selectedMotor,int des_tff, int direction);
     void MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction);
     void MaxonCSPSetting();
     void MaxonCSVSetting();

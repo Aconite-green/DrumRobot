@@ -213,7 +213,7 @@ CanFrameInfo MaxonMotor::getCanFrameForVelOffset()
 
 CanFrameInfo MaxonMotor::getCanFrameForTargetVelocity(int targetVelocity)
 {
-    // 10진수 targetPosition을 16진수로 변환
+    // 10진수 targetVelocity을 16진수로 변환
     // 1[revolve] = 4096[inc] * 35[gear ratio]
     unsigned char velByte0 = targetVelocity & 0xFF;         // 하위 8비트
     unsigned char velByte1 = (targetVelocity >> 8) & 0xFF;  // 다음 8비트
@@ -221,4 +221,24 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetVelocity(int targetVelocity)
     unsigned char velByte3 = (targetVelocity >> 24) & 0xFF; // 최상위 8비트
 
     return {this->txPdoIds[2], 4, {velByte0, velByte1, velByte2, velByte3, 0x00, 0x00, 0x00, 0x00}};
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+/*                                     CST                                       */
+//////////////////////////////////////////////////////////////////////////////////
+
+CanFrameInfo MaxonMotor::getCanFrameForCSTMode()
+{
+    return {this->canSendId, 8, {0x22, 0x60, 0x60, 0x00, 0x0A, 0x00, 0x00, 0x00}};
+}
+
+CanFrameInfo MaxonMotor::getCanFrameForTargetTorque(int targetTorque)
+{
+    // 10진수 targetTorque을 16진수로 변환
+    // 1[revolve] = 4096[inc] * 35[gear ratio]
+    unsigned char trqByte0 = targetTorque & 0xFF;         // 하위 8비트
+    unsigned char trqByte1 = (targetTorque >> 8) & 0xFF;  // 다음 8비트
+
+    return {this->txPdoIds[3], 2, {trqByte0, trqByte0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }

@@ -188,11 +188,10 @@ void MaxonCommandParser::parseVelCommand(MaxonMotor &motor, struct can_frame *fr
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::parseTorCommand(MaxonMotor &motor, struct can_frame *frame, int targetTorque)
+void MaxonCommandParser::parseTrqCommand(MaxonMotor &motor, struct can_frame *frame, int targetTorque)
 {
     unsigned char torByte0 = targetTorque & 0xFF;         // 하위 8비트
     unsigned char torByte1 = (targetTorque >> 8) & 0xFF;  // 다음 8비트
-
 
     // Set CAN frame id and data length code
     frame->can_id = motor.txPdoIds[3];
