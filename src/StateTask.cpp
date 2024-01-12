@@ -344,7 +344,7 @@ void StateTask::initializeMotors()
             motor->cwDir = -1.0f;
             motor->sensorBit = 3;
             motor->rMin = -M_PI; // -180deg
-            motor->rMax = 0.0f; // 0deg
+            motor->rMax = 0.0f;  // 0deg
             motor->isHomed = false;
         }
         else if (motor_pair.first == "L_arm1")
@@ -390,7 +390,7 @@ void StateTask::initializeMotors()
     }
 
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
-                                                     vector<uint32_t>{0x209, 0x309, 0x409,0x509},
+                                                     vector<uint32_t>{0x209, 0x309, 0x409, 0x509},
                                                      vector<uint32_t>{0x189},
                                                      "can0");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
@@ -1638,7 +1638,9 @@ void StateTask::TuningLoopTask()
         }
         else if (userInput == "b" && isMaxonMotor)
         {
-            std::cout << "Enter Desired Torque: ";
+            std::cout << "Enter Desired Torque Unit: ";
+            std::cout << "1 [unit] = ";
+
             std::cin >> des_tff;
         }
         else if (userInput == "e")
@@ -2214,16 +2216,20 @@ void StateTask::MaxonHMMSetting()
 
 void StateTask::MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction)
 {
+    struct can_frame frame;
+    canUtils.set_all_sockets_timeout(2, 0);
     MaxonCSPSetting();
 
     TuningMaxonCSP(sine_t, selectedMotor, cycles, peakAngle, pathType);
-    
-    chrono::system_clock::time_point external = std::chrono::system_clock::now();
+
     cout << "Change Mode (CSP => CSV)\n";
-    MaxonCSVSetting();
+    
+
+
+    
     chrono::system_clock::time_point internal = std::chrono::system_clock::now();
     chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-    cout << elapsed_time.count() << " micro sec\n";
+    cout << elapsed_time.count() << "micro sec\n";
 
     TuningMaxonCSV(selectedMotor, des_vel, direction);
 }
