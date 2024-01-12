@@ -16,6 +16,7 @@ void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, s
     // 참조 확인
     cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
 
+    // 모터 방향에 따른 +/- 값 적용
     ApplyDir();
 }
 
@@ -40,14 +41,12 @@ void PathManager::Tmotor_sendBuffer()
             cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
             p_des = motor->rMin;
             v_des = 0.0f;
-            getchar();
         }
         else if (p_des > motor->rMax)
         {
             cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
             p_des = motor->rMax;
             v_des = 0.0f;
-            getchar();
         }
 
         TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
@@ -87,6 +86,7 @@ void PathManager::ApplyDir()
     {
         standby[motor_mapping[entry.first]] *= entry.second->cwDir;
         backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
+        wrist[motor_mapping[entry.first]] *= entry.second->cwDir;
         motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
     }
 }
@@ -115,7 +115,7 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
 
 void PathManager::getMotorPos()
 {
-    // 각 모터의 현재위치 값 불러오기
+    // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : tmotors)
     {
         std::shared_ptr<TMotor> &motor = entry.second;
