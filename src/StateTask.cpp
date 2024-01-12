@@ -1713,7 +1713,7 @@ void StateTask::TuningLoopTask()
                 }
                 else if (controlType == 4)
                 {
-                    MaxonDrumTest();
+                    MaxonDrumTest(sine_t, selectedMotor, cycles, peakAngle, pathType, des_vel, direction);
                 }
                 MaxonQuickStopEnable();
             }
@@ -2089,7 +2089,7 @@ void StateTask::MaxonHMMSetting()
     }
 }
 
-void StateTask::MaxonDrumTest()
+void StateTask::MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction)
 {
     
 }

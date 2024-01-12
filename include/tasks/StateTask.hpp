@@ -106,12 +106,12 @@ private:
     void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
     void TuningMaxonCST(const std::string selectedMotor);
+    void MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction);
     void MaxonCSPSetting();
     void MaxonCSVSetting();
     void MaxonCSTSetting();
     void MaxonEnable();
     void MaxonQuickStopEnable();
-    void MaxonDrumTest();
     
     // Perform
     void runModeLoop();
