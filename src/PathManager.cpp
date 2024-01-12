@@ -86,7 +86,13 @@ void PathManager::ApplyDir()
     {
         standby[motor_mapping[entry.first]] *= entry.second->cwDir;
         backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
-        wrist[motor_mapping[entry.first]] *= entry.second->cwDir;
+        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
+    }
+
+    for (auto &entry : maxonMotors)
+    {
+        standby[motor_mapping[entry.first]] *= entry.second->cwDir;
+        backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
         motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
     }
 }

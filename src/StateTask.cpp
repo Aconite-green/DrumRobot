@@ -318,11 +318,11 @@ void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
+    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can1");
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
 
-    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
-    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
+    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can1");
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can1");
 
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
     tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
@@ -392,11 +392,11 @@ void StateTask::initializeMotors()
     maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
                                                      vector<uint32_t>{0x209, 0x309, 0x409, 0x509},
                                                      vector<uint32_t>{0x189},
-                                                     "can0");
+                                                     "can2");
     maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
                                                      vector<uint32_t>{0x208, 0x308, 0x408, 0x508},
                                                      vector<uint32_t>{0x188},
-                                                     "can0");
+                                                     "can2");
 
     for (auto &motor_pair : maxonMotors)
     {
@@ -412,7 +412,7 @@ void StateTask::initializeMotors()
         }
         else if (motor_pair.first == "R_wirst")
         {
-            motor->cwDir = -1.0f;
+            motor->cwDir = 1.0f;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
@@ -898,7 +898,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
     double additionalTorque = 0.0;
     if (motorName == "L_arm2" || motorName == "R_arm2")
     {
-        additionalTorque = motor->cwDir * (-2.9);
+        additionalTorque = motor->cwDir * (-3.0);
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
@@ -971,62 +971,42 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
     canUtils.clear_all_can_buffers();
     canUtils.set_all_sockets_timeout(2, 0);
 
-    for (const auto &motor_pair : maxonMotors)
+    cout << "\n<< Homing for " << motorName << " >>\n";
+
+    // Start to Move by homing method (일단은 PDO)
+    fillCanFrameFromInfo(&frame, motor->getStartHoming());
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motorName, frame,
+                   [](const std::string &motorName, bool success) {
+
+                   });
+    usleep(50000);
+    fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+    sendAndReceive(canUtils.sockets.at(motor->interFaceName), motorName, frame,
+                   [](const std::string &motorName, bool success) {
+
+                   });
+    sleep(10);
+    // 홈 위치에 도달할 때까지 반복
+    while (!motor->isHomed)
     {
-        std::string name = motor_pair.first;
-        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
-
-        cout << "\n<< Homing for " << motorName << " >>\n";
-
-        // Start to Move by homing method (일단은 PDO)
-        fillCanFrameFromInfo(&frame, motor->getStartHoming());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success) {
-
-                       });
-        usleep(50000);
         fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success) {
-
-                       });
-        sleep(10);
-        // 홈 위치에 도달할 때까지 반복
-        while (!motor->isHomed)
-        {
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                           [this, &frame, &motor, &name](const std::string &motorName, bool success)
+        sendAndReceive(canUtils.sockets.at(motor->interFaceName), motorName, frame,
+                       [this, &frame, &motor](const std::string &motorName, bool success)
+                       {
+                           if (success)
                            {
-                               if (success)
+                               // Statusword 비트 15 확인
+                               if (frame.data[1] & 0x80) // 비트 15 확인
                                {
-                                   // Statusword 비트 15 확인
-                                   if (frame.data[1] & 0x80) // 비트 15 확인
-                                   {
-                                       motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                                              // 'this'를 사용하여 멤버 함수 호출
-                                       cout << "-- Homing completed for " << motorName << " --\n\n";
-                                   }
+                                   motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                                          // 'this'를 사용하여 멤버 함수 호출
+                                   cout << "-- Homing completed for " << motorName << " --\n\n";
                                }
-                           });
-            canUtils.clear_all_can_buffers();
-
-            sleep(1); // 100ms 대기
-        }
-
-        /*fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success) {
-
+                           }
                        });
-        usleep(50000);
-        // Start to Move by homing method (일단은 PDO)
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success) {
+        canUtils.clear_all_can_buffers();
 
-                       });
-        usleep(50000);*/
+        sleep(1); // 100ms 대기
     }
 }
 
@@ -2178,12 +2158,24 @@ void StateTask::MaxonHMMSetting()
 
                        });*/
         usleep(50000);
-        fillCanFrameFromInfo(&frame, motor->getHomingMethod());
-        sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
-                       [](const std::string &motorName, bool success) {
+        if (name == "L_wrist")
+        {
+            fillCanFrameFromInfo(&frame, motor->getHomingMethodL());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success) {
 
-                       });
+                           });
+        }
+        else
+        {
+            fillCanFrameFromInfo(&frame, motor->getHomingMethodR());
+            sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
+                           [](const std::string &motorName, bool success) {
+
+                           });
+        }
         usleep(50000);
+
         fillCanFrameFromInfo(&frame, motor->getHomeoffsetDistance());
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success) {

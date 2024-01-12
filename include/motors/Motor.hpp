@@ -107,7 +107,9 @@ public:
 
     CanFrameInfo getHomePosition();
 
-    CanFrameInfo getHomingMethod();
+    CanFrameInfo getHomingMethodL();
+
+CanFrameInfo getHomingMethodR();
 
     CanFrameInfo getStartHoming();
 

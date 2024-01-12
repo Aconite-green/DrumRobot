@@ -180,10 +180,15 @@ CanFrameInfo MaxonMotor::getHomePosition()
     return {this->canSendId, 8, {0x22, 0xB0, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
 
-CanFrameInfo MaxonMotor::getHomingMethod()
+CanFrameInfo MaxonMotor::getHomingMethodL()
 {
     return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFD, 0xFF, 0xFF, 0xFF}};
     /*-4로 하고 싶은 경우 FD -> FC로 바꾸기*/
+}
+CanFrameInfo MaxonMotor::getHomingMethodR()
+{
+    return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFC, 0xFF, 0xFF, 0xFF}};
+    
 }
 
 CanFrameInfo MaxonMotor::getStartHoming()
@@ -194,7 +199,8 @@ CanFrameInfo MaxonMotor::getStartHoming()
 
 CanFrameInfo MaxonMotor::getCanFrameForCurrentThreshold()
 { // 1000 = 3E8
-    return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xE8, 0x03, 0x00, 0x00}};
+ // 500 = 01F4
+    return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xF4, 0x01, 0x00, 0x00}};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -240,5 +246,5 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetTorque(int targetTorque)
     unsigned char trqByte0 = targetTorque & 0xFF;         // 하위 8비트
     unsigned char trqByte1 = (targetTorque >> 8) & 0xFF;  // 다음 8비트
 
-    return {this->txPdoIds[3], 2, {trqByte0, trqByte0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    return {this->txPdoIds[3], 2, {trqByte0, trqByte1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }
