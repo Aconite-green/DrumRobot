@@ -109,7 +109,7 @@ public:
 
     CanFrameInfo getHomingMethodL();
 
-CanFrameInfo getHomingMethodR();
+    CanFrameInfo getHomingMethodR();
 
     CanFrameInfo getStartHoming();
 
@@ -121,12 +121,11 @@ CanFrameInfo getHomingMethodR();
     CanFrameInfo getCanFrameForVelOffset();
 
     CanFrameInfo getCanFrameForTargetVelocity(int targetVelocity);
-    
+
     /////////////////////////////// CST
     CanFrameInfo getCanFrameForCSTMode();
 
     CanFrameInfo getCanFrameForTargetTorque(int targetTorque);
-
 };
 
 #endif

@@ -1122,7 +1122,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<MaxonMotor> &motor)
 
     cout << "FixMotor\n";
 
-    MParser.parsePosCommand(*motor, &frame, motor->currentPos);
+    MParser.getTargetPosition(*motor, &frame, motor->currentPos);
     sendAndReceive(canUtils.sockets.at(motor->interFaceName), motor->interFaceName, frame,
                    [](const std::string &motorName, bool success)
                    {
@@ -1163,7 +1163,7 @@ void StateTask::FixMotorPosition()
         std::shared_ptr<MaxonMotor> motor = motorPair.second;
         CheckMaxonPosition(motor);
 
-        MParser.parsePosCommand(*motor, &frame, motor->currentPos);
+        MParser.getTargetPosition(*motor, &frame, motor->currentPos);
         sendAndReceive(canUtils.sockets.at(motor->interFaceName), name, frame,
                        [](const std::string &motorName, bool success)
                        {
@@ -1392,7 +1392,7 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
                         p_des = amplitude * (-1 + cosf(4 * M_PI * (local_time - sine_t / 2) / sine_t)) / 2;
                 }
 
-                MParser.parsePosCommand(*motor, &frame, p_des);
+                MParser.getTargetPosition(*motor, &frame, p_des);
                 csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << motor->nodeId;
 
                 chrono::system_clock::time_point external = std::chrono::system_clock::now();
@@ -1410,7 +1410,7 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
                             std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
                         }
 
-                        MParser.makeSync(&frame);
+                        MParser.getSync(&frame);
                         bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
                         if (bytesWritten == -1)
                         {
@@ -1785,7 +1785,7 @@ void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int
             csvFileIn << "0,";
         }
 
-        MParser.parseVelCommand(*motor, &frame, des_vel);
+        MParser.getTargetVelocity(*motor, &frame, des_vel);
 
         chrono::system_clock::time_point external = std::chrono::system_clock::now();
         while (1)
@@ -1813,7 +1813,7 @@ void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int
                     std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
                 }
 
-                MParser.makeSync(&frame);
+                MParser.getSync(&frame);
                 bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
                 if (bytesWritten == -1)
                 {
@@ -1899,7 +1899,7 @@ void StateTask::TuningMaxonCST(const std::string selectedMotor, int des_tff, int
             csvFileIn << "0,";
         }
 
-        MParser.parseTrqCommand(*motor, &frame, des_tff);
+        MParser.getTargetTorque(*motor, &frame, des_tff);
 
         chrono::system_clock::time_point external = std::chrono::system_clock::now();
         while (1)
@@ -1925,7 +1925,7 @@ void StateTask::TuningMaxonCST(const std::string selectedMotor, int des_tff, int
                     std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
                 }
 
-                MParser.makeSync(&frame);
+                MParser.getSync(&frame);
                 bytesWritten = write(canUtils.sockets.at(motor->interFaceName), &frame, sizeof(struct can_frame));
                 if (bytesWritten == -1)
                 {

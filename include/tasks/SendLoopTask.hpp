@@ -29,8 +29,8 @@
 #include <set>
 
 #include "SystemState.hpp"
-#include "usbio/SenSor.hpp"
-#include "PathManager.hpp"
+#include "../usbio/SenSor.hpp"
+#include "../path_manager/PathManager.hpp"
 
 using namespace std;
 
