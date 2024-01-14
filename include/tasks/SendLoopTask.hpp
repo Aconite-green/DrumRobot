@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
@@ -30,7 +30,7 @@
 
 #include "SystemState.hpp"
 #include "../usbio/SenSor.hpp"
-#include "../path_manager/PathManager.hpp"
+#include "../managers/PathManager.hpp"
 
 using namespace std;
 
@@ -39,20 +39,22 @@ class SendLoopTask
 public:
     // 생성자 선언
     SendLoopTask(SystemState &systemStateRef,
-                 CanSocketUtils &canUtilsRef,
+                 CanManager &canManagerRef,
                  std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                  std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
-                 queue<can_frame> &sendBufferRef);
+                 queue<can_frame> &sendBufferRef,
+                 queue<can_frame> &recieveBufferRef);
 
     // operator() 함수 선언
     void operator()();
 
 private:
     SystemState &systemState;
-    CanSocketUtils &canUtils;
+    CanManager &canManager;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;         // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
     queue<can_frame> &sendBuffer;
+    queue<can_frame> &recieveBuffer;
 
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;

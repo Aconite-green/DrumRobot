@@ -1,7 +1,10 @@
-#include "../include/tasks/CanSocketUtils.hpp"
-CanSocketUtils::CanSocketUtils() {}
+#include "../include/managers/CanManager.hpp"
+CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+{
+}
 
-CanSocketUtils::~CanSocketUtils()
+CanManager::~CanManager()
 {
 
     for (const auto &kv : sockets)
@@ -15,7 +18,7 @@ CanSocketUtils::~CanSocketUtils()
     sockets.clear();
 }
 
-void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames)
+void CanManager::initializeCAN(const std::vector<std::string> &ifnames)
 {
     this->ifnames = ifnames;
     std::cout << "Updated interface names:" << std::endl;
@@ -35,7 +38,7 @@ void CanSocketUtils::initializeCAN(const std::vector<std::string> &ifnames)
     }
 }
 
-void CanSocketUtils::checkCanPortsStatus() {
+void CanManager::checkCanPortsStatus() {
 
 
     for (const auto &ifname : this->ifnames) {
@@ -51,7 +54,7 @@ void CanSocketUtils::checkCanPortsStatus() {
     
 }
 
-bool CanSocketUtils::is_port_connected(const char *port)
+bool CanManager::is_port_connected(const char *port)
 {
     char command[50];
     snprintf(command, sizeof(command), "ifconfig %s", port);
@@ -74,7 +77,7 @@ bool CanSocketUtils::is_port_connected(const char *port)
     return true; // 포트가 시스템에 있으면 연결된 것으로 간주
 }
 
-bool CanSocketUtils::is_port_up(const char *port)
+bool CanManager::is_port_up(const char *port)
 {
     char command[50];
     snprintf(command, sizeof(command), "ip link show %s", port);
@@ -109,7 +112,7 @@ bool CanSocketUtils::is_port_up(const char *port)
     }
 }
 
-int CanSocketUtils::create_socket(const std::string &ifname)
+int CanManager::create_socket(const std::string &ifname)
 {
     int result;
     struct sockaddr_can addr;
@@ -146,7 +149,7 @@ int CanSocketUtils::create_socket(const std::string &ifname)
 
 
 
-void CanSocketUtils::activate_port(const char *port)
+void CanManager::activate_port(const char *port)
 {
     char command1[100], command2[100];
     snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.850", port);
@@ -162,7 +165,7 @@ void CanSocketUtils::activate_port(const char *port)
     }
 }
 
-void CanSocketUtils::list_and_activate_available_can_ports()
+void CanManager::list_and_activate_available_can_ports()
 {
     int portCount = 0; // CAN 포트 수를 세기 위한 변수
 
@@ -216,7 +219,7 @@ void CanSocketUtils::list_and_activate_available_can_ports()
     }
 }
 
-void CanSocketUtils::restart_all_can_ports()
+void CanManager::restart_all_can_ports()
 {
     // 먼저 모든 포트를 down 시킵니다.
     for (const auto &port : ifnames)
@@ -250,7 +253,7 @@ void CanSocketUtils::restart_all_can_ports()
     }
 }
 
-void CanSocketUtils::down_port(const char *port)
+void CanManager::down_port(const char *port)
 {
     char command[100];
     snprintf(command, sizeof(command), "sudo ip link set %s down", port);
@@ -261,7 +264,7 @@ void CanSocketUtils::down_port(const char *port)
     }
 }
 
-void CanSocketUtils::clear_all_can_buffers()
+void CanManager::clear_all_can_buffers()
 {
     for (const auto &socketPair : sockets)
     {
@@ -270,7 +273,7 @@ void CanSocketUtils::clear_all_can_buffers()
     }
 }
 
-void CanSocketUtils::clearCanBuffer(int canSocket)
+void CanManager::clearCanBuffer(int canSocket)
 {
     struct can_frame frame;
     fd_set readSet;
@@ -307,7 +310,7 @@ void CanSocketUtils::clearCanBuffer(int canSocket)
     }
 }
 
-int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec)
+int CanManager::set_socket_timeout(int socket, int sec, int usec)
 {
     struct timeval timeout;
     timeout.tv_sec = sec;
@@ -322,7 +325,7 @@ int CanSocketUtils::set_socket_timeout(int socket, int sec, int usec)
     return 0;
 }
 
-void CanSocketUtils::set_all_sockets_timeout(int sec, int usec)
+void CanManager::set_all_sockets_timeout(int sec, int usec)
 {
     for (const auto &socketPair : sockets)
     {
@@ -334,7 +337,7 @@ void CanSocketUtils::set_all_sockets_timeout(int sec, int usec)
     }
 }
 
-void CanSocketUtils::releaseBusyResources()
+void CanManager::releaseBusyResources()
 {
     for (const auto &ifname : this->ifnames)
     {

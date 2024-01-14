@@ -3,7 +3,7 @@
 #include <iostream>
 
 TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)
-    : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName)
+    : GenericMotor(nodeId), motorType(motorType), interFaceName(interFaceName)
 {
 }
 
@@ -37,7 +37,7 @@ CanFrameInfo TMotor::getCanFrameForQuickStop()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &txPdoIds, const std::vector<uint32_t> &rxPdoIds, const std::string &interFaceName)
-    : nodeId(nodeId), interFaceName(interFaceName)
+    : GenericMotor(nodeId), interFaceName(interFaceName)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;

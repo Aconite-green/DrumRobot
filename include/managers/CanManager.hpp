@@ -20,15 +20,20 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <queue>
+#include <memory>
+#include "Motor.hpp"
 
-class CanSocketUtils
+
+
+class CanManager
 {
 public:
     static const int ERR_SOCKET_CREATE_FAILURE = -1;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
     // Public Methods
-    CanSocketUtils();
-    ~CanSocketUtils();
+    CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    ~CanManager();
 
     void initializeCAN(const std::vector<std::string> &ifnames);
     void restart_all_can_ports();
@@ -41,6 +46,10 @@ public:
 
 private:
     std::vector<std::string> ifnames;
+    std::queue<can_frame> &sendBuffer;
+    std::queue<can_frame> &recieveBuffer;
+    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
+    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
 
     // Port
     bool is_port_up(const char *port);

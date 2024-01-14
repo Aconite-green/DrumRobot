@@ -1,11 +1,12 @@
 #include "../include/tasks/SendLoopTask.hpp"
 
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
-                           CanSocketUtils &canUtilsRef,
+                           CanManager &canManagerRef,
                            std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                            std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
-                           queue<can_frame> &sendBufferRef)
-    : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), sendBuffer(sendBufferRef), pathManager(sendBufferRef, tmotorsRef, maxonMotorsRef)
+                           queue<can_frame> &sendBufferRef,
+                           queue<can_frame> &recieveBufferRef)
+    : systemState(systemStateRef), canManager(canManagerRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),pathManager(sendBufferRef, recieveBufferRef,tmotorsRef, maxonMotorsRef)
 {
 }
 
@@ -83,7 +84,7 @@ void SendLoopTask::writeToSocket(MotorMap &motorMap, const std::map<std::string,
                 if (writeFailCount >= 10)
                 {
                     systemState.runMode = RunMode::Stop;
-                    canUtils.restart_all_can_ports();
+                    canManager.restart_all_can_ports();
                     writeFailCount = 0; // 카운터 리셋
                 }
             }
@@ -144,18 +145,18 @@ void SendLoopTask::SendLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(tmotors, canUtils.sockets);
+            writeToSocket(tmotors, canManager.sockets);
 
             if (!maxonMotors.empty())
             {
-                writeToSocket(maxonMotors, canUtils.sockets);
+                writeToSocket(maxonMotors, canManager.sockets);
 
                 // sync 신호 전송
                 frameToProcess = sendBuffer.front();
                 sendBuffer.pop();
-                auto it = canUtils.sockets.find(maxonMotors.begin()->second->interFaceName);
+                auto it = canManager.sockets.find(maxonMotors.begin()->second->interFaceName);
 
-                if (it != canUtils.sockets.end())
+                if (it != canManager.sockets.end())
                 {
                     int socket_descriptor_for_sync = it->second;
                     ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
@@ -227,18 +228,18 @@ void SendLoopTask::SendReadyLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(tmotors, canUtils.sockets);
+            writeToSocket(tmotors, canManager.sockets);
 
             if (!maxonMotors.empty())
             {
-                writeToSocket(maxonMotors, canUtils.sockets);
+                writeToSocket(maxonMotors, canManager.sockets);
 
                 // sync 신호 전송
                 frameToProcess = sendBuffer.front();
                 sendBuffer.pop();
-                auto it = canUtils.sockets.find(maxonMotors.begin()->second->interFaceName);
+                auto it = canManager.sockets.find(maxonMotors.begin()->second->interFaceName);
 
-                if (it != canUtils.sockets.end())
+                if (it != canManager.sockets.end())
                 {
                     int socket_descriptor_for_sync = it->second;
                     ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
@@ -252,7 +253,7 @@ void SendLoopTask::SendReadyLoop()
             }
         }
     }
-    canUtils.clear_all_can_buffers();
+    canManager.clear_all_can_buffers();
 }
 
 void SendLoopTask::initializePathManager()
@@ -295,15 +296,15 @@ bool SendLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
     fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
-    canUtils.clear_all_can_buffers();
+    canManager.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
-    // canUtils.restart_all_can_ports();
-    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    // canManager.restart_all_can_ports();
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
     {
-        int socket_descriptor = canUtils.sockets.at(interface_name);
+        int socket_descriptor = canManager.sockets.at(interface_name);
         ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
 
         if (bytesWritten == -1)
@@ -338,14 +339,14 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 
     struct can_frame frame;
     fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
-    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
-    canUtils.clear_all_can_buffers();
+    canManager.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
-    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
     {
-        int socket_descriptor = canUtils.sockets.at(interface_name);
+        int socket_descriptor = canManager.sockets.at(interface_name);
         ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
 
         if (bytesWritten == -1)

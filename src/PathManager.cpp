@@ -1,7 +1,7 @@
-#include "../include/path_manager/PathManager.hpp" // 적절한 경로로 변경하세요.
+#include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
-    : sendBuffer(sendBufferRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
 {
 }
 

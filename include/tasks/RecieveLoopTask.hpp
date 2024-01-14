@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 
 #include "../include/motors/Motor.hpp"
@@ -39,7 +39,7 @@ class RecieveLoopTask
 public:
     // 생성자 선언
     RecieveLoopTask(SystemState &systemStateRef,
-                    CanSocketUtils &canUtilsRef,
+                    CanManager &canManagerRef,
                     std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
                     queue<can_frame> &recieveBufferRef);
@@ -48,7 +48,7 @@ public:
 
 private:
     SystemState &systemState;
-    CanSocketUtils &canUtils;
+    CanManager &canManager;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
     queue<can_frame> &recieveBuffer;

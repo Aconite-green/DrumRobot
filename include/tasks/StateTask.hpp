@@ -25,7 +25,7 @@
 
 #include "SystemState.hpp"
 #include "../include/usbio/SenSor.hpp"
-#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
@@ -45,7 +45,7 @@ class StateTask /*: public QObject*/
 public:
     // 생성자 선언
     StateTask(SystemState &systemStateRef,
-              CanSocketUtils &canUtilsRef,
+              CanManager &canManagerRef,
               std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
               std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
@@ -54,12 +54,12 @@ public:
 
 private:
     SystemState &systemState; // 상태 참조
-    CanSocketUtils &canUtils;
+    CanManager &canManager;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
 
-    TMotorCommandParser TParser;
-    MaxonCommandParser MParser;
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
     Sensor sensor;
 
     // State Utility
@@ -70,7 +70,7 @@ private:
 
     // System Initiallize
     void initializeMotors();
-    void initializeCanUtils();
+    void initializecanManager();
     void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &tmotors, const map<string, shared_ptr<MaxonMotor>> &maxonMotors);
     void DeactivateControlTask();

@@ -2,7 +2,7 @@
 #define TASKUTILITY_HPP
 
 #include <stdio.h>
-#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include <map>
