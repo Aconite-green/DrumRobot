@@ -31,11 +31,6 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName);
     std::string motorType;
     std::string interFaceName;
-    /*uint32_t nodeId;
-    double currentPos;
-    float cwDir;
-    bool isHomed, isConected;
-    float rMin, rMax;*/
 
     int sensorBit;
     float desPos, desVel, desTor, outPos, outVel, outTor;
@@ -57,11 +52,6 @@ public:
     uint32_t txPdoIds[4]; // 변경된 부분
     uint32_t rxPdoIds[4]; // 변경된 부분
 
-    /*uint32_t nodeId;
-    double currentPos;
-    float cwDir;
-    bool isHomed, isConected;
-    float rMin, rMax;*/
 
     float outPos, outTor;
 };
