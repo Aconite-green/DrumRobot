@@ -40,8 +40,7 @@ public:
     // 생성자 선언
     RecieveLoopTask(SystemState &systemStateRef,
                     CanManager &canManagerRef,
-                    std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-                    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                    std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
                     queue<can_frame> &recieveBufferRef);
     // operator() 함수 선언
     void operator()();
@@ -49,10 +48,9 @@ public:
 private:
     SystemState &systemState;
     CanManager &canManager;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     queue<can_frame> &recieveBuffer;
-    
+
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
@@ -65,6 +63,6 @@ private:
     void handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer);
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void checkMotors();
-    bool checkTmotors(std::shared_ptr<TMotor> motor);
-    bool checkMmotors(std::shared_ptr<MaxonMotor> motor);
+    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
+    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
 };

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     // Create Tasks for Threads
     StateTask stateTask(systemState, canManager, motors);
     SendLoopTask sendLoopTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
-    RecieveLoopTask recieveLoopTask(systemState, canManager, tmotors, maxonMotors, recieveBuffer);
+    RecieveLoopTask recieveLoopTask(systemState, canManager, motors, recieveBuffer);
 
     // Create Threads
     std::thread state_thread(stateTask);
