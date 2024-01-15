@@ -234,7 +234,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     int j = 0;
     vector<double> the3(180);
     for (int i = 0; i < 135; i++)
-    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
+    {   // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
         the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
     }
 
