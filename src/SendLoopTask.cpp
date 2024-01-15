@@ -2,11 +2,10 @@
 
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            CanManager &canManagerRef,
-                           std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-                           std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                           std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
                            queue<can_frame> &sendBufferRef,
                            queue<can_frame> &recieveBufferRef)
-    : systemState(systemStateRef), canManager(canManagerRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),pathManager(sendBufferRef, recieveBufferRef,tmotorsRef, maxonMotorsRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), pathManager(sendBufferRef, recieveBufferRef, motorsRef)
 {
 }
 
@@ -25,7 +24,7 @@ void SendLoopTask::operator()()
                 systemState.main = Main::Ideal;
             }
         }
-        
+
         usleep(50000);
         while (systemState.main == Main::Perform)
         {
@@ -52,8 +51,6 @@ void SendLoopTask::operator()()
             }
         }
     }
-
-    
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +101,18 @@ void SendLoopTask::SendLoop()
 {
 
     struct can_frame frameToProcess;
+    std::string maxonCanInterface;
+
+    int maxonMotorCount = 0;
+    for (const auto &motor_pair : motors)
+    {
+        // 각 요소가 MaxonMotor 타입인지 확인
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            maxonMotorCount++;
+            maxonCanInterface = maxonMotor->interFaceName;
+        }
+    }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
     while (systemState.runMode != RunMode::PrePreparation)
@@ -145,27 +154,26 @@ void SendLoopTask::SendLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(tmotors, canManager.sockets);
+            writeToSocket(motors, canManager.sockets);
 
-            if (!maxonMotors.empty())
+            if (maxonMotorCount != 0)
             {
-                writeToSocket(maxonMotors, canManager.sockets);
 
                 // sync 신호 전송
                 frameToProcess = sendBuffer.front();
                 sendBuffer.pop();
-                auto it = canManager.sockets.find(maxonMotors.begin()->second->interFaceName);
+                auto it = canManager.sockets.find(maxonCanInterface);
 
                 if (it != canManager.sockets.end())
                 {
                     int socket_descriptor_for_sync = it->second;
                     ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
 
-                    handleError(bytesWritten, maxonMotors.begin()->second->interFaceName);
+                    handleError(bytesWritten, maxonCanInterface);
                 }
                 else
                 {
-                    std::cerr << "Socket not found for interface: " << maxonMotors.begin()->second->interFaceName << std::endl;
+                    std::cerr << "Socket not found for interface: " << maxonCanInterface << std::endl;
                 }
             }
         }
@@ -217,6 +225,18 @@ void SendLoopTask::SendReadyLoop()
 {
     cout << "Settig...\n";
     struct can_frame frameToProcess;
+    std::string maxonCanInterface;
+
+    int maxonMotorCount = 0;
+    for (const auto &motor_pair : motors)
+    {
+        // 각 요소가 MaxonMotor 타입인지 확인
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            maxonMotorCount++;
+            maxonCanInterface = maxonMotor->interFaceName;
+        }
+    }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
     while (sendBuffer.size() != 0)
@@ -228,27 +248,26 @@ void SendLoopTask::SendReadyLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(tmotors, canManager.sockets);
+            writeToSocket(motors, canManager.sockets);
 
-            if (!maxonMotors.empty())
+            if (maxonMotorCount != 0)
             {
-                writeToSocket(maxonMotors, canManager.sockets);
 
                 // sync 신호 전송
                 frameToProcess = sendBuffer.front();
                 sendBuffer.pop();
-                auto it = canManager.sockets.find(maxonMotors.begin()->second->interFaceName);
+                auto it = canManager.sockets.find(maxonCanInterface);
 
                 if (it != canManager.sockets.end())
                 {
                     int socket_descriptor_for_sync = it->second;
                     ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
 
-                    handleError(bytesWritten, maxonMotors.begin()->second->interFaceName);
+                    handleError(bytesWritten, maxonCanInterface);
                 }
                 else
                 {
-                    std::cerr << "Socket not found for interface: " << maxonMotors.begin()->second->interFaceName << std::endl;
+                    std::cerr << "Socket not found for interface: " << maxonCanInterface << std::endl;
                 }
             }
         }
@@ -258,7 +277,7 @@ void SendLoopTask::SendReadyLoop()
 
 void SendLoopTask::initializePathManager()
 {
-    pathManager.motorInitialize(tmotors, maxonMotors);
+    pathManager.motorInitialize(motors);
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
 }
@@ -267,27 +286,27 @@ bool SendLoopTask::CheckAllMotorsCurrentPosition()
 {
     std::cout << "Checking all positions for motors" << endl;
     bool allMotorsChecked = true;
-    for (const auto &motor_pair : tmotors)
+    for (const auto &motor_pair : motors)
     {
-        std::shared_ptr<TMotor> motor = motor_pair.second;
-        bool motorChecked = CheckTmotorPosition(motor);
-        if (!motorChecked)
+        if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
-            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-            allMotorsChecked = false;
+            bool motorChecked = CheckTmotorPosition(motor);
+            if (!motorChecked)
+            {
+                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+                allMotorsChecked = false;
+            }
+        }
+        else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            bool motorChecked = CheckMaxonPosition(motor);
+            if (!motorChecked)
+            {
+                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+                allMotorsChecked = false;
+            }
         }
     }
-    for (const auto &motor_pair : maxonMotors)
-    {
-        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
-        bool motorChecked = CheckMaxonPosition(motor);
-        if (!motorChecked)
-        {
-            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-            allMotorsChecked = false;
-        }
-    }
-
     std::cout << "Press Enter to Move On" << endl;
     return allMotorsChecked;
 }
@@ -376,8 +395,10 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
     }
 }
 
-void SendLoopTask::clearBuffer() {
-    while (!sendBuffer.empty()) {
+void SendLoopTask::clearBuffer()
+{
+    while (!sendBuffer.empty())
+    {
         sendBuffer.pop();
     }
 }

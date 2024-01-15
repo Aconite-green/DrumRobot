@@ -40,8 +40,7 @@ public:
     // 생성자 선언
     SendLoopTask(SystemState &systemStateRef,
                  CanManager &canManagerRef,
-                 std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
+                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
                  queue<can_frame> &sendBufferRef,
                  queue<can_frame> &recieveBufferRef);
 
@@ -51,8 +50,7 @@ public:
 private:
     SystemState &systemState;
     CanManager &canManager;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;         // 모터 배열
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors; // 가정된 MaxonMotor 배열
     queue<can_frame> &sendBuffer;
     queue<can_frame> &recieveBuffer;
 

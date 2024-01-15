@@ -46,8 +46,7 @@ public:
     // 생성자 선언
     StateTask(SystemState &systemStateRef,
               CanManager &canManagerRef,
-              std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-              std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     // operator() 함수 선언
     void operator()();
@@ -55,8 +54,7 @@ public:
 private:
     SystemState &systemState; // 상태 참조
     CanManager &canManager;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors; // 모터 배열
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -72,7 +70,7 @@ private:
     void initializeMotors();
     void initializecanManager();
     void ActivateControlTask();
-    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<TMotor>> &tmotors, const map<string, shared_ptr<MaxonMotor>> &maxonMotors);
+    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<GenericMotor>> &motors);
     void DeactivateControlTask();
     bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
     bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
@@ -83,9 +81,9 @@ private:
     void displayHomingStatus();
     void UpdateHomingStatus();
     void MaxonHMMSetting();
-    
+
     /*Tmotor*/
-    void SetHome(std::shared_ptr<TMotor> &motor, const std::string &motorName);
+    void SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     void HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
     float MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
@@ -94,10 +92,10 @@ private:
     void FixMotorPosition(std::shared_ptr<TMotor> &motor);
 
     /*Maxon*/
-    void SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &motorName);
+    void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     void SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName);
     void FixMotorPosition(std::shared_ptr<MaxonMotor> &motor);
-    
+
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
@@ -105,15 +103,14 @@ private:
     void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);
     void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
-    void TuningMaxonCST(const std::string selectedMotor,int des_tff, int direction);
+    void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction);
     void MaxonCSPSetting();
     void MaxonCSVSetting();
     void MaxonCSTSetting();
     void MaxonEnable();
     void MaxonQuickStopEnable();
-    
+
     // Perform
     void runModeLoop();
-    
 };

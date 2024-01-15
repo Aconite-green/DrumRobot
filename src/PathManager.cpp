@@ -1,7 +1,7 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
 {
 }
 
@@ -9,18 +9,15 @@ PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &reci
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+void PathManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
 {
-    this->tmotors = tmotorsRef;
-    this->maxonMotors = maxonMotorsRef;
-    // 참조 확인
-    cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
+    this->motors = motorsRef;
 
     // 모터 방향에 따른 +/- 값 적용
     ApplyDir();
 }
 
-void PathManager::Tmotor_sendBuffer()
+void PathManager::Motors_sendBuffer()
 {
     struct can_frame frame;
 
@@ -30,47 +27,22 @@ void PathManager::Tmotor_sendBuffer()
     Pi = p.back();
     Vi = v.back();
 
-    for (auto &entry : tmotors)
+    for (auto &entry : motors)
     {
-        std::shared_ptr<TMotor> &motor = entry.second;
-        float p_des = Pi[motor_mapping[entry.first]];
-        float v_des = Vi[motor_mapping[entry.first]];
-
-        if (p_des < motor->rMin)
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMin << " )\n";
-            p_des = motor->rMin;
-            v_des = 0.0f;
+            float p_des = Pi[motor_mapping[entry.first]];
+            float v_des = Vi[motor_mapping[entry.first]];
+
+            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
+            sendBuffer.push(frame);
         }
-        else if (p_des > motor->rMax)
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            cout << entry.first << " is out of range.  ( " << p_des << " => " << motor->rMax << " )\n";
-            p_des = motor->rMax;
-            v_des = 0.0f;
+            float p_des = Pi[motor_mapping[entry.first]];
+            MParser.getTargetPosition(*maxonMotor, &frame, p_des);
+            sendBuffer.push(frame);
         }
-
-        TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
-        sendBuffer.push(frame);
-    }
-}
-
-void PathManager::Mmotor_sendBuffer()
-{
-    struct can_frame frame;
-
-    vector<double> Pi;
-    vector<double> Vi;
-
-    Pi = p.back();
-    Vi = v.back();
-
-    for (auto &entry : maxonMotors)
-    {
-        std::shared_ptr<MaxonMotor> motor = entry.second;
-        float p_des = Pi[motor_mapping[entry.first]];
-
-        MParser.getTargetPosition(*motor, &frame, p_des);
-        sendBuffer.push(frame);
     }
     MParser.getSync(&frame);
     sendBuffer.push(frame);
@@ -82,14 +54,7 @@ void PathManager::Mmotor_sendBuffer()
 
 void PathManager::ApplyDir()
 { // CW / CCW에 따른 방향 적용
-    for (auto &entry : tmotors)
-    {
-        standby[motor_mapping[entry.first]] *= entry.second->cwDir;
-        backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
-        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
-    }
-
-    for (auto &entry : maxonMotors)
+    for (auto &entry : motors)
     {
         standby[motor_mapping[entry.first]] *= entry.second->cwDir;
         backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
@@ -122,19 +87,11 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
 void PathManager::getMotorPos()
 {
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
-    for (auto &entry : tmotors)
+    for (auto &entry : motors)
     {
-        std::shared_ptr<TMotor> &motor = entry.second;
-        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
+        c_MotorAngle[motor_mapping[entry.first]] = entry.second->currentPos;
         // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
-    }
-    for (auto &entry : maxonMotors)
-    {
-        std::shared_ptr<MaxonMotor> motor = entry.second;
-        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
-        // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << motor->currentPos << "\n";
+        cout << "Motor " << entry.first << " current position: " << entry.second->currentPos << "\n";
     }
 }
 
@@ -234,7 +191,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     int j = 0;
     vector<double> the3(180);
     for (int i = 0; i < 135; i++)
-    {   // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
+    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
         the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
     }
 
@@ -311,7 +268,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                         sol /= (L * L + zeta * zeta);
                                         the5 = asin(sol);
                                         if (the5 > -M_PI / 4 && the5 < M_PI / 2)
-                                        {   // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
+                                        { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
                                             alpha = L - r3 * sin(the5);
                                             beta = r4 * sin(the5);
                                             gamma = r4 * cos(the5);
@@ -324,7 +281,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                                 rol /= (beta * beta + gamma * gamma);
                                                 the6 = acos(rol);
                                                 if (the6 > 0 && the6 < M_PI * 0.75)
-                                                {   // 왼팔꿈치 각도 범위 : 0 ~ 135deg
+                                                { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
                                                     Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
                                                     if (Z < z2 + 0.001 && Z > z2 - 0.001)
@@ -372,9 +329,12 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     Qf.resize(7);
 
-    for (auto &entry : tmotors)
+    for (auto &entry : motors)
     {
-        Qf[motor_mapping[entry.first]] = Q[motor_mapping[entry.first]][index_theta0_min] * entry.second->cwDir;
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            Qf[motor_mapping[entry.first]] = Q[motor_mapping[entry.first]][index_theta0_min] * tMotor->cwDir;
+        }
     }
 
     return Qf;
@@ -701,15 +661,13 @@ void PathManager::PathLoopTask()
     for (int i = 0; i < n; i++)
     {
         iconnect(c_MotorAngle, Q1, Q2, V0, t1 / 2, t1, t * i);
-        Tmotor_sendBuffer();
-        Mmotor_sendBuffer();
+        Motors_sendBuffer();
     }
     V0 = v.back();
     for (int i = 0; i < n; i++)
     {
         iconnect(Q1, Q2, Q3, V0, t1 / 2, (t1 + t2) / 2, t * i);
-        Tmotor_sendBuffer();
-        Mmotor_sendBuffer();
+        Motors_sendBuffer();
     }
     c_MotorAngle = p.back();
     Q1 = Q3;
@@ -734,19 +692,20 @@ void PathManager::GetArr(vector<double> &arr)
         q_setting.push_back(Qi);
 
         // Send to Buffer
-        for (auto &entry : tmotors)
+        for (auto &entry : motors)
         {
-            std::shared_ptr<TMotor> &motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-            sendBuffer.push(frame);
-        }
-        for (auto &entry : maxonMotors)
-        {
-            std::shared_ptr<MaxonMotor> motor = entry.second;
-            float p_des = Qi[motor_mapping[entry.first]];
-            MParser.getTargetPosition(*motor, &frame, p_des);
-            sendBuffer.push(frame);
+            if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                float p_des = Qi[motor_mapping[entry.first]];
+                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                sendBuffer.push(frame);
+            }
+            else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                float p_des = Qi[motor_mapping[entry.first]];
+                MParser.getTargetPosition(*motor, &frame, p_des);
+                sendBuffer.push(frame);
+            }
         }
         MParser.getSync(&frame);
         sendBuffer.push(frame);

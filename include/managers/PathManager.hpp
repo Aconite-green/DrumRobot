@@ -32,9 +32,10 @@ class PathManager
 {
 
 public:
-    PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, 
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void GetDrumPositoin();
     void GetMusicSheet();
@@ -59,8 +60,7 @@ private:
     queue<can_frame> &recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -117,6 +117,5 @@ private:
     void getMotorPos();
     void getQ1AndQ2();
     void getQ3AndQ4();
-    void Tmotor_sendBuffer();
-    void Mmotor_sendBuffer();
+    void Motors_sendBuffer();
 };

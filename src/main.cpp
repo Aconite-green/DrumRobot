@@ -29,10 +29,11 @@ int main(int argc, char *argv[])
 
     queue<can_frame> sendBuffer;
     queue<can_frame> recieveBuffer;
-    CanManager canManager(sendBuffer, recieveBuffer,tmotors,maxonMotors);
+    CanManager canManager(sendBuffer, recieveBuffer,motors);
+    
     // Create Tasks for Threads
-    StateTask stateTask(systemState, canManager, tmotors, maxonMotors);
-    SendLoopTask sendLoopTask(systemState, canManager, tmotors, maxonMotors, sendBuffer, recieveBuffer);
+    StateTask stateTask(systemState, canManager, motors);
+    SendLoopTask sendLoopTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
     RecieveLoopTask recieveLoopTask(systemState, canManager, tmotors, maxonMotors, recieveBuffer);
 
     // Create Threads

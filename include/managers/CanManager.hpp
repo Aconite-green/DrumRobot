@@ -31,8 +31,9 @@ class CanManager
 public:
     static const int ERR_SOCKET_CREATE_FAILURE = -1;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
+
     // Public Methods
-    CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    CanManager(std::queue<can_frame> &sendBufferRef,std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     ~CanManager();
 
     void initializeCAN(const std::vector<std::string> &ifnames);
@@ -48,8 +49,7 @@ private:
     std::vector<std::string> ifnames;
     std::queue<can_frame> &sendBuffer;
     std::queue<can_frame> &recieveBuffer;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     // Port
     bool is_port_up(const char *port);
