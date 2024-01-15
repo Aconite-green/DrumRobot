@@ -81,7 +81,7 @@ void PathManager::Mmotor_sendBuffer()
 ///////////////////////////////////////////////////////////////////////////////
 
 void PathManager::ApplyDir()
-{   // CW / CCW에 따른 방향 적용
+{ // CW / CCW에 따른 방향 적용
     for (auto &entry : tmotors)
     {
         standby[motor_mapping[entry.first]] *= entry.second->cwDir;
@@ -233,9 +233,9 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
 
     int j = 0;
     vector<double> the3(180);
-    for (int i = 0; i < 180; i++)
-    {
-        the3[i] = -M_PI / 2 + (M_PI * i) / 179;
+    for (int i = 0; i < 135; i++)
+    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
+        the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
     }
 
     double zeta = z0 - z2;
@@ -278,7 +278,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
             the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             the4 = the34 - the3[i];
             if (the4 > 0 && the4 < M_PI * 0.75)
-            { // 오른팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
+            { // 오른팔꿈치 각도 범위 : 0 ~ 135deg
                 r = r1 * sin(the3[i]) + r2 * sin(the34);
 
                 det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
@@ -310,33 +310,35 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                         sol = T * L - abs(zeta) * sqrt(L * L + zeta * zeta - T * T);
                                         sol /= (L * L + zeta * zeta);
                                         the5 = asin(sol);
+                                        if (the5 > -M_PI / 4 && the5 < M_PI / 2)
+                                        {   // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
+                                            alpha = L - r3 * sin(the5);
+                                            beta = r4 * sin(the5);
+                                            gamma = r4 * cos(the5);
 
-                                        alpha = L - r3 * sin(the5);
-                                        beta = r4 * sin(the5);
-                                        gamma = r4 * cos(the5);
+                                            det_the6 = gamma * gamma + beta * beta - alpha * alpha;
 
-                                        det_the6 = gamma * gamma + beta * beta - alpha * alpha;
+                                            if (det_the6 > 0)
+                                            {
+                                                rol = alpha * beta - abs(gamma) * sqrt(det_the6);
+                                                rol /= (beta * beta + gamma * gamma);
+                                                the6 = acos(rol);
+                                                if (the6 > 0 && the6 < M_PI * 0.75)
+                                                {   // 왼팔꿈치 각도 범위 : 0 ~ 135deg
+                                                    Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
-                                        if (det_the6 > 0)
-                                        {
-                                            rol = alpha * beta - abs(gamma) * sqrt(det_the6);
-                                            rol /= (beta * beta + gamma * gamma);
-                                            the6 = acos(rol);
-                                            if (the6 > 0 && the6 < M_PI * 0.75)
-                                            { // 왼팔꿈치 들어올리는 각도 범위 : 0 ~ 135deg
-                                                Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
+                                                    if (Z < z2 + 0.001 && Z > z2 - 0.001)
+                                                    {
+                                                        q0.push_back(the0);
+                                                        q1.push_back(the1);
+                                                        q2.push_back(the2);
+                                                        q3.push_back(the3[i]);
+                                                        q4.push_back(the4);
+                                                        q5.push_back(the5);
+                                                        q6.push_back(the6);
 
-                                                if (Z < z2 + 0.001 && Z > z2 - 0.001)
-                                                {
-                                                    q0.push_back(the0);
-                                                    q1.push_back(the1);
-                                                    q2.push_back(the2);
-                                                    q3.push_back(the3[i]);
-                                                    q4.push_back(the4);
-                                                    q5.push_back(the5);
-                                                    q6.push_back(the6);
-
-                                                    j++;
+                                                        j++;
+                                                    }
                                                 }
                                             }
                                         }

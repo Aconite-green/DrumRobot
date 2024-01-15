@@ -188,7 +188,6 @@ CanFrameInfo MaxonMotor::getHomingMethodL()
 CanFrameInfo MaxonMotor::getHomingMethodR()
 {
     return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFC, 0xFF, 0xFF, 0xFF}};
-    
 }
 
 CanFrameInfo MaxonMotor::getStartHoming()
