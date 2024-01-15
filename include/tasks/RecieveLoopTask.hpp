@@ -53,8 +53,8 @@ private:
     std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors; // 가정된 MaxonMotor 배열
     queue<can_frame> &recieveBuffer;
     
-    TMotorCommandParser TParser;
-    MaxonCommandParser MParser;
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
     Sensor sensor;
 
     const int NUM_FRAMES = 10;

@@ -128,7 +128,7 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
             std::shared_ptr<TMotor> motor = pair.second;
             if (motor->nodeId == frame.data[0])
             {
-                std::tuple<int, float, float, float> parsedData = TParser.parseRecieveCommand(*motor, &frame);
+                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
                 id = std::get<0>(parsedData);
                 position = std::get<1>(parsedData);
                 speed = std::get<2>(parsedData);
@@ -144,7 +144,7 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
             std::shared_ptr<MaxonMotor> motor = entry.second;
             if (motor->nodeId == frame.data[0])
             {
-                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
+                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
                 id = std::get<0>(parsedData);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
@@ -191,7 +191,7 @@ void RecieveLoopTask::checkMotors()
 bool RecieveLoopTask::checkTmotors(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+    tmotorcmd.getControlMode(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -230,7 +230,7 @@ bool RecieveLoopTask::checkMmotors(std::shared_ptr<MaxonMotor> motor)
 {
 
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+    maxoncmd.getCheck(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();

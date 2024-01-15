@@ -56,8 +56,8 @@ private:
     queue<can_frame> &sendBuffer;
     queue<can_frame> &recieveBuffer;
 
-    TMotorCommandParser TParser;
-    MaxonCommandParser MParser;
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
     Sensor sensor;
 
     // Perform

@@ -336,9 +336,8 @@ void StateTask::initializeMotors()
         {
             motor->cwDir = 1.0f;
             motor->rMin = -M_PI / 2.0f; // -90deg
-            motor->rMax = M_PI / 2.0f;   // 90deg
+            motor->rMax = M_PI / 2.0f;  // 90deg
             motor->isHomed = true;
-            
         }
         else if (motor_pair.first == "R_arm1")
         {
@@ -347,7 +346,6 @@ void StateTask::initializeMotors()
             motor->rMin = -M_PI; // -180deg
             motor->rMax = 0.0f;  // 0deg
             motor->isHomed = false;
-            
         }
         else if (motor_pair.first == "L_arm1")
         {
@@ -356,7 +354,6 @@ void StateTask::initializeMotors()
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
-            
         }
         else if (motor_pair.first == "R_arm2")
         {
@@ -585,14 +582,13 @@ void StateTask::DeactivateControlTask()
             std::string name = motorPair.first;
             std::shared_ptr<TMotor> motor = motorPair.second;
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+                        tmotorcmd.getCheck(*motor, &frame);
             sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success) {
 
                            });
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForExit());
-
+            tmotorcmd.getExit(*motor, &frame);
             sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
                            [](const std::string &motorName, bool success)
                            {
@@ -623,7 +619,7 @@ void StateTask::DeactivateControlTask()
             std::string name = motorPair.first;
             std::shared_ptr<MaxonMotor> motor = motorPair.second;
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForQuickStop());
+            maxoncmd.getQuickStop(*motor, &frame);
             sendNotRead(canManager.sockets.at(motor->interFaceName), name, frame,
                         [](const std::string &motorName, bool success)
                         {
@@ -637,7 +633,7 @@ void StateTask::DeactivateControlTask()
                             }
                         });
 
-            fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+            maxoncmd.getSync(&frame);
             writeAndReadForSync(canManager.sockets.at(motor->interFaceName), name, frame, maxonMotors.size(),
                                 [](const std::string &motorName, bool success) {
 
@@ -728,7 +724,7 @@ bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 {
 
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+    maxoncmd.getSync(&frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -929,7 +925,7 @@ void StateTask::HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &mo
 
     canManager.set_all_sockets_timeout(2, 0);
     // 현재 position을 0으로 인식하는 명령을 보냄
-    fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForZeroing());
+    tmotorcmd.getZero(*motor, &frameToProcess);
     SendCommandToTMotor(motor, frameToProcess, motorName);
 
     // 상태 확인
@@ -2215,7 +2211,7 @@ void StateTask::MaxonDrumTest(float sine_t, const std::string selectedMotor, int
         std::string name = motor_pair.first;
         std::shared_ptr<MaxonMotor> motor = motor_pair.second;
 
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForCSVMode());
+        maxoncmd.getCSVMode(*motor, &frame);
         chrono::system_clock::time_point external = std::chrono::system_clock::now();
         ssize_t write_status = write(canManager.sockets.at(motor->interFaceName), &frame, sizeof(can_frame));
         if (write_status > 0)

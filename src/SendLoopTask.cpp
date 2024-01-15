@@ -295,7 +295,7 @@ bool SendLoopTask::CheckAllMotorsCurrentPosition()
 bool SendLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+    tmotorcmd.getControlMode(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -322,7 +322,7 @@ bool SendLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
             return false;
         }
 
-        std::tuple<int, float, float, float> parsedData = TParser.parseRecieveCommand(*motor, &frame);
+        std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
@@ -338,7 +338,7 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 {
 
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+    maxoncmd.getSync(&frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -364,7 +364,7 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
             return false;
         }
 
-        std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
+        std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
         motor->currentPos = std::get<1>(parsedData);
         std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
         return true;
