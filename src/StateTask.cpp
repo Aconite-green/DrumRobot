@@ -335,7 +335,7 @@ void StateTask::initializeMotors()
         if (motor_pair.first == "waist")
         {
             motor->cwDir = 1.0f;
-            motor->rMin = -M_PI * 0.75f; // -120deg
+            motor->rMin = -M_PI / 2.0f; // -90deg
             motor->rMax = M_PI / 2.0f;   // 90deg
             motor->isHomed = true;
             
