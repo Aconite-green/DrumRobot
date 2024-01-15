@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "../include/tasks/CanSocketUtils.hpp"
+#include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
@@ -32,7 +32,7 @@ class PathManager
 {
 
 public:
-    PathManager(queue<can_frame> &sendBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
     void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
 
@@ -56,6 +56,7 @@ public:
 
 private:
     queue<can_frame> &sendBuffer;
+    queue<can_frame> &recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     std::map<std::string, std::shared_ptr<TMotor>> &tmotors;

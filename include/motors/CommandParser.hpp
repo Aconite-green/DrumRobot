@@ -7,8 +7,6 @@
 #include <tuple>
 #include <iostream>
 
-class TMotor;
-
 class TMotorCommandParser
 {
 public:
@@ -23,15 +21,15 @@ public:
     void parseSendCommand(TMotor &motor, struct can_frame *frame, int canId, int dlc, float p_des, float v_des, float kp, float kd, float t_ff);
     std::tuple<int, float, float, float> parseRecieveCommand(TMotor &motor, struct can_frame *frame);
 
-    void checkMotor(TMotor &motor, struct can_frame *frame);
-    void controlMode(TMotor &motor, struct can_frame *frame);
-    void motorExit(TMotor &motor, struct can_frame *frame);
-    void setZero(TMotor &motor, struct can_frame *frame);
-    void quickStop(TMotor &motor, struct can_frame *frame);
+    void getCheck(TMotor &motor, struct can_frame *frame);
+    void getControlMode(TMotor &motor, struct can_frame *frame);
+    void getExit(TMotor &motor, struct can_frame *frame);
+    void getZero(TMotor &motor, struct can_frame *frame);
+    void getQuickStop(TMotor &motor, struct can_frame *frame);
 
 private:
-    int float_to_uint(float x, float x_min, float x_max, unsigned int bits);
-    float uint_to_float(int x_int, float x_min, float x_max, int bits);
+    int floatToUint(float x, float x_min, float x_max, unsigned int bits);
+    float uintToFloat(int x_int, float x_min, float x_max, int bits);
 
     void setMotorLimits(TMotor &motor);
 };
@@ -39,11 +37,40 @@ private:
 class MaxonCommandParser
 {
 public:
-    void parsePosCommand(MaxonMotor &motor, struct can_frame *frame, float p_des_radians);
-    void parseVelCommand(MaxonMotor &motor, struct can_frame *frame, int des_vel);
-    void parseTrqCommand(MaxonMotor &motor, struct can_frame *frame, int des_tff);
     std::tuple<int, float, float> parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame);
-    void makeSync(struct can_frame *frame);
+
+    // System
+    void getCheck(MaxonMotor &motor, struct can_frame *frame);
+    void getStop(MaxonMotor &motor, struct can_frame *frame);
+    void getQuickStop(MaxonMotor &motor, struct can_frame *frame);
+    void getOperational(MaxonMotor &motor, struct can_frame *frame);
+    void getEnable(MaxonMotor &motor, struct can_frame *frame);
+    void getSync(struct can_frame *frame);
+
+    // CSP
+    void getCSPMode(MaxonMotor &motor, struct can_frame *frame);
+    void getTorqueOffset(MaxonMotor &motor, struct can_frame *frame);
+    void getPosOffset(MaxonMotor &motor, struct can_frame *frame);
+    void getTargetPosition(MaxonMotor &motor, struct can_frame *frame, float p_des_radians);
+
+    // HMM
+    void getHomeMode(MaxonMotor &motor, struct can_frame *frame);
+    void getFlowingErrorWindow(MaxonMotor &motor, struct can_frame *frame);
+    void getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame);
+    void getHomePosition(MaxonMotor &motor, struct can_frame *frame);
+    void getHomingMethodL(MaxonMotor &motor, struct can_frame *frame);
+    void getHomingMethodR(MaxonMotor &motor, struct can_frame *frame);
+    void getStartHoming(MaxonMotor &motor, struct can_frame *frame);
+    void getCurrentThreshold(MaxonMotor &motor, struct can_frame *frame);
+
+    // CSV
+    void getCSVMode(MaxonMotor &motor, struct can_frame *frame);
+    void getVelOffset(MaxonMotor &motor, struct can_frame *frame);
+    void getTargetVelocity(MaxonMotor &motor, struct can_frame *frame, int targetVelocity);
+
+    // CST
+    void getCSTMode(MaxonMotor &motor, struct can_frame *frame);
+    void getTargetTorque(MaxonMotor &motor, struct can_frame *frame,int targetTorque);
 };
 
 #endif

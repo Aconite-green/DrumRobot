@@ -1,10 +1,10 @@
 #include "../include/tasks/RecieveLoopTask.hpp"
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
-                                 CanSocketUtils &canUtilsRef,
+                                 CanManager &canManagerRef,
                                  std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
                                  std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
-                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canUtils(canUtilsRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
+                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canManager(canManagerRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
 {
 }
 
@@ -19,7 +19,7 @@ void RecieveLoopTask::operator()()
         if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
         {
 
-            canUtils.checkCanPortsStatus();
+            canManager.checkCanPortsStatus();
             //checkMotors();
             lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
         }
@@ -40,8 +40,8 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    canUtils.set_all_sockets_timeout(0, 50000);
-    canUtils.clear_all_can_buffers();
+    canManager.set_all_sockets_timeout(0, 50000);
+    canManager.clear_all_can_buffers();
 
     sensor.connect();
     if (!sensor.connected)
@@ -68,7 +68,7 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         if (elapsed_time.count() >= TIME_THRESHOLD_MS)
         {
             external = std::chrono::system_clock::now();
-            for (const auto &socket_pair : canUtils.sockets)
+            for (const auto &socket_pair : canManager.sockets)
             {
                 int socket_descriptor = socket_pair.second;
 
@@ -192,15 +192,15 @@ bool RecieveLoopTask::checkTmotors(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
     fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
-    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
-    canUtils.clear_all_can_buffers();
+    canManager.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
-    // canUtils.restart_all_can_ports();
-    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    // canManager.restart_all_can_ports();
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
     {
-        int socket_descriptor = canUtils.sockets.at(interface_name);
+        int socket_descriptor = canManager.sockets.at(interface_name);
         ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
 
         if (bytesWritten == -1)
@@ -231,14 +231,14 @@ bool RecieveLoopTask::checkMmotors(std::shared_ptr<MaxonMotor> motor)
 
     struct can_frame frame;
     fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
-    canUtils.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
-    canUtils.clear_all_can_buffers();
+    canManager.clear_all_can_buffers();
     auto interface_name = motor->interFaceName;
 
-    if (canUtils.sockets.find(interface_name) != canUtils.sockets.end())
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
     {
-        int socket_descriptor = canUtils.sockets.at(interface_name);
+        int socket_descriptor = canManager.sockets.at(interface_name);
         ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
 
         if (bytesWritten == -1)
