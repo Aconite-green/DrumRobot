@@ -67,7 +67,7 @@ void StateTask::operator()()
 void StateTask::homeModeLoop()
 {
 
-    MaxonEnable();
+    // MaxonEnable();
     MaxonHMMSetting();
     while (systemState.main == Main::Homing)
     {
@@ -318,11 +318,11 @@ void StateTask::initializeMotors()
 {
     tmotors["waist"] = make_shared<TMotor>(0x007, "AK10_9", "can0");
 
-    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can1");
+    tmotors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10", "can0");
     tmotors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10", "can0");
 
-    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can1");
-    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can1");
+    tmotors["R_arm2"] = make_shared<TMotor>(0x003, "AK70_10", "can0");
+    tmotors["R_arm3"] = make_shared<TMotor>(0x004, "AK70_10", "can0");
 
     tmotors["L_arm2"] = make_shared<TMotor>(0x005, "AK70_10", "can0");
     tmotors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10", "can0");
@@ -338,6 +338,7 @@ void StateTask::initializeMotors()
             motor->rMin = -M_PI * 0.75f; // -120deg
             motor->rMax = M_PI / 2.0f;   // 90deg
             motor->isHomed = true;
+            
         }
         else if (motor_pair.first == "R_arm1")
         {
@@ -346,6 +347,7 @@ void StateTask::initializeMotors()
             motor->rMin = -M_PI; // -180deg
             motor->rMax = 0.0f;  // 0deg
             motor->isHomed = false;
+            
         }
         else if (motor_pair.first == "L_arm1")
         {
@@ -354,6 +356,7 @@ void StateTask::initializeMotors()
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
+            
         }
         else if (motor_pair.first == "R_arm2")
         {
@@ -389,33 +392,37 @@ void StateTask::initializeMotors()
         }
     }
 
-    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009,
-                                                     vector<uint32_t>{0x209, 0x309, 0x409, 0x509},
-                                                     vector<uint32_t>{0x189},
-                                                     "can2");
-    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008,
-                                                     vector<uint32_t>{0x208, 0x308, 0x408, 0x508},
-                                                     vector<uint32_t>{0x188},
-                                                     "can2");
+    maxonMotors["L_wrist"] = make_shared<MaxonMotor>(0x009, "can0");
+    maxonMotors["R_wrist"] = make_shared<MaxonMotor>(0x008, "can0");
 
     for (auto &motor_pair : maxonMotors)
     {
         std::shared_ptr<MaxonMotor> &motor = motor_pair.second;
 
         // 각 모터 이름에 따른 멤버 변수 설정
-        if (motor_pair.first == "L_wirst")
+        if (motor_pair.first == "L_wrist")
         {
             motor->cwDir = -1.0f;
             motor->rMin = -M_PI * 0.75f; // -120deg
             motor->rMax = M_PI / 2.0f;   // 90deg
             motor->isHomed = false;
+            motor->txPdoIds[0] = 0x209; // Controlword
+            motor->txPdoIds[1] = 0x309; // TargetPosition
+            motor->txPdoIds[2] = 0x409; // TargetVelocity
+            motor->txPdoIds[3] = 0x509; // TargetTorque
+            motor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
         }
-        else if (motor_pair.first == "R_wirst")
+        else if (motor_pair.first == "R_wrist")
         {
             motor->cwDir = 1.0f;
             motor->rMin = 0.0f; // 0deg
             motor->rMax = M_PI; // 180deg
             motor->isHomed = false;
+            motor->txPdoIds[0] = 0x208; // Controlword
+            motor->txPdoIds[1] = 0x308; // TargetPosition
+            motor->txPdoIds[2] = 0x408; // TargetVelocity
+            motor->txPdoIds[3] = 0x508; // TargetTorque
+            motor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
         }
     }
 };
@@ -678,7 +685,7 @@ bool StateTask::CheckAllMotorsCurrentPosition()
 bool StateTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+    tmotorcmd.getControlMode(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -974,13 +981,15 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
     cout << "\n<< Homing for " << motorName << " >>\n";
 
     // Start to Move by homing method (일단은 PDO)
-    fillCanFrameFromInfo(&frame, motor->getStartHoming());
+
+    maxoncmd.getStartHoming(*motor, &frame);
     sendAndReceive(canManager.sockets.at(motor->interFaceName), motorName, frame,
                    [](const std::string &motorName, bool success) {
 
                    });
     usleep(50000);
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+
+    maxoncmd.getSync(&frame);
     sendAndReceive(canManager.sockets.at(motor->interFaceName), motorName, frame,
                    [](const std::string &motorName, bool success) {
 
@@ -989,7 +998,8 @@ void StateTask::SetHome(std::shared_ptr<MaxonMotor> &motor, const std::string &m
     // 홈 위치에 도달할 때까지 반복
     while (!motor->isHomed)
     {
-        fillCanFrameFromInfo(&frame, motor->getCanFrameForSync());
+
+        maxoncmd.getSync(&frame);
         sendAndReceive(canManager.sockets.at(motor->interFaceName), motorName, frame,
                        [this, &frame, &motor](const std::string &motorName, bool success)
                        {

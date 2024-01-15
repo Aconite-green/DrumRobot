@@ -3,7 +3,7 @@
 #include <iostream>
 
 TMotor::TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName)
-    : GenericMotor(nodeId), motorType(motorType), interFaceName(interFaceName)
+    : nodeId(nodeId), motorType(motorType), interFaceName(interFaceName)
 {
 }
 
@@ -36,36 +36,12 @@ CanFrameInfo TMotor::getCanFrameForQuickStop()
 // maxonMotor 클래스 구현
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MaxonMotor::MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &txPdoIds, const std::vector<uint32_t> &rxPdoIds, const std::string &interFaceName)
-    : GenericMotor(nodeId), interFaceName(interFaceName)
+MaxonMotor::MaxonMotor(uint32_t nodeId, const std::string &interFaceName)
+    : nodeId(nodeId), interFaceName(interFaceName)
 {
     // canId 값 설정
     canSendId = 0x600 + nodeId;
     canReceiveId = 0x580 + nodeId;
-
-    // pdoId 배열 초기화
-    int index = 0;
-    for (const auto &pdo : txPdoIds)
-    {
-        if (index >= 4)
-        {
-            std::cout << "Warning: More than 4 txPDO IDs provided. Ignoring extras." << std::endl;
-            break;
-        }
-        this->txPdoIds[index] = pdo;
-        ++index;
-    }
-    index = 0;
-    for (const auto &pdo : rxPdoIds)
-    {
-        if (index >= 4)
-        {
-            std::cout << "Warning: More than 4 rxPDO IDs provided. Ignoring extras." << std::endl;
-            break;
-        }
-        this->rxPdoIds[index] = pdo;
-        ++index;
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +164,6 @@ CanFrameInfo MaxonMotor::getHomingMethodL()
 CanFrameInfo MaxonMotor::getHomingMethodR()
 {
     return {this->canSendId, 8, {0x22, 0x98, 0x60, 0x00, 0xFC, 0xFF, 0xFF, 0xFF}};
-    
 }
 
 CanFrameInfo MaxonMotor::getStartHoming()
@@ -199,7 +174,7 @@ CanFrameInfo MaxonMotor::getStartHoming()
 
 CanFrameInfo MaxonMotor::getCanFrameForCurrentThreshold()
 { // 1000 = 3E8
- // 500 = 01F4
+  // 500 = 01F4
     return {this->canSendId, 8, {0x23, 0xB2, 0x30, 0x00, 0xF4, 0x01, 0x00, 0x00}};
 }
 
@@ -229,7 +204,6 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetVelocity(int targetVelocity)
     return {this->txPdoIds[2], 4, {velByte0, velByte1, velByte2, velByte3, 0x00, 0x00, 0x00, 0x00}};
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////
 /*                                     CST                                       */
 //////////////////////////////////////////////////////////////////////////////////
@@ -243,8 +217,8 @@ CanFrameInfo MaxonMotor::getCanFrameForTargetTorque(int targetTorque)
 {
     // 10진수 targetTorque을 16진수로 변환
     // 1[revolve] = 4096[inc] * 35[gear ratio]
-    unsigned char trqByte0 = targetTorque & 0xFF;         // 하위 8비트
-    unsigned char trqByte1 = (targetTorque >> 8) & 0xFF;  // 다음 8비트
+    unsigned char trqByte0 = targetTorque & 0xFF;        // 하위 8비트
+    unsigned char trqByte1 = (targetTorque >> 8) & 0xFF; // 다음 8비트
 
     return {this->txPdoIds[3], 2, {trqByte0, trqByte1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 }

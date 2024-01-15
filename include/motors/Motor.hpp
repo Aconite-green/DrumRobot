@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-class GenericMotor
+/*class GenericMotor
 {
 public:
     uint32_t nodeId;
@@ -22,7 +22,7 @@ public:
     int socket;
 
     GenericMotor(uint32_t nodeId) : nodeId(nodeId), currentPos(0), cwDir(0), isHomed(false), isConected(false), rMin(0), rMax(0), socket(0) {}
-};
+};*/
 
 struct CanFrameInfo
 {
@@ -31,7 +31,7 @@ struct CanFrameInfo
     std::array<uint32_t, 8> data;
 };
 
-class TMotor : public GenericMotor
+class TMotor /*: public GenericMotor*/
 {
 public:
     TMotor(uint32_t nodeId, const std::string &motorType, const std::string &interFaceName);
@@ -58,19 +58,20 @@ public:
 private:
 };
 
-class MaxonMotor : public GenericMotor
+class MaxonMotor /*: public GenericMotor*/
 {
 public:
-    MaxonMotor(uint32_t nodeId, const std::vector<uint32_t> &txPdoIds, const std::vector<uint32_t> &rxPdoIds, const std::string &interFaceName);
+    MaxonMotor(uint32_t nodeId, const std::string &interFaceName);
         
     uint32_t nodeId;
+    std::string interFaceName;
     uint32_t canSendId;
     uint32_t canReceiveId;
 
-    std::vector<uint32_t> txPdoIds; // 변경된 부분
-    std::vector<uint32_t> rxPdoIds; // 변경된 부분
+    uint32_t txPdoIds[4]; // 변경된 부분
+    uint32_t rxPdoIds[4]; // 변경된 부분
 
-    std::string interFaceName;
+    
     double currentPos;
     float cwDir;
     bool isHomed, isConected;
