@@ -40,6 +40,7 @@ public:
     void GetMusicSheet();
     void PathLoopTask();
     void GetArr(vector<double> &arr);
+    void TestArr(double t, int cycles, int type, int LnR);
 
     // 실시간X, 전체 악보 처리 후 연주
     int total = 0;

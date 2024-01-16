@@ -1,7 +1,7 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
 {
 }
 
@@ -234,7 +234,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
     int j = 0;
     vector<double> the3(180);
     for (int i = 0; i < 135; i++)
-    {   // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
+    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
         the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
     }
 
@@ -311,7 +311,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                         sol /= (L * L + zeta * zeta);
                                         the5 = asin(sol);
                                         if (the5 > -M_PI / 4 && the5 < M_PI / 2)
-                                        {   // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
+                                        { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
                                             alpha = L - r3 * sin(the5);
                                             beta = r4 * sin(the5);
                                             gamma = r4 * cos(the5);
@@ -324,7 +324,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                                 rol /= (beta * beta + gamma * gamma);
                                                 the6 = acos(rol);
                                                 if (the6 > 0 && the6 < M_PI * 0.75)
-                                                {   // 왼팔꿈치 각도 범위 : 0 ~ 135deg
+                                                { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
                                                     Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
 
                                                     if (Z < z2 + 0.001 && Z > z2 - 0.001)
