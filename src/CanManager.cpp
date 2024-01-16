@@ -73,6 +73,8 @@ void CanManager::restartCanPorts()
             sockets[port] = new_socket_fd; // 소켓 디스크립터 값을 업데이트합니다.
         }
     }
+
+    setMotorsSocket();
 }
 
 void CanManager::setSocketsTimeout(int sec, int usec)
@@ -391,7 +393,7 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
     return false;
 }
 
-bool CanManager::recvFromBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
+bool CanManager::recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
 {
     struct can_frame frame;
     if (rxFrame(motor, frame, readCount))

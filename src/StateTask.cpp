@@ -444,6 +444,7 @@ void StateTask::initializecanManager()
 {
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
+    canManager.setMotorsSocket();
 }
 
 vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<GenericMotor>> &motor)

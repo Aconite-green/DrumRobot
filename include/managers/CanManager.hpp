@@ -44,7 +44,7 @@ public:
     // Basic Function
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
-    bool recvFromBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
+    bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
 
 
