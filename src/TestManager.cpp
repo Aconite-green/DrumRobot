@@ -1,7 +1,7 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
-TestManager::TestManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+TestManager::TestManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
 {
 }
 
@@ -9,12 +9,9 @@ TestManager::TestManager(queue<can_frame> &sendBufferRef, queue<can_frame> &reci
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
+void TestManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
 {
-    this->tmotors = tmotorsRef;
-    this->maxonMotors = maxonMotorsRef;
-    // 참조 확인
-    cout << "tmotors size in PathManager constructor: " << tmotors.size() << endl;
+    this->motors = motorsRef;
 
     // 모터 방향에 따른 +/- 값 적용
     ApplyDir();
@@ -26,38 +23,40 @@ void TestManager::motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, s
 
 void TestManager::ApplyDir()
 { // CW / CCW에 따른 방향 적용
-    for (auto &entry : tmotors)
-    {
-        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
-    }
-
-    for (auto &entry : maxonMotors)
+    for (auto &entry : motors)
     {
         motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
     }
 }
 
-void TestManager::waistarr(vector<vector<double>> &T, int time)
+void TestManager::getMotorPos()
 {
-    double WaistMove = M_PI / 4.0;
+    // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
+    for (auto &entry : motors)
+    {
+        c_MotorAngle[motor_mapping[entry.first]] = entry.second->currentPos;
+        // 각 모터의 현재 위치 출력
+        cout << "Motor " << entry.first << " current position: " << entry.second->currentPos << "\n";
+    }
+}
 
+void TestManager::waistarr(vector<vector<double>> &T, int time, double amp)
+{
     time = time / 2;
     for (int i = 0; i < time; i++)
     {
-        double val = M_PI / 2 - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * WaistMove;
+        double val = c_MotorAngle[0] - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         T[i][0] = val;
     }
     for (int i = 0; i < time; i++)
     {
-        double val = M_PI / 2 + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * WaistMove;
+        double val = c_MotorAngle[0] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         T[i + time][0] = val;
     }
 }
 
-void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR)
+void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double amp)
 {
-    double Arm1Move = M_PI / 4.0;
-
     vector<int> lnr;
     if (LnR == 1)
         lnr.push_back(1);
@@ -72,7 +71,7 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR)
     time = time / 2;
     for (int i = 0; i < time; i++)
     {
-        double val = M_PI / 2 - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * Arm1Move;
+        double val = c_MotorAngle[1] - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         for (int j = 0; j < lnr.size(); j++)
         {
             T[i][lnr[j]] = val;
@@ -80,7 +79,7 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR)
     }
     for (int i = 0; i < time; i++)
     {
-        double val = M_PI / 2 + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * Arm1Move;
+        double val = c_MotorAngle[1] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         for (int j = 0; j < lnr.size(); j++)
         {
             T[i + time][lnr[j]] = val;
@@ -88,10 +87,8 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR)
     }
 }
 
-void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR)
+void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double amp)
 {
-    double Arm2Move = M_PI / 4.0;
-
     vector<int> lnr;
     if (LnR == 1)
         lnr.push_back(3);
@@ -105,7 +102,7 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR)
 
     for (int i = 0; i < time; i++)
     {
-        double val = (1.0 - cos(2.0 * M_PI * i / time)) / 2 * Arm2Move;
+        double val = c_MotorAngle[3] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         for (int j = 0; j < lnr.size(); j++)
         {
             T[i][lnr[j]] = val;
@@ -113,10 +110,8 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR)
     }
 }
 
-void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR)
+void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double amp)
 {
-    double Arm3Move = M_PI / 2.0;
-
     vector<int> lnr;
     if (LnR == 1)
         lnr.push_back(4);
@@ -130,7 +125,30 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR)
 
     for (int i = 0; i < time; i++)
     {
-        double val = (1.0 - cos(2.0 * M_PI * i / time)) / 2 * Arm3Move;
+        double val = c_MotorAngle[4] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
+        for (int j = 0; j < lnr.size(); j++)
+        {
+            T[i][lnr[j]] = val;
+        }
+    }
+}
+
+void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double amp)
+{
+    vector<int> lnr;
+    if (LnR == 1)
+        lnr.push_back(7);
+    else if (LnR == 2)
+        lnr.push_back(8);
+    else if (LnR == 3)
+    {
+        lnr.push_back(7);
+        lnr.push_back(8);
+    }
+
+    for (int i = 0; i < time; i++)
+    {
+        double val = (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp;
         for (int j = 0; j < lnr.size(); j++)
         {
             T[i][lnr[j]] = val;
@@ -144,12 +162,14 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR)
 
 void TestManager::run()
 {
-    double t = 0.0;
-    int cycles = 0;
-    int type = 0b0000;
-    int LnR = 0;
-    
-    while(true)
+    char userInput;
+    double t = 4.0;
+    int cycles = 1;
+    int type = 0b00001;
+    int LnR = 1;
+    double amplitude[5] = {M_PI/2, M_PI/4, M_PI/6, M_PI/6, M_PI/4};
+
+    while (true)
     {
         int result = system("clear");
         if (result != 0)
@@ -158,36 +178,162 @@ void TestManager::run()
         }
 
         string typeDescription;
-        if (type || 0b0111)
+        if (type | 0b01111 == 0b11111)
+        {
+            typeDescription += "Wrist Turn, ";
+        }
+        if (type | 0b10111 == 0b11111)
         {
             typeDescription += "Waist Turn, ";
         }
-        if (type || 0b1011)
+        if (type | 0b11011 == 0b11111)
         {
             typeDescription += "Arm1 Turn, ";
         }
-        if (type || 0b1101)
+        if (type | 0b11101 == 0b11111)
         {
             typeDescription += "Arm2 Turn, ";
         }
-        if (type || 0b1110)
+        if (type | 0b11110 == 0b11111)
         {
             typeDescription += "Arm3 Turn, ";
         }
 
         std::string LeftAndRight;
-        if(LnR == 1){
-            LeftAndRight = "Left move"
+        if (LnR == 1)
+        {
+            LeftAndRight = "[ Left move ]\n";
         }
-        else if (LnR == 2){
+        else if (LnR == 2)
+        {
+            LeftAndRight = "[ Right move ]\n";
+        }
+        else if (LnR == 3)
+        {
+            LeftAndRight = "[ Left and Right move ]\n";
+        }
 
+        cout << "-----------------------------------------------------------------------------\n";
+        cout << LeftAndRight;
+        cout << "Type : " << typeDescription << "\n";
+        cout << "Period : " << t << "\n";
+        cout << "Cycles : " << cycles << "\n";
+        cout << "Amplitude :\n";
+        cout << "1) Arm3 - " << amplitude[0] << "\n";
+        cout << "2) Arm2 - " << amplitude[1] << "\n";
+        cout << "3) Arm1 - " << amplitude[2] << "\n";
+        cout << "4) Waist - " << amplitude[3] << "\n";
+        cout << "5) Wrist - " << amplitude[4] << "\n"; 
+        cout << "-----------------------------------------------------------------------------\n";
+
+        cout << "\nCommands:\n";
+        cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles | [a] : Amplitude | [r] : run | [e] : Exit\n";
+        cout << "-----------------------------------------------------------------------------\n";
+        cout << "Enter Command: ";
+        cin >> userInput;
+
+        if (userInput == 'e')
+        {
+            break;
         }
-        else if (LnR == 3){
-            
+        else if (userInput == 'd')
+        {
+            cout << "Enter Desired Direction:\n";
+            cout << "1: Left Move\n";
+            cout << "2: Right Move\n";
+            cout << "3: Left and Right Move\n";
+            cout << "Enter Path Type (1 or 2 or 3): ";
+            cin >> LnR;
+        }
+        else if (userInput == 't')
+        {
+            int num;
+            cout << "Enter Desired Type:\n";
+            cout << "1: Arm3 Turn ON/OFF\n";
+            cout << "2: Arm2 Turn ON/OFF\n";
+            cout << "3: Arm1 Turn ON/OFF\n";
+            cout << "4: Waist Turn ON/OFF\n";
+            cout << "5: Wrist Turn ON/OFF\n";
+            cout << "Enter Path Type (1 or 2 or 3 or 4 or 5): ";
+            cin >> num;
+
+            if (num == 1)
+            {
+                type = type ^ 0b00001;
+            }
+            else if (num == 2)
+            {
+                type = type ^ 0b00010;
+            }
+            else if (num == 3)
+            {
+                type = type ^ 0b00100;
+            }
+            else if (num == 4)
+            {
+                type = type ^ 0b01000;
+            }
+            else if (num == 5)
+            {
+                type = type ^ 0b10000;
+            }
+        }
+        else if (userInput == 'p')
+        {
+            cout << "Enter Desired Period\n";
+            cin >> t;
+        }
+        else if (userInput == 'c')
+        {
+            cout << "Enter Desired Cycles\n";
+            cin >> cycles;
+        }
+        else if (userInput == 'a')
+        {
+            while (true){
+                char input;
+                cout << "Choose Motor\n";
+                cout << "1: Arm3\n";
+                cout << "2: Arm2\n";
+                cout << "3: Arm1\n";
+                cout << "4: Waist\n";
+                cout << "5: Wrist\n";
+                cout << "d: Done\n";
+                cin >> input;
+
+                if(input == '1'){
+                    cout << "Enter Arm3's Desired Amplitude : ";
+                    cin >> amplitude[0];
+                }
+                else if(input == '2'){
+                    cout << "Enter Arm2's Desired Amplitude : ";
+                    cin >> amplitude[1];
+                }
+                else if(input == '3'){
+                    cout << "Enter Arm1's Desired Amplitude : ";
+                    cin >> amplitude[2];
+                }
+                else if(input == '4'){
+                    cout << "Enter Waist's Desired Amplitude : ";
+                    cin >> amplitude[3];
+                }
+                else if(input == '5'){
+                    cout << "Enter Wrist's Desired Amplitude : ";
+                    cin >> amplitude[4];
+                }
+                else if(input == 'd'){
+                    break;
+                }
+            }
+        }
+        else if (userInput == 'r')
+        {
+            TestArr(t, cycles, type, LnR, amplitude);
         }
     }
 }
-void TestManager::TestArr(double t, int cycles, int type, int LnR)
+
+void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 {
     cout << "Test Start!!\n";
 
@@ -202,28 +348,31 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR)
 
     int time = t / 0.005;
     vector<vector<double>> T;
-    vector<double> A = {0.0, M_PI / 2, M_PI / 2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     for (int i = 0; i < time; i++)
     {
-        T.push_back(A);
+        T.push_back(c_MotorAngle);
     }
 
-    if (type || 0b0111 == 0b1111) // Turn Waist
+    if (type | 0b01111 == 0b11111) // Turn Wrist
     {
-        waistarr(T, time);
+        wristarr(T, time, LnR, amp[4]);
     }
-    else if (type || 0b1011 == 0b1111) // Turn Arm1
+    else if (type | 0b10111 == 0b11111) // Turn Waist
     {
-        arm1arr(T, time, LnR);
+        waistarr(T, time, amp[3]);
     }
-    else if (type || 0b1101 == 0b1111) // Turn Arm2
+    else if (type | 0b11011 == 0b11111) // Turn Arm1
     {
-        arm2arr(T, time, LnR);
+        arm1arr(T, time, LnR, amp[2]);
     }
-    else if (type || 0b1110 == 0b1111) // Turn Arm3
+    else if (type | 0b11101 == 0b11111) // Turn Arm2
     {
-        arm3arr(T, time, LnR);
+        arm2arr(T, time, LnR, amp[1]);
+    }
+    else if (type | 0b11110 == 0b1111) // Turn Arm3
+    {
+        arm3arr(T, time, LnR, amp[0]);
     }
 
     for (int i = 1; i < cycles; i++)
@@ -232,6 +381,33 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR)
         {
             T.push_back(T[j]);
         }
+    }
+
+    for (int i = 0; i < T.size(); i++)
+    {
+        struct can_frame frame;
+
+        vector<double> Ti;
+        Ti = T[i];
+
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                float p_des = Ti[motor_mapping[entry.first]];
+
+                TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                sendBuffer.push(frame);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                float p_des = Ti[motor_mapping[entry.first]];
+                MParser.getTargetPosition(*maxonMotor, &frame, p_des);
+                sendBuffer.push(frame);
+            }
+        }
+        MParser.getSync(&frame);
+        sendBuffer.push(frame);
     }
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기

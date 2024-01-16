@@ -31,20 +31,20 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    TestManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, 
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void motorInitialize(map<string, shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef);
+    void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void run();
-    void TestArr(double t, int cycles, int type, int LnR);
+    void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 
 private:
     queue<can_frame> &sendBuffer;
     queue<can_frame> &recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
-    std::map<std::string, std::shared_ptr<TMotor>> &tmotors;
-    std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotors;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     // 각 관절에 해당하는 열
     map<string, int> motor_mapping = {
@@ -53,10 +53,13 @@ private:
     map<int, int> motor_dir = {     // 1 : CW , -1 : CCW
         {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
 
-
     void ApplyDir();
-    void waistarr(vector<vector<double>> &T, int time);
-    void arm1arr(vector<vector<double>> &T, int time, int LnR);
-    void arm2arr(vector<vector<double>> &T, int time, int LnR);
-    void arm3arr(vector<vector<double>> &T, int time, int LnR);
+    void getMotorPos();
+    void wristarr(vector<vector<double>> &T, int time, int LnR, double amp);
+    void waistarr(vector<vector<double>> &T, int time, double amp);
+    void arm1arr(vector<vector<double>> &T, int time, int LnR, double amp);
+    void arm2arr(vector<vector<double>> &T, int time, int LnR, double amp);
+    void arm3arr(vector<vector<double>> &T, int time, int LnR, double amp);
+
+    vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 };
