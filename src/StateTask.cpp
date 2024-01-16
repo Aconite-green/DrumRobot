@@ -22,7 +22,8 @@ void StateTask::operator()()
         case Main::SystemInit:
             initializeMotors();
             initializecanManager();
-            ActivateControlTask();
+            //ActivateControlTask();
+            MaxonEnable();
             std::cout << "Press Enter to go Home\n";
             getchar();
             systemState.main = Main::Ideal;
@@ -462,9 +463,8 @@ void StateTask::ActivateControlTask()
 {
     struct can_frame frame;
 
-    canManager.setSocketsTimeout(0, 5000);
+    canManager.setSocketsTimeout(0, 10000);
 
-    // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
     for (auto it = motors.begin(); it != motors.end();)
     {
         std::string name = it->first;
@@ -476,6 +476,7 @@ void StateTask::ActivateControlTask()
             // 상태 확인
             tmotorcmd.getCheck(*tMotor, &frame);
             canManager.sendAndRecv(motor, frame);
+            canManager.clearReadBuffers();
 
             // 상태 확인
             tmotorcmd.getControlMode(*tMotor, &frame);
@@ -507,7 +508,7 @@ void StateTask::ActivateControlTask()
             {
                 std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
                 ++it;
-                MaxonEnable();
+                
             }
         }
     }
