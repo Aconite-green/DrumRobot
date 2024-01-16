@@ -83,6 +83,7 @@ private:
     bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
     bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     bool CheckAllMotorsCurrentPosition();
+    void printCurrentPositions();
 
     // Home
     void homeModeLoop();

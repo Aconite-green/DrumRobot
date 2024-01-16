@@ -22,7 +22,6 @@ void StateTask::operator()()
         case Main::SystemInit:
             initializeMotors();
             initializecanManager();
-            // ActivateControlTask();
             MaxonEnable();
             std::cout << "Press Enter to go Home\n";
             getchar();
@@ -39,6 +38,7 @@ void StateTask::operator()()
             break;
         case Main::Check:
             CheckAllMotorsCurrentPosition();
+            printCurrentPositions();
             std::cout << "Press Enter to Go home\n";
             getchar();
             systemState.main = Main::Ideal;
@@ -516,6 +516,7 @@ void StateTask::DeactivateControlTask()
                         std::cout << "Exiting for motor [" << name << "]" << std::endl;
                         break;
                     }
+                    motor->recieveBuffer.pop();
                 }
             }
             else
@@ -578,6 +579,10 @@ bool StateTask::CheckAllMotorsCurrentPosition()
             }
         }
     }
+    return allMotorsChecked;
+}
+
+void StateTask::printCurrentPositions(){
     for (auto &motorPair : motors)
     {
         std::string name = motorPair.first;
@@ -585,11 +590,91 @@ bool StateTask::CheckAllMotorsCurrentPosition()
         std::cout << "[" << std::hex << motor->nodeId << std::dec << "] ";
         std::cout << name << " : " << motor->currentPos << endl;
     }
-
-    std::cout << "\nPress Enter to Move On" << endl;
-    return allMotorsChecked;
 }
 
+bool StateTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
+{
+    struct can_frame frame;
+    tmotorcmd.getControlMode(*motor, &frame);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
+
+    canManager.clearReadBuffers();
+    auto interface_name = motor->interFaceName;
+
+    // canManager.restart_all_can_ports();
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
+    {
+        int socket_descriptor = canManager.sockets.at(interface_name);
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
+
+        if (bytesWritten == -1)
+        {
+            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
+        if (bytesRead == -1)
+        {
+            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
+        motor->currentPos = std::get<1>(parsedData);
+        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
+        return true;
+    }
+    else
+    {
+        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
+        return false;
+    }
+}
+
+bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
+{
+
+    struct can_frame frame;
+    maxoncmd.getSync(&frame);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
+
+    canManager.clearReadBuffers();
+    auto interface_name = motor->interFaceName;
+
+    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
+    {
+        int socket_descriptor = canManager.sockets.at(interface_name);
+        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
+
+        if (bytesWritten == -1)
+        {
+            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
+        if (bytesRead == -1)
+        {
+            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
+            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            return false;
+        }
+
+        std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
+        motor->currentPos = std::get<1>(parsedData);
+        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
+        return true;
+    }
+    else
+    {
+        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
+        return false;
+    }
+}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////
