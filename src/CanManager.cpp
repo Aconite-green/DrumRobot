@@ -24,7 +24,6 @@ CanManager::~CanManager()
 void CanManager::initializeCAN()
 {
 
-    
     list_and_activate_available_can_ports();
     for (const auto &ifname : this->ifnames)
     {
@@ -251,8 +250,6 @@ void CanManager::list_and_activate_available_can_ports()
     }
 }
 
-
-
 void CanManager::deactivateCanPort(const char *port)
 {
     char command[100];
@@ -353,7 +350,7 @@ bool CanManager::txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
 {
     if (write(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
-        perror("CAN write error");
+        // perror("CAN write error");
         return false;
     }
     return true;
@@ -365,7 +362,7 @@ bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
     {
         if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
         {
-            perror("CAN read error");
+            // perror("CAN read error");
             return false;
         }
     }
@@ -376,7 +373,7 @@ bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_fr
 {
     if (!txFrame(motor, frame) || !rxFrame(motor, frame, 1))
     {
-        perror("Send and receive error");
+        // perror("Send and receive error");
         return false;
     }
     return true;
@@ -406,15 +403,17 @@ bool CanManager::recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
 void CanManager::setMotorsSocket()
 {
     struct can_frame frame;
-
+    setSocketsTimeout(0, 10000);
     // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
 
-        for (auto &motor_pair : motors)
+        for (auto it = motors.begin(); it != motors.end();)
         {
-            auto &motor = motor_pair.second;
+            std::string name = it->first;
+            auto &motor = it->second;
+            clearReadBuffers();
 
             // TMotor 및 MaxonMotor에 대해 적절한 명령 설정
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
@@ -433,13 +432,33 @@ void CanManager::setMotorsSocket()
             // 소켓에 CAN 프레임 보내고 응답 확인
             if (sendAndRecv(motor, frame))
             {
-                // 응답을 받은 경우, 해당 소켓 값을 모터 객체에 할당
+
+                motor->isConected = true;
+                ++it;
                 break; // 이 모터에 대한 처리 완료, 다음 모터로 이동
             }
             else
             {
                 // 응답이 없는 경우, 원래 소켓으로 되돌림
                 motor->socket = original_socket;
+                ++it;
+            }
+        }
+        for (auto it = motors.begin(); it != motors.end();)
+        {
+            std::string name = it->first;
+            std::shared_ptr<GenericMotor> motor = it->second;
+            if (motor->isConected)
+            {
+                std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
+                it++;
+            }
+            else
+            {
+
+                std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
+                it = motors.erase(it);
+                continue;
             }
         }
     }
