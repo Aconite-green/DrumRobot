@@ -55,8 +55,6 @@ public:
     void operator()();
 
 private:
-    
-
     SystemState &systemState; // 상태 참조
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
@@ -77,14 +75,12 @@ private:
     // System Initiallize
     void initializeMotors();
     void initializecanManager();
-    void ActivateControlTask();
     vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<GenericMotor>> &motors);
     void DeactivateControlTask();
-    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
-    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     bool CheckAllMotorsCurrentPosition();
     void printCurrentPositions();
-
+    bool checkMotorPosition(std::shared_ptr<GenericMotor> motor);
+    
     // Home
     void homeModeLoop();
     void displayHomingStatus();
@@ -93,18 +89,15 @@ private:
 
     /*Tmotor*/
     void SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    void HomeTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName);
-    float MoveTMotorToSensorLocation(std::shared_ptr<TMotor> &motor, const std::string &motorName, int sensorBit);
-    void RotateTMotor(std::shared_ptr<TMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
-    void SendCommandToTMotor(std::shared_ptr<TMotor> &motor, struct can_frame &frame, const std::string &motorName);
+    void HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
+    float MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit);
+    void RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
     bool PromptUserForHoming(const std::string &motorName);
-    void FixMotorPosition(std::shared_ptr<TMotor> &motor);
+    
 
     /*Maxon*/
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    void SendCommandToMaxonMotor(std::shared_ptr<MaxonMotor> &motor, struct can_frame &frame, const std::string &motorName);
-    void FixMotorPosition(std::shared_ptr<MaxonMotor> &motor);
-
+    
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
