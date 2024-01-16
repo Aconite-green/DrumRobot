@@ -464,7 +464,6 @@ void StateTask::ActivateControlTask()
 
     canManager.setSocketsTimeout(0, 5000);
 
-    // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
     for (auto it = motors.begin(); it != motors.end();)
     {
         std::string name = it->first;
