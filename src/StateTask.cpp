@@ -22,7 +22,8 @@ void StateTask::operator()()
         case Main::SystemInit:
             initializeMotors();
             initializecanManager();
-            ActivateControlTask();
+            //ActivateControlTask();
+            MaxonEnable();
             std::cout << "Press Enter to go Home\n";
             getchar();
             systemState.main = Main::Ideal;
@@ -464,9 +465,8 @@ void StateTask::ActivateControlTask()
 {
     struct can_frame frame;
 
-    canManager.setSocketsTimeout(0, 5000);
+    canManager.setSocketsTimeout(0, 10000);
 
-    // 첫 번째 단계: 모터 상태 확인 (10ms 타임아웃)
     for (auto it = motors.begin(); it != motors.end();)
     {
         std::string name = it->first;
@@ -475,73 +475,42 @@ void StateTask::ActivateControlTask()
         // 타입에 따라 적절한 캐스팅과 초기화 수행
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            bool checkSuccess = true;
-
             // 상태 확인
             tmotorcmd.getCheck(*tMotor, &frame);
-            sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result) {
-
-                           });
+            canManager.sendAndRecv(motor, frame);
+            canManager.clearReadBuffers();
 
             // 상태 확인
             tmotorcmd.getControlMode(*tMotor, &frame);
-            sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result)
-                           {
-                               if (!result)
-                               {
-                                   std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
-                                   checkSuccess = false;
-                               }
-                               else
-                               {
-                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
-                               }
-                           });
-
-            if (!checkSuccess)
+            if (!canManager.sendAndRecv(motor, frame))
             {
-                // 실패한 경우, 해당 모터를 배열에서 제거
+                std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
                 it = motors.erase(it);
-
                 continue;
             }
             else
             {
+                std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
                 ++it;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
-            bool checkSuccess = true;
+
             // 상태 확인
             maxoncmd.getCheck(*maxonMotor, &frame);
-            sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
-                           [&checkSuccess](const std::string &motorName, bool result)
-                           {
-                               if (!result)
-                               {
-                                   std::cerr << "Motor [" << motorName << "] Not Connected." << std::endl;
-                                   checkSuccess = false;
-                               }
-                               else
-                               {
-                                   std::cerr << "--------------> Motor [" << motorName << "] is Connected." << std::endl;
-                               }
-                           });
-
-            if (!checkSuccess)
+            if (!canManager.sendAndRecv(motor, frame))
             {
-                // 실패한 경우, 해당 모터를 배열에서 제거
+                std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
                 it = motors.erase(it);
 
                 continue;
             }
             else
             {
+                std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
                 ++it;
-                MaxonEnable();
+                
             }
         }
     }
@@ -1464,7 +1433,6 @@ void StateTask::TuningLoopTask()
         {
             isMaxonMotor = false;
         }
-        
 
         std::cout << "---------------------------------------------\n";
         std::cout << "Selected Motor: " << selectedMotor << "\n";
