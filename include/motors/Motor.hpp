@@ -21,6 +21,8 @@ public:
     bool isHomed, isConected;
     float rMin, rMax;
     int socket;
+    queue<can_frame> sendBuffer;
+    queue<can_frame> recieveBuffer;
 
     GenericMotor(uint32_t nodeId, const std::string &interFaceName) : nodeId(nodeId), interFaceName(interFaceName), currentPos(0), cwDir(0), isHomed(false), isConected(false), rMin(0), rMax(0), socket(0) {}
     virtual ~GenericMotor() = default;
