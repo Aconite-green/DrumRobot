@@ -23,8 +23,6 @@ int main(int argc, char *argv[])
 
     SystemState systemState;
 
-    map<string, shared_ptr<TMotor>> tmotors;
-    map<string, shared_ptr<MaxonMotor>> maxonMotors;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
     queue<can_frame> sendBuffer;

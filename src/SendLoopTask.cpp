@@ -2,7 +2,7 @@
 
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            CanManager &canManagerRef,
-                           std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
+                           std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
                            queue<can_frame> &sendBufferRef,
                            queue<can_frame> &recieveBufferRef)
     : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), pathManager(sendBufferRef, recieveBufferRef, motorsRef)
@@ -53,16 +53,20 @@ void SendLoopTask::operator()()
     }
 }
 
+void SendLoopTask::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+{
+    this->motors = motorsRef;
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  PERFORM                                   */
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename MotorMap>
-void SendLoopTask::writeToSocket(MotorMap &motorMap, const std::map<std::string, int> &sockets)
+void SendLoopTask::writeToSocket(const std::map<std::string, int> &sockets)
 {
     struct can_frame frameToProcess;
 
-    for (auto &motor_pair : motorMap)
+    for (auto &motor_pair : motors)
     {
         auto motor_ptr = motor_pair.second;
         auto interface_name = motor_ptr->interFaceName;
@@ -154,7 +158,7 @@ void SendLoopTask::SendLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(motors, canManager.sockets);
+            writeToSocket(canManager.sockets);
 
             if (maxonMotorCount != 0)
             {
@@ -238,7 +242,7 @@ void SendLoopTask::SendReadyLoop()
         }
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
-
+    std::cout << "SendBuffer size" << sendBuffer.size() << "\n";
     while (sendBuffer.size() != 0)
     {
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
@@ -248,7 +252,7 @@ void SendLoopTask::SendReadyLoop()
         {
             external = std::chrono::system_clock::now();
 
-            writeToSocket(motors, canManager.sockets);
+            writeToSocket(canManager.sockets);
 
             if (maxonMotorCount != 0)
             {

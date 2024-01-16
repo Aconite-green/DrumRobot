@@ -1455,6 +1455,11 @@ void StateTask::TuningLoopTask()
         {
             isMaxonMotor = true;
         }
+        else
+        {
+            isMaxonMotor = false;
+        }
+        
 
         std::cout << "---------------------------------------------\n";
         std::cout << "Selected Motor: " << selectedMotor << "\n";
@@ -1635,6 +1640,8 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
         kd = 1.0;
         peakAngle = 30;
         pathType = 2;
+        des_vel = 0;
+        des_tff = 0;
     }
     else if (selectedMotor == "R_arm1" || selectedMotor == "L_arm1" ||
              selectedMotor == "R_arm2" || selectedMotor == "R_arm3" ||
@@ -1644,6 +1651,8 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
         kd = 1.0;  // 예시 값, 실제 필요한 값으로 조정
         peakAngle = 90;
         pathType = 1;
+        des_vel = 0;
+        des_tff = 0;
     }
     else if (selectedMotor == "L_wrist" || selectedMotor == "R_wrist")
     {
