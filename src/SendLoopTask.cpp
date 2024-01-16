@@ -85,7 +85,7 @@ void SendLoopTask::writeToSocket(const std::map<std::string, int> &sockets)
                 if (writeFailCount >= 10)
                 {
                     systemState.runMode = RunMode::Stop;
-                    canManager.restart_all_can_ports();
+                    canManager.restartCanPorts();
                     writeFailCount = 0; // 카운터 리셋
                 }
             }
@@ -276,7 +276,7 @@ void SendLoopTask::SendReadyLoop()
             }
         }
     }
-    canManager.clear_all_can_buffers();
+    canManager.clearReadBuffers();
 }
 
 void SendLoopTask::initializePathManager()
@@ -319,12 +319,12 @@ bool SendLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
     tmotorcmd.getControlMode(*motor, &frame);
-    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
 
-    canManager.clear_all_can_buffers();
+    canManager.clearReadBuffers();
     auto interface_name = motor->interFaceName;
 
-    // canManager.restart_all_can_ports();
+    // canManager.restartCanPorts();
     if (canManager.sockets.find(interface_name) != canManager.sockets.end())
     {
         int socket_descriptor = canManager.sockets.at(interface_name);
@@ -362,9 +362,9 @@ bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 
     struct can_frame frame;
     maxoncmd.getSync(&frame);
-    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
 
-    canManager.clear_all_can_buffers();
+    canManager.clearReadBuffers();
     auto interface_name = motor->interFaceName;
 
     if (canManager.sockets.find(interface_name) != canManager.sockets.end())

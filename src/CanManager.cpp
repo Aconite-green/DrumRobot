@@ -1,83 +1,113 @@
 #include "../include/managers/CanManager.hpp"
-CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),motors(motorsRef)
+CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
 {
 }
 
 CanManager::~CanManager()
 {
-
-    for (const auto &kv : sockets)
+    // 모든 소켓 닫기
+    for (const auto &socketPair : sockets)
     {
-        int hsocket = kv.second;
-        if (hsocket >= 0)
+        if (socketPair.second >= 0)
         {
-            close(hsocket);
+            close(socketPair.second);
         }
     }
     sockets.clear();
 }
 
-void CanManager::initializeCAN(const std::vector<std::string> &ifnames)
+////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                Settign Functions [Public]                                 */
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+void CanManager::initializeCAN()
 {
-    this->ifnames = ifnames;
-    std::cout << "Updated interface names:" << std::endl;
+
+    
     list_and_activate_available_can_ports();
     for (const auto &ifname : this->ifnames)
     {
         std::cout << "Processing interface: " << ifname << std::endl;
-        int hsocket = create_socket(ifname);
+        int hsocket = createSocket(ifname);
         if (hsocket < 0)
         {
             std::cerr << "Socket creation error for interface: " << ifname << std::endl;
             exit(EXIT_FAILURE);
         }
         sockets[ifname] = hsocket;
-        isConnected[ifname] = true; 
+        isConnected[ifname] = true;
         std::cout << "Socket created for " << ifname << ": " << hsocket << std::endl;
     }
 }
 
-void CanManager::checkCanPortsStatus() {
+void CanManager::restartCanPorts()
+{
+    // 먼저 모든 포트를 down 시킵니다.
+    for (const auto &port : ifnames)
+    {
+        deactivateCanPort(port.c_str());
 
+        int socket_fd = sockets[port];
+        if (socket_fd >= 0)
+        {
+            close(socket_fd);   // 기존 소켓을 닫습니다.
+            sockets[port] = -1; // 소켓 디스크립터 값을 초기화합니다.
+        }
+    }
 
-    for (const auto &ifname : this->ifnames) {
-        isConnected[ifname] = is_port_connected(ifname.c_str()); 
+    // 각 포트에 대해 새로운 소켓을 생성하고 디스크립터를 업데이트합니다.
+    for (const auto &port : ifnames)
+    {
+        usleep(100000); // 100ms 대기
+        activateCanPort(port.c_str());
 
-        if (!isConnected[ifname]) {
+        int new_socket_fd = createSocket(port);
+        if (new_socket_fd < 0)
+        {
+            // 새로운 소켓 생성에 실패한 경우 처리
+            fprintf(stderr, "Failed to create a new socket for port: %s\n", port.c_str());
+        }
+        else
+        {
+            sockets[port] = new_socket_fd; // 소켓 디스크립터 값을 업데이트합니다.
+        }
+    }
+}
+
+void CanManager::setSocketsTimeout(int sec, int usec)
+{
+    for (const auto &socketPair : sockets)
+    {
+        int socket_fd = socketPair.second;
+        if (setSocketTimeout(socket_fd, sec, usec) != 0)
+        {
+            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
+        }
+    }
+}
+
+void CanManager::checkCanPortsStatus()
+{
+
+    for (const auto &ifname : this->ifnames)
+    {
+        isConnected[ifname] = getCanPortStatus(ifname.c_str());
+
+        if (!isConnected[ifname])
+        {
             std::cout << "Port " << ifname << " is NOT CONNECTED" << std::endl;
-            
         }
     }
 
     // 모든 포트가 연결된 경우 1, 아니면 0 반환
-    
 }
 
-bool CanManager::is_port_connected(const char *port)
-{
-    char command[50];
-    snprintf(command, sizeof(command), "ifconfig %s", port);
+////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                Settign Functions [Private]                                 */
+//////////////////////////////////////////////////////////////////////////////////////////////
 
-    FILE *fp = popen(command, "r");
-    if (fp == NULL)
-    {
-        perror("Error opening pipe");
-        return false;
-    }
-
-    char output[1024];
-    if (fgets(output, sizeof(output) - 1, fp) == NULL)
-    {
-        pclose(fp);
-        return false; // 포트가 시스템에 없으면 연결되지 않은 것으로 간주
-    }
-
-    pclose(fp);
-    return true; // 포트가 시스템에 있으면 연결된 것으로 간주
-}
-
-bool CanManager::is_port_up(const char *port)
+bool CanManager::getCanPortStatus(const char *port)
 {
     char command[50];
     snprintf(command, sizeof(command), "ip link show %s", port);
@@ -90,29 +120,27 @@ bool CanManager::is_port_up(const char *port)
     }
 
     char output[1024];
-    if (fgets(output, sizeof(output) - 1, fp) == NULL)
+    while (fgets(output, sizeof(output) - 1, fp) != NULL)
     {
-        perror("fgets failed");
-        printf("Errno: %d\n", errno); // errno 값을 출력
-        pclose(fp);
-        return false;
+        if (strstr(output, "DOWN") || strstr(output, "does not exist"))
+        {
+            pclose(fp);
+            return false;
+        }
+        else if (strstr(output, "UP"))
+        {
+            pclose(fp);
+            return true;
+        }
     }
 
-    if (strstr(output, "DOWN"))
-    {
-        return false;
-    }
-    else if (strstr(output, "UP"))
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    perror("fgets failed");
+    printf("Errno: %d\n", errno); // errno 값을 출력
+    pclose(fp);
+    return false;
 }
 
-int CanManager::create_socket(const std::string &ifname)
+int CanManager::createSocket(const std::string &ifname)
 {
     int result;
     struct sockaddr_can addr;
@@ -147,9 +175,7 @@ int CanManager::create_socket(const std::string &ifname)
     return localSocket; // 생성된 소켓 디스크립터 반환
 }
 
-
-
-void CanManager::activate_port(const char *port)
+void CanManager::activateCanPort(const char *port)
 {
     char command1[100], command2[100];
     snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.850", port);
@@ -179,8 +205,6 @@ void CanManager::list_and_activate_available_can_ports()
     char output[1024];
     while (fgets(output, sizeof(output) - 1, fp) != nullptr)
     {
-
-        portCount++; // CAN 포트를 발견할 때마다 카운트 증가
         std::string line(output);
         std::istringstream iss(line);
         std::string skip, port;
@@ -192,26 +216,32 @@ void CanManager::list_and_activate_available_can_ports()
             port.pop_back();
         }
 
-        if (is_port_up(port.c_str()))
+        // 포트 이름이 유효한지 확인
+        if (!port.empty() && port.find("can") == 0)
         {
-            printf("%s is already UP\n", port.c_str());
-        }
-        else
-        {
-            printf("%s is DOWN, activating...\n", port.c_str());
-            activate_port(port.c_str());
+            portCount++;
+            if (!getCanPortStatus(port.c_str()))
+            {
+                printf("%s is DOWN, activating...\n", port.c_str());
+                activateCanPort(port.c_str());
+            }
+            else
+            {
+                printf("%s is already UP\n", port.c_str());
+            }
+
+            this->ifnames.push_back(port); // 포트 이름을 ifnames 벡터에 추가
         }
     }
 
     if (feof(fp) == 0)
     {
         perror("fgets failed");
-        printf("Errno: %d\n", errno); // errno 값을 출력
+        printf("Errno: %d\n", errno);
     }
 
     pclose(fp);
 
-    // CAN 포트를 하나도 발견하지 못했으면 프로그램 종료
     if (portCount == 0)
     {
         printf("No CAN port found. Exiting...\n");
@@ -219,41 +249,9 @@ void CanManager::list_and_activate_available_can_ports()
     }
 }
 
-void CanManager::restart_all_can_ports()
-{
-    // 먼저 모든 포트를 down 시킵니다.
-    for (const auto &port : ifnames)
-    {
-        down_port(port.c_str());
 
-        int socket_fd = sockets[port];
-        if (socket_fd >= 0)
-        {
-            close(socket_fd);   // 기존 소켓을 닫습니다.
-            sockets[port] = -1; // 소켓 디스크립터 값을 초기화합니다.
-        }
-    }
 
-    // 각 포트에 대해 새로운 소켓을 생성하고 디스크립터를 업데이트합니다.
-    for (const auto &port : ifnames)
-    {
-        usleep(100000); // 100ms 대기
-        activate_port(port.c_str());
-
-        int new_socket_fd = create_socket(port);
-        if (new_socket_fd < 0)
-        {
-            // 새로운 소켓 생성에 실패한 경우 처리
-            fprintf(stderr, "Failed to create a new socket for port: %s\n", port.c_str());
-        }
-        else
-        {
-            sockets[port] = new_socket_fd; // 소켓 디스크립터 값을 업데이트합니다.
-        }
-    }
-}
-
-void CanManager::down_port(const char *port)
+void CanManager::deactivateCanPort(const char *port)
 {
     char command[100];
     snprintf(command, sizeof(command), "sudo ip link set %s down", port);
@@ -264,7 +262,7 @@ void CanManager::down_port(const char *port)
     }
 }
 
-void CanManager::clear_all_can_buffers()
+void CanManager::clearReadBuffers()
 {
     for (const auto &socketPair : sockets)
     {
@@ -310,7 +308,7 @@ void CanManager::clearCanBuffer(int canSocket)
     }
 }
 
-int CanManager::set_socket_timeout(int socket, int sec, int usec)
+int CanManager::setSocketTimeout(int socket, int sec, int usec)
 {
     struct timeval timeout;
     timeout.tv_sec = sec;
@@ -325,26 +323,14 @@ int CanManager::set_socket_timeout(int socket, int sec, int usec)
     return 0;
 }
 
-void CanManager::set_all_sockets_timeout(int sec, int usec)
-{
-    for (const auto &socketPair : sockets)
-    {
-        int socket_fd = socketPair.second;
-        if (set_socket_timeout(socket_fd, sec, usec) != 0)
-        {
-            std::cerr << "Failed to set socket timeout for " << socketPair.first << std::endl;
-        }
-    }
-}
-
 void CanManager::releaseBusyResources()
 {
     for (const auto &ifname : this->ifnames)
     {
-        if (is_port_up(ifname.c_str()))
+        if (getCanPortStatus(ifname.c_str()))
         {
             // 포트가 사용 중인 경우, 포트를 다운시키고 소켓을 닫음
-            down_port(ifname.c_str());
+            deactivateCanPort(ifname.c_str());
             int socket_fd = sockets[ifname];
             if (socket_fd >= 0)
             {
@@ -352,7 +338,107 @@ void CanManager::releaseBusyResources()
                 sockets[ifname] = -1; // 소켓 디스크립터 값을 초기화합니다.
             }
             // 포트를 다시 활성화
-            activate_port(ifname.c_str());
+            activateCanPort(ifname.c_str());
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                Utility Functions                                          */
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CanManager::txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame)
+{
+    if (write(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
+    {
+        perror("CAN write error");
+        return false;
+    }
+    return true;
+}
+
+bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame, int readCount)
+{
+    for (int i = 0; i < readCount; ++i)
+    {
+        if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
+        {
+            perror("CAN read error");
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame)
+{
+    if (!txFrame(motor, frame) || !rxFrame(motor, frame, 1))
+    {
+        perror("Send and receive error");
+        return false;
+    }
+    return true;
+}
+
+bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
+{
+    if (!motor->sendBuffer.empty())
+    {
+        struct can_frame frame = motor->sendBuffer.front();
+        motor->sendBuffer.pop();
+        return txFrame(motor, frame);
+    }
+    return false;
+}
+
+bool CanManager::recvFromBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
+{
+    struct can_frame frame;
+    if (rxFrame(motor, frame, readCount))
+    {
+        motor->recieveBuffer.push(frame);
+    }
+    return false;
+}
+
+void CanManager::setMotorsSocket()
+{
+    struct can_frame frame;
+
+    // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
+    for (const auto &socketPair : sockets)
+    {
+        int socket_fd = socketPair.second;
+
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+
+            // TMotor 및 MaxonMotor에 대해 적절한 명령 설정
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                tmotorcmd.getCheck(*tMotor, &frame);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                maxoncmd.getCheck(*maxonMotor, &frame);
+            }
+
+            // 모터의 현재 소켓을 임시 소켓으로 설정
+            int original_socket = motor->socket;
+            motor->socket = socket_fd;
+
+            // 소켓에 CAN 프레임 보내고 응답 확인
+            if (sendAndRecv(motor, frame))
+            {
+                // 응답을 받은 경우, 해당 소켓 값을 모터 객체에 할당
+                break; // 이 모터에 대한 처리 완료, 다음 모터로 이동
+            }
+            else
+            {
+                // 응답이 없는 경우, 원래 소켓으로 되돌림
+                motor->socket = original_socket;
+            }
         }
     }
 }

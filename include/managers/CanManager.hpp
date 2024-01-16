@@ -23,8 +23,7 @@
 #include <queue>
 #include <memory>
 #include "Motor.hpp"
-
-
+#include "CommandParser.hpp"
 
 class CanManager
 {
@@ -33,14 +32,24 @@ public:
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
 
     // Public Methods
-    CanManager(std::queue<can_frame> &sendBufferRef,std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     ~CanManager();
 
-    void initializeCAN(const std::vector<std::string> &ifnames);
-    void restart_all_can_ports();
-    void set_all_sockets_timeout(int sec, int usec);
-    void clear_all_can_buffers();
+    void initializeCAN();
+    void restartCanPorts();
+    void setSocketsTimeout(int sec, int usec);
     void checkCanPortsStatus();
+    void setMotorsSocket();
+
+    // Basic Function
+    bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
+    bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
+    bool recvFromBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
+
+
+
+    // Buffer Uitility
+    void clearReadBuffers();
 
     std::map<std::string, int> sockets;
     std::map<std::string, bool> isConnected;
@@ -51,20 +60,27 @@ private:
     std::queue<can_frame> &recieveBuffer;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
+
+    // Basic Function
+    bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
+    bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame,int readCount);
+
+
     // Port
-    bool is_port_up(const char *port);
-    void activate_port(const char *port);
+    bool getCanPortStatus(const char *port);
+    void activateCanPort(const char *port);
     void list_and_activate_available_can_ports();
-    void down_port(const char *port);
+    void deactivateCanPort(const char *port);
 
     // Network (Socket)
-    int create_socket(const std::string &ifname);
-    int set_socket_timeout(int socket, int sec, int usec);
+    int createSocket(const std::string &ifname);
+    int setSocketTimeout(int socket, int sec, int usec);
     void releaseBusyResources();
 
-    // Recieve Buffer Uitility
+    // Buffer Uitility
     void clearCanBuffer(int canSocket);
-    bool is_port_connected(const char *port);
 };
 
 #endif // CAN_SOCKET_UTILS_H

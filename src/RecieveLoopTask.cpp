@@ -39,8 +39,8 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
 {
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    canManager.set_all_sockets_timeout(0, 50000);
-    canManager.clear_all_can_buffers();
+    canManager.setSocketsTimeout(0, 50000);
+    canManager.clearReadBuffers();
 
     sensor.connect();
     if (!sensor.connected)
@@ -193,9 +193,9 @@ bool RecieveLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
     tmotorcmd.getControlMode(*motor, &frame);
-    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
 
-    canManager.clear_all_can_buffers();
+    canManager.clearReadBuffers();
     auto interface_name = motor->interFaceName;
 
     // canManager.restart_all_can_ports();
@@ -232,9 +232,9 @@ bool RecieveLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 
     struct can_frame frame;
     maxoncmd.getCheck(*motor, &frame);
-    canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
+    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
 
-    canManager.clear_all_can_buffers();
+    canManager.clearReadBuffers();
     auto interface_name = motor->interFaceName;
 
     if (canManager.sockets.find(interface_name) != canManager.sockets.end())
