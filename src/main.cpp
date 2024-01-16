@@ -23,17 +23,16 @@ int main(int argc, char *argv[])
 
     SystemState systemState;
 
-    map<string, shared_ptr<TMotor>> tmotors;
-    map<std::string, std::shared_ptr<MaxonMotor>> maxonMotors;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
     queue<can_frame> sendBuffer;
     queue<can_frame> recieveBuffer;
-    CanManager canManager(sendBuffer, recieveBuffer,tmotors,maxonMotors);
+    CanManager canManager(sendBuffer, recieveBuffer,motors);
+    
     // Create Tasks for Threads
-    StateTask stateTask(systemState, canManager, tmotors, maxonMotors);
-    SendLoopTask sendLoopTask(systemState, canManager, tmotors, maxonMotors, sendBuffer, recieveBuffer);
-    RecieveLoopTask recieveLoopTask(systemState, canManager, tmotors, maxonMotors, recieveBuffer);
+    StateTask stateTask(systemState, canManager, motors);
+    SendLoopTask sendLoopTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
+    RecieveLoopTask recieveLoopTask(systemState, canManager, motors, recieveBuffer);
 
     // Create Threads
     std::thread state_thread(stateTask);

@@ -1,11 +1,5 @@
 #include "../include/tasks/TaskUtility.hpp"
 
-void fillCanFrameFromInfo(struct can_frame *frame, const CanFrameInfo &info)
-{
-    frame->can_id = info.can_id;
-    frame->can_dlc = info.can_dlc;
-    std::copy(info.data.begin(), info.data.end(), frame->data);
-}
 
 int set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec)
 {

@@ -1,6 +1,6 @@
 #include "../include/managers/CanManager.hpp"
-CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef, std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),tmotors(tmotorsRef), maxonMotors(maxonMotorsRef)
+CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef,std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef),motors(motorsRef)
 {
 }
 

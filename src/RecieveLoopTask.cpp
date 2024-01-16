@@ -2,9 +2,8 @@
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
                                  CanManager &canManagerRef,
-                                 std::map<std::string, std::shared_ptr<TMotor>> &tmotorsRef,
-                                 std::map<std::string, std::shared_ptr<MaxonMotor>> &maxonMotorsRef,
-                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canManager(canManagerRef), tmotors(tmotorsRef), maxonMotors(maxonMotorsRef), recieveBuffer(recieveBufferRef)
+                                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
+                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), recieveBuffer(recieveBufferRef)
 {
 }
 
@@ -20,7 +19,7 @@ void RecieveLoopTask::operator()()
         {
 
             canManager.checkCanPortsStatus();
-            //checkMotors();
+            // checkMotors();
             lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
         }
         while (systemState.main == Main::Perform)
@@ -123,75 +122,77 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
         can_frame frame = recieveBuffer.front();
         recieveBuffer.pop();
 
-        for (const auto &pair : tmotors)
+        for (const auto &pair : motors)
         {
-            std::shared_ptr<TMotor> motor = pair.second;
-            if (motor->nodeId == frame.data[0])
+            if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(pair.second))
             {
-                std::tuple<int, float, float, float> parsedData = TParser.parseRecieveCommand(*motor, &frame);
-                id = std::get<0>(parsedData);
-                position = std::get<1>(parsedData);
-                speed = std::get<2>(parsedData);
-                torque = std::get<3>(parsedData);
+                if (motor->nodeId == frame.data[0])
+                {
+                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
+                    id = std::get<0>(parsedData);
+                    position = std::get<1>(parsedData);
+                    speed = std::get<2>(parsedData);
+                    torque = std::get<3>(parsedData);
 
-                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
-                    << std::dec
-                    << position << "," << speed << "," << torque << "\n";
+                    ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                        << std::dec
+                        << position << "," << speed << "," << torque << "\n";
+                }
+            }
+            else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(pair.second))
+            {
+                if (motor->nodeId == frame.data[0])
+                {
+                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
+                    id = std::get<0>(parsedData);
+                    position = std::get<1>(parsedData);
+                    torque = std::get<2>(parsedData);
+
+                    ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                        << std::dec
+                        << position << ","
+                        << " "
+                        << "," << torque << "\n";
+                }
             }
         }
-        for (auto &entry : maxonMotors)
-        {
-            std::shared_ptr<MaxonMotor> motor = entry.second;
-            if (motor->nodeId == frame.data[0])
-            {
-                std::tuple<int, float, float> parsedData = MParser.parseRecieveCommand(*motor, &frame);
-                id = std::get<0>(parsedData);
-                position = std::get<1>(parsedData);
-                torque = std::get<2>(parsedData);
 
-                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
-                    << std::dec
-                    << position << ","
-                    << " "
-                    << "," << torque << "\n";
-            }
-        }
+        ofs.close();
+
+        std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
     }
-
-    ofs.close();
-
-    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 void RecieveLoopTask::checkMotors()
 {
-
-    for (const auto &motor_pair : tmotors)
+    for (const auto &motor_pair : motors)
     {
-        std::shared_ptr<TMotor> motor = motor_pair.second;
-        bool motorChecked = checkTmotors(motor);
-        if (!motorChecked)
+        if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
-            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-            motor->isConected = false;
+            bool motorChecked = CheckTmotorPosition(motor);
+            if (!motorChecked)
+            {
+                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+                motor->isConected = false;
+            }
         }
-    }
-    for (const auto &motor_pair : maxonMotors)
-    {
-        std::shared_ptr<MaxonMotor> motor = motor_pair.second;
-        bool motorChecked = checkMmotors(motor);
-        if (!motorChecked)
+        else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
-            cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-            motor->isConected = false;
+            bool motorChecked = CheckMaxonPosition(motor);
+            if (!motorChecked)
+            {
+                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
+                motor->isConected = false;
+            }
         }
     }
 }
 
-bool RecieveLoopTask::checkTmotors(std::shared_ptr<TMotor> motor)
+
+bool RecieveLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForControlMode());
+    tmotorcmd.getControlMode(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
@@ -226,11 +227,11 @@ bool RecieveLoopTask::checkTmotors(std::shared_ptr<TMotor> motor)
     }
 }
 
-bool RecieveLoopTask::checkMmotors(std::shared_ptr<MaxonMotor> motor)
+bool RecieveLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
 {
 
     struct can_frame frame;
-    fillCanFrameFromInfo(&frame, motor->getCanFrameForCheckMotor());
+    maxoncmd.getCheck(*motor, &frame);
     canManager.set_all_sockets_timeout(0, 5000 /*5ms*/);
 
     canManager.clear_all_can_buffers();
