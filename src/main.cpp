@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     CanManager canManager(sendBuffer, recieveBuffer,motors);
     
     // Create Tasks for Threads
-    StateTask stateTask(systemState, canManager, motors);
+    StateTask stateTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
     SendLoopTask sendLoopTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
     RecieveLoopTask recieveLoopTask(systemState, canManager, motors, recieveBuffer);
 

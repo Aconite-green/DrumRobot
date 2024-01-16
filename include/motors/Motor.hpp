@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <linux/can/raw.h>
 
 class GenericMotor
 {

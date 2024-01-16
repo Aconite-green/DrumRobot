@@ -3,8 +3,10 @@
 // StateTask 클래스의 생성자
 StateTask::StateTask(SystemState &systemStateRef,
                      CanManager &canManagerRef,
-                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef) {}
+                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                     queue<can_frame> &sendBufferRef,
+                     queue<can_frame> &recieveBufferRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), testmanager(sendBufferRef, recieveBufferRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
