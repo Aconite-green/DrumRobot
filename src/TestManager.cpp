@@ -240,7 +240,7 @@ void TestManager::SendLoop()
 
 void TestManager::run()
 {
-    //getMotorPos();
+    getMotorPos();
     motorInitialize(motors);
     
     char userInput;

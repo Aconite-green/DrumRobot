@@ -44,7 +44,8 @@ void StateTask::operator()()
             break;
         case Main::Tune:
             MaxonEnable();
-            //TuningLoopTask();
+            //TuningLoopTask()
+            CheckAllMotorsCurrentPosition();
             MaxonCSPSetting();
             testmanager.run();
             systemState.main = Main::Ideal;
@@ -178,11 +179,20 @@ void StateTask::runModeLoop()
             checkUserInput();
             break;
         case RunMode::Ready:
-            std::cout << "Press 'p' to start performing: ";
-            std::cin >> input;
-            if (input == 'p')
-            {
-                systemState.runMode = RunMode::Running;
+            while(true){
+                std::cout << "Enter 't'(test) or 'p'(perform) or 'e'(exit): ";
+                std::cin >> input;
+                
+                if(input == 'e'){
+
+                }
+                else if(input == 't'){
+
+                }
+                else if (input == 'p')
+                {
+                    systemState.runMode = RunMode::Running;
+                }
             }
             break;
         case RunMode::Running:
@@ -361,7 +371,7 @@ void StateTask::initializeMotors()
                 tMotor->rMin = -M_PI; // -180deg
                 tMotor->rMax = 0.0f;  // 0deg
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                tMotor->interFaceName = "can1";
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -379,7 +389,7 @@ void StateTask::initializeMotors()
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                tMotor->interFaceName = "can1";
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -388,7 +398,7 @@ void StateTask::initializeMotors()
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                tMotor->interFaceName = "can1";
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -423,7 +433,7 @@ void StateTask::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->interFaceName = "can0";
+                maxonMotor->interFaceName = "can2";
             }
             else if (motor_pair.first == "R_wrist")
             {
@@ -436,7 +446,7 @@ void StateTask::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x408; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->interFaceName = "can0";
+                maxonMotor->interFaceName = "can2";
             }
         }
     }
