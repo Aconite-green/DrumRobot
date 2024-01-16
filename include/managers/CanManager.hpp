@@ -45,6 +45,9 @@ public:
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
+    bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
+    bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
+
 
 
 
@@ -63,10 +66,7 @@ private:
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
 
-    // Basic Function
-    bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
-    bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame,int readCount);
-
+    
 
     // Port
     bool getCanPortStatus(const char *port);

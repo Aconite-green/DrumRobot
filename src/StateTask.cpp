@@ -22,7 +22,7 @@ void StateTask::operator()()
         case Main::SystemInit:
             initializeMotors();
             initializecanManager();
-            //ActivateControlTask();
+            // ActivateControlTask();
             MaxonEnable();
             std::cout << "Press Enter to go Home\n";
             getchar();
@@ -45,7 +45,7 @@ void StateTask::operator()()
             break;
         case Main::Tune:
             MaxonEnable();
-            //TuningLoopTask()
+            // TuningLoopTask()
             CheckAllMotorsCurrentPosition();
             MaxonCSPSetting();
             testmanager.run();
@@ -180,15 +180,16 @@ void StateTask::runModeLoop()
             checkUserInput();
             break;
         case RunMode::Ready:
-            while(true){
+            while (true)
+            {
                 std::cout << "Enter 't'(test) or 'p'(perform) or 'e'(exit): ";
                 std::cin >> input;
-                
-                if(input == 'e'){
 
+                if (input == 'e')
+                {
                 }
-                else if(input == 't'){
-
+                else if (input == 't')
+                {
                 }
                 else if (input == 'p')
                 {
@@ -471,61 +472,6 @@ vector<string> StateTask::extractIfnamesFromMotors(const map<string, shared_ptr<
     return vector<string>(interface_names.begin(), interface_names.end());
 }
 
-void StateTask::ActivateControlTask()
-{
-    struct can_frame frame;
-
-    canManager.setSocketsTimeout(0, 10000);
-
-    for (auto it = motors.begin(); it != motors.end();)
-    {
-        std::string name = it->first;
-        auto &motor = it->second;
-        canManager.clearReadBuffers();
-        // 타입에 따라 적절한 캐스팅과 초기화 수행
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-        {
-            // 상태 확인
-            tmotorcmd.getCheck(*tMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-            canManager.clearReadBuffers();
-
-            // 상태 확인
-            tmotorcmd.getControlMode(*tMotor, &frame);
-            if (!canManager.sendAndRecv(motor, frame))
-            {
-                std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
-                it = motors.erase(it);
-                continue;
-            }
-            else
-            {
-                std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
-                ++it;
-            }
-        }
-        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-        {
-
-            // 상태 확인
-            maxoncmd.getCheck(*maxonMotor, &frame);
-            if (!canManager.sendAndRecv(motor, frame))
-            {
-                std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
-                it = motors.erase(it);
-
-                continue;
-            }
-            else
-            {
-                std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
-                ++it;
-                
-            }
-        }
-    }
-}
-
 void StateTask::DeactivateControlTask()
 {
     struct can_frame frame;
@@ -541,80 +487,67 @@ void StateTask::DeactivateControlTask()
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
             tmotorcmd.getCheck(*tMotor, &frame);
-            sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success) {
-
-                           });
+            canManager.sendAndRecv(motor, frame);
 
             tmotorcmd.getExit(*tMotor, &frame);
-            sendAndReceive(canManager.sockets.at(motor->interFaceName), name, frame,
-                           [](const std::string &motorName, bool success)
-                           {
-                               if (success)
-                               {
-                                   std::cout << "Exiting control mode for motor [" << motorName << "]." << std::endl;
-                               }
-                               else
-                               {
-                                   std::cerr << "Failed to exit control mode for motor [" << motorName << "]." << std::endl;
-                               }
-                           });
-
-            // 구분자 추가
-            std::cout << "=======================================" << std::endl;
+            if (canManager.sendAndRecv(motor, frame))
+            {
+                std::cout << "Exiting for motor [" << name << "]" << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to exit control mode for motor [" << name << "]." << std::endl;
+            }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
             maxoncmd.getQuickStop(*maxonMotor, &frame);
-            sendNotRead(canManager.sockets.at(motor->interFaceName), name, frame,
-                        [](const std::string &motorName, bool success)
-                        {
-                            if (success)
-                            {
-                                std::cout << "Exiting for motor [" << motorName << "]." << std::endl;
-                            }
-                            else
-                            {
-                                std::cerr << "Failed to exit for motor [" << motorName << "]." << std::endl;
-                            }
-                        });
-
-            int maxonMotorCount = 0;
-            for (const auto &motor_pair : motors)
-            {
-                // 각 요소가 MaxonMotor 타입인지 확인
-                if (std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-                {
-                    maxonMotorCount++;
-                }
-            }
+            canManager.txFrame(motor, frame);
 
             maxoncmd.getSync(&frame);
-            writeAndReadForSync(canManager.sockets.at(motor->interFaceName), name, frame, maxonMotorCount,
-                                [](const std::string &motorName, bool success) {
-
-                                });
-
-            // 구분자 추가
-            std::cout << "=======================================" << std::endl;
+            canManager.txFrame(motor, frame);
+            if (canManager.recvToBuff(motor, 2))
+            {
+                while (!motor->recieveBuffer.empty())
+                {
+                    frame = motor->recieveBuffer.front();
+                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                    {
+                        std::cout << "Exiting for motor [" << name << "]" << std::endl;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
+            }
         }
     }
 }
 
 bool StateTask::CheckAllMotorsCurrentPosition()
 {
-    std::cout << "Checking all positions for motors" << endl;
+    canManager.setSocketsTimeout(0, 10000 /*5ms*/);
+    struct can_frame frame;
+    std::cout << "Checking all positions for motors [rad]\n"
+              << endl;
     bool allMotorsChecked = true;
     for (auto &motorPair : motors)
     {
         std::string name = motorPair.first;
         auto &motor = motorPair.second;
+        canManager.clearReadBuffers();
 
-        // 타입에 따라 적절한 캐스팅과 초기화 수행
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            bool motorChecked = CheckTmotorPosition(tMotor);
-            if (!motorChecked)
+            tmotorcmd.getCheck(*tMotor, &frame);
+            if (canManager.sendAndRecv(motor, frame))
+            {
+                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                motor->currentPos = std::get<1>(parsedData);
+            }
+            else
             {
                 cerr << "Failed to check position for motor: " << name << endl;
                 allMotorsChecked = false;
@@ -622,100 +555,39 @@ bool StateTask::CheckAllMotorsCurrentPosition()
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
-            bool motorChecked = CheckMaxonPosition(maxonMotor);
-            if (!motorChecked)
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            if (canManager.recvToBuff(motor, 2))
+            {
+                while (!motor->recieveBuffer.empty())
+                {
+                    frame = motor->recieveBuffer.front();
+                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                    {
+                        std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                        motor->currentPos = std::get<1>(parsedData);
+                    }
+                    motor->recieveBuffer.pop();
+                }
+            }
+            else
             {
                 cerr << "Failed to check position for motor: " << name << endl;
                 allMotorsChecked = false;
             }
         }
     }
-    std::cout << "Press Enter to Move On" << endl;
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+        std::cout << "[" << std::hex << motor->nodeId << std::dec << "] ";
+        std::cout << name << " : " << motor->currentPos << endl;
+    }
+
+    std::cout << "\nPress Enter to Move On" << endl;
     return allMotorsChecked;
-}
-
-bool StateTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
-{
-    struct can_frame frame;
-    tmotorcmd.getControlMode(*motor, &frame);
-    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-
-    canManager.clearReadBuffers();
-    auto interface_name = motor->interFaceName;
-
-    // canManager.restart_all_can_ports();
-    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
-    {
-        int socket_descriptor = canManager.sockets.at(interface_name);
-        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
-
-        if (bytesWritten == -1)
-        {
-            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
-        if (bytesRead == -1)
-        {
-            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
-        motor->currentPos = std::get<1>(parsedData);
-        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
-        return true;
-    }
-    else
-    {
-        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
-        return false;
-    }
-}
-
-bool StateTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
-{
-
-    struct can_frame frame;
-    maxoncmd.getSync(&frame);
-    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-
-    canManager.clearReadBuffers();
-    auto interface_name = motor->interFaceName;
-
-    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
-    {
-        int socket_descriptor = canManager.sockets.at(interface_name);
-        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
-
-        if (bytesWritten == -1)
-        {
-            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
-        if (bytesRead == -1)
-        {
-            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
-        motor->currentPos = std::get<1>(parsedData);
-        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
-        return true;
-    }
-    else
-    {
-        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
-        return false;
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
