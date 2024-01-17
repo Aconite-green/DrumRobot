@@ -96,7 +96,7 @@ private:
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
 
     // Tune
-    void FixMotorPosition();
+    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningLoopTask();
     void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);

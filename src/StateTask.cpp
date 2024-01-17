@@ -734,7 +734,7 @@ void StateTask::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::s
     HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
     sleep(1);
-    // FixMotorPosition(motor);
+    FixMotorPosition(motor);
 
     cout << "-- Homing completed for " << motorName << " --\n\n";
     sensor.closeDevice();
@@ -882,39 +882,34 @@ void StateTask::UpdateHomingStatus()
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::FixMotorPosition()
+void StateTask::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
 {
     struct can_frame frame;
-    for (const auto &motorPair : motors)
+
+    checkMotorPosition(motor);
+
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        std::string name = motorPair.first;
-        auto motor = motorPair.second;
-
-        checkMotorPosition(motor);
-
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
+        if (canManager.sendAndRecv(motor, frame))
         {
-            tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
-            if (canManager.sendAndRecv(motor, frame))
-            {
-                std::cout << "Position fixed for motor [" << name << "]." << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to fix position for motor [" << name << "]." << std::endl;
-            }
+            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
         }
-        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        else
         {
-            maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
-            if (canManager.sendAndRecv(motor, frame))
-            {
-                std::cout << "Position fixed for motor [" << name << "]." << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to fix position for motor [" << name << "]." << std::endl;
-            }
+            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
+        }
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
+        if (canManager.sendAndRecv(motor, frame))
+        {
+            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
         }
     }
 }
@@ -1155,7 +1150,11 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
 
 void StateTask::TuningLoopTask()
 {
-    FixMotorPosition();
+    for (auto motor_pair : motors)
+    {
+        FixMotorPosition(motor_pair.second);
+    }
+
     std::string userInput, selectedMotor, fileName;
     float kp, kd, peakAngle;
     float sine_t = 4.0;
