@@ -1793,7 +1793,7 @@ void StateTask::MaxonQuickStopEnable()
 void StateTask::maxonSdoSetting()
 {
     struct can_frame frame;
-    canManager.setSocketsTimeout(0, 5000);
+    canManager.setSocketsTimeout(0, 10000);
     for (const auto &motorPair : motors)
     {
         std::string name = motorPair.first;
@@ -1835,7 +1835,7 @@ void StateTask::maxonSdoSetting()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else
+            else if(name == "R_wrist")
             {
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
@@ -1856,7 +1856,7 @@ void StateTask::maxonSdoSetting()
 void StateTask::setMaxonMode(std::string targetMode)
 {
     struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
+    canManager.setSocketsTimeout(0, 10000);
     for (const auto &motorPair : motors)
     {
         std::string name = motorPair.first;
