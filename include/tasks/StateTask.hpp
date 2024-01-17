@@ -64,7 +64,7 @@ private:
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
-    //TestManager testmanager;
+    TestManager testmanager;
 
     // State Utility
     void displayAvailableCommands() const;

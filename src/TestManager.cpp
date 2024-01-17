@@ -25,7 +25,8 @@ void TestManager::ApplyDir()
 { // CW / CCW에 따른 방향 적용
     for (auto &entry : motors)
     {
-        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
+        shared_ptr<GenericMotor> motor = entry.second;
+        motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
 }
 
@@ -34,7 +35,8 @@ void TestManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
-        c_MotorAngle[motor_mapping[entry.first]] = entry.second->currentPos;
+        shared_ptr<GenericMotor> motor = entry.second;
+        c_MotorAngle[motor_mapping[entry.first]] = motor->currentPos;
         // 각 모터의 현재 위치 출력
         cout << "Motor " << entry.first << " current position: " << entry.second->currentPos << "\n";
     }
@@ -254,8 +256,8 @@ void TestManager::SendLoop()
 
 void TestManager::run()
 {
-    getMotorPos();
     motorInitialize(motors);
+    getMotorPos();
 
     char userInput;
     double t = 4.0;

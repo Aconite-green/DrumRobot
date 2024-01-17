@@ -6,7 +6,7 @@ StateTask::StateTask(SystemState &systemStateRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
                      queue<can_frame> &sendBufferRef,
                      queue<can_frame> &recieveBufferRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef)/*, testmanager(canManagerRef, sendBufferRef, recieveBufferRef, motors)*/ {}
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), testmanager(canManagerRef, sendBufferRef, recieveBufferRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -49,7 +49,7 @@ void StateTask::operator()()
             // TuningLoopTask()
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
-            //testmanager.run();
+            testmanager.run();
             systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
