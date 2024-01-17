@@ -172,6 +172,10 @@ void TestManager::writeToSocket(const std::map<std::string, int> &sockets)
         {
             int socket_descriptor = sockets.at(interface_name);
             ssize_t bytesWritten = write(socket_descriptor, &frameToProcess, sizeof(struct can_frame));
+            if (bytesWritten < 0)
+            {
+                std::cout << "Write Error\n";
+            }
         }
         else
         {
@@ -242,7 +246,7 @@ void TestManager::run()
 {
     getMotorPos();
     motorInitialize(motors);
-    
+
     char userInput;
     double t = 4.0;
     int cycles = 1;

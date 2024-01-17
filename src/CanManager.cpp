@@ -458,7 +458,7 @@ void CanManager::setMotorsSocket()
         }
         else
         {
-            std::cerr << "Motor [" << name << "] Not Connected. Removing from motors map." << std::endl;
+            std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
             it = motors.erase(it); // 연결되지 않은 모터를 맵에서 제거
         }
     }

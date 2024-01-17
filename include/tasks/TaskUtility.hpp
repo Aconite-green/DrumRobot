@@ -29,7 +29,7 @@
 // Functions for Activate / Deactivate Task
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-int set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec);
+/*int set_socket_timeout(int hsocket, int timeout_sec, int timeout_usec);
 void sendAndReceive(
     int socket,
     const std::string &name,
@@ -45,7 +45,7 @@ void writeAndReadForSync(
     const std::string &name,
     struct can_frame &frame,
     size_t numMaxonMotors,
-    std::function<void(const std::string &, bool)> customOutput);
+    std::function<void(const std::string &, bool)> customOutput);*/
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Functions for PathGenerating

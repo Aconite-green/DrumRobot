@@ -64,7 +64,7 @@ private:
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
-    TestManager testmanager;
+    //TestManager testmanager;
 
     // State Utility
     void displayAvailableCommands() const;
@@ -75,17 +75,15 @@ private:
     // System Initiallize
     void initializeMotors();
     void initializecanManager();
-    vector<string> extractIfnamesFromMotors(const map<string, shared_ptr<GenericMotor>> &motors);
     void DeactivateControlTask();
     bool CheckAllMotorsCurrentPosition();
     void printCurrentPositions();
     bool checkMotorPosition(std::shared_ptr<GenericMotor> motor);
-    
+
     // Home
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
-    void MaxonHMMSetting();
 
     /*Tmotor*/
     void SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
@@ -93,11 +91,10 @@ private:
     float MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
     bool PromptUserForHoming(const std::string &motorName);
-    
 
     /*Maxon*/
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    
+
     // Tune
     void FixMotorPosition();
     void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
@@ -106,10 +103,8 @@ private:
     void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
     void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
-    void MaxonDrumTest(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType, int des_vel, int direction);
-    void MaxonCSPSetting();
-    void MaxonCSVSetting();
-    void MaxonCSTSetting();
+    void setMaxonMode(std::string targetMode);
+    void maxonSdoSetting();
     void MaxonEnable();
     void MaxonQuickStopEnable();
 
