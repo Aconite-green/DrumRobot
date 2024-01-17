@@ -35,8 +35,7 @@ public:
     PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, 
     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
-
+    void ApplyDir();
     void GetDrumPositoin();
     void GetMusicSheet();
     void PathLoopTask();
@@ -110,7 +109,6 @@ private:
     map<int, int> motor_dir = {     // 1 : CW , -1 : CCW
         {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
 
-    void ApplyDir();
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
     vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);

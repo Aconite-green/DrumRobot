@@ -9,14 +9,6 @@ PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &reci
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-{
-    this->motors = motorsRef;
-
-    // 모터 방향에 따른 +/- 값 적용
-    ApplyDir();
-}
-
 void PathManager::Motors_sendBuffer()
 {
     struct can_frame frame;
@@ -56,9 +48,10 @@ void PathManager::ApplyDir()
 { // CW / CCW에 따른 방향 적용
     for (auto &entry : motors)
     {
-        standby[motor_mapping[entry.first]] *= entry.second->cwDir;
-        backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
-        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
+        shared_ptr<GenericMotor> motor = entry.second;
+        standby[motor_mapping[entry.first]] *= motor->cwDir;
+        backarr[motor_mapping[entry.first]] *= motor->cwDir;
+        motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
 }
 

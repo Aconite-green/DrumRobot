@@ -680,7 +680,7 @@ void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::stri
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 2.1;
+        additionalTorque = motor->cwDir * 1.8;
     }
 
     tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
