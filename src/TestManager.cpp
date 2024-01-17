@@ -42,6 +42,8 @@ void TestManager::getMotorPos()
 
 void TestManager::waistarr(vector<vector<double>> &T, int time, double amp)
 {
+    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    
     time = time / 2;
     for (int i = 0; i < time; i++)
     {
@@ -67,6 +69,8 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(1);
         lnr.push_back(2);
     }
+
+    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
 
     time = time / 2;
     for (int i = 0; i < time; i++)
@@ -100,6 +104,8 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(5);
     }
 
+    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+
     for (int i = 0; i < time; i++)
     {
         for (long unsigned int j = 0; j < lnr.size(); j++)
@@ -123,6 +129,8 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(6);
     }
 
+    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+
     for (int i = 0; i < time; i++)
     {
         for (long unsigned int j = 0; j < lnr.size(); j++)
@@ -145,6 +153,8 @@ void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double 
         lnr.push_back(7);
         lnr.push_back(8);
     }
+
+    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -252,7 +262,7 @@ void TestManager::run()
     int cycles = 1;
     int type = 0b00001;
     int LnR = 1;
-    double amplitude[5] = {M_PI / 2, M_PI / 4, M_PI / 6, M_PI / 6, M_PI / 4};
+    double amplitude[5] = {90.0, 45.0, 30.0, 30.0, 45.0};
 
     while (true)
     {
@@ -389,27 +399,27 @@ void TestManager::run()
 
                 if (input == '1')
                 {
-                    cout << "Enter Arm3's Desired Amplitude : ";
+                    cout << "Enter Arm3's Desired Amplitude(degree) : ";
                     cin >> amplitude[0];
                 }
                 else if (input == '2')
                 {
-                    cout << "Enter Arm2's Desired Amplitude : ";
+                    cout << "Enter Arm2's Desired Amplitude(degree) : ";
                     cin >> amplitude[1];
                 }
                 else if (input == '3')
                 {
-                    cout << "Enter Arm1's Desired Amplitude : ";
+                    cout << "Enter Arm1's Desired Amplitude(degree) : ";
                     cin >> amplitude[2];
                 }
                 else if (input == '4')
                 {
-                    cout << "Enter Waist's Desired Amplitude : ";
+                    cout << "Enter Waist's Desired Amplitude(degree) : ";
                     cin >> amplitude[3];
                 }
                 else if (input == '5')
                 {
-                    cout << "Enter Wrist's Desired Amplitude : ";
+                    cout << "Enter Wrist's Desired Amplitude(degree) : ";
                     cin >> amplitude[4];
                 }
                 else if (input == 'd')
