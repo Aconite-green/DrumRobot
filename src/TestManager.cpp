@@ -42,10 +42,11 @@ void TestManager::getMotorPos()
     }
 }
 
-void TestManager::waistarr(vector<vector<double>> &T, int time, double amp)
+void TestManager::waistarr(vector<vector<double>> &T, int time, double amp, int kp[])
 {
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
-    
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
+    kp[0] = 200;
+
     time = time / 2;
     for (int i = 0; i < time; i++)
     {
@@ -59,20 +60,28 @@ void TestManager::waistarr(vector<vector<double>> &T, int time, double amp)
     }
 }
 
-void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double amp)
+void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[])
 {
     vector<int> lnr;
     if (LnR == 1)
+    {
         lnr.push_back(1);
+        kp[1] = 200;
+    }
     else if (LnR == 2)
+    {
         lnr.push_back(2);
+        kp[2] = 200;
+    }
     else if (LnR == 3)
     {
         lnr.push_back(1);
         lnr.push_back(2);
+        kp[1] = 200;
+        kp[2] = 200;
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     time = time / 2;
     for (int i = 0; i < time; i++)
@@ -93,20 +102,28 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double a
     }
 }
 
-void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double amp)
+void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[])
 {
     vector<int> lnr;
     if (LnR == 1)
+    {
         lnr.push_back(3);
+        kp[3] = 200;
+    }
     else if (LnR == 2)
+    {
         lnr.push_back(5);
+        kp[5] = 200;
+    }
     else if (LnR == 3)
     {
         lnr.push_back(3);
         lnr.push_back(5);
+        kp[3] = 200;
+        kp[5] = 200;
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -118,20 +135,28 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double a
     }
 }
 
-void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double amp)
+void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[])
 {
     vector<int> lnr;
     if (LnR == 1)
+    {
         lnr.push_back(4);
+        kp[4] = 200;
+    }
     else if (LnR == 2)
+    {
         lnr.push_back(6);
+        kp[6] = 200;
+    }
     else if (LnR == 3)
     {
         lnr.push_back(4);
         lnr.push_back(6);
+        kp[4] = 200;
+        kp[6] = 200;
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -143,7 +168,7 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double a
     }
 }
 
-void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double amp)
+void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[])
 {
     vector<int> lnr;
     if (LnR == 1)
@@ -156,7 +181,7 @@ void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double 
         lnr.push_back(8);
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -264,7 +289,7 @@ void TestManager::run()
     int cycles = 1;
     int type = 0b00001;
     int LnR = 1;
-    double amplitude[5] = {90.0, 45.0, 30.0, 30.0, 45.0};
+    double amplitude[5] = {30.0, 45.0, 30.0, 30.0, 30.0};
 
     while (true)
     {
@@ -443,6 +468,8 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 
     int time = t / 0.005;
     vector<vector<double>> T;
+    int Kp_fixed = 350;
+    int kp[7] = {Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed};
 
     for (int i = 0; i < time; i++)
     {
@@ -451,23 +478,23 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 
     if ((type | 0b01111) == 0b11111) // Turn Wrist
     {
-        wristarr(T, time, LnR, amp[4]);
+        wristarr(T, time, LnR, amp[4], kp);
     }
     if ((type | 0b10111) == 0b11111) // Turn Waist
     {
-        waistarr(T, time, amp[3]);
+        waistarr(T, time, amp[3], kp);
     }
     if ((type | 0b11011) == 0b11111) // Turn Arm1
     {
-        arm1arr(T, time, LnR, amp[2]);
+        arm1arr(T, time, LnR, amp[2], kp);
     }
     if ((type | 0b11101) == 0b11111) // Turn Arm2
     {
-        arm2arr(T, time, LnR, amp[1]);
+        arm2arr(T, time, LnR, amp[1], kp);
     }
     if ((type | 0b11110) == 0b11111) // Turn Arm3
     {
-        arm3arr(T, time, LnR, amp[0]);
+        arm3arr(T, time, LnR, amp[0], kp);
     }
 
     for (int i = 1; i < cycles; i++)
@@ -491,7 +518,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
             {
                 float p_des = Ti[motor_mapping[entry.first]];
 
-                TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, kp[motor_mapping[entry.first]], 3.0, 0.0);
                 sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

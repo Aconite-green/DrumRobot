@@ -47,7 +47,7 @@ void StateTask::operator()()
             break;
         case Main::Tune:
             MaxonEnable();
-            // TuningLoopTask()
+            // TuningLoopTask();
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
             testmanager.run();
@@ -170,13 +170,7 @@ void StateTask::runModeLoop()
         switch (systemState.runMode.load())
         {
         case RunMode::PrePreparation:
-            std::cout << "Press 'r' to set Ready mode: ";
-            char input;
-            std::cin >> input;
-            if (input == 'r')
-            {
-                systemState.runMode = RunMode::Preparing;
-            }
+            systemState.runMode = RunMode::Preparing;
             break;
         case RunMode::Preparing:
             checkUserInput();
@@ -184,6 +178,7 @@ void StateTask::runModeLoop()
         case RunMode::Ready:
             while (true)
             {
+                char input;
                 std::cout << "Enter 't'(test) or 'p'(perform) or 'e'(exit): ";
                 std::cin >> input;
 
@@ -236,7 +231,7 @@ void StateTask::displayAvailableCommands() const
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- t : Start tuning\n";
-            std::cout << "- p : Start Perform Mode\n";
+            std::cout << "- r : Move to Ready Position\n";
             std::cout << "- b : Back to Zero Postion\n";
         }
     }
@@ -267,7 +262,7 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Tune;
             return true;
         }
-        else if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
+        else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             systemState.main = Main::Perform;
             return true;
@@ -680,7 +675,7 @@ void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::stri
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 1.8;
+        additionalTorque = motor->cwDir * 2.0;
     }
 
     tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
@@ -1835,7 +1830,7 @@ void StateTask::maxonSdoSetting()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if(name == "R_wrist")
+            else if (name == "R_wrist")
             {
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
@@ -1851,6 +1846,7 @@ void StateTask::maxonSdoSetting()
             canManager.sendAndRecv(motor, frame);
         }
     }
+    std::cout << "Maxon SDO Set\n";
 }
 
 void StateTask::setMaxonMode(std::string targetMode)
