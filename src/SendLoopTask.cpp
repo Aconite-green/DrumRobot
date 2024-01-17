@@ -230,15 +230,16 @@ void SendLoopTask::SendReadyLoop()
     cout << "Settig...\n";
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
 
     int maxonMotorCount = 0;
     for (const auto &motor_pair : motors)
     {
         // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        if (std::shared_ptr<MaxonMotor> MaxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotorCount++;
-            maxonCanInterface = maxonMotor->interFaceName;
+            maxonCanInterface = virtualMaxonMotor->interFaceName;
         }
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
@@ -253,7 +254,13 @@ void SendLoopTask::SendReadyLoop()
             external = std::chrono::system_clock::now();
 
             writeToSocket(canManager.sockets);
-
+            for (auto &motor_pair : motors)
+            {
+                shared_ptr<GenericMotor> motor = motor_pair.second;
+                canManager.sendFromBuff(motor);
+            }
+            maxoncmd.getSync(&frameToProcess);
+            canManager.txFrame();
             if (maxonMotorCount != 0)
             {
 
