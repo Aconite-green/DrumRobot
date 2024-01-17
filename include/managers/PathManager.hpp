@@ -32,8 +32,8 @@ class PathManager
 {
 
 public:
-    PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, 
-    std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    PathManager(
+        std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
@@ -57,8 +57,6 @@ public:
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
 private:
-    queue<can_frame> &sendBuffer;
-    queue<can_frame> &recieveBuffer;
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
@@ -71,7 +69,7 @@ private:
     double bpm = 10;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
-    vector<int> RF, LF;  
+    vector<int> RF, LF;
 
     double p_R = 0; // 오른손 이전 악기 유무
     double p_L = 0; // 왼손 이전 악기 유무
@@ -107,8 +105,16 @@ private:
     map<string, int> motor_mapping = {
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
     // 각 열에 해당하는 관절방향
-    map<int, int> motor_dir = {     // 1 : CW , -1 : CCW
-        {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
+    map<int, int> motor_dir = { // 1 : CW , -1 : CCW
+        {0, 1},
+        {1, 1},
+        {2, 1},
+        {3, 1},
+        {4, 1},
+        {5, 1},
+        {6, 1},
+        {7, 1},
+        {8, 1}};
 
     void ApplyDir();
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);

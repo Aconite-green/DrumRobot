@@ -19,3 +19,16 @@ MaxonMotor::MaxonMotor(uint32_t nodeId)
     canSendId = 0x600 + nodeId;
     canReceiveId = 0x580 + nodeId;
 }
+
+void GenericMotor::clearSendBuffer(){
+    while (!sendBuffer.empty()) {
+            sendBuffer.pop();
+        }
+}
+
+void GenericMotor::clearReceiveBuffer(){
+    while (!recieveBuffer.empty()) {
+            recieveBuffer.pop();
+        }
+}
+    

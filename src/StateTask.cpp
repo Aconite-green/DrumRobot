@@ -3,10 +3,8 @@
 // StateTask 클래스의 생성자
 StateTask::StateTask(SystemState &systemStateRef,
                      CanManager &canManagerRef,
-                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                     queue<can_frame> &sendBufferRef,
-                     queue<can_frame> &recieveBufferRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), testmanager(canManagerRef, sendBufferRef, recieveBufferRef, motors) {}
+                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(canManagerRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -50,7 +48,7 @@ void StateTask::operator()()
             // TuningLoopTask()
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
-            testmanager.run();
+            // testmanager.run();
             systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
@@ -1836,7 +1834,7 @@ void StateTask::maxonSdoSetting()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if(name == "R_wrist")
+            else if (name == "R_wrist")
             {
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);

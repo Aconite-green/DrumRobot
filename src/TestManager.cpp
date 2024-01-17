@@ -1,7 +1,7 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
-TestManager::TestManager(CanManager &canManagerRef, queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : canManager(canManagerRef), sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
+TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -44,8 +44,8 @@ void TestManager::getMotorPos()
 
 void TestManager::waistarr(vector<vector<double>> &T, int time, double amp)
 {
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
-    
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
+
     time = time / 2;
     for (int i = 0; i < time; i++)
     {
@@ -72,7 +72,7 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(2);
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     time = time / 2;
     for (int i = 0; i < time; i++)
@@ -106,7 +106,7 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(5);
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -131,7 +131,7 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double a
         lnr.push_back(6);
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -156,7 +156,7 @@ void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double 
         lnr.push_back(8);
     }
 
-    amp = amp / 180.0 * M_PI;   // Degree -> Radian 변경
+    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
     for (int i = 0; i < time; i++)
     {
@@ -168,39 +168,12 @@ void TestManager::wristarr(vector<vector<double>> &T, int time, int LnR, double 
     }
 }
 
-void TestManager::writeToSocket(const std::map<std::string, int> &sockets)
-{
-    struct can_frame frameToProcess;
-
-    for (auto &motor_pair : motors)
-    {
-        auto motor_ptr = motor_pair.second;
-        auto interface_name = motor_ptr->interFaceName;
-
-        frameToProcess = sendBuffer.front(); // sendBuffer에서 데이터 꺼내기
-        sendBuffer.pop();
-
-        if (sockets.find(interface_name) != sockets.end())
-        {
-            int socket_descriptor = sockets.at(interface_name);
-            ssize_t bytesWritten = write(socket_descriptor, &frameToProcess, sizeof(struct can_frame));
-            if (bytesWritten < 0)
-            {
-                std::cout << "Write Error\n";
-            }
-        }
-        else
-        {
-            std::cerr << "Socket not found for interface: " << interface_name << std::endl;
-        }
-    }
-}
-
 void TestManager::SendLoop()
 {
     cout << "Settig...\n";
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
 
     int maxonMotorCount = 0;
     for (const auto &motor_pair : motors)
@@ -210,43 +183,47 @@ void TestManager::SendLoop()
         {
             maxonMotorCount++;
             maxonCanInterface = maxonMotor->interFaceName;
+            virtualMaxonMotor = motor_pair.second;
         }
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
-    std::cout << "SendBuffer size" << sendBuffer.size() << "\n";
-    while (sendBuffer.size() != 0)
+
+    bool allBuffersEmpty;
+    do
     {
-        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-
-        if (elapsed_time.count() >= 5000) // 5ms
+        allBuffersEmpty = true;
+        for (const auto &motor_pair : motors)
         {
-            external = std::chrono::system_clock::now();
-
-            writeToSocket(canManager.sockets);
-
-            if (maxonMotorCount != 0)
+            if (!motor_pair.second->sendBuffer.empty())
             {
+                allBuffersEmpty = false;
+                break;
+            }
+        }
 
-                // sync 신호 전송
-                frameToProcess = sendBuffer.front();
-                sendBuffer.pop();
-                auto it = canManager.sockets.find(maxonCanInterface);
+        if (!allBuffersEmpty)
+        {
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
 
-                if (it != canManager.sockets.end())
+            if (elapsed_time.count() >= 5000) // 5ms
+            {
+                external = std::chrono::system_clock::now();
+
+                for (auto &motor_pair : motors)
                 {
-                    int socket_descriptor_for_sync = it->second;
-                    ssize_t bytesWritten = write(socket_descriptor_for_sync, &frameToProcess, sizeof(struct can_frame));
-
-                    handleError(bytesWritten, maxonCanInterface);
+                    shared_ptr<GenericMotor> motor = motor_pair.second;
+                    canManager.sendFromBuff(motor);
                 }
-                else
+
+                if (maxonMotorCount != 0)
                 {
-                    std::cerr << "Socket not found for interface: " << maxonCanInterface << std::endl;
+                    maxoncmd.getSync(&frameToProcess);
+                    canManager.txFrame(virtualMaxonMotor, frameToProcess);
                 }
             }
         }
-    }
+    } while (!allBuffersEmpty);
     canManager.clearReadBuffers();
 }
 
@@ -491,18 +468,16 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
             {
                 float p_des = Ti[motor_mapping[entry.first]];
 
-                TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-                sendBuffer.push(frame);
+                tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
                 float p_des = Ti[motor_mapping[entry.first]];
-                MParser.getTargetPosition(*maxonMotor, &frame, p_des);
-                sendBuffer.push(frame);
+                maxoncmd.getTargetPosition(*maxonMotor, &frame, p_des);
+                entry.second->sendBuffer.push(frame);
             }
         }
-        MParser.getSync(&frame);
-        sendBuffer.push(frame);
     }
 
     SendLoop();
