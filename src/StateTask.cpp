@@ -24,6 +24,7 @@ void StateTask::operator()()
             initializecanManager();
             maxonSdoSetting();
             MaxonEnable();
+            setMaxonMode("CSP");
             std::cout << "Press Enter to go Home\n";
             getchar();
             systemState.main = Main::Ideal;
@@ -188,6 +189,8 @@ void StateTask::runModeLoop()
 
                 if (input == 'e')
                 {
+                    systemState.runMode = RunMode::PrePreparation;
+                    systemState.main = Main::Ideal;
                 }
                 else if (input == 't')
                 {
@@ -1803,6 +1806,9 @@ void StateTask::maxonSdoSetting()
         {
 
             // CSP Settings
+            maxoncmd.getCSVMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
             maxoncmd.getPosOffset(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
@@ -1810,14 +1816,23 @@ void StateTask::maxonSdoSetting()
             canManager.sendAndRecv(motor, frame);
 
             // CSV Settings
+            maxoncmd.getCSVMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
             maxoncmd.getVelOffset(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
             // CST Settings
+            maxoncmd.getCSTMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
             maxoncmd.getTorqueOffset(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
             // HMM Settigns
+            maxoncmd.getHomeMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
             if (name == "L_wrist")
             {
 
