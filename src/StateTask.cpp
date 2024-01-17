@@ -766,15 +766,10 @@ void StateTask::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::st
             frame = motor->recieveBuffer.front();
             if (frame.can_id == maxonMotor->rxPdoIds[0])
             {
-                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                motor->currentPos = std::get<1>(parsedData);
+                cout << "\n<< Homing for " << motorName << " >>\n";
             }
             motor->recieveBuffer.pop();
         }
-    }
-    else
-    {
-        cout << "\n<< Homing for " << motorName << " >>\n";
     }
 
     sleep(10);
@@ -783,6 +778,7 @@ void StateTask::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::st
     {
 
         maxoncmd.getSync(&frame);
+        canManager.txFrame(motor, frame);
         if (canManager.recvToBuff(motor, 2))
         {
             while (!motor->recieveBuffer.empty())
