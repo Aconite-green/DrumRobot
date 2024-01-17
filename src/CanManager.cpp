@@ -408,7 +408,7 @@ bool CanManager::recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
 void CanManager::setMotorsSocket()
 {
     struct can_frame frame;
-    setSocketsTimeout(0, 5000);
+    setSocketsTimeout(0, 10000);
 
     // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
