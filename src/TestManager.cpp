@@ -45,7 +45,7 @@ void TestManager::getMotorPos()
 void TestManager::waistarr(vector<vector<double>> &T, int time, double amp, int kp[])
 {
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
-    kp[0] = 200;
+    kp[0] = 250;
 
     time = time / 2;
     for (int i = 0; i < time; i++)
@@ -289,7 +289,7 @@ void TestManager::run()
     int cycles = 1;
     int type = 0b00001;
     int LnR = 1;
-    double amplitude[5] = {30.0, 45.0, 30.0, 30.0, 30.0};
+    double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
     while (true)
     {
@@ -468,7 +468,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 
     int time = t / 0.005;
     vector<vector<double>> T;
-    int Kp_fixed = 350;
+    int Kp_fixed = 450;
     int kp[7] = {Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed, Kp_fixed};
 
     for (int i = 0; i < time; i++)

@@ -554,6 +554,7 @@ bool StateTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         tmotorcmd.getControlMode(*tMotor, &frame);
+        usleep(5000);
         if (canManager.sendAndRecv(motor, frame))
         {
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
