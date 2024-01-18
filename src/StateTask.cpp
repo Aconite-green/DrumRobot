@@ -362,6 +362,7 @@ void StateTask::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->Kp = 350;
                 tMotor->isHomed = true;
                 tMotor->interFaceName = "can0";
             }
@@ -371,6 +372,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 3;
                 tMotor->rMin = -M_PI; // -180deg
                 tMotor->rMax = 0.0f;  // 0deg
+                tMotor->Kp = 200;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -380,6 +382,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 0;
                 tMotor->rMin = 0.0f; // 0deg
                 tMotor->rMax = M_PI; // 180deg
+                tMotor->Kp = 200;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
@@ -389,6 +392,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 4;
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->Kp = 250;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -398,6 +402,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
+                tMotor->Kp = 200;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -407,6 +412,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 1;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 4.0f;  // 45deg
+                tMotor->Kp = 250;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
@@ -416,6 +422,7 @@ void StateTask::initializeMotors()
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
+                tMotor->Kp = 200;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
