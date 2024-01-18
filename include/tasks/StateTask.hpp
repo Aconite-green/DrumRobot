@@ -95,6 +95,8 @@ private:
     bool PromptUserForHoming(std::string &motorName);
 
     /*Maxon*/
+    void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
+
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
 
     // Tune

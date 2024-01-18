@@ -4,7 +4,7 @@
 StateTask::StateTask(SystemState &systemStateRef,
                      CanManager &canManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(canManagerRef, motors, systemStateRef) {}
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(systemStateRef, canManagerRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -110,6 +110,38 @@ void StateTask::homeModeLoop()
 
         if (motorName == "all")
         {
+            /* 모터 한개씩 진행
+            // 우선순위가 높은 T모터 먼저 홈
+            std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
+            for (const auto &pmotorName : priorityMotors)
+            {
+                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                {
+                    SetTmotorHome(motors[pmotorName], pmotorName);
+                }
+            }
+            for (auto &motor_pair : motors)
+            {
+                auto &motor = motor_pair.second;
+                std::string name = motor_pair.first;
+
+                // 타입에 따라 적절한 캐스팅과 초기화 수행
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+                {
+                    if (!motor->isHomed)
+                    {
+                        SetTmotorHome(motors[name], name);
+                    }
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    if (!motor->isHomed)
+                    {
+                        SetMaxonHome(motors[name], name);
+                    }
+                }
+            }*/
+
             // 우선순위가 높은 Arm1모터 먼저 홈
             std::vector<std::string> PmotorNames = {"L_arm1", "R_arm1"};
             std::vector<std::shared_ptr<GenericMotor>> Pmotors;
@@ -639,7 +671,7 @@ void StateTask::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vec
 }
 
 void StateTask::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
-{   // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
+{ // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
     struct can_frame frameToProcess;
     vector<shared_ptr<TMotor>> tMotors;
     vector<int> sensorsBit;
@@ -672,11 +704,13 @@ void StateTask::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector
     vector<double> directions, degrees;
     for (int i = 0; i < motorNames.size(); i++)
     {
-        if(motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2"){
+        if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2")
+        {
             degrees.push_back(-30.0);
             midpoints[i] *= (-1);
         }
-        else{
+        else
+        {
             degrees.push_back(90.0);
         }
         directions.push_back(-motors[i]->cwDir);
@@ -686,75 +720,102 @@ void StateTask::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector
 
     cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
 
-    // 모터를 멈추는 신호를 보냄
-    tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
-    canManager.sendAndRecv(motor, frameToProcess);
-
-    canManager.setSocketsTimeout(2, 0);
-    // 현재 position을 0으로 인식하는 명령을 보냄
-    tmotorcmd.getZero(*tMotor, &frameToProcess);
-    canManager.sendAndRecv(motor, frameToProcess);
-
-    // 상태 확인
-    /*fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-    SendCommandToTMotor(motor, frameToProcess, motorName);*/
-
-    if (motorName == "L_arm1" || motorName == "R_arm1")
+    for (int i = 0; i < motors.size(); i++)
     {
-        checkMotorPosition(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
+        // 모터를 멈추는 신호를 보냄
+        tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, 0, 0, 0, 5, 0);
+        canManager.sendAndRecv(motors[i], frameToProcess);
+
+        canManager.setSocketsTimeout(2, 0);
+        // 현재 position을 0으로 인식하는 명령을 보냄
+        tmotorcmd.getZero(*tMotors[i], &frameToProcess);
+        canManager.sendAndRecv(motors[i], frameToProcess);
+
+        if (motorNames[i] == "L_arm1" || motorNames[i] == "R_arm1")
+        {
+            degrees[i] = 90.0;
+        }
+        /*if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2"){
+            degrees[i] = -30.0;
+        }*/
+        if (motorNames[i] == "L_arm3" || motorNames[i] == "R_arm3")
+        {
+            degrees[i] = 90.0;
+        }
+
+        midpoints[i] = 0.0;
     }
-    /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
-    if(motorName == "L_arm2" || motorName == "R_arm2")
-    {
-        checkMotorPosition(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, -30, 0);
-    }*/
-    if (motorName == "L_arm3" || motorName == "R_arm3")
-    {
-        checkMotorPosition(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
-    }
+
+    RotateTMotor(motors, motorNames, directions, degrees, midpoints);
 }
 
 vector<float> StateTask::MoveTMotorToSensorLocation(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<int> &sensorsBit)
 {
-    float firstPosition = 0.0f, secondPosition = 0.0f;
-    bool firstSensorTriggered = false;
-    bool secondSensorTriggered = false;
+    struct can_frame frameToProcess;
+    vector<shared_ptr<TMotor>> tMotors;
+    vector<float> firstPosition, secondPosition, positionDifference;
+    vector<bool> firstSensorTriggered, TriggeredDone;
 
-    std::cout << "Moving " << motorName << " to sensor location.\n";
+    for (int i = 0; i < sensorsBit.size(); i++)
+    {
+        tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
+        firstPosition.push_back(0.0f);
+        secondPosition.push_back(0.0f);
+        firstSensorTriggered.push_back(false);
+        TriggeredDone.push_back(false);
+
+        cout << "Moving " << motorNames[i] << " to sensor location.\n";
+    }
 
     while (true)
     {
-        bool sensorTriggered = ((sensor.ReadVal() >> sensorBit) & 1) != 0;
-
-        if (!firstSensorTriggered && sensorTriggered)
+        // 모든 모터 센싱 완료 시 break
+        bool done = true;
+        for (int i = 0; i < sensorsBit.size(); i++)
         {
-            // 첫 번째 센서 인식
-            firstSensorTriggered = true;
-            checkMotorPosition(motor);
-            firstPosition = motor->currentPos;
-            std::cout << motorName << " first sensor position: " << firstPosition << endl;
+            if (!TriggeredDone[i])
+                done = false;
         }
-        else if (firstSensorTriggered && !sensorTriggered)
+        if (done)
+            break;
+
+        for (int i = 0; i < sensorsBit.size(); i++)
         {
-            // 센서 인식 해제
-            secondSensorTriggered = true;
-            checkMotorPosition(motor);
-            secondPosition = motor->currentPos;
-            std::cout << motorName << " second sensor position: " << secondPosition << endl;
+            if (!TriggeredDone[i])
+            {
+                bool sensorTriggered = ((sensor.ReadVal() >> sensorsBit[i]) & 1) != 0;
 
-            break; // while문 탈출
+                if (!firstSensorTriggered[i] && sensorTriggered)
+                {
+                    // 첫 번째 센서 인식
+                    firstSensorTriggered[i] = true;
+                    checkMotorPosition(motors[i]);
+                    firstPosition[i] = motors[i]->currentPos;
+                    std::cout << motorNames[i] << " first sensor position: " << firstPosition[i] << endl;
+                }
+                else if (firstSensorTriggered[i] && !sensorTriggered)
+                {
+                    // 센서 인식 해제
+                    checkMotorPosition(motors[i]);
+                    secondPosition[i] = motors[i]->currentPos;
+                    std::cout << motorNames[i] << " second sensor position: " << secondPosition[i] << endl;
+
+                    TriggeredDone[i] = true;
+                }
+            }
+            else
+            {
+                tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, secondPosition[i], 0, motors[i]->Kp, 2.5, 0);
+                canManager.sendAndRecv(motors[i], frameToProcess);
+            }
         }
-
-        if (secondSensorTriggered)
-            break; // 두 번째 센서 인식 후 반복문 탈출
     }
 
-    // 1번과 2번 위치의 차이의 절반을 저장
-    float positionDifference = abs((secondPosition - firstPosition) / 2.0f);
-    std::cout << motorName << " midpoint position: " << positionDifference << endl;
+    for (int i = 0; i < sensorsBit.size(); i++)
+    {
+        positionDifference.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
+        cout << motorNames[i] << " midpoint position: " << positionDifference[i] << endl;
+    }
 
     return positionDifference;
 }
@@ -763,20 +824,16 @@ void StateTask::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
 {
 
     struct can_frame frameToProcess;
-    std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor);
+    vector<shared_ptr<TMotor>> tMotors;
+    vector<double> targetRadians;
+    for (int i = 0; i < motorNames.size(); i++)
+    {
+        tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
+        targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
+    }
+
     chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-    int kp = 250;
-
-    if (motorName == "L_arm1" || motorName == "R_arm1")
-        kp = 250;
-    else if (motorName == "L_arm2" || motorName == "R_arm2")
-        kp = 350;
-    else if (motorName == "L_arm3" || motorName == "R_arm3")
-        kp = 350;
-    // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
-    const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
-    int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
-
+    int totalSteps = 4000 / 5; // 4초 동안 이동 - 5ms 간격으로 나누기
     for (int step = 1; step <= totalSteps; ++step)
     {
         while (1)
@@ -789,11 +846,12 @@ void StateTask::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         startTime = std::chrono::system_clock::now();
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
-        double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
-        tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
-        canManager.sendAndRecv(motor, frameToProcess);
-
-        startTime = std::chrono::system_clock::now();
+        for (int i = 0; i < motorNames.size(); i++)
+        {
+            double targetPosition = targetRadians[i] * (static_cast<double>(step) / totalSteps) + motors[i]->currentPos;
+            tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, targetPosition, 0, motors[i]->Kp, 2.5, 0);
+            canManager.sendAndRecv(motors[i], frameToProcess);
+        }
     }
 
     totalSteps = 500 / 5;
@@ -809,14 +867,95 @@ void StateTask::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         startTime = std::chrono::system_clock::now();
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
-        double targetPosition = targetRadian + motor->currentPos;
-        tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
-        canManager.sendAndRecv(motor, frameToProcess);
-
-        startTime = std::chrono::system_clock::now();
+        for (int i = 0; i < motorNames.size(); i++)
+        {
+            double targetPosition = targetRadians[i] + motors[i]->currentPos;
+            tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, targetPosition, 0, motors[i]->Kp, 2.5, 0);
+            canManager.sendAndRecv(motors[i], frameToProcess);
+        }
     }
 
-    checkMotorPosition(motor);
+    for (auto &motor : motors)
+    {
+        checkMotorPosition(motor);
+    }
+}
+
+void StateTask::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
+{
+    struct can_frame frame;
+
+    canManager.clearReadBuffers();
+    canManager.setSocketsTimeout(2, 0);
+    vector<shared_ptr<MaxonMotor>> maxonMotors;
+    for (int i = 0; i < motorNames.size(); i++)
+    {
+        maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(motors[i]));
+
+        // Start to Move by homing method (일단은 PDO)
+
+        maxoncmd.getStartHoming(*maxonMotors[i], &frame);
+        canManager.txFrame(motors[i], frame);
+        usleep(50000);
+    }
+
+    maxoncmd.getSync(&frame);
+    canManager.txFrame(motors[0], frame);
+    if (canManager.recvToBuff(motors[0], 2))
+    {
+        while (!motors[0]->recieveBuffer.empty())
+        {
+            frame = motors[0]->recieveBuffer.front();
+            for (int i = 0; i < motorNames.size(); i++)
+            {
+                if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
+                {
+                    cout << "\n<< Homing for " << motorNames[i] << " >>\n";
+                }
+            }
+            motors[0]->recieveBuffer.pop();
+        }
+    }
+
+    sleep(10);
+    // 홈 위치에 도달할 때까지 반복
+    bool done = false;
+    while (!done)
+    {
+        //! motor->isHomed
+        done = true;
+        for (auto &motor : motors)
+        {
+            if(!motor->isHomed)
+                done = false;
+        }
+
+        maxoncmd.getSync(&frame);
+        canManager.txFrame(motors[0], frame);
+        if (canManager.recvToBuff(motors[0], 2))
+        {
+            while (!motors[0]->recieveBuffer.empty())
+            {
+                frame = motors[0]->recieveBuffer.front();
+                for (int i = 0; i < motorNames.size(); i++)
+                {
+                    if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
+                    {
+                        if (frame.data[1] & 0x80) // 비트 15 확인
+                        {
+                            motors[i]->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
+                                                       // 'this'를 사용하여 멤버 함수 호출
+                            cout << "-- Homing completed for " << motorNames[i] << " --\n\n";
+                        }
+                    }
+                }
+                motors[0]->recieveBuffer.pop();
+            }
+        }
+        canManager.clearReadBuffers();
+
+        sleep(1); // 100ms 대기
+    }
 }
 
 void StateTask::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
@@ -1017,7 +1156,6 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor
 {
     float firstPosition = 0.0f, secondPosition = 0.0f;
     bool firstSensorTriggered = false;
-    bool secondSensorTriggered = false;
 
     std::cout << "Moving " << motorName << " to sensor location.\n";
 
@@ -1036,16 +1174,12 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor
         else if (firstSensorTriggered && !sensorTriggered)
         {
             // 센서 인식 해제
-            secondSensorTriggered = true;
             checkMotorPosition(motor);
             secondPosition = motor->currentPos;
             std::cout << motorName << " second sensor position: " << secondPosition << endl;
 
             break; // while문 탈출
         }
-
-        if (secondSensorTriggered)
-            break; // 두 번째 센서 인식 후 반복문 탈출
     }
 
     // 1번과 2번 위치의 차이의 절반을 저장
