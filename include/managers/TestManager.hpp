@@ -31,7 +31,7 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(CanManager &canManagerRef, queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef,
+    TestManager(CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
@@ -41,10 +41,8 @@ public:
 
 private:
     CanManager &canManager;
-    queue<can_frame> &sendBuffer;
-    queue<can_frame> &recieveBuffer;
-    TMotorCommandParser TParser;
-    MaxonCommandParser MParser;
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     // 각 관절에 해당하는 열

@@ -40,8 +40,8 @@ public:
     // 생성자 선언
     RecieveLoopTask(SystemState &systemStateRef,
                     CanManager &canManagerRef,
-                    std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
-                    queue<can_frame> &recieveBufferRef);
+                    std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef
+                    );
     // operator() 함수 선언
     void operator()();
 
@@ -49,7 +49,7 @@ private:
     SystemState &systemState;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-    queue<can_frame> &recieveBuffer;
+    
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -59,8 +59,7 @@ private:
     const int TIME_THRESHOLD_MS = 5;
     int writeFailCount = 0;
 
-    void RecieveLoop(queue<can_frame> &recieveBuffer);
-    void handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer);
+    void RecieveLoop();
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void checkMotors();
     bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);

@@ -22,17 +22,14 @@ int main(int argc, char *argv[])
     // Create Share Resource
 
     SystemState systemState;
-
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
-    queue<can_frame> sendBuffer;
-    queue<can_frame> recieveBuffer;
-    CanManager canManager(sendBuffer, recieveBuffer,motors);
+    CanManager canManager(motors);
     
     // Create Tasks for Threads
-    StateTask stateTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
-    SendLoopTask sendLoopTask(systemState, canManager, motors, sendBuffer, recieveBuffer);
-    RecieveLoopTask recieveLoopTask(systemState, canManager, motors, recieveBuffer);
+    StateTask stateTask(systemState, canManager, motors);
+    SendLoopTask sendLoopTask(systemState, canManager, motors);
+    RecieveLoopTask recieveLoopTask(systemState, canManager, motors);
 
     // Create Threads
     std::thread state_thread(stateTask);
