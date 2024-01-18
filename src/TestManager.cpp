@@ -327,7 +327,7 @@ void TestManager::SendLoop()
 
 void TestManager::multiTestLoop()
 {
-    motorInitialize(motors);
+    ApplyDir();
     getMotorPos();
 
     char userInput;
@@ -463,7 +463,7 @@ void TestManager::multiTestLoop()
         }
         else if (userInput == 'a')
         {
-            char input;
+            int input;
             cout << "Choose Motor\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
@@ -473,31 +473,8 @@ void TestManager::multiTestLoop()
             cout << "Enter Desired Motor : ";
             cin >> input;
 
-            if (input == '1')
-            {
-                cout << "Enter Arm3's Desired Amplitude(degree) : ";
-                cin >> amplitude[0];
-            }
-            else if (input == '2')
-            {
-                cout << "Enter Arm2's Desired Amplitude(degree) : ";
-                cin >> amplitude[1];
-            }
-            else if (input == '3')
-            {
-                cout << "Enter Arm1's Desired Amplitude(degree) : ";
-                cin >> amplitude[2];
-            }
-            else if (input == '4')
-            {
-                cout << "Enter Waist's Desired Amplitude(degree) : ";
-                cin >> amplitude[3];
-            }
-            else if (input == '5')
-            {
-                cout << "Enter Wrist's Desired Amplitude(degree) : ";
-                cin >> amplitude[4];
-            }
+            cout << "Enter Desired Amplitude(degree) : ";
+            cin >> amplitude[input - 1];
         }
         else if (userInput == 'p')
         {
@@ -602,7 +579,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
             {
                 float p_des = Ti[motor_mapping[entry.first]];
 
-                tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, kp[motor_mapping[entry.first]], 3.0, 0.0);
                 entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
