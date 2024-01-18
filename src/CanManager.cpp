@@ -322,26 +322,6 @@ int CanManager::setSocketTimeout(int socket, int sec, int usec)
     return 0;
 }
 
-void CanManager::releaseBusyResources()
-{
-    for (const auto &ifname : this->ifnames)
-    {
-        if (getCanPortStatus(ifname.c_str()))
-        {
-            // 포트가 사용 중인 경우, 포트를 다운시키고 소켓을 닫음
-            deactivateCanPort(ifname.c_str());
-            int socket_fd = sockets[ifname];
-            if (socket_fd >= 0)
-            {
-                close(socket_fd);     // 기존 소켓을 닫습니다.
-                sockets[ifname] = -1; // 소켓 디스크립터 값을 초기화합니다.
-            }
-            // 포트를 다시 활성화
-            activateCanPort(ifname.c_str());
-        }
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                Utility Functions                                          */
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -459,36 +439,48 @@ void CanManager::setMotorsSocket()
         else
         {
             std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
-            it = motors.erase(it); 
+            it = motors.erase(it);
         }
     }
 }
 
-void CanManager::readFramesFromAllSockets() {
+void CanManager::readFramesFromAllSockets()
+{
     struct can_frame frame;
-    for (const auto &socketPair : sockets) {
+    for (const auto &socketPair : sockets)
+    {
         int socket_fd = socketPair.second;
-        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame)) {
+        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        {
             tempFrames[socket_fd].push_back(frame);
         }
     }
 }
 
-void CanManager::distributeFramesToMotors() {
-    for (auto &motor_pair : motors) {
+void CanManager::distributeFramesToMotors()
+{
+    for (auto &motor_pair : motors)
+    {
         auto &motor = motor_pair.second;
 
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor)) {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        {
             // TMotor 처리
-            for (auto &frame : tempFrames[motor->socket]) {
-                if (frame.data[0] == tMotor->nodeId) {
+            for (auto &frame : tempFrames[motor->socket])
+            {
+                if (frame.data[0] == tMotor->nodeId)
+                {
                     tMotor->recieveBuffer.push(frame);
                 }
             }
-        } else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor)) {
+        }
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        {
             // MaxonMotor 처리
-            for (auto &frame : tempFrames[motor->socket]) {
-                if (frame.can_id == maxonMotor->txPdoIds[0]) {
+            for (auto &frame : tempFrames[motor->socket])
+            {
+                if (frame.can_id == maxonMotor->txPdoIds[0])
+                {
                     maxonMotor->recieveBuffer.push(frame);
                 }
             }
@@ -497,4 +489,66 @@ void CanManager::distributeFramesToMotors() {
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
 }
 
+bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
+{
+    struct can_frame frame;
+    setSocketsTimeout(0, 5000 /*5ms*/);
+    clearReadBuffers();
 
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    {
+        tmotorcmd.getControlMode(*tMotor, &frame);
+        if (sendAndRecv(motor, frame))
+        {
+            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+            motor->currentPos = std::get<1>(parsedData);
+            motor->isConected = true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getSync(&frame);
+        txFrame(motor, frame);
+
+        if (recvToBuff(motor, 2))
+        {
+            while (!motor->recieveBuffer.empty())
+            {
+                frame = motor->recieveBuffer.front();
+                if (frame.can_id == maxonMotor->rxPdoIds[0])
+                {
+                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    motor->currentPos = std::get<1>(parsedData);
+                    motor->isConected = true;
+                }
+                motor->recieveBuffer.pop();
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CanManager::checkAllMotors()
+{
+    std::cout << "Checking all positions for motors [rad]\n\n";
+    bool allMotorsChecked = true;
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        if (!checkConnection(motor))
+        {
+            allMotorsChecked = false;
+        }
+    }
+    return allMotorsChecked;
+}

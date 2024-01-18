@@ -12,9 +12,10 @@ void SendLoopTask::operator()()
     initializePathManager();
     while (systemState.main != Main::Shutdown)
     {
+        usleep(50000);
         if (systemState.main == Main::Back)
         {
-            if (CheckAllMotorsCurrentPosition())
+            if (canManager.checkAllMotors())
             {
                 clearBuffer();
                 cout << "Get Back...\n";
@@ -27,7 +28,7 @@ void SendLoopTask::operator()()
         else if (systemState.main == Main::Ready)
         {
 
-            if (CheckAllMotorsCurrentPosition())
+            if (canManager.checkAllMotors())
             {
                 cout << "Get Ready...\n";
                 pathManager.GetArr(pathManager.standby);
@@ -36,15 +37,12 @@ void SendLoopTask::operator()()
                 systemState.main = Main::Ideal;
             }
         }
-
-        usleep(50000);
-        while (systemState.main == Main::Perform)
+        else if (systemState.main == Main::Perform)
         {
-            usleep(50000);
 
             if (systemState.runMode == RunMode::Running)
             {
-                if (CheckAllMotorsCurrentPosition())
+                if (canManager.checkAllMotors())
                 {
                     SendLoop();
                     systemState.runMode = RunMode::PrePreparation;
@@ -111,7 +109,7 @@ void SendLoopTask::SendLoop()
             else if (pathManager.line == pathManager.total)
             {
                 std::cout << "Turn Back\n";
-                CheckAllMotorsCurrentPosition();
+                canManager.checkAllMotors();
                 pathManager.GetArr(pathManager.backarr);
                 pathManager.line++;
             }
@@ -263,24 +261,6 @@ void SendLoopTask::initializePathManager()
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
 }
-bool SendLoopTask::CheckAllMotorsCurrentPosition()
-{
-
-    std::cout << "Checking all positions for motors [rad]\n"
-              << endl;
-    bool allMotorsChecked = true;
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        if (!checkMotorPosition(motor))
-        {
-            allMotorsChecked = false;
-        }
-    }
-    return allMotorsChecked;
-}
 
 void SendLoopTask::printCurrentPositions()
 {
@@ -291,51 +271,6 @@ void SendLoopTask::printCurrentPositions()
         std::cout << "[" << std::hex << motor->nodeId << std::dec << "] ";
         std::cout << name << " : " << motor->currentPos << endl;
     }
-}
-
-bool SendLoopTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
-{
-    struct can_frame frame;
-    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-    canManager.clearReadBuffers();
-
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-    {
-        tmotorcmd.getControlMode(*tMotor, &frame);
-        if (canManager.sendAndRecv(motor, frame))
-        {
-            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-            motor->currentPos = std::get<1>(parsedData);
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-    {
-        maxoncmd.getSync(&frame);
-        canManager.txFrame(motor, frame);
-
-        if (canManager.recvToBuff(motor, 2))
-        {
-            while (!motor->recieveBuffer.empty())
-            {
-                frame = motor->recieveBuffer.front();
-                if (frame.can_id == maxonMotor->rxPdoIds[0])
-                {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    motor->currentPos = std::get<1>(parsedData);
-                }
-                motor->recieveBuffer.pop();
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-    return true;
 }
 
 void SendLoopTask::clearBuffer()

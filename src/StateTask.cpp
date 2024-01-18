@@ -37,7 +37,7 @@ void StateTask::operator()()
             runModeLoop();
             break;
         case Main::Check:
-            CheckAllMotorsCurrentPosition();
+            canManager.checkAllMotors();
             printCurrentPositions();
             std::cout << "Press Enter to Go home\n";
             getchar();
@@ -46,7 +46,7 @@ void StateTask::operator()()
         case Main::Tune:
             MaxonEnable();
             // TuningLoopTask();
-            CheckAllMotorsCurrentPosition();
+            canManager.checkAllMotors();
             setMaxonMode("CSP");
             systemState.testMode = TestMode::MultiMode;
             testmanager.mainLoop();
@@ -261,18 +261,18 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Shutdown;
             return true;
         }
-        if (input == "p" && systemState.homeMode == HomeMode::HomeDone&& systemState.runMode == RunMode::Ready)
+        if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
         {
             systemState.main = Main::Perform;
+            systemState.runMode = RunMode::Running;
             return true;
         }
-        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone&& systemState.runMode == RunMode::Ready)
+        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
         {
             systemState.main = Main::Back;
             return true;
         }
     }
-    
 
     return false;
 }
@@ -507,24 +507,7 @@ void StateTask::DeactivateControlTask()
     }
 }
 
-bool StateTask::CheckAllMotorsCurrentPosition()
-{
 
-    std::cout << "Checking all positions for motors [rad]\n"
-              << endl;
-    bool allMotorsChecked = true;
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        if (!checkMotorPosition(motor))
-        {
-            allMotorsChecked = false;
-        }
-    }
-    return allMotorsChecked;
-}
 
 void StateTask::printCurrentPositions()
 {
@@ -537,51 +520,7 @@ void StateTask::printCurrentPositions()
     }
 }
 
-bool StateTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
-{
-    struct can_frame frame;
-    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-    canManager.clearReadBuffers();
 
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-    {
-        tmotorcmd.getControlMode(*tMotor, &frame);
-        usleep(5000);
-        if (canManager.sendAndRecv(motor, frame))
-        {
-            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-            motor->currentPos = std::get<1>(parsedData);
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-    {
-        maxoncmd.getSync(&frame);
-        canManager.txFrame(motor, frame);
-
-        if (canManager.recvToBuff(motor, 2))
-        {
-            while (!motor->recieveBuffer.empty())
-            {
-                frame = motor->recieveBuffer.front();
-                if (frame.can_id == maxonMotor->rxPdoIds[0])
-                {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    motor->currentPos = std::get<1>(parsedData);
-                }
-                motor->recieveBuffer.pop();
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-    return true;
-}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////
@@ -651,7 +590,8 @@ void StateTask::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::st
         startTime = std::chrono::system_clock::now();
     }
 
-    checkMotorPosition(motor);
+    canManager.checkConnection(motor);
+    
 }
 
 void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
@@ -697,18 +637,18 @@ void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::stri
 
     if (motorName == "L_arm1" || motorName == "R_arm1")
     {
-        checkMotorPosition(motor);
+        canManager.checkConnection(motor);
         RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
     /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
     if(motorName == "L_arm2" || motorName == "R_arm2")
     {
-        checkMotorPosition(motor);
+        canManager.checkConnection(motor);
         RotateTMotor(motor, motorName, motor->cwDir, -30, 0);
     }*/
     if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        checkMotorPosition(motor);
+        canManager.checkConnection(motor);
         RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
     }
 }
@@ -806,7 +746,7 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor
         {
             // 첫 번째 센서 인식
             firstSensorTriggered = true;
-            checkMotorPosition(motor);
+            canManager.checkConnection(motor);
             firstPosition = motor->currentPos;
             std::cout << motorName << " first sensor position: " << firstPosition << endl;
         }
@@ -814,7 +754,7 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor
         {
             // 센서 인식 해제
             secondSensorTriggered = true;
-            checkMotorPosition(motor);
+            canManager.checkConnection(motor);
             secondPosition = motor->currentPos;
             std::cout << motorName << " second sensor position: " << secondPosition << endl;
 
@@ -873,7 +813,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
 {
     struct can_frame frame;
 
-    checkMotorPosition(motor);
+    canManager.checkConnection(motor);
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {

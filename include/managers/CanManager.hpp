@@ -39,7 +39,11 @@ public:
     void restartCanPorts();
     void setSocketsTimeout(int sec, int usec);
     void checkCanPortsStatus();
+    
+    // Motor Functions
     void setMotorsSocket();
+    bool checkConnection(std::shared_ptr<GenericMotor> motor);
+    bool checkAllMotors();
 
     // Basic Function
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
@@ -47,9 +51,11 @@ public:
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
     bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
-
+    
+    // DrumPlay Functions
     void readFramesFromAllSockets();
     void distributeFramesToMotors();
+
 
     // Buffer Uitility
     void clearReadBuffers();
@@ -74,7 +80,6 @@ private:
     // Network (Socket)
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
-    void releaseBusyResources();
 
     // Buffer Uitility
     void clearCanBuffer(int canSocket);

@@ -73,9 +73,7 @@ private:
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
-    bool CheckAllMotorsCurrentPosition();
     void printCurrentPositions();
-    bool checkMotorPosition(std::shared_ptr<GenericMotor> motor);
 
     // Home
     void homeModeLoop();
