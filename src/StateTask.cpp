@@ -4,7 +4,7 @@
 StateTask::StateTask(SystemState &systemStateRef,
                      CanManager &canManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(canManagerRef, motors) {}
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(canManagerRef, motors, systemStateRef) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -48,13 +48,16 @@ void StateTask::operator()()
             // TuningLoopTask();
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
-            testmanager.run();
+            systemState.testMode = TestMode::MultiMode;
+            testmanager.mainLoop();
             systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
             break;
         case Main::Back:
+            break;
+        case Main::Ready:
             break;
         default:
             systemState.main = Main::Ideal;
@@ -168,31 +171,8 @@ void StateTask::runModeLoop()
         switch (systemState.runMode.load())
         {
         case RunMode::PrePreparation:
-            systemState.runMode = RunMode::Preparing;
-            break;
-        case RunMode::Preparing:
-            checkUserInput();
             break;
         case RunMode::Ready:
-            while (true)
-            {
-                char input;
-                std::cout << "Enter 't'(test) or 'p'(perform) or 'e'(exit): ";
-                std::cin >> input;
-
-                if (input == 'e')
-                {
-                    systemState.runMode = RunMode::Running;
-                    systemState.main = Main::Ideal;
-                }
-                else if (input == 't')
-                {
-                }
-                else if (input == 'p')
-                {
-                    systemState.runMode = RunMode::Running;
-                }
-            }
             break;
         case RunMode::Running:
             checkUserInput();
@@ -228,14 +208,15 @@ void StateTask::displayAvailableCommands() const
         }
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
-            std::cout << "- t : Start tuning\n";
+
             std::cout << "- r : Move to Ready Position\n";
+        }
+        else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
+        {
+            std::cout << "- p : Start Perform\n";
+            std::cout << "- t : Start tuning\n";
             std::cout << "- b : Back to Zero Postion\n";
         }
-    }
-    else if (systemState.main == Main::Homing)
-    {
-        // 현재 Homing 상태 알 수 있는 로직추가
     }
     else if (systemState.main == Main::Perform)
     {
@@ -262,7 +243,7 @@ bool StateTask::processInput(const std::string &input)
         }
         else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
-            systemState.main = Main::Perform;
+            systemState.main = Main::Ready;
             return true;
         }
         else if (input == "x" && systemState.homeMode == HomeMode::NotHome)
@@ -280,12 +261,18 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Shutdown;
             return true;
         }
-        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
+        if (input == "p" && systemState.homeMode == HomeMode::HomeDone&& systemState.runMode == RunMode::Ready)
+        {
+            systemState.main = Main::Perform;
+            return true;
+        }
+        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone&& systemState.runMode == RunMode::Ready)
         {
             systemState.main = Main::Back;
             return true;
         }
     }
+    
 
     return false;
 }

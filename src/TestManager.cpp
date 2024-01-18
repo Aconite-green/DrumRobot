@@ -1,7 +1,7 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
-TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : canManager(canManagerRef), motors(motorsRef)
+TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, SystemState &systemStateRef)
+    : canManager(canManagerRef), motors(motorsRef), systemState(systemStateRef)
 {
 }
 
@@ -245,6 +245,27 @@ void TestManager::SendLoop()
 /*                                  MAKE PATH                                 */
 ///////////////////////////////////////////////////////////////////////////////
 
+void TestManager::mainLoop()
+{
+    while (systemState.testMode != TestMode::Exit)
+    {
+        switch (systemState.testMode.load())
+        {
+        case TestMode::MultiMode:
+            run();
+            break;
+        case TestMode::SingleMode:
+            break;
+        case TestMode::StickMode:
+            break;
+        case TestMode::TestError:
+            break;
+        case TestMode::Exit:
+            break;
+        }
+    }
+}
+
 void TestManager::run()
 {
     ApplyDir();
@@ -326,6 +347,7 @@ void TestManager::run()
 
         if (userInput == 'e')
         {
+            systemState.testMode = TestMode::Exit;
             break;
         }
         else if (userInput == 'd')

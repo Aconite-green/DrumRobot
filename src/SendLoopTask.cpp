@@ -20,6 +20,19 @@ void SendLoopTask::operator()()
                 cout << "Get Back...\n";
                 pathManager.GetArr(pathManager.backarr);
                 SendReadyLoop();
+                systemState.runMode = RunMode::PrePreparation;
+                systemState.main = Main::Ideal;
+            }
+        }
+        else if (systemState.main == Main::Ready)
+        {
+
+            if (CheckAllMotorsCurrentPosition())
+            {
+                cout << "Get Ready...\n";
+                pathManager.GetArr(pathManager.standby);
+                SendReadyLoop();
+                systemState.runMode = RunMode::Ready;
                 systemState.main = Main::Ideal;
             }
         }
@@ -29,17 +42,7 @@ void SendLoopTask::operator()()
         {
             usleep(50000);
 
-            if (systemState.runMode == RunMode::Preparing)
-            {
-                if (CheckAllMotorsCurrentPosition())
-                {
-                    cout << "Get Ready...\n";
-                    pathManager.GetArr(pathManager.standby);
-                    SendReadyLoop();
-                    systemState.runMode = RunMode::Ready;
-                }
-            }
-            else if (systemState.runMode == RunMode::Running)
+            if (systemState.runMode == RunMode::Running)
             {
                 if (CheckAllMotorsCurrentPosition())
                 {
@@ -313,7 +316,7 @@ bool SendLoopTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
     {
         maxoncmd.getSync(&frame);
         canManager.txFrame(motor, frame);
-        
+
         if (canManager.recvToBuff(motor, 2))
         {
             while (!motor->recieveBuffer.empty())
@@ -334,8 +337,6 @@ bool SendLoopTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
     }
     return true;
 }
-
-
 
 void SendLoopTask::clearBuffer()
 {
