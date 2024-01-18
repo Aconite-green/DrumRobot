@@ -1,7 +1,9 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    :  motors(motorsRef)
+PathManager::PathManager(SystemState &systemStateRef,
+                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                         CanManager &canManagerRef)
+    : systemState(systemStateRef), motors(motorsRef), canManager(canManagerRef)
 {
 }
 
@@ -28,7 +30,6 @@ void PathManager::Motors_sendBuffer()
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
             entry.second->sendBuffer.push(frame);
-            
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {

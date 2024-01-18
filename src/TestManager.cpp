@@ -1,8 +1,29 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
-TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, SystemState &systemStateRef)
-    : canManager(canManagerRef), motors(motorsRef), systemState(systemStateRef)
+TestManager::TestManager(SystemState &systemStateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
 {
+}
+
+void TestManager::mainLoop()
+{
+    while (systemState.testMode != TestMode::Exit)
+    {
+        switch (systemState.testMode.load())
+        {
+        case TestMode::MultiMode:
+            run();
+            break;
+        case TestMode::SingleMode:
+            break;
+        case TestMode::StickMode:
+            break;
+        case TestMode::TestError:
+            break;
+        case TestMode::Exit:
+            break;
+        }
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -245,26 +266,34 @@ void TestManager::SendLoop()
 /*                                  MAKE PATH                                 */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::mainLoop()
-{
-    while (systemState.testMode != TestMode::Exit)
-    {
-        switch (systemState.testMode.load())
-        {
-        case TestMode::MultiMode:
-            run();
-            break;
-        case TestMode::SingleMode:
-            break;
-        case TestMode::StickMode:
-            break;
-        case TestMode::TestError:
-            break;
-        case TestMode::Exit:
-            break;
-        }
-    }
-}
+// 각 관절에 해당하는 열
+    map<string, int> motor_mapping = {
+        {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
+    // 각 열에 해당하는 관절방향
+    map<int, int> motor_dir = { // 1 : CW , -1 : CCW
+        {0, 1},
+        {1, 1},
+        {2, 1},
+        {3, 1},
+        {4, 1},
+        {5, 1},
+        {6, 1},
+        {7, 1},
+        {8, 1}};
+
+    map<int, int> motor_Kp = { // Desired Kp Gain
+        {0, 200},
+        {1, 200},
+        {2, 200},
+        {3, 200},
+        {4, 200},
+        {5, 200},
+        {6, 200},
+        {7, 200},
+        {8, 200}};
+
+
+
 
 void TestManager::run()
 {

@@ -66,7 +66,5 @@ private:
     int writeFailCount;
     void initializePathManager();
     void clearBuffer();
-    bool checkMotorPosition(std::shared_ptr<GenericMotor> motor);
-    bool CheckAllMotorsCurrentPosition();
     void printCurrentPositions();
 };
