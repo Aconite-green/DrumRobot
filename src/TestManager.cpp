@@ -520,7 +520,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
             {
                 float p_des = Ti[motor_mapping[entry.first]];
 
-                tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, 0, kp[motor_mapping[entry.first]], 3.0, 0.0);
                 entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
