@@ -20,7 +20,7 @@ void StateTask::operator()()
         case Main::SystemInit:
             initializeMotors();
             initializecanManager();
-            maxonSdoSetting();
+            motorSettingCmd();
             MaxonEnable();
             setMaxonMode("CSP");
             std::cout << "Press Enter to go Home\n";
@@ -48,7 +48,7 @@ void StateTask::operator()()
             // TuningLoopTask()
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
-            // testmanager.run();
+            testmanager.run();
             systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
@@ -187,7 +187,7 @@ void StateTask::runModeLoop()
 
                 if (input == 'e')
                 {
-                    systemState.runMode = RunMode::PrePreparation;
+                    systemState.runMode = RunMode::Running;
                     systemState.main = Main::Ideal;
                 }
                 else if (input == 't')
@@ -1789,10 +1789,10 @@ void StateTask::MaxonQuickStopEnable()
     }
 }
 
-void StateTask::maxonSdoSetting()
+void StateTask::motorSettingCmd()
 {
     struct can_frame frame;
-    canManager.setSocketsTimeout(0, 10000);
+    canManager.setSocketsTimeout(2, 0);
     for (const auto &motorPair : motors)
     {
         std::string name = motorPair.first;
@@ -1848,6 +1848,14 @@ void StateTask::maxonSdoSetting()
 
             maxoncmd.getHomePosition(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
+        }
+        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+        {
+            if (name == "waist")
+            {
+                tmotorcmd.getZero(*tmotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
         }
     }
 }

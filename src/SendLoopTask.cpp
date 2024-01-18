@@ -17,7 +17,7 @@ void SendLoopTask::operator()()
             {
                 clearBuffer();
                 cout << "Get Back...\n";
-                // pathManager.GetArr(pathManager.backarr);
+                pathManager.GetArr(pathManager.backarr);
                 SendReadyLoop();
                 systemState.main = Main::Ideal;
             }
@@ -34,7 +34,7 @@ void SendLoopTask::operator()()
                 {
                     initializePathManager();
                     cout << "Get Ready...\n";
-                    // pathManager.GetArr(pathManager.standby);
+                    pathManager.GetArr(pathManager.standby);
                     SendReadyLoop();
                     systemState.runMode = RunMode::Ready;
                 }
@@ -260,119 +260,82 @@ void SendLoopTask::initializePathManager()
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
 }
-
 bool SendLoopTask::CheckAllMotorsCurrentPosition()
 {
-    std::cout << "Checking all positions for motors" << endl;
+
+    std::cout << "Checking all positions for motors [rad]\n"
+              << endl;
     bool allMotorsChecked = true;
-    for (const auto &motor_pair : motors)
+    for (auto &motorPair : motors)
     {
-        if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        if (!checkMotorPosition(motor))
         {
-            bool motorChecked = CheckTmotorPosition(motor);
-            if (!motorChecked)
-            {
-                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-                allMotorsChecked = false;
-            }
-        }
-        else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            bool motorChecked = CheckMaxonPosition(motor);
-            if (!motorChecked)
-            {
-                cerr << "Failed to check position for motor: " << motor_pair.first << endl;
-                allMotorsChecked = false;
-            }
+            allMotorsChecked = false;
         }
     }
-    std::cout << "Press Enter to Move On" << endl;
     return allMotorsChecked;
 }
 
-bool SendLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
+void SendLoopTask::printCurrentPositions()
 {
-    struct can_frame frame;
-    tmotorcmd.getControlMode(*motor, &frame);
-    canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-
-    canManager.clearReadBuffers();
-    auto interface_name = motor->interFaceName;
-
-    // canManager.restartCanPorts();
-    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
+    for (auto &motorPair : motors)
     {
-        int socket_descriptor = canManager.sockets.at(interface_name);
-        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
-
-        if (bytesWritten == -1)
-        {
-            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
-        if (bytesRead == -1)
-        {
-            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
-            return false;
-        }
-
-        std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
-        motor->currentPos = std::get<1>(parsedData);
-        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
-        return true;
-    }
-    else
-    {
-        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
-        return false;
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+        std::cout << "[" << std::hex << motor->nodeId << std::dec << "] ";
+        std::cout << name << " : " << motor->currentPos << endl;
     }
 }
 
-bool SendLoopTask::CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor)
+bool SendLoopTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
 {
-
     struct can_frame frame;
-    maxoncmd.getSync(&frame);
     canManager.setSocketsTimeout(0, 5000 /*5ms*/);
-
     canManager.clearReadBuffers();
-    auto interface_name = motor->interFaceName;
 
-    if (canManager.sockets.find(interface_name) != canManager.sockets.end())
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        int socket_descriptor = canManager.sockets.at(interface_name);
-        ssize_t bytesWritten = write(socket_descriptor, &frame, sizeof(can_frame));
-
-        if (bytesWritten == -1)
+        tmotorcmd.getControlMode(*tMotor, &frame);
+        if (canManager.sendAndRecv(motor, frame))
         {
-            cerr << "Failed to write to socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+            motor->currentPos = std::get<1>(parsedData);
+        }
+        else
+        {
             return false;
         }
-
-        ssize_t bytesRead = read(socket_descriptor, &frame, sizeof(can_frame));
-        if (bytesRead == -1)
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getSync(&frame);
+        canManager.txFrame(motor, frame);
+        
+        if (canManager.recvToBuff(motor, 2))
         {
-            cerr << "Failed to read from socket for motor: " << motor->nodeId << " (" << interface_name << ")" << endl;
-            cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << endl;
+            while (!motor->recieveBuffer.empty())
+            {
+                frame = motor->recieveBuffer.front();
+                if (frame.can_id == maxonMotor->rxPdoIds[0])
+                {
+                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    motor->currentPos = std::get<1>(parsedData);
+                }
+                motor->recieveBuffer.pop();
+            }
+        }
+        else
+        {
             return false;
         }
-
-        std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
-        motor->currentPos = std::get<1>(parsedData);
-        std::cout << "Current Position of [" << std::hex << motor->nodeId << std::dec << "] : " << motor->currentPos << endl;
-        return true;
     }
-    else
-    {
-        cerr << "Socket not found for interface: " << interface_name << " (" << motor->nodeId << ")" << endl;
-        return false;
-    }
+    return true;
 }
+
+
 
 void SendLoopTask::clearBuffer()
 {

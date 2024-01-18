@@ -101,7 +101,7 @@ private:
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
     void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void setMaxonMode(std::string targetMode);
-    void maxonSdoSetting();
+    void motorSettingCmd();
     void MaxonEnable();
     void MaxonQuickStopEnable();
 
