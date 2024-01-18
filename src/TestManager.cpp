@@ -5,50 +5,55 @@ TestManager::TestManager(SystemState &systemStateRef, CanManager &canManagerRef,
 {
 }
 
-void TestManager::mainLoop() {
+void TestManager::mainLoop()
+{
     int choice;
-
-    while (systemState.testMode != TestMode::Exit) {
+    canManager.checkAllMotors();
+    setMaxonMode("CSP");
+    while (systemState.testMode != TestMode::Exit)
+    {
         // 사용자에게 선택지 제공
         std::cout << "1: MultiMode\n2: SingleMode\n3: StickMode\n4: Exit\n";
         std::cout << "Select mode (1-4): ";
         std::cin >> choice;
 
         // 선택에 따라 testMode 설정
-        switch (choice) {
-            case 1:
-                systemState.testMode.store(TestMode::MultiMode);
-                break;
-            case 2:
-                systemState.testMode.store(TestMode::SingleMode);
-                break;
-            case 3:
-                systemState.testMode.store(TestMode::StickMode);
-                break;
-            case 4:
-                systemState.testMode.store(TestMode::Exit);
-                break;
-            default:
-                std::cout << "Invalid choice. Please try again.\n";
-                continue;
+        switch (choice)
+        {
+        case 1:
+            systemState.testMode.store(TestMode::MultiMode);
+            break;
+        case 2:
+            systemState.testMode.store(TestMode::SingleMode);
+            break;
+        case 3:
+            systemState.testMode.store(TestMode::StickMode);
+            break;
+        case 4:
+            systemState.testMode.store(TestMode::Exit);
+            break;
+        default:
+            std::cout << "Invalid choice. Please try again.\n";
+            continue;
         }
 
         // testMode에 따라 적절한 함수 호출
-        switch (systemState.testMode.load()) {
-            case TestMode::MultiMode:
-                multiTestLoop();
-                break;
-            case TestMode::SingleMode:
-                TuningLoopTask();
-                break;
-            case TestMode::StickMode:
-                // StickMode 로직
-                break;
-            case TestMode::Ideal:
-                break;
-            case TestMode::Exit:
-                // Exit 로직
-                break;
+        switch (systemState.testMode.load())
+        {
+        case TestMode::MultiMode:
+            multiTestLoop();
+            break;
+        case TestMode::SingleMode:
+            TuningLoopTask();
+            break;
+        case TestMode::StickMode:
+            // StickMode 로직
+            break;
+        case TestMode::Ideal:
+            break;
+        case TestMode::Exit:
+            systemState.main = Main::Ideal;
+            break;
         }
     }
 }

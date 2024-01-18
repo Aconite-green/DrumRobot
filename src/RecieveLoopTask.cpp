@@ -2,8 +2,7 @@
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
                                  CanManager &canManagerRef,
-                                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef
-                                 ) : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
+                                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef) : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -130,7 +129,6 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
-
 void RecieveLoopTask::checkMotors()
 {
     for (const auto &motor_pair : motors)
@@ -155,7 +153,6 @@ void RecieveLoopTask::checkMotors()
         }
     }
 }
-
 
 bool RecieveLoopTask::CheckTmotorPosition(std::shared_ptr<TMotor> motor)
 {
