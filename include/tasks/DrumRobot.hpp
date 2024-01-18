@@ -26,11 +26,13 @@
 #include "SystemState.hpp"
 #include "../include/usbio/SenSor.hpp"
 #include "../include/managers/CanManager.hpp"
+#include "../include/managers/PathManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
 #include "../include/usbio/Global.hpp"
 #include "../include/managers/TestManager.hpp"
+#include "../include/managers/HomeManager.hpp"
 
 // #include <QObject>
 
@@ -47,6 +49,9 @@ public:
     // 생성자 선언
     DrumRobot(SystemState &systemStateRef,
               CanManager &canManagerRef,
+              PathManager &pathManagerRef,
+              HomeManager &homeManagerRef,
+              TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     // operator() 함수 선언
@@ -55,12 +60,14 @@ public:
 private:
     SystemState &systemState; // 상태 참조
     CanManager &canManager;
+    PathManager &pathManager;
+    HomeManager &homeManager;
+    TestManager &testManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
-    TestManager testmanager;
 
     // State Utility
     void displayAvailableCommands() const;
@@ -72,13 +79,13 @@ private:
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
-    void printCurrentPositions();
+    
 
     // Home
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
-
+void printCurrentPositions();
     /*Tmotor*/
     void SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
     void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
