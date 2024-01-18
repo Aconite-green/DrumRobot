@@ -362,10 +362,9 @@ bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
     if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
         // perror("CAN read error");
-                return false;
+        return false;
     }
-        return true;
-    
+    return true;
 }
 
 bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame)
@@ -405,6 +404,7 @@ bool CanManager::recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
     }
     return true;
 }
+
 void CanManager::setMotorsSocket()
 {
     struct can_frame frame;
@@ -433,7 +433,7 @@ void CanManager::setMotorsSocket()
             // 모터의 현재 소켓을 임시 소켓으로 설정
             int original_socket = motor->socket;
             motor->socket = socket_fd;
-
+            usleep(5000);
             // 소켓에 CAN 프레임 보내고 응답 확인
             if (sendAndRecv(motor, frame))
             {

@@ -47,7 +47,7 @@ void StateTask::operator()()
             break;
         case Main::Tune:
             MaxonEnable();
-            // TuningLoopTask()
+            // TuningLoopTask();
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
             testmanager.run();
@@ -170,13 +170,7 @@ void StateTask::runModeLoop()
         switch (systemState.runMode.load())
         {
         case RunMode::PrePreparation:
-            std::cout << "Press 'r' to set Ready mode: ";
-            char input;
-            std::cin >> input;
-            if (input == 'r')
-            {
-                systemState.runMode = RunMode::Preparing;
-            }
+            systemState.runMode = RunMode::Preparing;
             break;
         case RunMode::Preparing:
             checkUserInput();
@@ -184,6 +178,7 @@ void StateTask::runModeLoop()
         case RunMode::Ready:
             while (true)
             {
+                char input;
                 std::cout << "Enter 't'(test) or 'p'(perform) or 'e'(exit): ";
                 std::cin >> input;
 
@@ -236,7 +231,7 @@ void StateTask::displayAvailableCommands() const
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             std::cout << "- t : Start tuning\n";
-            std::cout << "- p : Start Perform Mode\n";
+            std::cout << "- r : Move to Ready Position\n";
             std::cout << "- b : Back to Zero Postion\n";
         }
     }
@@ -267,7 +262,7 @@ bool StateTask::processInput(const std::string &input)
             systemState.main = Main::Tune;
             return true;
         }
-        else if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
+        else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
             systemState.main = Main::Perform;
             return true;
@@ -559,6 +554,7 @@ bool StateTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         tmotorcmd.getControlMode(*tMotor, &frame);
+        usleep(5000);
         if (canManager.sendAndRecv(motor, frame))
         {
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
@@ -680,7 +676,7 @@ void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::stri
     }
     else if (motorName == "L_arm3" || motorName == "R_arm3")
     {
-        additionalTorque = motor->cwDir * 2.1;
+        additionalTorque = motor->cwDir * 2.0;
     }
 
     tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
@@ -737,7 +733,7 @@ void StateTask::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::s
     HomeTMotor(motor, motorName);
     motor->isHomed = true; // 홈잉 상태 업데이트
     sleep(1);
-    // FixMotorPosition(motor);
+    FixMotorPosition(motor);
 
     cout << "-- Homing completed for " << motorName << " --\n\n";
     sensor.closeDevice();
@@ -881,39 +877,34 @@ void StateTask::UpdateHomingStatus()
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::FixMotorPosition()
+void StateTask::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
 {
     struct can_frame frame;
-    for (const auto &motorPair : motors)
+
+    checkMotorPosition(motor);
+
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        std::string name = motorPair.first;
-        auto motor = motorPair.second;
-
-        checkMotorPosition(motor);
-
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
+        if (canManager.sendAndRecv(motor, frame))
         {
-            tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
-            if (canManager.sendAndRecv(motor, frame))
-            {
-                std::cout << "Position fixed for motor [" << name << "]." << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to fix position for motor [" << name << "]." << std::endl;
-            }
+            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
         }
-        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        else
         {
-            maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
-            if (canManager.sendAndRecv(motor, frame))
-            {
-                std::cout << "Position fixed for motor [" << name << "]." << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to fix position for motor [" << name << "]." << std::endl;
-            }
+            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
+        }
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
+        if (canManager.sendAndRecv(motor, frame))
+        {
+            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
         }
     }
 }
@@ -1154,7 +1145,11 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
 
 void StateTask::TuningLoopTask()
 {
-    FixMotorPosition();
+    for (auto motor_pair : motors)
+    {
+        FixMotorPosition(motor_pair.second);
+    }
+
     std::string userInput, selectedMotor, fileName;
     float kp, kd, peakAngle;
     float sine_t = 4.0;
@@ -1836,7 +1831,7 @@ void StateTask::maxonSdoSetting()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if(name == "R_wrist")
+            else if (name == "R_wrist")
             {
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
@@ -1852,6 +1847,7 @@ void StateTask::maxonSdoSetting()
             canManager.sendAndRecv(motor, frame);
         }
     }
+    std::cout << "Maxon SDO Set\n";
 }
 
 void StateTask::setMaxonMode(std::string targetMode)

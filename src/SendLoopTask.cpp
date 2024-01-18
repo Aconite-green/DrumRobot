@@ -11,6 +11,7 @@ SendLoopTask::SendLoopTask(SystemState &systemStateRef,
 
 void SendLoopTask::operator()()
 {
+    initializePathManager();
     while (systemState.main != Main::Shutdown)
     {
         if (systemState.main == Main::Back)
@@ -34,7 +35,6 @@ void SendLoopTask::operator()()
             {
                 if (CheckAllMotorsCurrentPosition())
                 {
-                    initializePathManager();
                     cout << "Get Ready...\n";
                     pathManager.GetArr(pathManager.standby);
                     SendReadyLoop();
@@ -281,7 +281,7 @@ void SendLoopTask::SendReadyLoop()
 
 void SendLoopTask::initializePathManager()
 {
-    pathManager.motorInitialize(motors);
+    pathManager.ApplyDir();
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
 }
