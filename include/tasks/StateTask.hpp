@@ -47,9 +47,8 @@ public:
     // 생성자 선언
     StateTask(SystemState &systemStateRef,
               CanManager &canManagerRef,
-              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-              queue<can_frame> &sendBufferRef,
-              queue<can_frame> &recieveBufferRef);
+              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef
+              );
 
     // operator() 함수 선언
     void operator()();
@@ -58,8 +57,6 @@ private:
     SystemState &systemState; // 상태 참조
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-    queue<can_frame> &sendBuffer;
-    queue<can_frame> &recieveBuffer;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -104,7 +101,7 @@ private:
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
     void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void setMaxonMode(std::string targetMode);
-    void maxonSdoSetting();
+    void motorSettingCmd();
     void MaxonEnable();
     void MaxonQuickStopEnable();
 

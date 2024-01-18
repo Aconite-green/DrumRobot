@@ -2,8 +2,8 @@
 
 RecieveLoopTask::RecieveLoopTask(SystemState &systemStateRef,
                                  CanManager &canManagerRef,
-                                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef,
-                                 queue<can_frame> &recieveBufferRef) : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), recieveBuffer(recieveBufferRef)
+                                 std::map<std::string, std::shared_ptr<GenericMotor>> motorsRef
+                                 ) : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -29,13 +29,13 @@ void RecieveLoopTask::operator()()
 
             if (systemState.runMode == RunMode::Running)
             {
-                RecieveLoop(recieveBuffer);
+                RecieveLoop();
             }
         }
     }
 }
 
-void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
+void RecieveLoopTask::RecieveLoop()
 {
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
@@ -67,43 +67,18 @@ void RecieveLoopTask::RecieveLoop(queue<can_frame> &recieveBuffer)
         if (elapsed_time.count() >= TIME_THRESHOLD_MS)
         {
             external = std::chrono::system_clock::now();
-            for (const auto &socket_pair : canManager.sockets)
-            {
-                int socket_descriptor = socket_pair.second;
-
-                handleSocketRead(socket_descriptor, recieveBuffer);
-            }
+            canManager.readFramesFromAllSockets();
+            canManager.distributeFramesToMotors();
         }
     }
 
     parse_and_save_to_csv("../../READ/DrumData_out.txt");
 }
 
-void RecieveLoopTask::handleSocketRead(int socket_descriptor, queue<can_frame> &recieveBuffer)
-{
-    struct can_frame readFrame[NUM_FRAMES];
-
-    ssize_t bytesRead = read(socket_descriptor, &readFrame, sizeof(can_frame) * NUM_FRAMES);
-    if (bytesRead == -1)
-    {
-        std::cerr << "Failed to read from socket." << std::endl;
-        return;
-    }
-
-    int numFramesRead = bytesRead / sizeof(can_frame); // 중복 연산 최소화
-    for (int i = 0; i < numFramesRead; ++i)
-    {
-        recieveBuffer.push(readFrame[i]);
-    }
-}
-
 void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
     std::ofstream ofs(csv_file_name, std::ios::app);
-    int id;
-    float position, speed, torque;
-
     if (!ofs.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
@@ -115,53 +90,46 @@ void RecieveLoopTask::parse_and_save_to_csv(const std::string &csv_file_name)
     if (ofs.tellp() == 0)
     {
         ofs << "CAN_ID,p_act,tff_des,tff_act\n";
-    };
-
-    while (!recieveBuffer.empty())
-    {
-        can_frame frame = recieveBuffer.front();
-        recieveBuffer.pop();
-
-        for (const auto &pair : motors)
-        {
-            if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(pair.second))
-            {
-                if (motor->nodeId == frame.data[0])
-                {
-                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*motor, &frame);
-                    id = std::get<0>(parsedData);
-                    position = std::get<1>(parsedData);
-                    speed = std::get<2>(parsedData);
-                    torque = std::get<3>(parsedData);
-
-                    ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
-                        << std::dec
-                        << position << "," << speed << "," << torque << "\n";
-                }
-            }
-            else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(pair.second))
-            {
-                if (motor->nodeId == frame.data[0])
-                {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*motor, &frame);
-                    id = std::get<0>(parsedData);
-                    position = std::get<1>(parsedData);
-                    torque = std::get<2>(parsedData);
-
-                    ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
-                        << std::dec
-                        << position << ","
-                        << " "
-                        << "," << torque << "\n";
-                }
-            }
-        }
-
-        ofs.close();
-
-        std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
     }
+
+    // 각 모터에 대한 처리
+    for (const auto &pair : motors)
+    {
+        auto &motor = pair.second;
+        if (!motor->recieveBuffer.empty())
+        {
+            can_frame frame = motor->recieveBuffer.front();
+            motor->recieveBuffer.pop();
+
+            int id = motor->nodeId;
+            float position, speed, torque;
+
+            // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                position = std::get<1>(parsedData);
+                speed = std::get<2>(parsedData);
+                torque = std::get<3>(parsedData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                position = std::get<1>(parsedData);
+                torque = std::get<2>(parsedData);
+                speed = 0.0; // MaxonMotor의 경우 speed 정보가 없음
+            }
+
+            // 데이터 CSV 파일에 쓰기
+            ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                << std::dec << position << "," << speed << "," << torque << "\n";
+        }
+    }
+
+    ofs.close();
+    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
+
 
 void RecieveLoopTask::checkMotors()
 {

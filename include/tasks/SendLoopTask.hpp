@@ -40,9 +40,8 @@ public:
     // 생성자 선언
     SendLoopTask(SystemState &systemStateRef,
                  CanManager &canManagerRef,
-                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                 queue<can_frame> &sendBufferRef,
-                 queue<can_frame> &recieveBufferRef);
+                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef
+                 );
 
     // operator() 함수 선언
     void operator()();
@@ -51,25 +50,23 @@ private:
     SystemState &systemState;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; // 가정된 MaxonMotor 배열
-    queue<can_frame> &sendBuffer;
-    queue<can_frame> &recieveBuffer;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
 
     // Perform
-    void writeToSocket(const std::map<std::string, int> &sockets);
+    
     void SendLoop();
     void save_to_txt_inputData(const string &csv_file_name);
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     
     PathManager pathManager;
     void SendReadyLoop();
-    bool CheckAllMotorsCurrentPosition();
-    bool CheckTmotorPosition(std::shared_ptr<TMotor> motor);
-    bool CheckMaxonPosition(std::shared_ptr<MaxonMotor> motor);
     int writeFailCount;
     void initializePathManager();
     void clearBuffer();
+    bool checkMotorPosition(std::shared_ptr<GenericMotor> motor);
+    bool CheckAllMotorsCurrentPosition();
+    void printCurrentPositions();
 };

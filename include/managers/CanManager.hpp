@@ -32,7 +32,7 @@ public:
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
 
     // Public Methods
-    CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     ~CanManager();
 
     void initializeCAN();
@@ -48,8 +48,8 @@ public:
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
     bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
 
-
-
+    void readFramesFromAllSockets();
+    void distributeFramesToMotors();
 
     // Buffer Uitility
     void clearReadBuffers();
@@ -59,15 +59,12 @@ public:
 
 private:
     std::vector<std::string> ifnames;
-    std::queue<can_frame> &sendBuffer;
-    std::queue<can_frame> &recieveBuffer;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
 
-    
-
+    std::map<int, std::vector<can_frame>> tempFrames;
     // Port
     bool getCanPortStatus(const char *port);
     void activateCanPort(const char *port);

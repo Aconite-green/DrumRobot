@@ -1,7 +1,7 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
+PathManager::PathManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    :  motors(motorsRef)
 {
 }
 
@@ -27,17 +27,16 @@ void PathManager::Motors_sendBuffer()
             float v_des = Vi[motor_mapping[entry.first]];
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
-            sendBuffer.push(frame);
+            entry.second->sendBuffer.push(frame);
+            
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
             float p_des = Pi[motor_mapping[entry.first]];
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
-            sendBuffer.push(frame);
+            entry.second->sendBuffer.push(frame);
         }
     }
-    MParser.getSync(&frame);
-    sendBuffer.push(frame);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -691,17 +690,15 @@ void PathManager::GetArr(vector<double> &arr)
             {
                 float p_des = Qi[motor_mapping[entry.first]];
                 TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-                sendBuffer.push(frame);
+                entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
                 float p_des = Qi[motor_mapping[entry.first]];
                 MParser.getTargetPosition(*motor, &frame, p_des);
-                sendBuffer.push(frame);
+                entry.second->sendBuffer.push(frame);
             }
         }
-        MParser.getSync(&frame);
-        sendBuffer.push(frame);
     }
 
     c_MotorAngle = Qi;

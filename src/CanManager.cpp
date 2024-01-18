@@ -1,6 +1,6 @@
 #include "../include/managers/CanManager.hpp"
-CanManager::CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
+CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : motors(motorsRef)
 {
 }
 
@@ -429,7 +429,7 @@ void CanManager::setMotorsSocket()
             {
                 maxoncmd.getCheck(*maxonMotor, &frame);
             }
-
+            usleep(5000);
             // 모터의 현재 소켓을 임시 소켓으로 설정
             int original_socket = motor->socket;
             motor->socket = socket_fd;
@@ -459,7 +459,42 @@ void CanManager::setMotorsSocket()
         else
         {
             std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
-            it = motors.erase(it); // 연결되지 않은 모터를 맵에서 제거
+            it = motors.erase(it); 
         }
     }
 }
+
+void CanManager::readFramesFromAllSockets() {
+    struct can_frame frame;
+    for (const auto &socketPair : sockets) {
+        int socket_fd = socketPair.second;
+        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame)) {
+            tempFrames[socket_fd].push_back(frame);
+        }
+    }
+}
+
+void CanManager::distributeFramesToMotors() {
+    for (auto &motor_pair : motors) {
+        auto &motor = motor_pair.second;
+
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor)) {
+            // TMotor 처리
+            for (auto &frame : tempFrames[motor->socket]) {
+                if (frame.data[0] == tMotor->nodeId) {
+                    tMotor->recieveBuffer.push(frame);
+                }
+            }
+        } else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor)) {
+            // MaxonMotor 처리
+            for (auto &frame : tempFrames[motor->socket]) {
+                if (frame.can_id == maxonMotor->txPdoIds[0]) {
+                    maxonMotor->recieveBuffer.push(frame);
+                }
+            }
+        }
+    }
+    tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
+}
+
+
