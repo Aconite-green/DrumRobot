@@ -47,8 +47,7 @@ public:
     // 생성자 선언
     DrumRobot(SystemState &systemStateRef,
               CanManager &canManagerRef,
-              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef
-              );
+              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     // operator() 함수 선언
     void operator()();
@@ -89,20 +88,12 @@ private:
 
     /*Maxon*/
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-
-    // Tune
-    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
-    void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-    void TuningLoopTask();
-    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);
-    void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-    void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
-    void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void setMaxonMode(std::string targetMode);
     void motorSettingCmd();
     void MaxonEnable();
     void MaxonQuickStopEnable();
-
+    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
+    
     // Perform
     void runModeLoop();
 };

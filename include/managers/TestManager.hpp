@@ -34,23 +34,25 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(SystemState &systemStateRef, 
-    CanManager &canManagerRef, std::map<std::string, 
-    std::shared_ptr<GenericMotor>> &motorsRef);
+    TestManager(SystemState &systemStateRef,
+                CanManager &canManagerRef, 
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     void mainLoop();
-    void run();
+    void multiTestLoop();
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 
 private:
+     SystemState &systemState;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-    SystemState &systemState;
+   
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
-    
+
+    // Multi Test
     void ApplyDir();
     void getMotorPos();
     void wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
@@ -60,5 +62,13 @@ private:
     void arm3arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void SendLoop();
 
-    vector<double> c_MotorAngle = {0, -M_PI / 2, M_PI / 2, M_PI / 4, -M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
+    // Single Mode Test
+    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
+    void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningLoopTask();
+    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);
+    void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
+    void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
+    void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
+    void setMaxonMode(std::string targetMode);
 };
