@@ -10,6 +10,7 @@
 #include "../include/managers/PathManager.hpp"
 #include "../include/managers/CanManager.hpp"
 #include "../include/managers/TestManager.hpp"
+#include "../include/managers/HomeManager.hpp"
 
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
@@ -28,12 +29,13 @@ int main(int argc, char *argv[])
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
     CanManager canManager(motors);
-    //PathManager pathManager(systemState, motors, canManager);
-    //TestManager testManager(systemState, canManager, motors);
+    PathManager pathManager(systemState, canManager, motors);
+    TestManager testManager(systemState, canManager, motors);
+    HomeManager homeManager(systemState, canManager, motors);
 
 
-    // Create Tasks for Threads
-    DrumRobot drumRobot(systemState, canManager, motors);
+    
+    DrumRobot drumRobot(systemState, canManager, pathManager, homeManager, testManager, motors);
 
     SendLoopTask sendLoopTask(systemState, canManager, motors);
     RecieveLoopTask recieveLoopTask(systemState, canManager, motors);

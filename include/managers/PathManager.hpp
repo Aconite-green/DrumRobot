@@ -37,8 +37,8 @@ class PathManager
 
 public:
     PathManager(SystemState &systemStateRef,
-                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                CanManager &canManagerRef);
+                CanManager &canManagerRef, 
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void ApplyDir();
     void GetDrumPositoin();

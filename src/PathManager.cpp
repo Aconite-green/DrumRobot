@@ -1,9 +1,9 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
 PathManager::PathManager(SystemState &systemStateRef,
-                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                         CanManager &canManagerRef)
-    : systemState(systemStateRef), motors(motorsRef), canManager(canManagerRef)
+                         CanManager &canManagerRef,
+                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
