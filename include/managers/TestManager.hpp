@@ -62,6 +62,17 @@ private:
         {7, 1},
         {8, 1}};
 
+    map<int, int> motor_Kp = { // Desired Kp Gain
+        {0, 200},
+        {1, 200},
+        {2, 200},
+        {3, 200},
+        {4, 200},
+        {5, 200},
+        {6, 200},
+        {7, 200},
+        {8, 200}};
+
     void ApplyDir();
     void getMotorPos();
     void wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);

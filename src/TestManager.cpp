@@ -22,11 +22,12 @@ void TestManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericM
 ///////////////////////////////////////////////////////////////////////////////
 
 void TestManager::ApplyDir()
-{ // CW / CCW에 따른 방향 적용
+{ // CW / CCW에 따른 방향 및 Kp값 적용
     for (auto &entry : motors)
     {
         shared_ptr<GenericMotor> motor = entry.second;
         motor_dir[motor_mapping[entry.first]] = motor->cwDir;
+        motor_Kp[motor_mapping[entry.first]] = motor->Kp;
     }
 }
 
@@ -45,7 +46,7 @@ void TestManager::getMotorPos()
 void TestManager::waistarr(vector<vector<double>> &T, int time, double amp, int kp[])
 {
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
-    kp[0] = 250;
+    kp[0] = motor_Kp[0];
 
     time = time / 2;
     for (int i = 0; i < time; i++)
@@ -66,19 +67,19 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double a
     if (LnR == 1)
     {
         lnr.push_back(1);
-        kp[1] = 200;
+        kp[1] = motor_Kp[1];
     }
     else if (LnR == 2)
     {
         lnr.push_back(2);
-        kp[2] = 200;
+        kp[2] = motor_Kp[2];
     }
     else if (LnR == 3)
     {
         lnr.push_back(1);
         lnr.push_back(2);
-        kp[1] = 200;
-        kp[2] = 200;
+        kp[1] = motor_Kp[1];
+        kp[2] = motor_Kp[2];
     }
 
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
@@ -108,19 +109,19 @@ void TestManager::arm2arr(vector<vector<double>> &T, int time, int LnR, double a
     if (LnR == 1)
     {
         lnr.push_back(3);
-        kp[3] = 200;
+        kp[3] = motor_Kp[3];
     }
     else if (LnR == 2)
     {
         lnr.push_back(5);
-        kp[5] = 200;
+        kp[5] = motor_Kp[5];
     }
     else if (LnR == 3)
     {
         lnr.push_back(3);
         lnr.push_back(5);
-        kp[3] = 200;
-        kp[5] = 200;
+        kp[3] = motor_Kp[3];
+        kp[5] = motor_Kp[5];
     }
 
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
@@ -141,19 +142,19 @@ void TestManager::arm3arr(vector<vector<double>> &T, int time, int LnR, double a
     if (LnR == 1)
     {
         lnr.push_back(4);
-        kp[4] = 200;
+        kp[4] = motor_Kp[4];
     }
     else if (LnR == 2)
     {
         lnr.push_back(6);
-        kp[6] = 200;
+        kp[6] = motor_Kp[6];
     }
     else if (LnR == 3)
     {
         lnr.push_back(4);
         lnr.push_back(6);
-        kp[4] = 200;
-        kp[6] = 200;
+        kp[4] = motor_Kp[4];
+        kp[6] = motor_Kp[6];
     }
 
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
@@ -344,10 +345,15 @@ void TestManager::run()
         cout << "3) Arm1 = " << amplitude[2] << "\n";
         cout << "4) Waist = " << amplitude[3] << "\n";
         cout << "5) Wrist = " << amplitude[4] << "\n";
+        cout << "Motor_Kp :\n";
+        cout << "1) Arm3 = " << motor_Kp[4] << "\n";
+        cout << "2) Arm2 = " << motor_Kp[2] << "\n";
+        cout << "3) Arm1 = " << motor_Kp[1] << "\n";
+        cout << "4) Waist = " << motor_Kp[0] << "\n";
         cout << "------------------------------------------------------------------------------------------------------------\n";
 
         cout << "Commands:\n";
-        cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles | [a] : Amplitude | [r] : run | [e] : Exit\n";
+        cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles | [a] : Amplitude | [p] : Kp | [r] : run | [e] : Exit\n";
         cout << "Enter Command: ";
         cin >> userInput;
 
@@ -410,48 +416,79 @@ void TestManager::run()
         }
         else if (userInput == 'a')
         {
-            while (true)
-            {
-                char input;
-                cout << "Choose Motor\n";
-                cout << "1: Arm3\n";
-                cout << "2: Arm2\n";
-                cout << "3: Arm1\n";
-                cout << "4: Waist\n";
-                cout << "5: Wrist\n";
-                cout << "d: Done\n";
-                cout << "Enter Desired Num : ";
-                cin >> input;
+            char input;
+            cout << "Choose Motor\n";
+            cout << "1: Arm3\n";
+            cout << "2: Arm2\n";
+            cout << "3: Arm1\n";
+            cout << "4: Waist\n";
+            cout << "5: Wrist\n";
+            cout << "Enter Desired Motor : ";
+            cin >> input;
 
-                if (input == '1')
-                {
-                    cout << "Enter Arm3's Desired Amplitude(degree) : ";
-                    cin >> amplitude[0];
-                }
-                else if (input == '2')
-                {
-                    cout << "Enter Arm2's Desired Amplitude(degree) : ";
-                    cin >> amplitude[1];
-                }
-                else if (input == '3')
-                {
-                    cout << "Enter Arm1's Desired Amplitude(degree) : ";
-                    cin >> amplitude[2];
-                }
-                else if (input == '4')
-                {
-                    cout << "Enter Waist's Desired Amplitude(degree) : ";
-                    cin >> amplitude[3];
-                }
-                else if (input == '5')
-                {
-                    cout << "Enter Wrist's Desired Amplitude(degree) : ";
-                    cin >> amplitude[4];
-                }
-                else if (input == 'd')
-                {
-                    break;
-                }
+            if (input == '1')
+            {
+                cout << "Enter Arm3's Desired Amplitude(degree) : ";
+                cin >> amplitude[0];
+            }
+            else if (input == '2')
+            {
+                cout << "Enter Arm2's Desired Amplitude(degree) : ";
+                cin >> amplitude[1];
+            }
+            else if (input == '3')
+            {
+                cout << "Enter Arm1's Desired Amplitude(degree) : ";
+                cin >> amplitude[2];
+            }
+            else if (input == '4')
+            {
+                cout << "Enter Waist's Desired Amplitude(degree) : ";
+                cin >> amplitude[3];
+            }
+            else if (input == '5')
+            {
+                cout << "Enter Wrist's Desired Amplitude(degree) : ";
+                cin >> amplitude[4];
+            }
+        }
+        else if (userInput == 'p'){
+            char input;
+            int kp;
+            cout << "Choose Motor\n";
+            cout << "1: Arm3\n";
+            cout << "2: Arm2\n";
+            cout << "3: Arm1\n";
+            cout << "4: Waist\n";
+            cout << "Enter Desired Motor : ";
+            cin >> input;
+
+            if (input == '1')
+            {
+                cout << "Enter Arm3's Desired Kp : ";
+                cin >> kp;
+                motor_Kp[4] = kp;
+                motor_Kp[6] = kp;
+            }
+            else if (input == '2')
+            {
+                cout << "Enter Arm2's Desired Kp : ";
+                cin >> kp;
+                motor_Kp[3] = kp;
+                motor_Kp[5] = kp;
+            }
+            else if (input == '3')
+            {
+                cout << "Enter Arm1's Desired Kp : ";
+                cin >> kp;
+                motor_Kp[1] = kp;
+                motor_Kp[2] = kp;
+            }
+            else if (input == '4')
+            {
+                cout << "Enter Waist's Desired Kp : ";
+                cin >> kp;
+                motor_Kp[0] = kp;
             }
         }
         else if (userInput == 'r')
