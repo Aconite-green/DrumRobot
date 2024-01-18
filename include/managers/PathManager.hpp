@@ -37,7 +37,7 @@ class PathManager
 
 public:
     PathManager(SystemState &systemStateRef,
-                CanManager &canManagerRef, 
+                CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void ApplyDir();
@@ -63,9 +63,10 @@ public:
 private:
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
+    
     SystemState &systemState;
-    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     CanManager &canManager;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};

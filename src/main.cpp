@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
     HomeManager homeManager(systemState, canManager, motors);
 
 
-    
     DrumRobot drumRobot(systemState, canManager, pathManager, homeManager, testManager, motors);
 
     SendLoopTask sendLoopTask(systemState, canManager, motors);
