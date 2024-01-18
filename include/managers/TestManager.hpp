@@ -34,8 +34,6 @@ public:
     TestManager(CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
-
     void run();
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 

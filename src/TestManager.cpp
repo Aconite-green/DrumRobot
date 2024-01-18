@@ -6,18 +6,6 @@ TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::s
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                            SEND BUFFER TO MOTOR                            */
-///////////////////////////////////////////////////////////////////////////////
-
-void TestManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-{
-    this->motors = motorsRef;
-
-    // 모터 방향에 따른 +/- 값 적용
-    ApplyDir();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -259,7 +247,7 @@ void TestManager::SendLoop()
 
 void TestManager::run()
 {
-    motorInitialize(motors);
+    ApplyDir();
     getMotorPos();
 
     char userInput;
@@ -394,7 +382,7 @@ void TestManager::run()
         }
         else if (userInput == 'a')
         {
-            char input;
+            int input;
             cout << "Choose Motor\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
@@ -404,33 +392,11 @@ void TestManager::run()
             cout << "Enter Desired Motor : ";
             cin >> input;
 
-            if (input == '1')
-            {
-                cout << "Enter Arm3's Desired Amplitude(degree) : ";
-                cin >> amplitude[0];
-            }
-            else if (input == '2')
-            {
-                cout << "Enter Arm2's Desired Amplitude(degree) : ";
-                cin >> amplitude[1];
-            }
-            else if (input == '3')
-            {
-                cout << "Enter Arm1's Desired Amplitude(degree) : ";
-                cin >> amplitude[2];
-            }
-            else if (input == '4')
-            {
-                cout << "Enter Waist's Desired Amplitude(degree) : ";
-                cin >> amplitude[3];
-            }
-            else if (input == '5')
-            {
-                cout << "Enter Wrist's Desired Amplitude(degree) : ";
-                cin >> amplitude[4];
-            }
+            cout << "Enter Desired Amplitude(degree) : ";
+            cin >> amplitude[input - 1];
         }
-        else if (userInput == 'p'){
+        else if (userInput == 'p')
+        {
             char input;
             int kp;
             cout << "Choose Motor\n";
