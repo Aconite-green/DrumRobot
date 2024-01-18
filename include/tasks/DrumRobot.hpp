@@ -36,7 +36,7 @@
 
 using namespace std;
 
-class StateTask /*: public QObject*/
+class DrumRobot /*: public QObject*/
 {
     // Q_OBJECT
 
@@ -45,7 +45,7 @@ class StateTask /*: public QObject*/
 
 public:
     // 생성자 선언
-    StateTask(SystemState &systemStateRef,
+    DrumRobot(SystemState &systemStateRef,
               CanManager &canManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef
               );

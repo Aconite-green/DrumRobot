@@ -3,7 +3,7 @@
 SendLoopTask::SendLoopTask(SystemState &systemStateRef,
                            CanManager &canManagerRef,
                            std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), pathManager(motorsRef)
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), pathManager(systemStateRef, motorsRef, canManagerRef)
 {
 }
 

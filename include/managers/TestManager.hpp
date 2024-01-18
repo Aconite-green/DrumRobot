@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
@@ -32,9 +34,9 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(CanManager &canManagerRef,
-                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                SystemState &systemStateRef);
+    TestManager(SystemState &systemStateRef, 
+    CanManager &canManagerRef, std::map<std::string, 
+    std::shared_ptr<GenericMotor>> &motorsRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     void mainLoop();
@@ -43,36 +45,12 @@ public:
 
 private:
     CanManager &canManager;
-    TMotorCommandParser tmotorcmd;
-    MaxonCommandParser maxoncmd;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     SystemState &systemState;
-    // 각 관절에 해당하는 열
-    map<string, int> motor_mapping = {
-        {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
-    // 각 열에 해당하는 관절방향
-    map<int, int> motor_dir = { // 1 : CW , -1 : CCW
-        {0, 1},
-        {1, 1},
-        {2, 1},
-        {3, 1},
-        {4, 1},
-        {5, 1},
-        {6, 1},
-        {7, 1},
-        {8, 1}};
 
-    map<int, int> motor_Kp = { // Desired Kp Gain
-        {0, 200},
-        {1, 200},
-        {2, 200},
-        {3, 200},
-        {4, 200},
-        {5, 200},
-        {6, 200},
-        {7, 200},
-        {8, 200}};
-
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
+    
     void ApplyDir();
     void getMotorPos();
     void wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);

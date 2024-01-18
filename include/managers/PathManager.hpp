@@ -1,9 +1,13 @@
+#pragma once
+
 #include <stdio.h>
 #include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
 #include "../include/usbio/Global.hpp"
+#include "../include/tasks/SystemState.hpp"
+
 #include <map>
 #include <memory>
 #include <string>
@@ -32,8 +36,9 @@ class PathManager
 {
 
 public:
-    PathManager(
-        std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    PathManager(SystemState &systemStateRef,
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                CanManager &canManagerRef);
 
     void ApplyDir();
     void GetDrumPositoin();
@@ -58,7 +63,9 @@ public:
 private:
     TMotorCommandParser TParser;
     MaxonCommandParser MParser;
+    SystemState &systemState;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+    CanManager &canManager;
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};

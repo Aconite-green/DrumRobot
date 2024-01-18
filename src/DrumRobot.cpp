@@ -1,16 +1,16 @@
-#include "../include/tasks/StateTask.hpp"
+#include "../include/tasks/DrumRobot.hpp"
 
-// StateTask 클래스의 생성자
-StateTask::StateTask(SystemState &systemStateRef,
+// DrumRobot 클래스의 생성자
+DrumRobot::DrumRobot(SystemState &systemStateRef,
                      CanManager &canManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(canManagerRef, motors, systemStateRef) {}
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(systemStateRef, canManagerRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::operator()()
+void DrumRobot::operator()()
 {
     while (systemState.main != Main::Shutdown)
     {
@@ -72,7 +72,7 @@ void StateTask::operator()()
     DeactivateControlTask();
 }
 
-void StateTask::homeModeLoop()
+void DrumRobot::homeModeLoop()
 {
 
     // MaxonEnable();
@@ -162,7 +162,7 @@ void StateTask::homeModeLoop()
     }
 }
 
-void StateTask::runModeLoop()
+void DrumRobot::runModeLoop()
 {
     MaxonEnable();
     setMaxonMode("CSP");
@@ -195,7 +195,7 @@ void StateTask::runModeLoop()
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::displayAvailableCommands() const
+void DrumRobot::displayAvailableCommands() const
 {
     std::cout << "Available Commands:\n";
 
@@ -227,7 +227,7 @@ void StateTask::displayAvailableCommands() const
     std::cout << "- c : Check Motors position\n";
 }
 
-bool StateTask::processInput(const std::string &input)
+bool DrumRobot::processInput(const std::string &input)
 {
     if (systemState.main == Main::Ideal)
     {
@@ -277,7 +277,7 @@ bool StateTask::processInput(const std::string &input)
     return false;
 }
 
-void StateTask::idealStateRoutine()
+void DrumRobot::idealStateRoutine()
 {
     int ret = system("clear");
     if (ret == -1)
@@ -297,7 +297,7 @@ void StateTask::idealStateRoutine()
     usleep(2000);
 }
 
-void StateTask::checkUserInput()
+void DrumRobot::checkUserInput()
 {
     if (kbhit())
     {
@@ -321,7 +321,7 @@ void StateTask::checkUserInput()
 /*                                 SYSTEM                                     */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::initializeMotors()
+void DrumRobot::initializeMotors()
 {
 
     motors["waist"] = make_shared<TMotor>(0x007, "AK10_9");
@@ -445,14 +445,14 @@ void StateTask::initializeMotors()
     }
 };
 
-void StateTask::initializecanManager()
+void DrumRobot::initializecanManager()
 {
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
     canManager.setMotorsSocket();
 }
 
-void StateTask::DeactivateControlTask()
+void DrumRobot::DeactivateControlTask()
 {
     struct can_frame frame;
 
@@ -509,7 +509,7 @@ void StateTask::DeactivateControlTask()
 
 
 
-void StateTask::printCurrentPositions()
+void DrumRobot::printCurrentPositions()
 {
     for (auto &motorPair : motors)
     {
@@ -525,7 +525,7 @@ void StateTask::printCurrentPositions()
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-bool StateTask::PromptUserForHoming(const std::string &motorName)
+bool DrumRobot::PromptUserForHoming(const std::string &motorName)
 {
     char userResponse;
     std::cout << "Would you like to start homing mode for motor [" << motorName << "]? (y/n): ";
@@ -533,7 +533,7 @@ bool StateTask::PromptUserForHoming(const std::string &motorName)
     return userResponse == 'y';
 }
 
-void StateTask::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
+void DrumRobot::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
 
     struct can_frame frameToProcess;
@@ -594,7 +594,7 @@ void StateTask::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::st
     
 }
 
-void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
+void DrumRobot::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
 {
     struct can_frame frameToProcess;
     std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor);
@@ -653,7 +653,7 @@ void StateTask::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::stri
     }
 }
 
-void StateTask::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
+void DrumRobot::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
 {
     sensor.OpenDeviceUntilSuccess();
     canManager.setSocketsTimeout(5, 0);
@@ -671,7 +671,7 @@ void StateTask::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::s
     sensor.closeDevice();
 }
 
-void StateTask::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
+void DrumRobot::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
 {
     struct can_frame frame;
 
@@ -730,7 +730,7 @@ void StateTask::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::st
     }
 }
 
-float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit)
+float DrumRobot::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit)
 {
     float firstPosition = 0.0f, secondPosition = 0.0f;
     bool firstSensorTriggered = false;
@@ -772,7 +772,7 @@ float StateTask::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor
     return positionDifference;
 }
 
-void StateTask::displayHomingStatus()
+void DrumRobot::displayHomingStatus()
 {
     std::cout << "Homing Status of Motors:\n";
     for (const auto &motor_pair : motors)
@@ -782,7 +782,7 @@ void StateTask::displayHomingStatus()
     }
 }
 
-void StateTask::UpdateHomingStatus()
+void DrumRobot::UpdateHomingStatus()
 {
     bool allMotorsHomed = true;
     for (const auto &motor_pair : motors)
@@ -809,7 +809,7 @@ void StateTask::UpdateHomingStatus()
 /*                                  TUNE                                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateTask::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
+void DrumRobot::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
 {
     struct can_frame frame;
 
@@ -841,7 +841,7 @@ void StateTask::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
     }
 }
 
-void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
+void DrumRobot::TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
     canManager.setSocketsTimeout(0, 50000);
 
@@ -956,7 +956,7 @@ void StateTask::TuningTmotor(float kp, float kd, float sine_t, const std::string
     csvFileOut.close();
 }
 
-void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
+void DrumRobot::TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType)
 {
 
     canManager.setSocketsTimeout(0, 50000);
@@ -1075,7 +1075,7 @@ void StateTask::TuningMaxonCSP(float sine_t, const std::string selectedMotor, in
     csvFileOut.close();
 }
 
-void StateTask::TuningLoopTask()
+void DrumRobot::TuningLoopTask()
 {
     for (auto motor_pair : motors)
     {
@@ -1330,7 +1330,7 @@ void StateTask::TuningLoopTask()
     }
 }
 
-void StateTask::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction)
+void DrumRobot::InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction)
 {
     if (selectedMotor == "waist")
     {
@@ -1364,7 +1364,7 @@ void StateTask::InitializeParameters(const std::string selectedMotor, float &kp,
     // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
 }
 
-void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction)
+void DrumRobot::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction)
 {
     des_vel = des_vel * 35;
 
@@ -1474,7 +1474,7 @@ void StateTask::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int
     csvFileOut.close();
 }
 
-void StateTask::TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction)
+void DrumRobot::TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction)
 {
     if (direction == 1)
         des_tff *= 1;
@@ -1580,7 +1580,7 @@ void StateTask::TuningMaxonCST(const std::string selectedMotor, int des_tff, int
     csvFileOut.close();
 }
 
-void StateTask::MaxonEnable()
+void DrumRobot::MaxonEnable()
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
@@ -1666,7 +1666,7 @@ void StateTask::MaxonEnable()
     }
 };
 
-void StateTask::MaxonQuickStopEnable()
+void DrumRobot::MaxonQuickStopEnable()
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
@@ -1718,7 +1718,7 @@ void StateTask::MaxonQuickStopEnable()
     }
 }
 
-void StateTask::motorSettingCmd()
+void DrumRobot::motorSettingCmd()
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
@@ -1790,7 +1790,7 @@ void StateTask::motorSettingCmd()
     std::cout << "Maxon SDO Set\n";
 }
 
-void StateTask::setMaxonMode(std::string targetMode)
+void DrumRobot::setMaxonMode(std::string targetMode)
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(0, 10000);

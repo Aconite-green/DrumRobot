@@ -7,8 +7,11 @@
 #include <map>
 
 #include "../include/motors/Motor.hpp"
+#include "../include/managers/PathManager.hpp"
+#include "../include/managers/CanManager.hpp"
+#include "../include/managers/TestManager.hpp"
 
-#include "../include/tasks/StateTask.hpp"
+#include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
 #include "../include/tasks/SendLoopTask.hpp"
 #include "../include/tasks/RecieveLoopTask.hpp"
@@ -25,17 +28,29 @@ int main(int argc, char *argv[])
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
     CanManager canManager(motors);
-    
+    //PathManager pathManager(systemState, motors, canManager);
+    //TestManager testManager(systemState, canManager, motors);
+
+
     // Create Tasks for Threads
-    StateTask stateTask(systemState, canManager, motors);
+    DrumRobot drumRobot(systemState, canManager, motors);
+
     SendLoopTask sendLoopTask(systemState, canManager, motors);
     RecieveLoopTask recieveLoopTask(systemState, canManager, motors);
 
     // Create Threads
-    std::thread state_thread(stateTask);
+    std::thread state_thread(drumRobot);
     std::thread send_thread(sendLoopTask);
     std::thread receive_thread(recieveLoopTask);
 
+    /*
+    SystemState systemState;
+    StateMachine stateMachine(systemState, );
+
+    // 스레드 생성 및 관리
+    //std::thread task1(&StateMachine::someOperation, &stateMachine);
+
+*/
     // Wait Threads
     state_thread.join();
     send_thread.join();
