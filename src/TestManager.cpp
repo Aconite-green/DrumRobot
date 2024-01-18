@@ -1,7 +1,7 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
-TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : canManager(canManagerRef), motors(motorsRef)
+TestManager::TestManager(CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, SystemState &systemStateRef)
+    : canManager(canManagerRef), motors(motorsRef), systemState(systemStateRef)
 {
 }
 

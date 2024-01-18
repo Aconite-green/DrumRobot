@@ -13,7 +13,8 @@ enum class Main
     Perform,    // 드럼 연주 모드
     Check,      // 현재 모터들의 포지션을 체크하는 상태
     Shutdown,   // 시스템 종료 및 모든 작업 마무리
-    Back
+    Back,
+    Ready
 };
 
 enum class HomeMode
@@ -26,7 +27,6 @@ enum class HomeMode
 enum class RunMode
 {
     PrePreparation,
-    Preparing,
     Ready,
     Running, // 연주중
     Pause,   // 일시정지

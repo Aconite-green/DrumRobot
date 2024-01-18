@@ -4,6 +4,7 @@
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/TaskUtility.hpp"
 #include "../include/usbio/Global.hpp"
+#include "../include/tasks/SystemState.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -32,7 +33,8 @@ class TestManager
 {
 public:
     TestManager(CanManager &canManagerRef,
-                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                SystemState &systemStateRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
@@ -44,7 +46,7 @@ private:
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-
+    SystemState &systemState;
     // 각 관절에 해당하는 열
     map<string, int> motor_mapping = {
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
@@ -67,7 +69,6 @@ private:
     void arm1arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void arm2arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void arm3arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
-    void writeToSocket(const std::map<std::string, int> &sockets);
     void SendLoop();
 
     vector<double> c_MotorAngle = {0, -M_PI / 2, M_PI / 2, M_PI / 4, -M_PI / 2.4, -M_PI / 4, -M_PI / 2.4, 0, 0};
