@@ -39,8 +39,8 @@ enum class TestMode
     SingleMode,
     MultiMode,
     StickMode,
-    Exit,
-    TestError
+    Ideal,
+    Exit
 };
 
 struct SystemState
