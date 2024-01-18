@@ -48,7 +48,8 @@ void StateTask::operator()()
             // TuningLoopTask();
             CheckAllMotorsCurrentPosition();
             setMaxonMode("CSP");
-            testmanager.run();
+            systemState.testMode = TestMode::MultiMode;
+            testmanager.mainLoop();
             systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:

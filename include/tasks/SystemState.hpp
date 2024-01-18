@@ -39,6 +39,7 @@ enum class TestMode
     SingleMode,
     MultiMode,
     StickMode,
+    Exit,
     TestError
 };
 

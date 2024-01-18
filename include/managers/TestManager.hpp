@@ -37,7 +37,7 @@ public:
                 SystemState &systemStateRef);
 
     void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
-
+    void mainLoop();
     void run();
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 

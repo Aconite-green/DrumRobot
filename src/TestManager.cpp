@@ -256,6 +256,27 @@ void TestManager::SendLoop()
 /*                                  MAKE PATH                                 */
 ///////////////////////////////////////////////////////////////////////////////
 
+void TestManager::mainLoop()
+{
+    while (systemState.testMode != TestMode::Exit)
+    {
+        switch (systemState.testMode.load())
+        {
+        case TestMode::MultiMode:
+            run();
+            break;
+        case TestMode::SingleMode:
+            break;
+        case TestMode::StickMode:
+            break;
+        case TestMode::TestError:
+            break;
+        case TestMode::Exit:
+            break;
+        }
+    }
+}
+
 void TestManager::run()
 {
     motorInitialize(motors);
@@ -332,6 +353,7 @@ void TestManager::run()
 
         if (userInput == 'e')
         {
+            systemState.testMode = TestMode::Exit;
             break;
         }
         else if (userInput == 'd')
