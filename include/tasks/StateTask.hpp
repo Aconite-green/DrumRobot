@@ -31,6 +31,7 @@
 #include "../include/tasks/TaskUtility.hpp"
 #include "../include/usbio/Global.hpp"
 #include "../include/managers/TestManager.hpp"
+#include "../include/managers/HomeManager.hpp"
 
 // #include <QObject>
 
@@ -62,6 +63,8 @@ private:
     MaxonCommandParser maxoncmd;
     Sensor sensor;
     TestManager testmanager;
+    HomeManager homemanager;
+
 
     // State Utility
     void displayAvailableCommands() const;

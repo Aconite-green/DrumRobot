@@ -4,7 +4,7 @@
 StateTask::StateTask(SystemState &systemStateRef,
                      CanManager &canManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(systemStateRef, canManagerRef, motors) {}
+    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef), testmanager(systemStateRef, canManagerRef, motors), homemanager(systemStateRef, canManagerRef, motors) {}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -31,7 +31,8 @@ void StateTask::operator()()
             idealStateRoutine();
             break;
         case Main::Homing:
-            homeModeLoop();
+            // homeModeLoop();
+            homemanager.mainLoop();
             break;
         case Main::Perform:
             runModeLoop();
@@ -632,6 +633,7 @@ bool StateTask::checkMotorPosition(std::shared_ptr<GenericMotor> motor)
     }
     return true;
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  HOME                                      */
 ///////////////////////////////////////////////////////////////////////////////

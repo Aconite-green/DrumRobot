@@ -54,7 +54,13 @@ private:
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
+
     /*Tmotor*/
+    void SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
+    void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
+    vector<float> MoveTMotorToSensorLocation(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<int> &sensorsBit);
+    void RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<double> &directions, vector<double> &degrees, vector<float> &midpoints);
+
     void SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     void HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     float MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit);
@@ -62,6 +68,8 @@ private:
     bool PromptUserForHoming(const std::string &motorName);
 
     /*Maxon*/
+    void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
+
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     void setMaxonMode(std::string targetMode);
     void motorSettingCmd();

@@ -79,13 +79,13 @@ private:
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
-    
 
     // Home
     void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
-void printCurrentPositions();
+    void printCurrentPositions();
+
     /*Tmotor*/
     void SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
     void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
@@ -96,7 +96,7 @@ void printCurrentPositions();
     void HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     float MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit);
     void RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
-    bool PromptUserForHoming(std::string &motorName);
+    bool PromptUserForHoming(const std::string &motorName);
 
     /*Maxon*/
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
@@ -105,7 +105,7 @@ void printCurrentPositions();
     void MaxonEnable();
     void MaxonQuickStopEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
-    
+
     // Perform
     void runModeLoop();
 };
