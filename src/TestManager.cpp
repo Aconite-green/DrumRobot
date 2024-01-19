@@ -125,16 +125,10 @@ void TestManager::waistarr(vector<vector<double>> &T, int time, double amp, int 
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
     kp[0] = motor_Kp[0];
 
-    time = time / 2;
     for (int i = 0; i < time; i++)
     {
-        double val = c_MotorAngle[0] - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * motor_dir[0];
+        double val = c_MotorAngle[0] + sin(2.0 * M_PI * i / time) / 2 * amp * motor_dir[0];
         T[i][0] = val;
-    }
-    for (int i = 0; i < time; i++)
-    {
-        double val = c_MotorAngle[0] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * motor_dir[0];
-        T[i + time][0] = val;
     }
 }
 
@@ -161,21 +155,12 @@ void TestManager::arm1arr(vector<vector<double>> &T, int time, int LnR, double a
 
     amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
 
-    time = time / 2;
     for (int i = 0; i < time; i++)
     {
         for (long unsigned int j = 0; j < lnr.size(); j++)
         {
-            double val = c_MotorAngle[lnr[j]] - (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * motor_dir[lnr[j]];
+            double val = c_MotorAngle[lnr[j]] + sin(2.0 * M_PI * i / time) / 2 * amp * motor_dir[lnr[j]];
             T[i][lnr[j]] = val;
-        }
-    }
-    for (int i = 0; i < time; i++)
-    {
-        for (long unsigned int j = 0; j < lnr.size(); j++)
-        {
-            double val = c_MotorAngle[lnr[j]] + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * motor_dir[lnr[j]];
-            T[i + time][lnr[j]] = val;
         }
     }
 }

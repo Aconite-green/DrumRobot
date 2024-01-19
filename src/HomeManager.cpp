@@ -188,7 +188,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     vector<int> sensorsBit;
 
     // 속도 제어 - 센서 방향으로 이동
-    for (int i = 0; i < motorNames.size(); i++)
+    for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
 
@@ -213,7 +213,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     vector<float> midpoints = MoveTMotorToSensorLocation(motors, motorNames, sensorsBit);
 
     vector<double> directions, degrees;
-    for (int i = 0; i < motorNames.size(); i++)
+    for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
         if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2")
         {
@@ -231,7 +231,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
 
     cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
 
-    for (int i = 0; i < motors.size(); i++)
+    for (long unsigned int i = 0; i < motors.size(); i++)
     {
         // 모터를 멈추는 신호를 보냄
         tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, 0, 0, 0, 5, 0);
@@ -267,7 +267,7 @@ vector<float> HomeManager::MoveTMotorToSensorLocation(vector<std::shared_ptr<Gen
     vector<float> firstPosition, secondPosition, positionDifference;
     vector<bool> firstSensorTriggered, TriggeredDone;
 
-    for (int i = 0; i < sensorsBit.size(); i++)
+    for (long unsigned int i = 0; i < sensorsBit.size(); i++)
     {
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
         firstPosition.push_back(0.0f);
@@ -282,7 +282,7 @@ vector<float> HomeManager::MoveTMotorToSensorLocation(vector<std::shared_ptr<Gen
     {
         // 모든 모터 센싱 완료 시 break
         bool done = true;
-        for (int i = 0; i < sensorsBit.size(); i++)
+        for (long unsigned int i = 0; i < sensorsBit.size(); i++)
         {
             if (!TriggeredDone[i])
                 done = false;
@@ -290,7 +290,7 @@ vector<float> HomeManager::MoveTMotorToSensorLocation(vector<std::shared_ptr<Gen
         if (done)
             break;
 
-        for (int i = 0; i < sensorsBit.size(); i++)
+        for (long unsigned int i = 0; i < sensorsBit.size(); i++)
         {
             if (!TriggeredDone[i])
             {
@@ -322,7 +322,7 @@ vector<float> HomeManager::MoveTMotorToSensorLocation(vector<std::shared_ptr<Gen
         }
     }
 
-    for (int i = 0; i < sensorsBit.size(); i++)
+    for (long unsigned int i = 0; i < sensorsBit.size(); i++)
     {
         positionDifference.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
         cout << motorNames[i] << " midpoint position: " << positionDifference[i] << endl;
@@ -337,7 +337,7 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
     struct can_frame frameToProcess;
     vector<shared_ptr<TMotor>> tMotors;
     vector<double> targetRadians;
-    for (int i = 0; i < motorNames.size(); i++)
+    for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
         targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
@@ -357,7 +357,7 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
         startTime = std::chrono::system_clock::now();
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
-        for (int i = 0; i < motorNames.size(); i++)
+        for (long unsigned int i = 0; i < motorNames.size(); i++)
         {
             double targetPosition = targetRadians[i] * (static_cast<double>(step) / totalSteps) + motors[i]->currentPos;
             tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, targetPosition, 0, motors[i]->Kp, 2.5, 0);
@@ -378,7 +378,7 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
         startTime = std::chrono::system_clock::now();
 
         // 5ms마다 목표 위치 계산 및 프레임 전송
-        for (int i = 0; i < motorNames.size(); i++)
+        for (long unsigned int i = 0; i < motorNames.size(); i++)
         {
             double targetPosition = targetRadians[i] + motors[i]->currentPos;
             tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, targetPosition, 0, motors[i]->Kp, 2.5, 0);
@@ -399,7 +399,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
     canManager.clearReadBuffers();
     canManager.setSocketsTimeout(2, 0);
     vector<shared_ptr<MaxonMotor>> maxonMotors;
-    for (int i = 0; i < motorNames.size(); i++)
+    for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
         maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(motors[i]));
 
@@ -417,7 +417,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
         while (!motors[0]->recieveBuffer.empty())
         {
             frame = motors[0]->recieveBuffer.front();
-            for (int i = 0; i < motorNames.size(); i++)
+            for (long unsigned int i = 0; i < motorNames.size(); i++)
             {
                 if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
                 {
@@ -448,7 +448,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
             while (!motors[0]->recieveBuffer.empty())
             {
                 frame = motors[0]->recieveBuffer.front();
-                for (int i = 0; i < motorNames.size(); i++)
+                for (long unsigned int i = 0; i < motorNames.size(); i++)
                 {
                     if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
                     {

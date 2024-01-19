@@ -55,6 +55,7 @@ private:
     // Multi Test
     void ApplyDir();
     void getMotorPos();
+    void sendBufferToMotor();
     void wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void waistarr(vector<vector<double>> &T, int time, double amp, int kp[]);
     void arm1arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
