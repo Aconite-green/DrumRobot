@@ -51,7 +51,6 @@ private:
     Sensor sensor;
     
     // Home
-    void homeModeLoop();
     void displayHomingStatus();
     void UpdateHomingStatus();
     /*Tmotor*/
