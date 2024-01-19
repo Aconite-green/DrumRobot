@@ -25,6 +25,8 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
+using namespace std;
+
 class CanManager
 {
 public:

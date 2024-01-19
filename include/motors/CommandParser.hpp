@@ -7,6 +7,8 @@
 #include <tuple>
 #include <iostream>
 
+using namespace std;
+
 class TMotorCommandParser
 {
 public:
