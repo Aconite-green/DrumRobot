@@ -85,7 +85,7 @@ private:
     void setMaxonMode(std::string targetMode);
     void MaxonEnable();
 
-    // State Machine Loop
+    // Perform
     void runModeLoop();
 
     // Send Thread Loop
