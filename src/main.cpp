@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 {
 
     // Create Share Resource
-
     SystemState systemState;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
@@ -33,28 +32,15 @@ int main(int argc, char *argv[])
     TestManager testManager(systemState, canManager, motors);
     HomeManager homeManager(systemState, canManager, motors);
 
-
-    
     DrumRobot drumRobot(systemState, canManager, pathManager, homeManager, testManager, motors);
 
-    SendLoopTask sendLoopTask(systemState, canManager, motors);
-    RecieveLoopTask recieveLoopTask(systemState, canManager, motors);
-
     // Create Threads
-    std::thread state_thread(drumRobot);
-    std::thread send_thread(sendLoopTask);
-    std::thread receive_thread(recieveLoopTask);
+    std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
+    std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
+    std::thread receiveThread(&DrumRobot::recvLoopForThread, &drumRobot);
 
-    /*
-    SystemState systemState;
-    StateMachine stateMachine(systemState, );
-
-    // 스레드 생성 및 관리
-    //std::thread task1(&StateMachine::someOperation, &stateMachine);
-
-*/
     // Wait Threads
-    state_thread.join();
-    send_thread.join();
-    receive_thread.join();
+    stateThread.join();
+    sendThread.join();
+    receiveThread.join();
 }

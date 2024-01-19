@@ -4,7 +4,7 @@
 DrumRobot::DrumRobot(SystemState &systemStateRef,
                      CanManager &canManagerRef,
                      PathManager &pathManagerRef,
-                    HomeManager &homeManagerRef,
+                     HomeManager &homeManagerRef,
                      TestManager &testManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : systemState(systemStateRef),
@@ -20,7 +20,7 @@ DrumRobot::DrumRobot(SystemState &systemStateRef,
 /*                               SYSTEM LOOPS                             */
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrumRobot::operator()()
+void DrumRobot::stateMachine()
 {
     while (systemState.main != Main::Shutdown)
     {
@@ -41,7 +41,8 @@ void DrumRobot::operator()()
             idealStateRoutine();
             break;
         case Main::Homing:
-            homeModeLoop();
+            homeManager.mainLoop();
+            MaxonEnable();
             break;
         case Main::Perform:
             runModeLoop();
@@ -54,13 +55,7 @@ void DrumRobot::operator()()
             systemState.main = Main::Ideal;
             break;
         case Main::Tune:
-            MaxonEnable();
-            // TuningLoopTask();
-            canManager.checkAllMotors();
-            setMaxonMode("CSP");
-            systemState.testMode = TestMode::MultiMode;
             testManager.mainLoop();
-            systemState.main = Main::Ideal;
             break;
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
@@ -80,96 +75,6 @@ void DrumRobot::operator()()
     }
 
     DeactivateControlTask();
-}
-
-void DrumRobot::homeModeLoop()
-{
-
-    // MaxonEnable();
-    setMaxonMode("HMM");
-    while (systemState.main == Main::Homing)
-    {
-        displayHomingStatus();
-
-        std::string motorName;
-        std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
-        std::cin >> motorName;
-
-        // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
-        /*if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
-        {
-            std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
-            continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
-        }
-        else if ((motorName == "R_arm2" || motorName == "R_arm3") && !tmotors["R_arm1"]->isHomed)
-        {
-            std::cout << "Error: R_arm1 must be homed before " << motorName << std::endl;
-            continue;
-        }
-        else if ((motorName == "R_wrist") && !tmotors["R_arm3"]->isHomed)
-        {
-            std::cout << "Error: R_arm3 must be homed before " << motorName << std::endl;
-            continue;
-        }
-        else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
-        {
-            std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
-            continue;
-        }*/
-
-        if (motorName == "all")
-        {
-            // 우선순위가 높은 T모터 먼저 홈
-            std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
-            for (const auto &pmotorName : priorityMotors)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    SetTmotorHome(motors[pmotorName], pmotorName);
-                }
-            }
-            for (auto &motor_pair : motors)
-            {
-                auto &motor = motor_pair.second;
-                std::string name = motor_pair.first;
-
-                // 타입에 따라 적절한 캐스팅과 초기화 수행
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-                {
-                    if (!motor->isHomed)
-                    {
-                        SetTmotorHome(motors[name], name);
-                    }
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-                {
-                    if (!motor->isHomed)
-                    {
-                        SetMaxonHome(motors[name], name);
-                    }
-                }
-            }
-        }
-        else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
-        {
-            // 타입에 따라 적절한 캐스팅과 초기화 수행
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]))
-            {
-                SetTmotorHome(motors[motorName], motorName);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorName]))
-            {
-
-                SetMaxonHome(motors[motorName], motorName);
-            }
-        }
-        else
-        {
-            std::cout << "Motor not found or already homed: " << motorName << std::endl;
-        }
-
-        UpdateHomingStatus();
-    }
 }
 
 void DrumRobot::runModeLoop()
@@ -528,287 +433,110 @@ void DrumRobot::printCurrentPositions()
     }
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-/*                                  HOME                                      */
-///////////////////////////////////////////////////////////////////////////////
-
-bool DrumRobot::PromptUserForHoming(const std::string &motorName)
-{
-    char userResponse;
-    std::cout << "Would you like to start homing mode for motor [" << motorName << "]? (y/n): ";
-    std::cin >> userResponse;
-    return userResponse == 'y';
-}
-
-void DrumRobot::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
-{
-
-    struct can_frame frameToProcess;
-    std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor);
-    chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-    int kp = 250;
-
-    if (motorName == "L_arm1" || motorName == "R_arm1")
-        kp = 250;
-    else if (motorName == "L_arm2" || motorName == "R_arm2")
-        kp = 350;
-    else if (motorName == "L_arm3" || motorName == "R_arm3")
-        kp = 350;
-    // 수정된 부분: 사용자가 입력한 각도를 라디안으로 변환
-    const double targetRadian = (degree * M_PI / 180.0 + midpoint) * direction; // 사용자가 입력한 각도를 라디안으로 변환 + midpoint
-    int totalSteps = 4000 / 5;                                                  // 4초 동안 5ms 간격으로 나누기
-
-    for (int step = 1; step <= totalSteps; ++step)
-    {
-        while (1)
-        {
-            chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
-            if (chrono::duration_cast<chrono::microseconds>(currentTime - startTime).count() > 5000)
-                break;
-        }
-
-        startTime = std::chrono::system_clock::now();
-
-        // 5ms마다 목표 위치 계산 및 프레임 전송
-        double targetPosition = targetRadian * (static_cast<double>(step) / totalSteps) + motor->currentPos;
-        tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
-        canManager.sendAndRecv(motor, frameToProcess);
-
-        startTime = std::chrono::system_clock::now();
-    }
-
-    totalSteps = 500 / 5;
-    for (int step = 1; step <= totalSteps; ++step)
-    {
-        while (1)
-        {
-            chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
-            if (chrono::duration_cast<chrono::microseconds>(currentTime - startTime).count() > 5000)
-                break;
-        }
-
-        startTime = std::chrono::system_clock::now();
-
-        // 5ms마다 목표 위치 계산 및 프레임 전송
-        double targetPosition = targetRadian + motor->currentPos;
-        tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, targetPosition, 0, kp, 2.5, 0);
-        canManager.sendAndRecv(motor, frameToProcess);
-
-        startTime = std::chrono::system_clock::now();
-    }
-
-    canManager.checkConnection(motor);
-}
-
-void DrumRobot::HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
-{
-    struct can_frame frameToProcess;
-    std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor);
-    // arm2 모터는 -30도, 나머지 모터는 +90도에 센서 위치함.
-    double initialDirection = (motorName == "L_arm2" || motorName == "R_arm2") ? (-0.2) * motor->cwDir : 0.2 * motor->cwDir;
-
-    double additionalTorque = 0.0;
-    if (motorName == "L_arm2" || motorName == "R_arm2")
-    {
-        additionalTorque = motor->cwDir * (-3.0);
-    }
-    else if (motorName == "L_arm3" || motorName == "R_arm3")
-    {
-        additionalTorque = motor->cwDir * 2.0;
-    }
-
-    tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
-    canManager.sendAndRecv(motor, frameToProcess);
-
-    float midpoint = MoveTMotorToSensorLocation(motor, motorName, tMotor->sensorBit);
-
-    double degree = (motorName == "L_arm2" || motorName == "R_arm2") ? -30.0 : 90;
-    midpoint = (motorName == "L_arm2" || motorName == "R_arm2") ? -midpoint : midpoint;
-    RotateTMotor(motor, motorName, -motor->cwDir, degree, midpoint);
-
-    cout << "----------------------moved 90 degree (Anti clock wise) --------------------------------- \n";
-
-    // 모터를 멈추는 신호를 보냄
-    tmotorcmd.parseSendCommand(*tMotor, &frameToProcess, motor->nodeId, 8, 0, 0, 0, 5, 0);
-    canManager.sendAndRecv(motor, frameToProcess);
-
-    canManager.setSocketsTimeout(2, 0);
-    // 현재 position을 0으로 인식하는 명령을 보냄
-    tmotorcmd.getZero(*tMotor, &frameToProcess);
-    canManager.sendAndRecv(motor, frameToProcess);
-
-    // 상태 확인
-    /*fillCanFrameFromInfo(&frameToProcess, motor->getCanFrameForControlMode());
-    SendCommandToTMotor(motor, frameToProcess, motorName);*/
-
-    if (motorName == "L_arm1" || motorName == "R_arm1")
-    {
-        canManager.checkConnection(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
-    }
-    /*  // homing 잘 됐는지 센서 위치로 다시 돌아가서 확인
-    if(motorName == "L_arm2" || motorName == "R_arm2")
-    {
-        canManager.checkConnection(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, -30, 0);
-    }*/
-    if (motorName == "L_arm3" || motorName == "R_arm3")
-    {
-        canManager.checkConnection(motor);
-        RotateTMotor(motor, motorName, motor->cwDir, 90, 0);
-    }
-}
-
-void DrumRobot::SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
-{
-    sensor.OpenDeviceUntilSuccess();
-    canManager.setSocketsTimeout(5, 0);
-
-    std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor);
-    // 허리는 home 안잡음
-    cout << "\n<< Homing for " << motorName << " >>\n";
-
-    HomeTMotor(motor, motorName);
-    motor->isHomed = true; // 홈잉 상태 업데이트
-    sleep(1);
-    FixMotorPosition(motor);
-
-    cout << "-- Homing completed for " << motorName << " --\n\n";
-    sensor.closeDevice();
-}
-
-void DrumRobot::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName)
+void DrumRobot::setMaxonMode(std::string targetMode)
 {
     struct can_frame frame;
+    canManager.setSocketsTimeout(0, 10000);
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        {
+            if (targetMode == "CSV")
+            {
+                maxoncmd.getCSVMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CST")
+            {
+                maxoncmd.getCSTMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "HMM")
+            {
+                maxoncmd.getHomeMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CSP")
+            {
+                maxoncmd.getCSPMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+        }
+    }
+}
 
-    canManager.clearReadBuffers();
+void DrumRobot::motorSettingCmd()
+{
+    struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
-    std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor);
-
-    // Start to Move by homing method (일단은 PDO)
-
-    maxoncmd.getStartHoming(*maxonMotor, &frame);
-    canManager.txFrame(motor, frame);
-    usleep(50000);
-
-    maxoncmd.getSync(&frame);
-    canManager.txFrame(motor, frame);
-    if (canManager.recvToBuff(motor, 2))
+    for (const auto &motorPair : motors)
     {
-        while (!motor->recieveBuffer.empty())
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
         {
-            frame = motor->recieveBuffer.front();
-            if (frame.can_id == maxonMotor->rxPdoIds[0])
+
+            // CSP Settings
+            maxoncmd.getCSVMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getPosOffset(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getTorqueOffset(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            // CSV Settings
+            maxoncmd.getCSVMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getVelOffset(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            // CST Settings
+            maxoncmd.getCSTMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getTorqueOffset(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            // HMM Settigns
+            maxoncmd.getHomeMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            if (name == "L_wrist")
             {
-                cout << "\n<< Homing for " << motorName << " >>\n";
+
+                maxoncmd.getHomingMethodL(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
             }
-            motor->recieveBuffer.pop();
-        }
-    }
-
-    sleep(10);
-    // 홈 위치에 도달할 때까지 반복
-    while (!motor->isHomed)
-    {
-
-        maxoncmd.getSync(&frame);
-        canManager.txFrame(motor, frame);
-        if (canManager.recvToBuff(motor, 2))
-        {
-            while (!motor->recieveBuffer.empty())
+            else if (name == "R_wrist")
             {
-                frame = motor->recieveBuffer.front();
-                if (frame.can_id == maxonMotor->rxPdoIds[0])
-                {
-                    if (frame.data[1] & 0x80) // 비트 15 확인
-                    {
-                        motor->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
-                                               // 'this'를 사용하여 멤버 함수 호출
-                        cout << "-- Homing completed for " << motorName << " --\n\n";
-                    }
-                }
-                motor->recieveBuffer.pop();
+                maxoncmd.getHomingMethodR(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+
+            maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getCurrentThreshold(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            maxoncmd.getHomePosition(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+        }
+        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+        {
+            if (name == "waist")
+            {
+                tmotorcmd.getZero(*tmotor, &frame);
+                canManager.sendAndRecv(motor, frame);
             }
         }
-        canManager.clearReadBuffers();
-
-        sleep(1); // 100ms 대기
     }
-}
-
-float DrumRobot::MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit)
-{
-    float firstPosition = 0.0f, secondPosition = 0.0f;
-    bool firstSensorTriggered = false;
-    bool secondSensorTriggered = false;
-
-    std::cout << "Moving " << motorName << " to sensor location.\n";
-
-    while (true)
-    {
-        bool sensorTriggered = ((sensor.ReadVal() >> sensorBit) & 1) != 0;
-
-        if (!firstSensorTriggered && sensorTriggered)
-        {
-            // 첫 번째 센서 인식
-            firstSensorTriggered = true;
-            canManager.checkConnection(motor);
-            firstPosition = motor->currentPos;
-            std::cout << motorName << " first sensor position: " << firstPosition << endl;
-        }
-        else if (firstSensorTriggered && !sensorTriggered)
-        {
-            // 센서 인식 해제
-            secondSensorTriggered = true;
-            canManager.checkConnection(motor);
-            secondPosition = motor->currentPos;
-            std::cout << motorName << " second sensor position: " << secondPosition << endl;
-
-            break; // while문 탈출
-        }
-
-        if (secondSensorTriggered)
-            break; // 두 번째 센서 인식 후 반복문 탈출
-    }
-
-    // 1번과 2번 위치의 차이의 절반을 저장
-    float positionDifference = abs((secondPosition - firstPosition) / 2.0f);
-    std::cout << motorName << " midpoint position: " << positionDifference << endl;
-
-    return positionDifference;
-}
-
-void DrumRobot::displayHomingStatus()
-{
-    std::cout << "Homing Status of Motors:\n";
-    for (const auto &motor_pair : motors)
-    {
-        std::cout << motor_pair.first << ": "
-                  << (motor_pair.second->isHomed ? "Homed" : "Not Homed") << std::endl;
-    }
-}
-
-void DrumRobot::UpdateHomingStatus()
-{
-    bool allMotorsHomed = true;
-    for (const auto &motor_pair : motors)
-    {
-        if (!motor_pair.second->isHomed)
-        {
-            allMotorsHomed = false;
-            break;
-        }
-    }
-
-    if (allMotorsHomed)
-    {
-        systemState.homeMode = HomeMode::HomeDone;
-        systemState.main = Main::Ideal;
-    }
-    else
-    {
-        systemState.homeMode = HomeMode::NotHome;
-    }
+    std::cout << "Maxon SDO Set\n";
 }
 
 void DrumRobot::MaxonEnable()
@@ -897,192 +625,386 @@ void DrumRobot::MaxonEnable()
     }
 };
 
-void DrumRobot::MaxonQuickStopEnable()
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Send Thread Loop                           */
+///////////////////////////////////////////////////////////////////////////////
+
+void DrumRobot::sendLoopForThread()
 {
-    struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
-
-    for (const auto &motorPair : motors)
+    initializePathManager();
+    while (systemState.main != Main::Shutdown)
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        usleep(50000);
+        if (systemState.main == Main::Back)
         {
-            maxoncmd.getQuickStop(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.checkAllMotors())
             {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
-                        std::cout << "Maxon Quick Stopped\n";
-                    }
-                    motor->recieveBuffer.pop();
-                }
+                clearMotorsSendBuffer();
+                cout << "Get Back...\n";
+                pathManager.GetArr(pathManager.backarr);
+                SendReadyLoop();
+                systemState.runMode = RunMode::PrePreparation;
+                systemState.main = Main::Ideal;
             }
+        }
+        else if (systemState.main == Main::Ready)
+        {
 
-            maxoncmd.getEnable(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.checkAllMotors())
             {
-                while (!motor->recieveBuffer.empty())
+                cout << "Get Ready...\n";
+                pathManager.GetArr(pathManager.standby);
+                SendReadyLoop();
+                systemState.runMode = RunMode::Ready;
+                systemState.main = Main::Ideal;
+            }
+        }
+        else if (systemState.main == Main::Perform)
+        {
+
+            if (systemState.runMode == RunMode::Running)
+            {
+                if (canManager.checkAllMotors())
                 {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
-                        std::cout << "Maxon Enabled \n";
-                    }
-                    motor->recieveBuffer.pop();
+                    SendLoop();
+                    systemState.runMode = RunMode::PrePreparation;
                 }
             }
         }
     }
 }
 
-void DrumRobot::motorSettingCmd()
+void DrumRobot::SendLoop()
 {
-    struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
-    for (const auto &motorPair : motors)
+
+    struct can_frame frameToProcess;
+    std::string maxonCanInterface;
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+
+    int maxonMotorCount = 0;
+    for (const auto &motor_pair : motors)
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        // 각 요소가 MaxonMotor 타입인지 확인
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
-
-            // CSP Settings
-            maxoncmd.getCSVMode(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getPosOffset(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getTorqueOffset(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            // CSV Settings
-            maxoncmd.getCSVMode(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getVelOffset(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            // CST Settings
-            maxoncmd.getCSTMode(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getTorqueOffset(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            // HMM Settigns
-            maxoncmd.getHomeMode(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            if (name == "L_wrist")
-            {
-
-                maxoncmd.getHomingMethodL(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
-            }
-            else if (name == "R_wrist")
-            {
-                maxoncmd.getHomingMethodR(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
-            }
-
-            maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getCurrentThreshold(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getHomePosition(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
+            maxonMotorCount++;
+            maxonCanInterface = maxonMotor->interFaceName;
+            virtualMaxonMotor = motor_pair.second;
         }
-        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+    }
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
+
+    while (systemState.runMode != RunMode::PrePreparation)
+    {
+
+        if (systemState.runMode == RunMode::Pause)
         {
-            if (name == "waist")
+            continue;
+        }
+
+        bool isAnyBufferLessThanTen = false;
+        for (const auto &motor_pair : motors)
+        {
+            if (motor_pair.second->sendBuffer.size() < 10)
             {
-                tmotorcmd.getZero(*tmotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                isAnyBufferLessThanTen = true;
+                break;
+            }
+        }
+        if (isAnyBufferLessThanTen)
+        {
+            if (pathManager.line < pathManager.total)
+            {
+                std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
+                pathManager.PathLoopTask();
+                pathManager.line++;
+            }
+            else if (pathManager.line == pathManager.total)
+            {
+                std::cout << "Turn Back\n";
+                canManager.checkAllMotors();
+                pathManager.GetArr(pathManager.backarr);
+                pathManager.line++;
+            }
+        }
+
+        bool allBuffersEmpty = true;
+        for (const auto &motor_pair : motors)
+        {
+            if (!motor_pair.second->sendBuffer.empty())
+            {
+                allBuffersEmpty = false;
+                break;
+            }
+        }
+
+        // 모든 모터의 sendBuffer가 비었을 때 성능 종료 로직 실행
+        if (allBuffersEmpty)
+        {
+            std::cout << "Performance is Over\n";
+            systemState.runMode = RunMode::PrePreparation;
+            systemState.main = Main::Ideal;
+        }
+
+        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+
+        if (elapsed_time.count() >= 5000) // 5ms
+        {
+            external = std::chrono::system_clock::now();
+
+            for (auto &motor_pair : motors)
+            {
+                shared_ptr<GenericMotor> motor = motor_pair.second;
+                canManager.sendFromBuff(motor);
+            }
+
+            if (maxonMotorCount != 0)
+            {
+                maxoncmd.getSync(&frameToProcess);
+                canManager.txFrame(virtualMaxonMotor, frameToProcess);
             }
         }
     }
-    std::cout << "Maxon SDO Set\n";
+
+    // CSV 파일명 설정
+    std::string csvFileName = "../../READ/DrumData_in.txt";
+
+    // input 파일 저장
+    save_to_txt_inputData(csvFileName);
 }
 
-void DrumRobot::setMaxonMode(std::string targetMode)
+void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
 {
-    struct can_frame frame;
-    canManager.setSocketsTimeout(0, 10000);
-    for (const auto &motorPair : motors)
+    // CSV 파일 열기
+    std::ofstream csvFile(csv_file_name);
+
+    if (!csvFile.is_open())
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+
+    // 헤더 추가
+    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+
+    // 2차원 벡터의 데이터를 CSV 파일로 쓰기
+    for (const auto &row : pathManager.p)
+    {
+        for (const double cell : row)
         {
-            if (targetMode == "CSV")
+            csvFile << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
             {
-                maxoncmd.getCSVMode(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                csvFile << ","; // 쉼표로 셀 구분
             }
-            else if (targetMode == "CST")
+        }
+        csvFile << "\n"; // 다음 행으로 이동
+    }
+
+    // CSV 파일 닫기
+    csvFile.close();
+
+    std::cout << "연주 txt_InData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+
+    std::cout << "SendLoop terminated\n";
+}
+
+void DrumRobot::SendReadyLoop()
+{
+    cout << "Settig...\n";
+    struct can_frame frameToProcess;
+    std::string maxonCanInterface;
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+
+    int maxonMotorCount = 0;
+    for (const auto &motor_pair : motors)
+    {
+        // 각 요소가 MaxonMotor 타입인지 확인
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            maxonMotorCount++;
+            maxonCanInterface = maxonMotor->interFaceName;
+            virtualMaxonMotor = motor_pair.second;
+        }
+    }
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
+
+    bool allBuffersEmpty;
+    do
+    {
+        allBuffersEmpty = true;
+        for (const auto &motor_pair : motors)
+        {
+            if (!motor_pair.second->sendBuffer.empty())
             {
-                maxoncmd.getCSTMode(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                allBuffersEmpty = false;
+                break;
             }
-            else if (targetMode == "HMM")
+        }
+
+        if (!allBuffersEmpty)
+        {
+            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+
+            if (elapsed_time.count() >= 5000) // 5ms
             {
-                maxoncmd.getHomeMode(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                external = std::chrono::system_clock::now();
+
+                for (auto &motor_pair : motors)
+                {
+                    shared_ptr<GenericMotor> motor = motor_pair.second;
+                    canManager.sendFromBuff(motor);
+                }
+
+                if (maxonMotorCount != 0)
+                {
+                    maxoncmd.getSync(&frameToProcess);
+                    canManager.txFrame(virtualMaxonMotor, frameToProcess);
+                }
             }
-            else if (targetMode == "CSP")
+        }
+    } while (!allBuffersEmpty);
+    canManager.clearReadBuffers();
+}
+
+void DrumRobot::initializePathManager()
+{
+    pathManager.ApplyDir();
+    pathManager.GetDrumPositoin();
+    pathManager.GetMusicSheet();
+}
+
+void DrumRobot::clearMotorsSendBuffer(){
+    for (auto motor_pair : motors)
+    {
+        motor_pair.second->clearSendBuffer();
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Recive Thread Loop                         */
+///////////////////////////////////////////////////////////////////////////////
+
+void DrumRobot::recvLoopForThread()
+{
+    auto lastCheckTime = std::chrono::steady_clock::now();
+
+    while (systemState.main != Main::Shutdown)
+    {
+        auto currentTime = std::chrono::steady_clock::now();
+        usleep(50000);
+        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
+        {
+
+            canManager.checkCanPortsStatus();
+            // checkMotors();
+            lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
+        }
+        while (systemState.main == Main::Perform)
+        {
+
+            usleep(50000); // Perform 상태일 때의 처리
+
+            if (systemState.runMode == RunMode::Running)
             {
-                maxoncmd.getCSPMode(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                RecieveLoop();
             }
         }
     }
 }
 
-void DrumRobot::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
+void DrumRobot::RecieveLoop()
 {
-    struct can_frame frame;
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    canManager.checkConnection(motor);
+    canManager.setSocketsTimeout(0, 50000);
+    canManager.clearReadBuffers();
 
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    sensor.connect();
+    if (!sensor.connected)
     {
-        tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 250, 1, 0);
-        if (canManager.sendAndRecv(motor, frame))
+        cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
+    }
+
+    while (systemState.runMode != RunMode::PrePreparation)
+    {
+
+        if (systemState.runMode == RunMode::Pause)
         {
-            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
+            continue;
         }
-        else
+
+        /*if (sensor.connected && (sensor.ReadVal() & 1) != 0)
         {
-            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
+            cout << "Motors at Sensor Location please check!!!\n";
+            systemState.runMode = RunMode::Pause;
+        }*/
+
+        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+        chrono::milliseconds elapsed_time = chrono::duration_cast<chrono::milliseconds>(internal - external);
+        if (elapsed_time.count() >= TIME_THRESHOLD_MS)
+        {
+            external = std::chrono::system_clock::now();
+            canManager.readFramesFromAllSockets();
+            canManager.distributeFramesToMotors();
         }
     }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+
+    parse_and_save_to_csv("../../READ/DrumData_out.txt");
+}
+
+void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
+{
+    // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
+    std::ofstream ofs(csv_file_name, std::ios::app);
+    if (!ofs.is_open())
     {
-        maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
-        if (canManager.sendAndRecv(motor, frame))
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
+
+    // 파일이 새로 생성되었으면 CSV 헤더를 추가
+    ofs.seekp(0, std::ios::end);
+    if (ofs.tellp() == 0)
+    {
+        ofs << "CAN_ID,p_act,tff_des,tff_act\n";
+    }
+
+    // 각 모터에 대한 처리
+    for (const auto &pair : motors)
+    {
+        auto &motor = pair.second;
+        if (!motor->recieveBuffer.empty())
         {
-            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
+            can_frame frame = motor->recieveBuffer.front();
+            motor->recieveBuffer.pop();
+
+            int id = motor->nodeId;
+            float position, speed, torque;
+
+            // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                position = std::get<1>(parsedData);
+                speed = std::get<2>(parsedData);
+                torque = std::get<3>(parsedData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                position = std::get<1>(parsedData);
+                torque = std::get<2>(parsedData);
+                speed = 0.0; // MaxonMotor의 경우 speed 정보가 없음
+            }
+
+            // 데이터 CSV 파일에 쓰기
+            ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                << std::dec << position << "," << speed << "," << torque << "\n";
         }
     }
+
+    ofs.close();
+    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }

@@ -54,8 +54,9 @@ public:
               TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    // operator() 함수 선언
-    void operator()();
+    void stateMachine();
+    void sendLoopForThread();
+    void recvLoopForThread();
 
 private:
     SystemState &systemState; // 상태 참조
@@ -74,38 +75,32 @@ private:
     bool processInput(const std::string &input);
     void idealStateRoutine();
     void checkUserInput();
+    void printCurrentPositions();
 
     // System Initiallize
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
-
-    // Home
-    void homeModeLoop();
-    void displayHomingStatus();
-    void UpdateHomingStatus();
-    void printCurrentPositions();
-
-    /*Tmotor*/
-    void SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
-    void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName);
-    float MoveTMotorToSensorLocation(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName, vector<int> &sensorBit);
-    void RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motor, vector<std::string> &motorName, vector<double> &direction, vector<double> &degree, vector<float> &midpoint);
-
-    void SetTmotorHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    void HomeTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    float MoveTMotorToSensorLocation(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, int sensorBit);
-    void RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint);
-    bool PromptUserForHoming(const std::string &motorName);
-
-    /*Maxon*/
-    void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
-    void setMaxonMode(std::string targetMode);
     void motorSettingCmd();
+    void setMaxonMode(std::string targetMode);
     void MaxonEnable();
-    void MaxonQuickStopEnable();
-    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
 
     // Perform
     void runModeLoop();
+
+    // Send Thread Loop
+
+    void SendLoop();
+    void save_to_txt_inputData(const string &csv_file_name);
+    void SendReadyLoop();
+    int writeFailCount=0;
+    void initializePathManager();
+    void clearMotorsSendBuffer();
+
+    // Recive Thread Loop
+    const int NUM_FRAMES = 10;
+    const int TIME_THRESHOLD_MS = 5;
+
+    void RecieveLoop();
+    void parse_and_save_to_csv(const std::string &csv_file_name);
 };
