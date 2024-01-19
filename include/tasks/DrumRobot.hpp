@@ -88,8 +88,8 @@ private:
     // Perform
     void runModeLoop();
 
-    // Send Thread Loop
 
+    // Send Thread Loop
     void SendLoop();
     void save_to_txt_inputData(const string &csv_file_name);
     void SendReadyLoop();
