@@ -14,8 +14,6 @@
 
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
-#include "../include/tasks/SendLoopTask.hpp"
-#include "../include/tasks/RecieveLoopTask.hpp"
 #include <atomic>
 
 using namespace std;

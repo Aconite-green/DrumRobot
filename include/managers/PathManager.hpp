@@ -4,8 +4,7 @@
 #include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
-#include "../include/tasks/TaskUtility.hpp"
-#include "../include/usbio/Global.hpp"
+
 #include "../include/tasks/SystemState.hpp"
 
 #include <map>
@@ -109,7 +108,7 @@ private:
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // 각 관절에 해당하는 열
-    map<string, int> motor_mapping = {
+    map<std::string, int> motor_mapping = {
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
     // 각 열에 해당하는 관절방향
     map<int, int> motor_dir = { // 1 : CW , -1 : CCW

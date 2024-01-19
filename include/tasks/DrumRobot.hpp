@@ -29,8 +29,7 @@
 #include "../include/managers/PathManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
-#include "../include/tasks/TaskUtility.hpp"
-#include "../include/usbio/Global.hpp"
+//#include "../include/tasks/TaskUtility.hpp"
 #include "../include/managers/TestManager.hpp"
 #include "../include/managers/HomeManager.hpp"
 
@@ -76,6 +75,7 @@ private:
     void idealStateRoutine();
     void checkUserInput();
     void printCurrentPositions();
+    int kbhit();
 
     // System Initiallize
     void initializeMotors();

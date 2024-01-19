@@ -4,10 +4,8 @@
 #include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
-#include "../include/tasks/TaskUtility.hpp"
-#include "../include/usbio/Global.hpp"
 #include "../include/tasks/SystemState.hpp"
-#include "../include/usbio/SenSor.hpp"
+//#include "../include/usbio/SenSor.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -29,8 +27,6 @@
 #include <cmath>
 #include <chrono>
 #include <set>
-
-using namespace std;
 
 class HomeManager
 {

@@ -4,8 +4,7 @@
 #include "../include/managers/CanManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
-#include "../include/tasks/TaskUtility.hpp"
-#include "../include/usbio/Global.hpp"
+
 #include "../include/tasks/SystemState.hpp"
 #include <map>
 #include <memory>
@@ -28,8 +27,6 @@
 #include <cmath>
 #include <chrono>
 #include <set>
-
-using namespace std;
 
 class TestManager
 {
@@ -71,4 +68,5 @@ private:
     void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
     void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void setMaxonMode(std::string targetMode);
+    int kbhit();
 };

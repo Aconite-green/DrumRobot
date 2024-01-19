@@ -83,5 +83,6 @@
             "binaryPath": "/home/shy//DrumRobot_v1.0/bin/main.out",
             "binaryArgs": []
         }
-    ]
+    ],
+    "C_Cpp.errorSquiggles": "disabled"
 }
