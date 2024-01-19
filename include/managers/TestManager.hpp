@@ -28,6 +28,8 @@
 #include <chrono>
 #include <set>
 
+using namespace std;
+
 class TestManager
 {
 public:
@@ -53,7 +55,7 @@ private:
     void ApplyDir();
     void getMotorPos();
     void sendBufferToMotor();
-    void wristarr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
+    void wristarr(std::vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void waistarr(vector<vector<double>> &T, int time, double amp, int kp[]);
     void arm1arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
     void arm2arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
