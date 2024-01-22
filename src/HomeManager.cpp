@@ -85,8 +85,11 @@ void HomeManager::mainLoop()
                     Pmotors.push_back(motors[pmotorName]);
                 }
             }
-            SetTmotorHome(Pmotors, PmotorNames);
-            Pmotors.clear();
+            if (!Pmotors.empty())
+            {
+                SetTmotorHome(Pmotors, PmotorNames);
+                Pmotors.clear();
+            }
 
             // 다음 우선순위 : Arm2
             PmotorNames = {"L_arm2", "R_arm2"};
@@ -97,9 +100,11 @@ void HomeManager::mainLoop()
                     Pmotors.push_back(motors[pmotorName]);
                 }
             }
-            SetTmotorHome(Pmotors, PmotorNames);
-            Pmotors.clear();
-
+            if (!Pmotors.empty())
+            {
+                SetTmotorHome(Pmotors, PmotorNames);
+                Pmotors.clear();
+            }
             // 다음 우선순위 : Arm3
             PmotorNames = {"L_arm3", "R_arm3"};
             for (const auto &pmotorName : PmotorNames)
@@ -109,11 +114,14 @@ void HomeManager::mainLoop()
                     Pmotors.push_back(motors[pmotorName]);
                 }
             }
-            SetTmotorHome(Pmotors, PmotorNames);
-            Pmotors.clear();
+            if (!Pmotors.empty())
+            {
+                SetTmotorHome(Pmotors, PmotorNames);
+                Pmotors.clear();
+            }
 
             // 다음 우선순위 : Wrist
-            PmotorNames = {"L_wrist", "R_wrist"};
+            PmotorNames = {"L_wrist", "R_wrist", "maxonForTest"};
             for (const auto &pmotorName : PmotorNames)
             {
                 if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
@@ -121,8 +129,11 @@ void HomeManager::mainLoop()
                     Pmotors.push_back(motors[pmotorName]);
                 }
             }
-            SetMaxonHome(Pmotors, PmotorNames);
-            Pmotors.clear();
+            if (!Pmotors.empty())
+            {
+                SetMaxonHome(Pmotors, PmotorNames);
+                Pmotors.clear();
+            }
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
         {
@@ -153,7 +164,6 @@ bool HomeManager::PromptUserForHoming(const std::string &motorName)
     std::cin >> userResponse;
     return userResponse == 'y';
 }
-
 
 void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
 {
@@ -437,7 +447,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
         done = true;
         for (auto &motor : motors)
         {
-            if(!motor->isHomed)
+            if (!motor->isHomed)
                 done = false;
         }
 
@@ -468,7 +478,6 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
         sleep(1); // 100ms 대기
     }
 }
-
 
 void HomeManager::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
@@ -1016,4 +1025,3 @@ void HomeManager::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
         }
     }
 }
-
