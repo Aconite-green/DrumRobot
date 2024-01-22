@@ -231,8 +231,7 @@ void TestManager::SendLoop()
 
 void TestManager::multiTestLoop()
 {
-    ApplyDir();
-    getMotorPos();
+    
 
     string userInput;
     double t = 4.0;

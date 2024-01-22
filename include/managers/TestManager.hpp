@@ -52,9 +52,6 @@ private:
     MaxonCommandParser maxoncmd;
 
     // Multi Test
-    void ApplyDir();
-    void getMotorPos();
-    void sendBufferToMotor();
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
     void wristarr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
     void waistarr(vector<string> &motorName, int time, int cycles, double amp);
