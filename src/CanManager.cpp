@@ -442,6 +442,14 @@ void CanManager::setMotorsSocket()
             it = motors.erase(it);
         }
     }
+
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            maxonCnt++;
+        }
+    }
 }
 
 void CanManager::readFramesFromAllSockets()
@@ -513,12 +521,13 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
     {
         maxoncmd.getSync(&frame);
         txFrame(motor, frame);
-
-        if (recvToBuff(motor, 2))
+        motor->clearReceiveBuffer();
+        if (recvToBuff(motor, maxonCnt))
         {
             while (!motor->recieveBuffer.empty())
             {
                 frame = motor->recieveBuffer.front();
+                std::cout << "canid :" << frame.can_id << "\n";
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
@@ -548,6 +557,7 @@ bool CanManager::checkAllMotors()
         if (!checkConnection(motor))
         {
             allMotorsChecked = false;
+            std::cout << "Not checked\n";
         }
     }
     return allMotorsChecked;

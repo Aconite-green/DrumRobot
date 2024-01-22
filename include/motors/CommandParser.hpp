@@ -7,6 +7,8 @@
 #include <tuple>
 #include <iostream>
 
+using namespace std;
+
 class TMotorCommandParser
 {
 public:
@@ -57,6 +59,7 @@ public:
     void getHomeMode(MaxonMotor &motor, struct can_frame *frame);
     void getFlowingErrorWindow(MaxonMotor &motor, struct can_frame *frame);
     void getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame);
+    void getHomeoffsetDistanceZero(MaxonMotor &motor, struct can_frame *frame);
     void getHomePosition(MaxonMotor &motor, struct can_frame *frame);
     void getHomingMethodL(MaxonMotor &motor, struct can_frame *frame);
     void getHomingMethodR(MaxonMotor &motor, struct can_frame *frame);

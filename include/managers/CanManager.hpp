@@ -25,6 +25,8 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
+using namespace std;
+
 class CanManager
 {
 public:
@@ -62,6 +64,7 @@ public:
 
     std::map<std::string, int> sockets;
     std::map<std::string, bool> isConnected;
+    int maxonCnt=0;
 
 private:
     std::vector<std::string> ifnames;

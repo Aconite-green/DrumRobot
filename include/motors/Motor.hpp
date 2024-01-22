@@ -13,6 +13,8 @@
 #include <queue>
 #include <linux/can/raw.h>
 
+using namespace std;
+
 class GenericMotor
 {
 public:
