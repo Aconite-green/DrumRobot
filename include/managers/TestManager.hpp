@@ -72,4 +72,8 @@ private:
     void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
     void setMaxonMode(std::string targetMode);
     int kbhit();
+
+
+    // Stick  Mode Test
+    void TestStickLoop();
 };

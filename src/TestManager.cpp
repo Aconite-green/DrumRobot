@@ -49,7 +49,7 @@ void TestManager::mainLoop()
             TuningLoopTask();
             break;
         case TestMode::StickMode:
-            // StickMode 로직
+            TestStickLoop();
             break;
         case TestMode::Ideal:
             break;
@@ -1422,8 +1422,9 @@ void TestManager::setMaxonMode(std::string targetMode)
     }
 }
 
-int TestManager::kbhit(){
-     struct termios oldt, newt;
+int TestManager::kbhit()
+{
+    struct termios oldt, newt;
     int ch;
     int oldf;
 
@@ -1446,4 +1447,44 @@ int TestManager::kbhit(){
     }
 
     return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Stick Test Mode                           */
+///////////////////////////////////////////////////////////////////////////////
+
+void TestManager::TestStickLoop()
+{
+
+    // 1. Do Home Setting
+    struct can_frame frame;
+    canManager.setSocketsTimeout(2, 0);
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        {
+            // HMM Settigns
+            maxoncmd.getHomeMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+            usleep(5000);
+            maxoncmd.getHomeoffsetDistanceZero(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+            usleep(5000);
+            maxoncmd.getHomingMethodL(*maxonMotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+            usleep(5000);
+            maxoncmd.getStartHoming(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+            usleep(5000);
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+            usleep(5000);
+        }
+    }
+
+    sleep(5);
+    //2. Start Testing
+
 }

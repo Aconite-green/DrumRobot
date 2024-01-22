@@ -623,7 +623,7 @@ void HomeManager::SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::
 
     maxoncmd.getSync(&frame);
     canManager.txFrame(motor, frame);
-    if (canManager.recvToBuff(motor, 2))
+    if (canManager.recvToBuff(motor, canManager.maxonCnt))
     {
         while (!motor->recieveBuffer.empty())
         {
