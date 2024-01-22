@@ -232,8 +232,9 @@ void DrumRobot::checkUserInput()
     usleep(500000);
 }
 
-int DrumRobot::kbhit(){
-     struct termios oldt, newt;
+int DrumRobot::kbhit()
+{
+    struct termios oldt, newt;
     int ch;
     int oldf;
 
@@ -272,6 +273,7 @@ void DrumRobot::initializeMotors()
     motors["L_arm3"] = make_shared<TMotor>(0x006, "AK70_10");
     motors["L_wrist"] = make_shared<MaxonMotor>(0x009);
     motors["R_wrist"] = make_shared<MaxonMotor>(0x008);
+    motors["maxonForTest"] = make_shared<MaxonMotor>(0x00A);
 
     for (auto &motor_pair : motors)
     {
@@ -387,6 +389,18 @@ void DrumRobot::initializeMotors()
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->interFaceName = "can2";
             }
+            else if (motor_pair.first == "maxonForTest")
+            {
+                maxonMotor->cwDir = 1.0f;
+                maxonMotor->rMin = 0.0f; // 0deg
+                maxonMotor->rMax = M_PI; // 180deg
+                maxonMotor->isHomed = false;
+                maxonMotor->txPdoIds[0] = 0x20A; // Controlword
+                maxonMotor->txPdoIds[1] = 0x30A; // TargetPosition
+                maxonMotor->txPdoIds[2] = 0x40A; // TargetVelocity
+                maxonMotor->txPdoIds[3] = 0x50A; // TargetTorque
+                maxonMotor->rxPdoIds[0] = 0x18A; // Statusword, ActualPosition, ActualTorque
+            }
         }
     }
 };
@@ -432,7 +446,7 @@ void DrumRobot::DeactivateControlTask()
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -542,15 +556,26 @@ void DrumRobot::motorSettingCmd()
 
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
             }
             else if (name == "R_wrist")
             {
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
-            }
 
-            maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+             else if (name == "maxonForTest")
+            {
+                maxoncmd.getHomingMethodR(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getHomeoffsetDistanceZero(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
 
             maxoncmd.getCurrentThreshold(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
@@ -602,7 +627,7 @@ void DrumRobot::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -621,7 +646,7 @@ void DrumRobot::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -640,7 +665,7 @@ void DrumRobot::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -906,7 +931,8 @@ void DrumRobot::initializePathManager()
     pathManager.GetMusicSheet();
 }
 
-void DrumRobot::clearMotorsSendBuffer(){
+void DrumRobot::clearMotorsSendBuffer()
+{
     for (auto motor_pair : motors)
     {
         motor_pair.second->clearSendBuffer();

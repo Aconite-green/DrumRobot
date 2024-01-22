@@ -449,6 +449,7 @@ void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_fra
     frame->data[7] = 0x00;
 }
 
+
 void MaxonCommandParser::getHomeoffsetDistanceZero(MaxonMotor &motor, struct can_frame *frame)
 {
     // 95 degree
