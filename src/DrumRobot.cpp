@@ -263,7 +263,6 @@ int DrumRobot::kbhit(){
 
 void DrumRobot::initializeMotors()
 {
-
     motors["waist"] = make_shared<TMotor>(0x007, "AK10_9");
     motors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10");
@@ -288,6 +287,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->Kp = 350;
+                tMotor->Kd = 3.5;
                 tMotor->isHomed = true;
                 tMotor->interFaceName = "can0";
             }
@@ -298,6 +298,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI; // -180deg
                 tMotor->rMax = 0.0f;  // 0deg
                 tMotor->Kp = 200;
+                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -308,6 +309,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = 0.0f; // 0deg
                 tMotor->rMax = M_PI; // 180deg
                 tMotor->Kp = 200;
+                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
@@ -318,6 +320,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->Kp = 250;
+                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -328,6 +331,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
                 tMotor->Kp = 200;
+                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -338,6 +342,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 4.0f;  // 45deg
                 tMotor->Kp = 250;
+                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
@@ -348,6 +353,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
                 tMotor->Kp = 200;
+                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }

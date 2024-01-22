@@ -66,7 +66,7 @@
 #define SUPPORT_PO(SupportMask) ((SupportMask & 0x10) > 0)
 #define SUPPORT_PI(SupportMask) ((SupportMask & 0x20) > 0)
 
-#define round(x) x+0.5
+//#define round(x) x+0.5
 
 #define IS_PAIR_TYPE_CODE(CompType) (CompType == TYPECODE_UP_DOWN || CompType == TYPECODE_PULSE_DIRECTION || CompType == TYPECODE_AB_PHASE)
 

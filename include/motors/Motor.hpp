@@ -24,6 +24,7 @@ public:
     float rMin, rMax;
     int socket;
     int Kp;
+    double Kd;
     std::queue<can_frame> sendBuffer;
     std::queue<can_frame> recieveBuffer;
 

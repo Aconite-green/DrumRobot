@@ -55,11 +55,10 @@ private:
     void ApplyDir();
     void getMotorPos();
     void sendBufferToMotor();
-    void wristarr(std::vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
-    void waistarr(vector<vector<double>> &T, int time, double amp, int kp[]);
-    void arm1arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
-    void arm2arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
-    void arm3arr(vector<vector<double>> &T, int time, int LnR, double amp, int kp[]);
+    void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
+    void wristarr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
+    void waistarr(vector<string> &motorName, int time, int cycles, double amp);
+    
     void SendLoop();
 
     // Single Mode Test
