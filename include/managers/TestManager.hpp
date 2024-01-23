@@ -37,7 +37,6 @@ public:
                 CanManager &canManagerRef, 
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     void mainLoop();
     void multiTestLoop();
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
@@ -53,8 +52,6 @@ private:
 
     // Multi Test
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
-    void wristarr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
-    void waistarr(vector<string> &motorName, int time, int cycles, double amp);
     
     void SendLoop();
 

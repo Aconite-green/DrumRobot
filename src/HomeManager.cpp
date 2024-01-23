@@ -121,7 +121,7 @@ void HomeManager::mainLoop()
                     Pmotors.push_back(motors[pmotorName]);
                 }
             }
-            SetMaxonHome(Pmotors, PmotorNames);
+            SetMaxonHome(Pmotors);
             Pmotors.clear();
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
@@ -153,7 +153,6 @@ bool HomeManager::PromptUserForHoming(const std::string &motorName)
     std::cin >> userResponse;
     return userResponse == 'y';
 }
-
 
 void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
 {
@@ -392,14 +391,14 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
     }
 }
 
-void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
+void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 {
     struct can_frame frame;
 
     canManager.clearReadBuffers();
     canManager.setSocketsTimeout(2, 0);
     vector<shared_ptr<MaxonMotor>> maxonMotors;
-    for (long unsigned int i = 0; i < motorNames.size(); i++)
+    for (long unsigned int i = 0; i < motors.size(); i++)
     {
         maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(motors[i]));
 
@@ -412,16 +411,16 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
 
     maxoncmd.getSync(&frame);
     canManager.txFrame(motors[0], frame);
-    if (canManager.recvToBuff(motors[0], 2))
+    if (canManager.recvToBuff(motors[0], canManager.maxonCnt))
     {
         while (!motors[0]->recieveBuffer.empty())
         {
             frame = motors[0]->recieveBuffer.front();
-            for (long unsigned int i = 0; i < motorNames.size(); i++)
+            for (long unsigned int i = 0; i < motors.size(); i++)
             {
                 if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
                 {
-                    cout << "\n<< Homing for " << motorNames[i] << " >>\n";
+                    cout << "\nHoming Start!!\n";
                 }
             }
             motors[0]->recieveBuffer.pop();
@@ -448,7 +447,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
             while (!motors[0]->recieveBuffer.empty())
             {
                 frame = motors[0]->recieveBuffer.front();
-                for (long unsigned int i = 0; i < motorNames.size(); i++)
+                for (long unsigned int i = 0; i < motors.size(); i++)
                 {
                     if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
                     {
@@ -456,7 +455,6 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, ve
                         {
                             motors[i]->isHomed = true; // MaxonMotor 객체의 isHomed 속성을 true로 설정
                                                        // 'this'를 사용하여 멤버 함수 호출
-                            cout << "-- Homing completed for " << motorNames[i] << " --\n\n";
                         }
                     }
                 }

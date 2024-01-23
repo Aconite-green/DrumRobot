@@ -31,8 +31,6 @@ bool setThreadPriority(std::thread &th, int priority, int policy = SCHED_FIFO)
     return true;
 }
 
-
-
 int main(int argc, char *argv[])
 {
 
@@ -52,24 +50,22 @@ int main(int argc, char *argv[])
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
     std::thread receiveThread(&DrumRobot::recvLoopForThread, &drumRobot);
 
-/*
-        // Threads Priority Settings
-        if (!setThreadPriority(sendThread, 3))
-        {
-            std::cerr << "Error setting priority for sendCanFrame" << std::endl;
-            return -1;
-        }
-        if (!setThreadPriority(receiveThread, 2))
-        {
-            std::cerr << "Error setting priority for receiveCanFrame" << std::endl;
-            return -1;
-        }
-        if (!setThreadPriority(stateThread, 1))
-        {
-            std::cerr << "Error setting priority for stateMachine" << std::endl;
-            return -1;
-        }
-        */
+    // Threads Priority Settings
+    if (!setThreadPriority(sendThread, 3))
+    {
+        std::cerr << "Error setting priority for sendCanFrame" << std::endl;
+        return -1;
+    }
+    if (!setThreadPriority(receiveThread, 2))
+    {
+        std::cerr << "Error setting priority for receiveCanFrame" << std::endl;
+        return -1;
+    }
+    if (!setThreadPriority(stateThread, 1))
+    {
+        std::cerr << "Error setting priority for stateMachine" << std::endl;
+        return -1;
+    }
 
     // Wait Threads
     stateThread.join();

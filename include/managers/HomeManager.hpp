@@ -65,7 +65,7 @@ private:
     bool PromptUserForHoming(const std::string &motorName);
 
     /*Maxon*/
-    void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
+    void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors);
 
     void SetMaxonHome(std::shared_ptr<GenericMotor> &motor, const std::string &motorName);
     void setMaxonMode(std::string targetMode);

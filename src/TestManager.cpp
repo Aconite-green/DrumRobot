@@ -64,11 +64,6 @@ void TestManager::mainLoop()
 /*                                 Multi Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-{
-    this->motors = motorsRef;
-}
-
 void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp)
 {
     struct can_frame frame;
@@ -76,7 +71,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
     int Kp_fixed = 450;
     double Kd_fixed = 4.5;
     map<string, bool> TestMotor;
-    if (LnR == 1) // 오른쪽만
+    if (LnR == 1) // 오른쪽만 Test
     {
         for (auto &motorname : motorName)
         {
@@ -86,7 +81,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 TestMotor[motorname] = true;
         }
     }
-    else if (LnR == 2) // 왼쪽만
+    else if (LnR == 2) // 왼쪽만 Test
     {
         for (auto &motorname : motorName)
         {
@@ -116,7 +111,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                     int kp = tMotor->Kp;
                     double kd = tMotor->Kd;
 
-                    for (int c = 1; c < cycles; c++)
+                    for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
                         {
@@ -128,7 +123,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
                 {
-                    for (int c = 1; c < cycles; c++)
+                    for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
                         {
@@ -140,7 +135,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 }
             }
             else
-            {   // Fixed 하는 모터
+            { // Fixed 하는 모터
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
                     for (int c = 1; c < cycles; c++)
@@ -231,13 +226,11 @@ void TestManager::SendLoop()
 
 void TestManager::multiTestLoop()
 {
-    
-
     string userInput;
     double t = 4.0;
     int cycles = 1;
     int type = 0b00001;
-    int LnR = 1;
+    int LnR = 2;
     double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
     while (true)
@@ -249,25 +242,25 @@ void TestManager::multiTestLoop()
         }
 
         string typeDescription;
-        if ((type | 0b01111) == 0b11111)
+        if ((type | 0b11110) == 0b11111)
         {
-            typeDescription += "Wrist Turn, ";
-        }
-        if ((type | 0b10111) == 0b11111)
-        {
-            typeDescription += "Waist Turn, ";
-        }
-        if ((type | 0b11011) == 0b11111)
-        {
-            typeDescription += "Arm1 Turn, ";
+            typeDescription += "Arm3 Turn, ";
         }
         if ((type | 0b11101) == 0b11111)
         {
             typeDescription += "Arm2 Turn, ";
         }
-        if ((type | 0b11110) == 0b11111)
+        if ((type | 0b11011) == 0b11111)
         {
-            typeDescription += "Arm3 Turn, ";
+            typeDescription += "Arm1 Turn, ";
+        }
+        if ((type | 0b10111) == 0b11111)
+        {
+            typeDescription += "Waist Turn, ";
+        }
+        if ((type | 0b01111) == 0b11111)
+        {
+            typeDescription += "Wrist Turn, ";
         }
 
         std::string LeftAndRight;
@@ -509,7 +502,6 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
     else
         mkArr(SmotorName, time, cycles, 0, 0);
 
-
     // CSV 입력 파일 열기
     string FileNamein = "../../READ/test_in.txt";
     ofstream csvFileIn(FileNamein);
@@ -518,8 +510,42 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
         std::cerr << "Error opening TXT file." << std::endl;
     }
     // csvFileIn << "Waist,R_arm1,L_arm1,R_arm2,L_arm2,R_arm3,L_arm3,R_wrist,L_wrist,\n"; // header
-    csvFileIn << "0x007,0x001,0x002,0x003,0x005,0x004,0x006,0x008,0x009,\n"; // header
+    for (auto &entry : motors)
+    {
+        csvFileIn << entry.second->nodeId << ",";
+    }
+    csvFileIn << "\n";
 
+    for (int c = 1; c < cycles; c++)
+    {
+        for (int i = 0; i < time; i++)
+        {
+            for (auto &entry : motors)
+            {
+                auto &motor = entry.second;
+                can_frame frame = motor->recieveBuffer.front();
+                motor->recieveBuffer.pop();
+                motor->recieveBuffer.push(frame);
+
+                float position;
+
+                // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+                {
+                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    position = std::get<1>(parsedData);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    position = std::get<1>(parsedData);
+                }
+
+                csvFileIn << position << ",";
+            }
+            csvFileIn << "\n";
+        }
+    }
 
     // CSV 파일 닫기
     csvFileIn.close();
@@ -1400,6 +1426,5 @@ void TestManager::TestStickLoop()
     }
 
     sleep(5);
-    //2. Start Testing
-
+    // 2. Start Testing
 }
