@@ -965,6 +965,7 @@ void DrumRobot::recvLoopForThread()
 
             if (systemState.runMode == RunMode::Running)
             {
+                canManager.clearReadBuffers();
                 RecieveLoop();
             }
         }
