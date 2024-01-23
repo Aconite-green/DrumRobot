@@ -290,14 +290,14 @@ void TestManager::multiTestLoop()
         cout << "5) Wrist = " << amplitude[4] << "\n";
         cout << "Motor_Kp :\n";
         cout << "1) Arm3 = " << motors["R_arm3"]->Kp << "\n";
-        cout << "2) Arm2 = " << motors["R_arm2"]->Kp << "\n";
-        cout << "3) Arm1 = " << motors["R_arm1"]->Kp << "\n";
-        cout << "4) Waist = " << motors["waist"]->Kp << "\n";
+        //cout << "2) Arm2 = " << motors["R_arm2"]->Kp << "\n";
+        //cout << "3) Arm1 = " << motors["R_arm1"]->Kp << "\n";
+        //cout << "4) Waist = " << motors["waist"]->Kp << "\n";
         cout << "Motor_Kd :\n";
         cout << "1) Arm3 = " << motors["R_arm3"]->Kd << "\n";
-        cout << "2) Arm2 = " << motors["R_arm2"]->Kd << "\n";
-        cout << "3) Arm1 = " << motors["R_arm1"]->Kd << "\n";
-        cout << "4) Waist = " << motors["waist"]->Kd << "\n";
+        //cout << "2) Arm2 = " << motors["R_arm2"]->Kd << "\n";
+        //cout << "3) Arm1 = " << motors["R_arm1"]->Kd << "\n";
+        //cout << "4) Waist = " << motors["waist"]->Kd << "\n";
         cout << "------------------------------------------------------------------------------------------------------------\n";
 
         cout << "Commands:\n";
@@ -395,7 +395,7 @@ void TestManager::multiTestLoop()
                 cout << "Enter Arm3's Desired Kp : ";
                 cin >> kp;
                 motors["R_arm3"]->Kp = kp;
-                motors["L_arm3"]->Kp = kp;
+                //motors["L_arm3"]->Kp = kp;
             }
             else if (input == '2')
             {
@@ -435,7 +435,7 @@ void TestManager::multiTestLoop()
                 cout << "Enter Arm3's Desired Kd : ";
                 cin >> kd;
                 motors["R_arm3"]->Kd = kd;
-                motors["L_arm3"]->Kd = kd;
+                //motors["L_arm3"]->Kd = kd;
             }
             else if (input == '2')
             {
@@ -798,7 +798,7 @@ void TestManager::TuningMaxonCSP(float sine_t, const std::string selectedMotor, 
                     maxoncmd.getSync(&frame);
                     canManager.txFrame(motors[selectedMotor], frame);
 
-                    if (canManager.recvToBuff(motors[selectedMotor], 2))
+                    if (canManager.recvToBuff(motors[selectedMotor], canManager.maxonCnt))
                     {
                         while (!motors[selectedMotor]->recieveBuffer.empty())
                         {

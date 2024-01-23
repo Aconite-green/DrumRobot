@@ -76,63 +76,24 @@ void HomeManager::mainLoop()
             }*/
 
             // 우선순위가 높은 Arm1모터 먼저 홈
-            std::vector<std::string> PmotorNames = {"L_arm1", "R_arm1"};
-            std::vector<std::shared_ptr<GenericMotor>> Pmotors;
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    Pmotors.push_back(motors[pmotorName]);
-                }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
+            std::vector<vector<std::string>> PNames = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}, {"L_wrist", "R_wrist", "maxonForTest"}};
 
-            // 다음 우선순위 : Arm2
-            PmotorNames = {"L_arm2", "R_arm2"};
-            for (const auto &pmotorName : PmotorNames)
+            for (long unsigned int i = 0; i < PNames.size(); i++)
             {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                std::vector<std::shared_ptr<GenericMotor>> Pmotors;
+                std::vector<std::string> PmotorNames;
+                for (const auto &pName : PNames[i])
                 {
-                    Pmotors.push_back(motors[pmotorName]);
+                    if (motors.find(pName) != motors.end() && !motors[pName]->isHomed)
+                    {   // 연결된 모터중 Homi가ng 안된 모터만 배열에 추가
+                        Pmotors.push_back(motors[pName]);
+                        PmotorNames.push_back(pName);
+                    }
                 }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
-            // 다음 우선순위 : Arm3
-            PmotorNames = {"L_arm3", "R_arm3"};
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                if (!Pmotors.empty())
                 {
-                    Pmotors.push_back(motors[pmotorName]);
+                    SetTmotorHome(Pmotors, PmotorNames);                    
                 }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
-
-            // 다음 우선순위 : Wrist
-            PmotorNames = {"L_wrist", "R_wrist", "maxonForTest"};
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    Pmotors.push_back(motors[pmotorName]);
-                }
-            }
-            if (!Pmotors.empty())
-            {
-                SetMaxonHome(Pmotors);
-                Pmotors.clear();
             }
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
@@ -438,7 +399,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
         }
     }
 
-    sleep(10);
+    sleep(5);
     // 홈 위치에 도달할 때까지 반복
     bool done = false;
     while (!done)
@@ -453,7 +414,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 
         maxoncmd.getSync(&frame);
         canManager.txFrame(motors[0], frame);
-        if (canManager.recvToBuff(motors[0], 2))
+        if (canManager.recvToBuff(motors[0], canManager.maxonCnt))
         {
             while (!motors[0]->recieveBuffer.empty())
             {
@@ -781,7 +742,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -800,7 +761,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -819,7 +780,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -852,7 +813,7 @@ void HomeManager::MaxonQuickStopEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -871,7 +832,7 @@ void HomeManager::MaxonQuickStopEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {

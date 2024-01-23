@@ -568,7 +568,7 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-             else if (name == "maxonForTest")
+            else if (name == "maxonForTest")
             {
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
