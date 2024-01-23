@@ -955,7 +955,7 @@ void DrumRobot::recvLoopForThread()
         {
 
             canManager.checkCanPortsStatus();
-            // checkMotors();
+            canManager.checkAllMotors();
             lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
         }
         while (systemState.main == Main::Perform)

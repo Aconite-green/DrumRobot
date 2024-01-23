@@ -527,7 +527,6 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
             while (!motor->recieveBuffer.empty())
             {
                 frame = motor->recieveBuffer.front();
-                std::cout << "canid :" << frame.can_id << "\n";
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
@@ -547,7 +546,6 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
 
 bool CanManager::checkAllMotors()
 {
-    std::cout << "Checking all positions for motors [rad]\n\n";
     bool allMotorsChecked = true;
     for (auto &motorPair : motors)
     {
@@ -557,7 +555,6 @@ bool CanManager::checkAllMotors()
         if (!checkConnection(motor))
         {
             allMotorsChecked = false;
-            std::cout << "Not checked\n";
         }
     }
     return allMotorsChecked;
