@@ -1006,6 +1006,7 @@ void DrumRobot::RecieveLoop()
             external = std::chrono::system_clock::now();
             canManager.readFramesFromAllSockets();
             canManager.distributeFramesToMotors();
+            
         }
     }
 

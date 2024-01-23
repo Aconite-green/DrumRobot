@@ -478,7 +478,10 @@ void CanManager::distributeFramesToMotors()
             {
                 if (frame.data[0] == tMotor->nodeId)
                 {
-                    tMotor->recieveBuffer.push(frame);
+                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    tMotor->currentPos = std::get<1>(parsedData);
+                    tMotor->currentVel = std::get<2>(parsedData);
+                    tMotor->currentTor = std::get<3>(parsedData);
                 }
             }
         }
@@ -489,7 +492,9 @@ void CanManager::distributeFramesToMotors()
             {
                 if (frame.can_id == maxonMotor->txPdoIds[0])
                 {
-                    maxonMotor->recieveBuffer.push(frame);
+                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    maxonMotor->currentPos = std::get<1>(parsedData);
+                    maxonMotor->currentTor = std::get<2>(parsedData); 
                 }
             }
         }
@@ -510,6 +515,8 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
         {
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
             motor->currentPos = std::get<1>(parsedData);
+            motor->currentVel = std::get<2>(parsedData);
+            motor->currentTor = std::get<3>(parsedData);
             motor->isConected = true;
         }
         else
@@ -531,6 +538,7 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
                 {
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     motor->currentPos = std::get<1>(parsedData);
+                    motor->currentTor = std::get<2>(parsedData);
                     motor->isConected = true;
                 }
                 motor->recieveBuffer.pop();
