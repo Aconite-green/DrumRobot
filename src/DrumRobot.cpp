@@ -1006,7 +1006,7 @@ void DrumRobot::RecieveLoop()
             external = std::chrono::system_clock::now();
             canManager.readFramesFromAllSockets();
             canManager.distributeFramesToMotors();
-            
+
         }
     }
 
@@ -1055,7 +1055,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
                 std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
-                speed = 0.0; // MaxonMotor의 경우 speed 정보가 없음
+                speed = 0.0; 
             }
 
             // 데이터 CSV 파일에 쓰기
