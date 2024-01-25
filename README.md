@@ -12,7 +12,7 @@ This endeavor stands as a testament to the potential of robotics in the arts, sh
 
 
 ## Team Members
-- **SeongYong Park**: Key developer responsible for the entire project's core components. Developed **advanced algorithms in C++** for precision motor control, implemented **real-time system performance** using Linux Ubuntu with a Real-Time Kernel, and integrated control logic with a **collaboratively developed Qt user interface**. Also responsible for implementing the **CAN Bus Protocol with SocketCAN Library** for motor communications, and incorporating **USB IO devices and proximity sensors** for accurate robotic movement and positioning.
+- **SeongYong Park**: Key developer responsible for the entire project's core components. Developed advanced algorithms in C++ for precision motor control, implemented real-time system performance using Linux Ubuntu with a Real-Time Kernel, and integrated control logic with a collaboratively developed Qt user interface Also responsible for implementing the CAN Bus Protocol with SocketCAN Library for motor communications, and incorporating USB IO devices and proximity sensors for accurate robotic movement and positioning.
 
 
 - **Partner's Name**: Partner's role and contributions in the project
