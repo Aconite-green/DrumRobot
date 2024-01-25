@@ -71,8 +71,8 @@ Remember to adjust these steps based on your project's specific requirements and
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
 
-![Screenshot 1](url-to-screenshot)
-![Screenshot 2](url-to-screenshot)
+![Screenshot Front Robot](url-to-screenshot)
+![Screenshot Ready Position diagonal](url-to-screenshot)
 [Link to Demo Video](url-to-demo)
 
 ## License
@@ -92,5 +92,5 @@ For any questions, feedback, or further information, feel free to reach out to u
   - LinkedIn: [Teammate's LinkedIn](teammate-linkedin-url)
 
 Additional resources and information:
-- Project Link: [Well Come To DrumRobot Project WebSite](https://seongyongs-organization.gitbook.io/design-system/)
+- Project Link: [Welcome To DrumRobot Project WebSite](https://seongyongs-organization.gitbook.io/design-system/)
 
