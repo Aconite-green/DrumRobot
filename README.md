@@ -71,7 +71,7 @@ Remember to adjust these steps based on your project's specific requirements and
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
 
-![Screenshot Front Robot](url-to-screenshot)
+![Screenshot Front Robot](./image/Robot.jpg)
 ![Screenshot Ready Position diagonal](url-to-screenshot)
 [Link to Demo Video](url-to-demo)
 
