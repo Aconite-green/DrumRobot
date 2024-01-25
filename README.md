@@ -67,12 +67,11 @@ To set up and use this robotic drummer, please follow the outlined steps:
 
 Remember to adjust these steps based on your project's specific requirements and the hardware components used.
 
-
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
 
-![Screenshot Front Robot](./image/Robot.jpg =500x)
-![Screenshot Ready Position diagonal](url-to-screenshot =500x)
+<img src="./image/Robot.jpg" width="500" alt="Screenshot Front Robot">
+<img src="url-to-screenshot" width="500" alt="Screenshot Ready Position diagonal">
 [Link to Demo Video](url-to-demo)
 
 
