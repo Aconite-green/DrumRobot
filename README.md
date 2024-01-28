@@ -33,8 +33,7 @@ This endeavor stands as a testament to the potential of robotics in the arts, sh
 - **Linux Ubuntu with Real-Time Kernel**: Operating system platform modified for robust and stable performance with real-time capabilities.
 - **Qt (GUI Development)**: Collaboratively developed with another developer, focusing on integrating the control logic with the GUI for enhanced user interaction.
 - **SocketCAN Library**: Employed for implementing the CAN Bus Protocol, facilitating efficient communication with the motors.
-- **Version Control with Git**: Utilized Git for version control, ensuring efficient collaboration and tracking of changes throughout the development process.
-
+- **Multi-Threading**: Implemented throughout the system to manage concurrent processes effectively. This approach is crucial for real-time data processing, ensuring synchronized motor control and maintaining system stability under various operational conditions.
 
 ### Hardware
 - **Tmotor AK10-9 and AK70-10 Motors**: High-performance motors used for precise and powerful drumming actions.
