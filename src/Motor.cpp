@@ -32,7 +32,7 @@ TMotor::TMotor(uint32_t nodeId, const std::string &motorType)
 
 void TMotor::addTMotorData(float position, float velocity, float kp, float kd, float torqueOffset)
 {
-    tMotorBuffer.push(TMotorData(position, velocity, kp, kd, torqueOffset));
+    sendBuffer.push(TMotorData(position, velocity, kp, kd, torqueOffset));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,5 +48,5 @@ MaxonMotor::MaxonMotor(uint32_t nodeId)
 }
 
 void MaxonMotor::addMaxonMotorData(int position){
-    maxonMotorBuffer.push(MaxonMotorData(position));
+    sendBuffer.push(MaxonMotorData(position));
 }
