@@ -620,7 +620,7 @@ void DrumRobot::MaxonEnable()
 
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
-
+            auto start = std::chrono::high_resolution_clock::now();
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -639,6 +639,12 @@ void DrumRobot::MaxonEnable()
                     motor->recieveBuffer.pop();
                 }
             }
+
+            auto end = std::chrono::high_resolution_clock::now();
+
+            // 경과 시간 계산 및 출력 (마이크로초 단위)
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            std::cout << "Elapsed time: " << duration.count() << " microseconds\n";
 
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
@@ -1006,7 +1012,6 @@ void DrumRobot::RecieveLoop()
             external = std::chrono::system_clock::now();
             canManager.readFramesFromAllSockets();
             canManager.distributeFramesToMotors();
-
         }
     }
 
@@ -1055,7 +1060,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
                 std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
-                speed = 0.0; 
+                speed = 0.0;
             }
 
             // 데이터 CSV 파일에 쓰기
