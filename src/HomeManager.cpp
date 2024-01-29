@@ -76,63 +76,23 @@ void HomeManager::mainLoop()
             }*/
 
             // 우선순위가 높은 Arm1모터 먼저 홈
-            std::vector<std::string> PmotorNames = {"L_arm1", "R_arm1"};
-            std::vector<std::shared_ptr<GenericMotor>> Pmotors;
-            for (const auto &pmotorName : PmotorNames)
+            vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}, {"L_wrist", "R_wrist", "maxonForTest"}};
+            for (auto &PmotorNames : Priority)
             {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                vector<shared_ptr<GenericMotor>> Pmotors;
+                vector<string> Pnames;
+                for (const auto &pmotorName : PmotorNames)
                 {
-                    Pmotors.push_back(motors[pmotorName]);
+                    if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                    {
+                        Pmotors.push_back(motors[pmotorName]);
+                        Pnames.push_back(pmotorName);
+                    }
                 }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
-
-            // 다음 우선순위 : Arm2
-            PmotorNames = {"L_arm2", "R_arm2"};
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                if (!Pmotors.empty())
                 {
-                    Pmotors.push_back(motors[pmotorName]);
+                    SetTmotorHome(Pmotors, Pnames);
                 }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
-            // 다음 우선순위 : Arm3
-            PmotorNames = {"L_arm3", "R_arm3"};
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    Pmotors.push_back(motors[pmotorName]);
-                }
-            }
-            if (!Pmotors.empty())
-            {
-                SetTmotorHome(Pmotors, PmotorNames);
-                Pmotors.clear();
-            }
-
-            // 다음 우선순위 : Wrist
-            PmotorNames = {"L_wrist", "R_wrist", "maxonForTest"};
-            for (const auto &pmotorName : PmotorNames)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    Pmotors.push_back(motors[pmotorName]);
-                }
-            }
-            if (!Pmotors.empty())
-            {
-                SetMaxonHome(Pmotors);
-                Pmotors.clear();
             }
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
@@ -170,11 +130,6 @@ void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, v
     sensor.OpenDeviceUntilSuccess();
     canManager.setSocketsTimeout(5, 0);
 
-    for (auto &motorname : motorNames)
-    {
-        cout << "\n<< Homing for " << motorname << " >>\n";
-    }
-
     HomeTMotor(motors, motorNames);
     for (auto &motor : motors)
     {
@@ -200,6 +155,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     // 속도 제어 - 센서 방향으로 이동
     for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
+        cout << "\n<< Homing for " << motorNames[i] << " >>\n";
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
 
         double initialDirection;
