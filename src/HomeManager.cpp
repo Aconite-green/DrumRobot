@@ -76,23 +76,22 @@ void HomeManager::mainLoop()
             }*/
 
             // 우선순위가 높은 Arm1모터 먼저 홈
-            std::vector<vector<std::string>> PNames = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}, {"L_wrist", "R_wrist", "maxonForTest"}};
-
-            for (long unsigned int i = 0; i < PNames.size(); i++)
+            vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}, {"L_wrist", "R_wrist", "maxonForTest"}};
+            for (auto &PmotorNames : Priority)
             {
-                std::vector<std::shared_ptr<GenericMotor>> Pmotors;
-                std::vector<std::string> PmotorNames;
-                for (const auto &pName : PNames[i])
+                vector<shared_ptr<GenericMotor>> Pmotors;
+                vector<string> Pnames;
+                for (const auto &pmotorName : PmotorNames)
                 {
-                    if (motors.find(pName) != motors.end() && !motors[pName]->isHomed)
-                    {   // 연결된 모터중 Homi가ng 안된 모터만 배열에 추가
-                        Pmotors.push_back(motors[pName]);
-                        PmotorNames.push_back(pName);
+                    if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                    {
+                        Pmotors.push_back(motors[pmotorName]);
+                        Pnames.push_back(pmotorName);
                     }
                 }
                 if (!Pmotors.empty())
                 {
-                    SetTmotorHome(Pmotors, PmotorNames);                    
+                    SetTmotorHome(Pmotors, Pnames);
                 }
             }
         }
@@ -131,11 +130,6 @@ void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, v
     sensor.OpenDeviceUntilSuccess();
     canManager.setSocketsTimeout(5, 0);
 
-    for (auto &motorname : motorNames)
-    {
-        cout << "\n<< Homing for " << motorname << " >>\n";
-    }
-
     HomeTMotor(motors, motorNames);
     for (auto &motor : motors)
     {
@@ -161,6 +155,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     // 속도 제어 - 센서 방향으로 이동
     for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
+        cout << "\n<< Homing for " << motorNames[i] << " >>\n";
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
 
         double initialDirection;
