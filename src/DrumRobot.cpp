@@ -590,9 +590,12 @@ void DrumRobot::motorSettingCmd()
                 tmotorcmd.getZero(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
+
+            tmotorcmd.getControlMode(*tmotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
         }
     }
-    std::cout << "Maxon SDO Set\n";
 }
 
 void DrumRobot::MaxonEnable()
