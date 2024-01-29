@@ -20,7 +20,7 @@ class GenericMotor
 public:
     uint32_t nodeId;
     std::string interFaceName;
-    double currentPos;
+    float desPos, desVel, desTor, currentPos, currentVel, currentTor;
     float cwDir;
     bool isHomed, isConected;
     float rMin, rMax;
@@ -44,7 +44,7 @@ public:
     std::string motorType;
 
     int sensorBit;
-    float desPos, desVel, desTor, outPos, outVel, outTor;
+    
 
 private:
 };
@@ -60,7 +60,6 @@ public:
     uint32_t txPdoIds[4]; // 변경된 부분
     uint32_t rxPdoIds[4]; // 변경된 부분
 
-    float outPos, outTor;
 };
 
 #endif

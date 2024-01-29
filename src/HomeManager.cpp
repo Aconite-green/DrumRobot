@@ -394,7 +394,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
         }
     }
 
-    sleep(10);
+    sleep(5);
     // 홈 위치에 도달할 때까지 반복
     bool done = false;
     while (!done)
@@ -409,7 +409,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 
         maxoncmd.getSync(&frame);
         canManager.txFrame(motors[0], frame);
-        if (canManager.recvToBuff(motors[0], 2))
+        if (canManager.recvToBuff(motors[0], canManager.maxonCnt))
         {
             while (!motors[0]->recieveBuffer.empty())
             {
@@ -737,7 +737,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -756,7 +756,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -775,7 +775,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -808,7 +808,7 @@ void HomeManager::MaxonQuickStopEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {
@@ -827,7 +827,7 @@ void HomeManager::MaxonQuickStopEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            if (canManager.recvToBuff(motor, 2))
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
                 {

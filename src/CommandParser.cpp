@@ -114,9 +114,9 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     speed = uintToFloat(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
     torque = uintToFloat(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
 
-    motor.outPos = position;
-    motor.outVel = speed;
-    motor.outTor = torque;
+    motor.currentPos = position;
+    motor.currentVel = speed;
+    motor.currentTor = torque;
 
     return std::make_tuple(id, position, speed, torque);
 }
@@ -252,8 +252,8 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-    motor.outPos = currentPositionRadians;
-    motor.outTor = currentTorqueNm;
+    motor.currentPos = currentPositionRadians;
+    motor.currentTor = currentTorqueNm;
 
     return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
