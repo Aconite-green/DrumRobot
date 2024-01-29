@@ -593,7 +593,6 @@ void DrumRobot::motorSettingCmd()
 
             tmotorcmd.getControlMode(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
-
         }
     }
 }
@@ -623,7 +622,7 @@ void DrumRobot::MaxonEnable()
 
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
-            auto start = std::chrono::high_resolution_clock::now();
+
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -642,12 +641,6 @@ void DrumRobot::MaxonEnable()
                     motor->recieveBuffer.pop();
                 }
             }
-
-            auto end = std::chrono::high_resolution_clock::now();
-
-            // 경과 시간 계산 및 출력 (마이크로초 단위)
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            std::cout << "Elapsed time: " << duration.count() << " microseconds\n";
 
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
@@ -954,18 +947,16 @@ void DrumRobot::clearMotorsSendBuffer()
 
 void DrumRobot::recvLoopForThread()
 {
-    auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (systemState.main != Main::Shutdown)
     {
-        auto currentTime = std::chrono::steady_clock::now();
-        usleep(50000);
-        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime).count() >= 3)
-        {
 
+        usleep(50000);
+        if (!(systemState.main == Main::Perform) || !(systemState.main == Main::Tune))
+        {
+            sleep(3);
             canManager.checkCanPortsStatus();
             canManager.checkAllMotors();
-            lastCheckTime = currentTime; // 마지막 체크 시간 업데이트
         }
         while (systemState.main == Main::Perform)
         {

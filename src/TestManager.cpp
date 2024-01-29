@@ -105,7 +105,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
         if (motors.find(motorname) != motors.end())
         {
             if (TestMotor[motorname])
-            {   // Test 하는 모터
+            { // Test 하는 모터
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
                     int kp = tMotor->Kp;
@@ -290,14 +290,14 @@ void TestManager::multiTestLoop()
         cout << "5) Wrist = " << amplitude[4] << "\n";
         cout << "Motor_Kp :\n";
         cout << "1) Arm3 = " << motors["R_arm3"]->Kp << "\n";
-        //cout << "2) Arm2 = " << motors["R_arm2"]->Kp << "\n";
-        //cout << "3) Arm1 = " << motors["R_arm1"]->Kp << "\n";
-        //cout << "4) Waist = " << motors["waist"]->Kp << "\n";
+        // cout << "2) Arm2 = " << motors["R_arm2"]->Kp << "\n";
+        // cout << "3) Arm1 = " << motors["R_arm1"]->Kp << "\n";
+        // cout << "4) Waist = " << motors["waist"]->Kp << "\n";
         cout << "Motor_Kd :\n";
         cout << "1) Arm3 = " << motors["R_arm3"]->Kd << "\n";
-        //cout << "2) Arm2 = " << motors["R_arm2"]->Kd << "\n";
-        //cout << "3) Arm1 = " << motors["R_arm1"]->Kd << "\n";
-        //cout << "4) Waist = " << motors["waist"]->Kd << "\n";
+        // cout << "2) Arm2 = " << motors["R_arm2"]->Kd << "\n";
+        // cout << "3) Arm1 = " << motors["R_arm1"]->Kd << "\n";
+        // cout << "4) Waist = " << motors["waist"]->Kd << "\n";
         cout << "------------------------------------------------------------------------------------------------------------\n";
 
         cout << "Commands:\n";
@@ -395,7 +395,7 @@ void TestManager::multiTestLoop()
                 cout << "Enter Arm3's Desired Kp : ";
                 cin >> kp;
                 motors["R_arm3"]->Kp = kp;
-                //motors["L_arm3"]->Kp = kp;
+                // motors["L_arm3"]->Kp = kp;
             }
             else if (input == '2')
             {
@@ -435,7 +435,7 @@ void TestManager::multiTestLoop()
                 cout << "Enter Arm3's Desired Kd : ";
                 cin >> kd;
                 motors["R_arm3"]->Kd = kd;
-                //motors["L_arm3"]->Kd = kd;
+                // motors["L_arm3"]->Kd = kd;
             }
             else if (input == '2')
             {
@@ -918,7 +918,8 @@ void TestManager::TuningLoopTask()
         else
         {
             std::cout << "Control Type : " << controlTypeDescription;
-            std::cout << " | Vel [rpm]: " << des_vel << " | Des Torque: " << des_tff << "\n";
+            std::cout << " | Vel [rpm]: " << des_vel << " | Des Torque: " << des_tff * 31.052 / 1000 << "[mNm]"
+                      << "\n";
         };
         std::cout << "Sine Period: " << sine_t << " | Cycles: " << cycles << " | Hz: " << 1 / sine_t << "\n";
         std::cout << "Peak Angle: " << peakAngle << " | Path Type [Pos]: " << pathTypeDescription << "\n";
@@ -998,9 +999,8 @@ void TestManager::TuningLoopTask()
         }
         else if (userInput == "b" && isMaxonMotor)
         {
-            std::cout << "Enter Desired Torque Unit: ";
-            std::cout << "1 [unit] = ";
-
+            std::cout << "Enter Desired Torque: ";
+            std::cout << "-100 [unit] = -3.1052 [mNm]\n";
             std::cin >> des_tff;
         }
         else if (userInput == "e")
@@ -1101,7 +1101,7 @@ void TestManager::InitializeParameters(const std::string selectedMotor, float &k
         des_vel = 0;
         des_tff = 0;
     }
-    else if (selectedMotor == "L_wrist" || selectedMotor == "R_wrist")
+    else if (selectedMotor == "L_wrist" || selectedMotor == "R_wrist" || selectedMotor == "maxonForTest")
     {
         peakAngle = 90;
         pathType = 1;
@@ -1271,8 +1271,6 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
         csvFileIn << "0,";
     }
 
-    maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
-
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
     while (1)
     {
@@ -1290,37 +1288,37 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
         if (elapsed_time.count() >= 5000)
         {
 
-            ssize_t bytesWritten = write(canManager.sockets.at(maxonMotor->interFaceName), &frame, sizeof(struct can_frame));
-            if (bytesWritten == -1)
-            {
-                std::cerr << "Failed to write to socket for interface: " << maxonMotor->interFaceName << std::endl;
-                std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
-            }
+            maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
+            canManager.txFrame(motors[selectedMotor], frame);
 
             maxoncmd.getSync(&frame);
-            bytesWritten = write(canManager.sockets.at(maxonMotor->interFaceName), &frame, sizeof(struct can_frame));
-            if (bytesWritten == -1)
-            {
-                std::cerr << "Failed to write to socket for interface: " << maxonMotor->interFaceName << std::endl;
-                std::cerr << "Error: " << strerror(errno) << " (errno: " << errno << ")" << std::endl;
-            }
-            ssize_t bytesRead = read(canManager.sockets.at(maxonMotor->interFaceName), &frame, sizeof(struct can_frame));
+            canManager.txFrame(motors[selectedMotor], frame);
 
-            if (bytesRead == -1)
+            if (canManager.recvToBuff(motors[selectedMotor], canManager.maxonCnt))
             {
-                std::cerr << "Failed to read from socket for interface: " << maxonMotor->interFaceName << std::endl;
-                return;
-            }
-            else
-            {
+                while (!motors[selectedMotor]->recieveBuffer.empty())
+                {
+                    frame = motors[selectedMotor]->recieveBuffer.front();
+                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                    {
+                        std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
 
-                std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                        p_act = std::get<1>(result);
+                        tff_act = std::get<2>(result);
+                        // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                        csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
+                        csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
-                p_act = std::get<1>(result);
-                tff_act = std::get<2>(result);
-                // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
-                csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
-                csvFileOut << ',' << std::dec << p_act << ", ," << tff_act << '\n';
+                        if (abs(tff_act) > 20)
+                        {
+                            des_tff = 0;
+                        }
+                    }
+                    if (!motors[selectedMotor]->recieveBuffer.empty())
+                    {
+                        motors[selectedMotor]->recieveBuffer.pop();
+                    }
+                }
             }
         }
     }

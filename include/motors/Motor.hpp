@@ -12,7 +12,7 @@
 #include <vector>
 #include <queue>
 #include <linux/can/raw.h>
-
+#include <iostream>
 using namespace std;
 
 class GenericMotor
@@ -37,6 +37,18 @@ public:
     void clearReceiveBuffer();
 };
 
+struct TMotorData
+{
+    float position;
+    float velocity;
+    float kp;
+    float kd;
+    float torqueOffset;
+
+    TMotorData(float position, float velocity, float kp, float kd, float torqueOffset)
+        : position(position), velocity(velocity), kp(kp), kd(kd), torqueOffset(torqueOffset) {}
+};
+
 class TMotor : public GenericMotor
 {
 public:
@@ -44,9 +56,19 @@ public:
     std::string motorType;
 
     int sensorBit;
-    
+
+    std::queue<TMotorData> sendBuffer;
+
+    void addTMotorData(float position, float velocity, float kp, float kd, float torqueOffset);
 
 private:
+};
+
+struct MaxonMotorData
+{
+    int position;
+
+    MaxonMotorData(int position) : position(position) {}
 };
 
 class MaxonMotor : public GenericMotor
@@ -54,12 +76,15 @@ class MaxonMotor : public GenericMotor
 public:
     MaxonMotor(uint32_t nodeId);
 
+    std::queue<MaxonMotorData> sendBuffer;
+
+    void addMaxonMotorData(int position);
+
     uint32_t canSendId;
     uint32_t canReceiveId;
 
     uint32_t txPdoIds[4]; // 변경된 부분
     uint32_t rxPdoIds[4]; // 변경된 부분
-
 };
 
 #endif
