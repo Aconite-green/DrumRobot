@@ -1110,7 +1110,15 @@ void TestManager::InitializeParameters(const std::string selectedMotor, float &k
         des_vel = 0;
         des_tff = 0;
     }
-    // 추가적인 모터 이름과 매개변수를 이곳에 추가할 수 있습니다.
+    else if (selectedMotor == "maxonForTest")
+    {
+        peakAngle = 90;
+        pathType = 1;
+        controlType = 3;
+        direction = -1;
+        des_vel = 0;
+        des_tff = 500;
+    }
 }
 
 void TestManager::TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction)
@@ -1270,6 +1278,8 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
     {
         csvFileIn << "0,";
     }
+    bool reachedDrum = false;
+    bool motorFixed = false;
 
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
     while (1)
@@ -1278,10 +1288,14 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
         if (kbhit())
         {
             input = getchar();
-        }
+            if (input == 'e' && motorFixed)
+            {
 
-        if (input == 'e')
-            break;
+                maxoncmd.getCSTMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motors[selectedMotor], frame);
+                break;
+            }
+        }
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
@@ -1309,9 +1323,37 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
                         csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
                         csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
-                        if (abs(tff_act) > 20)
+                        // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
+                        if (abs(tff_act) > 20 && !reachedDrum)
                         {
-                            des_tff = 0;
+                            des_tff = 10 * -direction;
+                            reachedDrum = true;
+                        }
+
+                        // 특정 각도에 도달했는지 확인하는 조건
+                        if (p_act > -0.5 && reachedDrum)
+                        {
+                            maxoncmd.getCSPMode(*maxonMotor, &frame);
+                            canManager.sendAndRecv(motors[selectedMotor], frame);
+
+                            canManager.checkConnection(motors[selectedMotor]);
+                            maxoncmd.getTargetPosition(*maxonMotor, &frame, motors[selectedMotor]->currentPos);
+                            canManager.txFrame(motors[selectedMotor], frame);
+                            maxoncmd.getSync(&frame);
+                            canManager.txFrame(motors[selectedMotor], frame);
+                            if (canManager.recvToBuff(motors[selectedMotor], canManager.maxonCnt))
+                            {
+                                while (!motors[selectedMotor]->recieveBuffer.empty())
+                                {
+                                    frame = motors[selectedMotor]->recieveBuffer.front();
+                                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                                    {
+                                        std::cout << "This is My stick!! \n";
+                                        motorFixed = true;
+                                    }
+                                    motors[selectedMotor]->recieveBuffer.pop();
+                                }
+                            }
                         }
                     }
                     if (!motors[selectedMotor]->recieveBuffer.empty())

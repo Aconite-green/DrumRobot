@@ -952,7 +952,7 @@ void DrumRobot::recvLoopForThread()
     {
 
         usleep(50000);
-        if (!(systemState.main == Main::Perform) || !(systemState.main == Main::Tune))
+        if (!(systemState.main == Main::Perform) || !(systemState.main == Main::Tune)|| !(systemState.main == Main::Homing))
         {
             sleep(3);
             canManager.checkCanPortsStatus();
