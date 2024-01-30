@@ -104,7 +104,6 @@ void HomeManager::mainLoop()
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorName]))
             {
-
                 SetMaxonHome(motors[motorName], motorName);
             }
         }
@@ -134,7 +133,7 @@ void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, v
     for (auto &motor : motors)
     {
         motor->isHomed = true; // 홈잉 상태 업데이트
-        sleep(1);
+        sleep(2);
         FixMotorPosition(motor);
     }
 
@@ -155,7 +154,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     // 속도 제어 - 센서 방향으로 이동
     for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
-        cout << "\n<< Homing for " << motorNames[i] << " >>\n";
+        cout << "<< Homing for " << motorNames[i] << " >>\n";
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
 
         double initialDirection;
@@ -184,7 +183,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2")
         {
             degrees.push_back(-30.0);
-            midpoints[i] *= (-1);
+            midpoints[i] = midpoints[i] * (-1);
         }
         else
         {
@@ -201,12 +200,17 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     {
         // 모터를 멈추는 신호를 보냄
         tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, 0, 0, 0, 5, 0);
-        canManager.sendAndRecv(motors[i], frameToProcess);
+        if(canManager.sendAndRecv(motors[i], frameToProcess))
+            cout << "Set " << motorNames[i] << " speed Zero.\n";
 
         canManager.setSocketsTimeout(2, 0);
         // 현재 position을 0으로 인식하는 명령을 보냄
         tmotorcmd.getZero(*tMotors[i], &frameToProcess);
-        canManager.sendAndRecv(motors[i], frameToProcess);
+        if(canManager.sendAndRecv(motors[i], frameToProcess))
+            cout << "Set Zero.\n";
+        if(canManager.checkConnection(motors[i]))
+            cout << motorNames[i] << " Position : " << motors[i]->currentPos;
+        
 
         if (motorNames[i] == "L_arm1" || motorNames[i] == "R_arm1")
         {
@@ -331,7 +335,7 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
         }
     }
 
-    totalSteps = 500 / 5;
+    totalSteps = 4000 / 5;
     for (int step = 1; step <= totalSteps; ++step)
     {
         while (1)
