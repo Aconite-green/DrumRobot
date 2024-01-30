@@ -438,6 +438,9 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
     }
 }
 
+
+
+
 void HomeManager::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
 
