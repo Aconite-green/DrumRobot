@@ -496,7 +496,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
     else
         mkArr(SmotorName, time, cycles, 0, 0);
 
-    SmotorName = {"R_wrist", "L_wrist"};
+    SmotorName = {"R_wrist", "L_wrist", "maxonForTest"};
     if ((type | 0b01111) == 0b11111) // Turn Wrist
         mkArr(SmotorName, time, cycles, LnR, amp[4]);
     else
