@@ -1443,34 +1443,227 @@ int TestManager::kbhit()
 void TestManager::TestStickLoop()
 {
 
-    // 1. Do Home Setting
-    struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
-    for (const auto &motorPair : motors)
+    std::string userInput;
+    std::string selectedMotor = "maxonForTest";
+    float des_tff = 0;
+    int direction = -1;
+    float posThreshold = 0.0; // 위치 임계값 초기화
+    float tffThreshold = 0.0; // 토크 임계값 초기화
+
+    for (auto motor_pair : motors)
     {
-        std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        FixMotorPosition(motor_pair.second);
+    }
+
+    while (true)
+    {
+
+        int result = system("clear");
+        if (result != 0)
         {
-            // HMM Settigns
-            maxoncmd.getHomeMode(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-            usleep(5000);
-            maxoncmd.getHomeoffsetDistanceZero(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-            usleep(5000);
-            maxoncmd.getHomingMethodL(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-            usleep(5000);
-            maxoncmd.getStartHoming(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-            usleep(5000);
+            std::cerr << "Error during clear screen" << std::endl;
+        }
+
+        std::string directionDescription = (direction == 1) ? "CW" : "CCW";
+
+        std::cout << "================ Tuning Menu ================\n";
+        std::cout << "Available Motors for Stick Mode:\n";
+        for (const auto &motor_pair : motors)
+        {
+            if (motor_pair.first == "maxonForTest")
+                std::cout << " - " << motor_pair.first << "\n";
+        }
+
+        bool isMaxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[selectedMotor]) != nullptr;
+        if (isMaxonMotor)
+            break;
+
+        std::cout << "---------------------------------------------\n";
+        std::cout << "Selected Motor: " << selectedMotor << "\n";
+
+        std::cout << "Des Torque: " << des_tff * 31.052 / 1000 << "[mNm]\n";
+        std::cout << "Direction: " << directionDescription << "\n";
+        std::cout << "Torque Threshold: " << tffThreshold * 31.052 / 1000 << " [mNm]\n"; // 현재 토크 임계값 출력
+        std::cout << "Position Threshold: " << posThreshold << " [rad]\n";               // 현재 위치 임계값 출력
+        std::cout << "\nCommands:\n";
+        std::cout << "[a]: des_tff | [k]: Direction | ";
+        std::cout << "[b]: Set Torque Threshold | [c]: Set Position Threshold | ";
+        std::cout << "[i]: Run | [j]: Exit\n";
+        std::cout << "=============================================\n";
+        std::cout << "Enter Command: ";
+        std::cin >> userInput;
+        std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
+
+        if (userInput[0] == 'j')
+        {
+            break;
+        }
+        else if (userInput == "a" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Torque: ";
+            std::cout << "-100 [unit] = -3.1052 [mNm]\n";
+            std::cin >> des_tff;
+        }
+        else if (userInput == "b" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Torque Threshold: ";
+            std::cout << "-100 [unit] = -3.1052 [mNm]\n";
+            std::cin >> tffThreshold;
+        }
+        else if (userInput == "c" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Position Threshold: ";
+            std::cin >> posThreshold;
+        }
+        else if (userInput == "k" && isMaxonMotor)
+        {
+            std::cout << "Enter Desired Direction (1: CW, -1: CCW): ";
+            std::cin >> direction;
+            if (direction != 1 && direction != -1)
+            {
+                std::cout << "Invalid direction type. Please enter 1 or 2.\n";
+                direction = 1;
+            }
+        }
+        else if (userInput[0] == 'i' && isMaxonMotor)
+        {
+            TestStick(selectedMotor, des_tff, direction, tffThreshold, posThreshold);
+        }
+    }
+}
+
+void TestManager::TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold)
+{
+
+    canManager.setSocketsTimeout(0, 50000);
+    std::string FileName1 = "../../READ/" + selectedMotor + "_cst_in.txt";
+
+    std::ofstream csvFileIn(FileName1);
+
+    if (!csvFileIn.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+
+    // Input File
+    csvFileIn << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+    std::string FileName2 = "../../READ/" + selectedMotor + "_cst_out.txt";
+    std::ofstream csvFileOut(FileName2);
+
+    if (!csvFileOut.is_open())
+    {
+        std::cerr << "Error opening CSV file." << std::endl;
+    }
+    csvFileOut << "CAN_ID,pos_act,tff_act\n"; // CSV 헤더
+
+    struct can_frame frame;
+
+    float p_act, tff_act;
+    char input = 'a';
+    std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[selectedMotor]);
+
+    for (int i = 0; i < (int)maxonMotor->nodeId - 1; i++)
+    {
+        csvFileIn << "0,";
+    }
+    csvFileIn << std::dec << des_tff << ",";
+    for (int i = 0; i < (9 - (int)maxonMotor->nodeId); i++)
+    {
+        csvFileIn << "0,";
+    }
+    bool reachedDrum = false;
+    bool motorFixed = false;
+
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
+    bool motorModeSet = false;
+
+    while (1)
+    {
+
+        if (!motorModeSet)
+        {
+            maxoncmd.getCSTMode(*maxonMotor, &frame);
+            canManager.sendAndRecv(motors[selectedMotor], frame);
+            motorModeSet = true; // 모터 모드 설정 완료
+        }
+
+        if (kbhit())
+        {
+            input = getchar();
+            if (input == 'e' && motorFixed)
+                break;
+        }
+
+        if (motorFixed)
+            continue;
+
+        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
+        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+        if (elapsed_time.count() >= 5000)
+        {
+
+            maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
+            canManager.txFrame(motors[selectedMotor], frame);
+
             maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-            usleep(5000);
+            canManager.txFrame(motors[selectedMotor], frame);
+
+            if (canManager.recvToBuff(motors[selectedMotor], canManager.maxonCnt))
+            {
+                while (!motors[selectedMotor]->recieveBuffer.empty())
+                {
+                    frame = motors[selectedMotor]->recieveBuffer.front();
+                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                    {
+                        std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+
+                        p_act = std::get<1>(result);
+                        tff_act = std::get<2>(result);
+                        // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
+                        csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
+                        csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
+
+                        // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
+                        if (abs(tff_act) > tffThreshold && !reachedDrum)
+                        {
+                            des_tff = 10 * -direction;
+                            reachedDrum = true;
+                        }
+
+                        // 특정 각도에 도달했는지 확인하는 조건
+                        if (p_act > posThreshold && reachedDrum)
+                        {
+                            maxoncmd.getCSPMode(*maxonMotor, &frame);
+                            canManager.sendAndRecv(motors[selectedMotor], frame);
+
+                            maxoncmd.getTargetPosition(*maxonMotor, &frame, p_act);
+                            canManager.txFrame(motors[selectedMotor], frame);
+                            maxoncmd.getSync(&frame);
+                            canManager.txFrame(motors[selectedMotor], frame);
+                            if (canManager.recvToBuff(motors[selectedMotor], canManager.maxonCnt))
+                            {
+                                while (!motors[selectedMotor]->recieveBuffer.empty())
+                                {
+                                    frame = motors[selectedMotor]->recieveBuffer.front();
+                                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                                    {
+                                        std::cout << "This is My stick!! \n";
+                                        motorFixed = true;
+                                    }
+                                    motors[selectedMotor]->recieveBuffer.pop();
+                                }
+                            }
+                        }
+                    }
+                    if (!motors[selectedMotor]->recieveBuffer.empty())
+                    {
+                        motors[selectedMotor]->recieveBuffer.pop();
+                    }
+                }
+            }
         }
     }
 
-    sleep(5);
-    // 2. Start Testing
+    csvFileIn.close();
+    csvFileOut.close();
 }
