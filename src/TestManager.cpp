@@ -1447,9 +1447,9 @@ void TestManager::TestStickLoop()
     std::string selectedMotor = "maxonForTest";
     float des_tff = 0;
     int direction = -1;
-    float posThreshold = 0.0; // 위치 임계값 초기화
-    float tffThreshold = 0.0; // 토크 임계값 초기화
-
+    float posThreshold = -0.5; // 위치 임계값 초기화
+    float tffThreshold = 18;  // 토크 임계값 초기화
+    int backTorqueUnit = 150;
     for (auto motor_pair : motors)
     {
         FixMotorPosition(motor_pair.second);
@@ -1475,7 +1475,7 @@ void TestManager::TestStickLoop()
         }
 
         bool isMaxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[selectedMotor]) != nullptr;
-        if (isMaxonMotor)
+        if (!isMaxonMotor)
             break;
 
         std::cout << "---------------------------------------------\n";
@@ -1483,39 +1483,46 @@ void TestManager::TestStickLoop()
 
         std::cout << "Des Torque: " << des_tff * 31.052 / 1000 << "[mNm]\n";
         std::cout << "Direction: " << directionDescription << "\n";
-        std::cout << "Torque Threshold: " << tffThreshold * 31.052 / 1000 << " [mNm]\n"; // 현재 토크 임계값 출력
-        std::cout << "Position Threshold: " << posThreshold << " [rad]\n";               // 현재 위치 임계값 출력
+        std::cout << "Torque Threshold: " << tffThreshold << " [mNm]\n"; // 현재 토크 임계값 출력
+        std::cout << "Position Threshold: " << posThreshold << " [rad]\n";
+        std::cout << "Back Torque: " << backTorqueUnit* 31.052 / 1000 << " [mNm]\n";
         std::cout << "\nCommands:\n";
-        std::cout << "[a]: des_tff | [k]: Direction | ";
-        std::cout << "[b]: Set Torque Threshold | [c]: Set Position Threshold | ";
-        std::cout << "[i]: Run | [j]: Exit\n";
+        std::cout << "[a]: des_tff | [b]: Direction | [c]: Back Torque\n";
+        std::cout << "[d]: Set Torque Threshold [e]: Set Position Threshold \n";
+        std::cout << "[f]: Run | [g]: Exit\n";
         std::cout << "=============================================\n";
         std::cout << "Enter Command: ";
         std::cin >> userInput;
         std::transform(userInput.begin(), userInput.end(), userInput.begin(), ::tolower);
 
-        if (userInput[0] == 'j')
+        if (userInput[0] == 'g')
         {
             break;
         }
+
+        else if(userInput == "c"){
+             std::cout << "Enter Desired [Back] Torque In Unit: ";
+            std::cout << "100 [unit] = 3.1052 [mNm]\n";
+            std::cin >> backTorqueUnit;
+        }
         else if (userInput == "a" && isMaxonMotor)
         {
-            std::cout << "Enter Desired Torque: ";
+            std::cout << "Enter Desired Torque In Unit: ";
             std::cout << "-100 [unit] = -3.1052 [mNm]\n";
             std::cin >> des_tff;
         }
-        else if (userInput == "b" && isMaxonMotor)
+        else if (userInput == "d" && isMaxonMotor)
         {
             std::cout << "Enter Desired Torque Threshold: ";
             std::cout << "-100 [unit] = -3.1052 [mNm]\n";
             std::cin >> tffThreshold;
         }
-        else if (userInput == "c" && isMaxonMotor)
+        else if (userInput == "e" && isMaxonMotor)
         {
             std::cout << "Enter Desired Position Threshold: ";
             std::cin >> posThreshold;
         }
-        else if (userInput == "k" && isMaxonMotor)
+        else if (userInput == "b" && isMaxonMotor)
         {
             std::cout << "Enter Desired Direction (1: CW, -1: CCW): ";
             std::cin >> direction;
@@ -1525,14 +1532,14 @@ void TestManager::TestStickLoop()
                 direction = 1;
             }
         }
-        else if (userInput[0] == 'i' && isMaxonMotor)
+        else if (userInput[0] == 'f' && isMaxonMotor)
         {
-            TestStick(selectedMotor, des_tff, direction, tffThreshold, posThreshold);
+            TestStick(selectedMotor, des_tff, direction, tffThreshold, posThreshold, backTorqueUnit);
         }
     }
 }
 
-void TestManager::TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold)
+void TestManager::TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold, int backTorqueUnit)
 {
 
     canManager.setSocketsTimeout(0, 50000);
@@ -1626,7 +1633,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
                         // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
                         if (abs(tff_act) > tffThreshold && !reachedDrum)
                         {
-                            des_tff = 10 * -direction;
+                            des_tff = backTorqueUnit * -direction;
                             reachedDrum = true;
                         }
 
@@ -1647,7 +1654,6 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
                                     frame = motors[selectedMotor]->recieveBuffer.front();
                                     if (frame.can_id == maxonMotor->rxPdoIds[0])
                                     {
-                                        std::cout << "This is My stick!! \n";
                                         motorFixed = true;
                                     }
                                     motors[selectedMotor]->recieveBuffer.pop();

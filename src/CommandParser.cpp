@@ -227,7 +227,6 @@ void TMotorCommandParser::getQuickStop(TMotor &motor, struct can_frame *frame)
 /*                                                      Maxon Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
 {
     int id = frame->can_id;
@@ -449,17 +448,16 @@ void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_fra
     frame->data[7] = 0x00;
 }
 
-
 void MaxonCommandParser::getHomeoffsetDistanceZero(MaxonMotor &motor, struct can_frame *frame)
 {
-    // 95 degree
+    // 30 degree
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB1;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
+    frame->data[4] = 0x1E;
     frame->data[5] = 0x00;
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
