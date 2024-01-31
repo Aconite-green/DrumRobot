@@ -69,4 +69,5 @@ private:
 
     // Stick  Mode Test
     void TestStickLoop();
+    void TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold);
 };
