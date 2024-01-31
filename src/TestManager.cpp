@@ -1450,12 +1450,14 @@ void TestManager::TestStickLoop()
     float posThreshold = 0.0; // 위치 임계값 초기화
     float tffThreshold = 0.0; // 토크 임계값 초기화
 
+    for (auto motor_pair : motors)
+    {
+        FixMotorPosition(motor_pair.second);
+    }
+
     while (true)
     {
-        for (auto motor_pair : motors)
-        {
-            FixMotorPosition(motor_pair.second);
-        }
+
         int result = system("clear");
         if (result != 0)
         {
@@ -1588,10 +1590,12 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
         if (kbhit())
         {
             input = getchar();
-            if (input == 'e' && motorFixed) break;
+            if (input == 'e' && motorFixed)
+                break;
         }
 
-        if(motorFixed) continue;
+        if (motorFixed)
+            continue;
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
