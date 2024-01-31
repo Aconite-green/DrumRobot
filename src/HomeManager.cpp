@@ -19,7 +19,7 @@ void HomeManager::mainLoop()
         std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
         std::cin >> motorName;
 
-        if (motorName == "all")
+        if (motorName == "all")     // 차례행로 동시실행
         {
             // 우선순위가 높은 순서대로 먼저 홈
             vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}};
@@ -52,7 +52,7 @@ void HomeManager::mainLoop()
                 SetMaxonHome(Pmotors);
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
-        {
+        {   // 원하는 하나의 모터 실행
             vector<shared_ptr<GenericMotor>> Pmotor;
             vector<string> Pnames;
             // 타입에 따라 적절한 캐스팅과 초기화 수행

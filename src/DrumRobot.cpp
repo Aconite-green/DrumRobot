@@ -223,7 +223,6 @@ void DrumRobot::checkUserInput()
         {
             systemState.runMode = RunMode::PrePreparation;
             systemState.main = Main::Ideal;
-            canManager.restartCanPorts();
         }
         else if (input == 'r')
             systemState.runMode = RunMode::Running;
@@ -725,7 +724,6 @@ void DrumRobot::sendLoopForThread()
                 if (canManager.checkAllMotors())
                 {
                     SendLoop();
-                    systemState.runMode = RunMode::PrePreparation;
                 }
             }
         }
