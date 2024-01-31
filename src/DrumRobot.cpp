@@ -952,11 +952,11 @@ void DrumRobot::recvLoopForThread()
     {
 
         usleep(50000);
-        if (!(systemState.main == Main::Perform) || !(systemState.main == Main::Tune)|| !(systemState.main == Main::Homing))
+        if (systemState.main == Main::Ideal)
         {
-            sleep(3);
             canManager.checkCanPortsStatus();
             canManager.checkAllMotors();
+            sleep(3);
         }
         while (systemState.main == Main::Perform)
         {
