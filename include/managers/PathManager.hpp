@@ -89,7 +89,7 @@ private:
     /* 실측값
     vector<double> P1 = {0.265, -0.6187, -0.0532};	 // RightArm Standby
     vector<double> P2 = {-0.265, -0.6187, -0.0532}; // LeftArm Standby
-    vector<double> R = {0.368, 0.414, 0.368, 0.414};
+    vector<double> R = {0.368, 0.864, 0.368, 0.864};
     double s = 0.530;
     double z0 = 0.000;
     */
@@ -97,7 +97,7 @@ private:
     // 임의값
     vector<double> P1 = {0.3, -0.45, -0.0866};  // RightArm Standby
     vector<double> P2 = {-0.3, -0.45, -0.0866}; // LeftArm Standby
-    vector<double> R = {0.500, 0.400, 0.500, 0.400};
+    vector<double> R = {0.500, 0.850, 0.500, 0.850};    // 오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱
     double s = 0.600;
     double z0 = 0.000;
 

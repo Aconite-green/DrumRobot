@@ -170,56 +170,33 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
 vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
 {
     // 드럼위치의 중점 각도
-    double direction = 0.0; //-M_PI / 3.0;
+    double direction = 0.0 * M_PI; //-M_PI / 3.0;
 
     // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
 
-    vector<double> Qf;
+    vector<double> Qf(7);
 
     double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
     double X2 = P2[0], Y2 = P2[1], z2 = P2[2];
     double r1 = R[0], r2 = R[1], r3 = R[2], r4 = R[3];
 
-    int j = 0;
-    vector<double> the3(180);
-    for (int i = 0; i < 135; i++)
+    vector<double> the3(181);
+    for (int i = 0; i < 181; i++)
     { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
-        the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
+        the3[i] = -M_PI / 4 + (M_PI * i) / 240;
     }
 
     double zeta = z0 - z2;
 
-    double det_the4;
-    double the34;
-    double the4;
-    double r;
-    double det_the1;
-    double the1;
-    double det_the0;
-    double the0;
-    double L;
-    double det_the2;
-    double the2;
-    double T;
-    double det_the5;
+    double det_the0, det_the1, det_the2, det_the4, det_the5, det_the6;
+    double the0_f, the0, the1, the2, the34, the4, the5, the6;
+    double r, L, Lp, T;
     double sol;
-    double the5;
-    double alpha, beta, gamma;
-    double det_the6;
-    double rol;
-    double the6;
-    double Z;
+    double alpha;
+    bool first = true;
 
-    vector<double> q0;
-    vector<double> q1;
-    vector<double> q2;
-    vector<double> q3;
-    vector<double> q4;
-    vector<double> q5;
-    vector<double> q6;
-
-    for (int i = 0; i < 179; i++)
+    for (long unsigned int i = 0; i < the3.size(); i++)
     {
         det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
 
@@ -262,32 +239,27 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                         the5 = asin(sol);
                                         if (the5 > -M_PI / 4 && the5 < M_PI / 2)
                                         { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
-                                            alpha = L - r3 * sin(the5);
-                                            beta = r4 * sin(the5);
-                                            gamma = r4 * cos(the5);
 
-                                            det_the6 = gamma * gamma + beta * beta - alpha * alpha;
+                                            Lp = sqrt(L * L + zeta * zeta);
+                                            det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
 
-                                            if (det_the6 > 0)
+                                            if (det_the6 > 1 && det_the6 > -1)
                                             {
-                                                rol = alpha * beta - abs(gamma) * sqrt(det_the6);
-                                                rol /= (beta * beta + gamma * gamma);
-                                                the6 = acos(rol);
+                                                the6 = acos(det_the6);
                                                 if (the6 > 0 && the6 < M_PI * 0.75)
                                                 { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
-                                                    Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
-
-                                                    if (Z < z2 + 0.001 && Z > z2 - 0.001)
+                                                    if (first || abs(the0-direction) < abs(the0_f - direction))
                                                     {
-                                                        q0.push_back(the0);
-                                                        q1.push_back(the1);
-                                                        q2.push_back(the2);
-                                                        q3.push_back(the3[i]);
-                                                        q4.push_back(the4);
-                                                        q5.push_back(the5);
-                                                        q6.push_back(the6);
+                                                        the0_f = the0;
+                                                        Qf[0] = the0;
+                                                        Qf[1] = the1;
+                                                        Qf[2] = the2;
+                                                        Qf[3] = the3[i];
+                                                        Qf[4] = the4;
+                                                        Qf[5] = the5;
+                                                        Qf[6] = the6;
 
-                                                        j++;
+                                                        first = false;
                                                     }
                                                 }
                                             }
@@ -302,31 +274,11 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
         }
     }
 
-    vector<vector<double>> Q;
-    Q.push_back(q0);
-    Q.push_back(q1);
-    Q.push_back(q2);
-    Q.push_back(q3);
-    Q.push_back(q4);
-    Q.push_back(q5);
-    Q.push_back(q6);
-
-    int index_theta0_min = 0;
-
-    // Find index of minimum absolute difference
-    for (long unsigned int i = 1; i < Q[0].size(); i++)
-    {
-        if (abs(direction - Q[0][i]) < abs(direction - Q[0][index_theta0_min]))
-            index_theta0_min = i;
-    }
-
-    Qf.resize(7);
-
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            Qf[motor_mapping[entry.first]] = Q[motor_mapping[entry.first]][index_theta0_min] * tMotor->cwDir;
+            Qf[motor_mapping[entry.first]] *= tMotor->cwDir;
         }
     }
 
