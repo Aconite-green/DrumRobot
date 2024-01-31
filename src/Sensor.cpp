@@ -17,11 +17,6 @@ DWORD Sensor::ReadVal()
     return DIValue;
 }
 
-long Sensor::get_nano_seconds(struct timespec *start, struct timespec *end)
-{
-    return (end->tv_sec - start->tv_sec) * 1000000000 + (end->tv_nsec - start->tv_nsec);
-}
-
 bool Sensor::OpenDeviceUntilSuccess()
 {
     printf("USB I/O Library Version : %s\n", USBIO_GetLibraryVersion());

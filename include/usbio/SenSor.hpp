@@ -19,7 +19,6 @@ public:
     void closeDevice();
     void connect();
     bool connected = false;
-    long get_nano_seconds(struct timespec *start, struct timespec *end);
 
 private:
     int DeviceID = USB2051_32;
