@@ -1279,8 +1279,7 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
         csvFileIn << "0,";
     }
     bool reachedDrum = false;
-    bool motorFixed = false;
-
+    bool waitForEInput = false;
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
     while (1)
     {
@@ -1288,13 +1287,18 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
         if (kbhit())
         {
             input = getchar();
-            if (input == 'e' && motorFixed)
+            if (input == 'e' && waitForEInput) // waitForEInput이 true일 때만 'e' 입력 처리
             {
-
                 maxoncmd.getCSTMode(*maxonMotor, &frame);
                 canManager.sendAndRecv(motors[selectedMotor], frame);
                 break;
             }
+        }
+
+        if (waitForEInput)
+        {
+            // 'e' 입력을 기다리는 동안 다른 작업을 하지 않음
+            continue;
         }
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
@@ -1324,9 +1328,9 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
                         csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
                         // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
-                        if (abs(tff_act) > 20 && !reachedDrum)
+                        if (abs(tff_act) > 18)
                         {
-                            des_tff = 10 * -direction;
+                            des_tff = 100;
                             reachedDrum = true;
                         }
 
@@ -1349,11 +1353,13 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
                                     if (frame.can_id == maxonMotor->rxPdoIds[0])
                                     {
                                         std::cout << "This is My stick!! \n";
-                                        motorFixed = true;
                                     }
                                     motors[selectedMotor]->recieveBuffer.pop();
                                 }
                             }
+
+                            waitForEInput = true; // 'e' 입력 대기 상태로 전환
+                            std::cout << "Waiting for 'e' input...\n";
                         }
                     }
                     if (!motors[selectedMotor]->recieveBuffer.empty())
