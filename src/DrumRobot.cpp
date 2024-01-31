@@ -590,7 +590,7 @@ void DrumRobot::motorSettingCmd()
                 tmotorcmd.getZero(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-
+            usleep(5000);
             tmotorcmd.getControlMode(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
         }

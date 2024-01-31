@@ -19,64 +19,10 @@ void HomeManager::mainLoop()
         std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
         std::cin >> motorName;
 
-        // L_arm2, L_arm3, R_arm2, R_arm3 입력 시 L_arm1, R_arm1 홈 상태 확인
-        /*if ((motorName == "L_arm2" || motorName == "L_arm3") && !tmotors["L_arm1"]->isHomed)
-        {
-            std::cout << "Error: L_arm1 must be homed before " << motorName << std::endl;
-            continue; // 다음 입력을 위해 반복문의 시작으로 돌아감
-        }
-        else if ((motorName == "R_arm2" || motorName == "R_arm3") && !tmotors["R_arm1"]->isHomed)
-        {
-            std::cout << "Error: R_arm1 must be homed before " << motorName << std::endl;
-            continue;
-        }
-        else if ((motorName == "R_wrist") && !tmotors["R_arm3"]->isHomed)
-        {
-            std::cout << "Error: R_arm3 must be homed before " << motorName << std::endl;
-            continue;
-        }
-        else if ((motorName == "L_wrist") && !tmotors["L_arm3"]->isHomed)
-        {
-            std::cout << "Error: L_arm3 must be homed before " << motorName << std::endl;
-            continue;
-        }*/
-
         if (motorName == "all")
         {
-            /* 모터 한개씩 진행
-            // 우선순위가 높은 T모터 먼저 홈
-            std::vector<std::string> priorityMotors = {"L_arm1", "R_arm1"};
-            for (const auto &pmotorName : priorityMotors)
-            {
-                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
-                {
-                    SetTmotorHome(motors[pmotorName], pmotorName);
-                }
-            }
-            for (auto &motor_pair : motors)
-            {
-                auto &motor = motor_pair.second;
-                std::string name = motor_pair.first;
-
-                // 타입에 따라 적절한 캐스팅과 초기화 수행
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-                {
-                    if (!motor->isHomed)
-                    {
-                        SetTmotorHome(motors[name], name);
-                    }
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-                {
-                    if (!motor->isHomed)
-                    {
-                        SetMaxonHome(motors[name], name);
-                    }
-                }
-            }*/
-
-            // 우선순위가 높은 Arm1모터 먼저 홈
-            vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}, {"L_wrist", "R_wrist", "maxonForTest"}};
+            // 우선순위가 높은 순서대로 먼저 홈
+            vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}};
             for (auto &PmotorNames : Priority)
             {
                 vector<shared_ptr<GenericMotor>> Pmotors;
@@ -90,29 +36,42 @@ void HomeManager::mainLoop()
                     }
                 }
                 if (!Pmotors.empty())
-                {
                     SetTmotorHome(Pmotors, Pnames);
-                }
+                Pmotors.clear();
+                Pnames.clear();
             }
+
+            vector<string> PmotorNames = {"L_wrist", "R_wrist", "maxonForTest"};
+            vector<shared_ptr<GenericMotor>> Pmotors;
+            for (const auto &pmotorName : PmotorNames)
+            {
+                if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                    Pmotors.push_back(motors[pmotorName]);
+            }
+            if (!Pmotors.empty())
+                SetMaxonHome(Pmotors);
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
         {
+            vector<shared_ptr<GenericMotor>> Pmotor;
+            vector<string> Pnames;
             // 타입에 따라 적절한 캐스팅과 초기화 수행
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]))
             {
-                SetTmotorHome(motors[motorName], motorName);
+                Pmotor.push_back(motors[motorName]);
+                Pnames.push_back(motorName);
+                SetTmotorHome(Pmotor, Pnames);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorName]))
             {
-
-                SetMaxonHome(motors[motorName], motorName);
+                Pmotor.push_back(motors[motorName]);
+                SetMaxonHome(Pmotor);
             }
         }
         else
         {
             std::cout << "Motor not found or already homed: " << motorName << std::endl;
         }
-
         UpdateHomingStatus();
     }
 }
@@ -134,7 +93,7 @@ void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, v
     for (auto &motor : motors)
     {
         motor->isHomed = true; // 홈잉 상태 업데이트
-        sleep(1);
+        sleep(2);
         FixMotorPosition(motor);
     }
 
@@ -155,7 +114,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     // 속도 제어 - 센서 방향으로 이동
     for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
-        cout << "\n<< Homing for " << motorNames[i] << " >>\n";
+        cout << "<< Homing for " << motorNames[i] << " >>\n";
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
 
         double initialDirection;
@@ -184,7 +143,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2")
         {
             degrees.push_back(-30.0);
-            midpoints[i] *= (-1);
+            midpoints[i] = midpoints[i] * (-1);
         }
         else
         {
@@ -201,13 +160,20 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
     {
         // 모터를 멈추는 신호를 보냄
         tmotorcmd.parseSendCommand(*tMotors[i], &frameToProcess, motors[i]->nodeId, 8, 0, 0, 0, 5, 0);
-        canManager.sendAndRecv(motors[i], frameToProcess);
+        if (canManager.sendAndRecv(motors[i], frameToProcess))
+            cout << "Set " << motorNames[i] << " speed Zero.\n";
 
         canManager.setSocketsTimeout(2, 0);
         // 현재 position을 0으로 인식하는 명령을 보냄
         tmotorcmd.getZero(*tMotors[i], &frameToProcess);
-        canManager.sendAndRecv(motors[i], frameToProcess);
+        if (canManager.sendAndRecv(motors[i], frameToProcess))
+            cout << "Set Zero.\n";
+        if (canManager.checkConnection(motors[i]))
+            cout << motorNames[i] << " Position : " << motors[i]->currentPos;
 
+        degrees[i] = 0.0;
+        directions[i] = motors[i]->cwDir;
+        midpoints[i] = 0.0;
         if (motorNames[i] == "L_arm1" || motorNames[i] == "R_arm1")
         {
             degrees[i] = 90.0;
@@ -219,8 +185,6 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         {
             degrees[i] = 90.0;
         }
-
-        midpoints[i] = 0.0;
     }
 
     RotateTMotor(motors, motorNames, directions, degrees, midpoints);
@@ -305,6 +269,8 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
     vector<double> targetRadians;
     for (long unsigned int i = 0; i < motorNames.size(); i++)
     {
+        if (degrees[i] == 0.0)
+            return;
         tMotors.push_back(dynamic_pointer_cast<TMotor>(motors[i]));
         targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
     }
@@ -387,7 +353,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
             {
                 if (frame.can_id == maxonMotors[i]->rxPdoIds[0])
                 {
-                    cout << "\nHoming Start!!\n";
+                    cout << "\nMaxon Homing Start!!\n";
                 }
             }
             motors[0]->recieveBuffer.pop();
@@ -399,7 +365,6 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
     bool done = false;
     while (!done)
     {
-        //! motor->isHomed
         done = true;
         for (auto &motor : motors)
         {
@@ -433,9 +398,6 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
         sleep(1); // 100ms 대기
     }
 }
-
-
-
 
 void HomeManager::RotateTMotor(std::shared_ptr<GenericMotor> &motor, const std::string &motorName, double direction, double degree, float midpoint)
 {
