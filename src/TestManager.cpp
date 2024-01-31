@@ -1448,7 +1448,7 @@ void TestManager::TestStickLoop()
     float des_tff = 0;
     int direction = -1;
     float posThreshold = -0.5; // 위치 임계값 초기화
-    float tffThreshold = 18;  // 토크 임계값 초기화
+    float tffThreshold = 18;   // 토크 임계값 초기화
     int backTorqueUnit = 150;
     for (auto motor_pair : motors)
     {
@@ -1485,7 +1485,7 @@ void TestManager::TestStickLoop()
         std::cout << "Direction: " << directionDescription << "\n";
         std::cout << "Torque Threshold: " << tffThreshold << " [mNm]\n"; // 현재 토크 임계값 출력
         std::cout << "Position Threshold: " << posThreshold << " [rad]\n";
-        std::cout << "Back Torque: " << backTorqueUnit* 31.052 / 1000 << " [mNm]\n";
+        std::cout << "Back Torque: " << backTorqueUnit * 31.052 / 1000 << " [mNm]\n";
         std::cout << "\nCommands:\n";
         std::cout << "[a]: des_tff | [b]: Direction | [c]: Back Torque\n";
         std::cout << "[d]: Set Torque Threshold [e]: Set Position Threshold \n";
@@ -1500,8 +1500,9 @@ void TestManager::TestStickLoop()
             break;
         }
 
-        else if(userInput == "c"){
-             std::cout << "Enter Desired [Back] Torque In Unit: ";
+        else if (userInput == "c")
+        {
+            std::cout << "Enter Desired [Back] Torque In Unit: ";
             std::cout << "100 [unit] = 3.1052 [mNm]\n";
             std::cin >> backTorqueUnit;
         }
@@ -1593,16 +1594,9 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
             canManager.sendAndRecv(motors[selectedMotor], frame);
             motorModeSet = true; // 모터 모드 설정 완료
         }
-
-        if (kbhit())
-        {
-            input = getchar();
-            if (input == 'e' && motorFixed)
-                break;
-        }
-
         if (motorFixed)
-            continue;
+            break;
+
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);

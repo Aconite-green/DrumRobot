@@ -223,6 +223,7 @@ void DrumRobot::checkUserInput()
         {
             systemState.runMode = RunMode::PrePreparation;
             systemState.main = Main::Ideal;
+            pathManager.line = 0;
         }
         else if (input == 'r')
             systemState.runMode = RunMode::Running;
