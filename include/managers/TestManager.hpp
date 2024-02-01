@@ -52,6 +52,7 @@ private:
     vector<string> InputData;
 
     // Multi Test
+    void move();
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
     void SendLoop();
 

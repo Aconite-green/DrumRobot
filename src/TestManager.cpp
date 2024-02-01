@@ -235,6 +235,7 @@ void TestManager::SendLoop()
 void TestManager::multiTestLoop()
 {
     string userInput;
+    vector<double> c_deg;
     double t = 4.0;
     int cycles = 1;
     int type = 0b00001;
@@ -289,13 +290,15 @@ void TestManager::multiTestLoop()
         cout << "< Current Position >\n";
         for (auto &motor : motors)
         {
+            c_deg.push_back(motor.second->currentPos * motor.second->cwDir / M_PI * 180);
             cout << motor.first << " : " << motor.second->currentPos * motor.second->cwDir / M_PI * 180 << "deg\n";
         }
-        cout << "\n" << LeftAndRight;
+        cout << "\n"
+             << LeftAndRight;
         cout << "Type : " << typeDescription << "\n";
         cout << "Period : " << t << "\n";
         cout << "Cycles : " << cycles << "\n";
-        cout << "Amplitude :\n";
+        cout << "\nAmplitude :\n";
         cout << "1) Arm3 = " << amplitude[0] << "\n";
         cout << "2) Arm2 = " << amplitude[1] << "\n";
         cout << "3) Arm1 = " << amplitude[2] << "\n";
@@ -303,9 +306,9 @@ void TestManager::multiTestLoop()
         cout << "5) Wrist = " << amplitude[4] << "\n";
         cout << "------------------------------------------------------------------------------------------------------------\n";
 
-        cout << "Commands:\n";
+        cout << "[Commands]\n";
         cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles\n"
-             << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [r] : run | [e] : Exit\n";
+             << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [m] : move | [r] : run | [e] : Exit\n";
         cout << "Enter Command: ";
         cin >> userInput;
 
@@ -317,23 +320,23 @@ void TestManager::multiTestLoop()
         }
         else if (userInput[0] == 'd')
         {
-            cout << "Enter Desired Direction:\n";
+            cout << "\n[Enter Desired Direction]\n";
             cout << "1: Right Move\n";
             cout << "2: Left Move\n";
             cout << "3: Left and Right Move\n";
-            cout << "Enter Path Type (1 or 2 or 3): ";
+            cout << "\nEnter Path Type (1 or 2 or 3): ";
             cin >> LnR;
         }
         else if (userInput[0] == 't')
         {
             int num;
-            cout << "Enter Desired Type:\n";
+            cout << "\n[Enter Desired Type]\n";
             cout << "1: Arm3 Turn ON/OFF\n";
             cout << "2: Arm2 Turn ON/OFF\n";
             cout << "3: Arm1 Turn ON/OFF\n";
             cout << "4: Waist Turn ON/OFF\n";
             cout << "5: Wrist Turn ON/OFF\n";
-            cout << "Enter Path Type (1 or 2 or 3 or 4 or 5): ";
+            cout << "\nEnter Path Type (1 or 2 or 3 or 4 or 5): ";
             cin >> num;
 
             if (num == 1)
@@ -359,39 +362,39 @@ void TestManager::multiTestLoop()
         }
         else if (userInput[0] == 'p')
         {
-            cout << "Enter Desired Period : ";
+            cout << "\nEnter Desired Period : ";
             cin >> t;
         }
         else if (userInput[0] == 'c')
         {
-            cout << "Enter Desired Cycles : ";
+            cout << "\nEnter Desired Cycles : ";
             cin >> cycles;
         }
         else if (userInput[0] == 'a')
         {
             int input;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
             cout << "5: Wrist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
-            cout << "Enter Desired Amplitude(degree) : ";
+            cout << "\nEnter Desired Amplitude(degree) : ";
             cin >> amplitude[input - 1];
         }
         else if (userInput == "kp")
         {
             char input;
             int kp;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
             if (input == '1')
@@ -430,12 +433,12 @@ void TestManager::multiTestLoop()
         {
             char input;
             int kd;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
             if (input == '1')
@@ -468,6 +471,42 @@ void TestManager::multiTestLoop()
                 cout << "Enter Waist's Desired Kd : ";
                 cin >> kd;
                 motors["waist"]->Kd = kd;
+            }
+        }
+        else if (userInput[0] == 'm')
+        {
+            while (true)
+            {
+                string input;
+                double deg;
+                cout << "\n[Move to]\n";
+                int i = 0;
+                for (auto &motor : motors)
+                {
+                    cout << i + 1 << " - " << motor.first << " : " << c_deg[i] << "deg\n";
+                    i++;
+                }
+                cout << "m - Move\n";
+                cout << "e - Exit\n";
+                cout << "\nEnter Desired Option : ";
+                cin >> input;
+
+                if (input[0] == 'e')
+                {
+                    break;
+                }
+                else if (input[0] == 'm')
+                {
+                    // 움직이는 함수 작성
+                    // 나중에 이동할 위치 값 : c_deg * motor.second->cwDir / 180 * M_PI
+                    break;
+                }
+                else
+                {
+                    cout << "\nEnter Desired Degree : ";
+                    cin >> deg;
+                    c_deg[stoi(input) - 1] = deg;
+                }
             }
         }
         else if (userInput[0] == 'r')
