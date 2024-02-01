@@ -45,14 +45,14 @@ private:
      SystemState &systemState;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-   
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
 
+    vector<string> InputData;
+
     // Multi Test
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
-    
     void SendLoop();
 
     // Single Mode Test
