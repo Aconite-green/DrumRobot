@@ -28,7 +28,7 @@ void PathManager::Motors_sendBuffer()
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
 
-            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
+            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
             entry.second->sendBuffer.push(frame);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -167,7 +167,35 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
     v.push_back(v_out);
 }
 
-vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
+vector<double> PathManager::fkfun()
+{
+    vector<double> P;
+    vector<double> theta(7);
+    for (auto &motorPair : motors)
+    {
+        auto &name = motorPair.first;
+        auto &motor = motorPair.second;
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        {
+            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
+        }
+    }
+    double r1 = R[0], r2 = R[1], l1 = R[2], l2 = R[3];
+    double r, l;
+    r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
+    l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
+
+    P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]));
+    P.push_back(0.5 * s * cos(theta[0] + M_PI) + l * cos(theta[0] + theta[2]));
+    P.push_back(0.5 * s * sin(theta[0] + M_PI) + l * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));
+
+    return P;
+}
+
+vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
 {
     // 드럼위치의 중점 각도
     double direction = 0.0 * M_PI; //-M_PI / 3.0;
@@ -229,26 +257,25 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                 the2 = acos(det_the2) - the0;
                                 if (the2 > differ && the2 < M_PI)
                                 { // 왼팔 돌리는 각도 범위 : 30deg ~ 180deg
-                                    T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
-                                    det_the5 = L * L + zeta * zeta - T * T;
-
-                                    if (det_the5 > 0)
+                                    Lp = sqrt(L * L + zeta * zeta);
+                                    det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
+                                    if (det_the6 > 1 && det_the6 > -1)
                                     {
-                                        sol = T * L - abs(zeta) * sqrt(L * L + zeta * zeta - T * T);
-                                        sol /= (L * L + zeta * zeta);
-                                        the5 = asin(sol);
-                                        if (the5 > -M_PI / 4 && the5 < M_PI / 2)
-                                        { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
+                                        the6 = acos(det_the6);
+                                        if (the6 > 0 && the6 < M_PI * 0.75)
+                                        { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
+                                            T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
+                                            det_the5 = L * L + zeta * zeta - T * T;
 
-                                            Lp = sqrt(L * L + zeta * zeta);
-                                            det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
-
-                                            if (det_the6 > 1 && det_the6 > -1)
+                                            if (det_the5 > 0)
                                             {
-                                                the6 = acos(det_the6);
-                                                if (the6 > 0 && the6 < M_PI * 0.75)
-                                                { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
-                                                    if (first || abs(the0-direction) < abs(the0_f - direction))
+                                                sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                sol /= (L * L + zeta * zeta);
+                                                the5 = asin(sol);
+                                                if (the5 > -M_PI / 4 && the5 < M_PI / 2)
+                                                { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
+
+                                                    if (first || abs(the0 - direction) < abs(the0_f - direction))
                                                     {
                                                         the0_f = the0;
                                                         Qf[0] = the0;
@@ -334,7 +361,7 @@ void PathManager::getQ1AndQ2()
     }
     else
     {
-        Q1 = IKfun(P1, P2, R, s, z0);
+        Q1 = IKfun(P1, P2);
         Q1.push_back(r_wrist);
         Q1.push_back(l_wrist);
         Q2 = Q1;
@@ -391,7 +418,7 @@ void PathManager::getQ3AndQ4()
     }
     else
     {
-        Q3 = IKfun(P1, P2, R, s, z0);
+        Q3 = IKfun(P1, P2);
         Q3.push_back(r_wrist);
         Q3.push_back(l_wrist);
         Q4 = Q3;
@@ -642,7 +669,7 @@ void PathManager::GetArr(vector<double> &arr)
             if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 float p_des = Qi[motor_mapping[entry.first]];
-                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
+                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, motor->Kp, motor->Kd, 0.0);
                 entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

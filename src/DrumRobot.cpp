@@ -478,6 +478,12 @@ void DrumRobot::printCurrentPositions()
         std::cout << "[" << std::hex << motor->nodeId << std::dec << "] ";
         std::cout << name << " : " << motor->currentPos << endl;
     }
+
+    vector<double> P(6);
+    P = pathManager.fkfun();
+
+    cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
+    cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
 }
 
 void DrumRobot::setMaxonMode(std::string targetMode)

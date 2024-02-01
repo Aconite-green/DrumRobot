@@ -39,6 +39,7 @@ public:
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
+    vector<double> fkfun();
     void ApplyDir();
     void GetDrumPositoin();
     void GetMusicSheet();
@@ -124,7 +125,7 @@ private:
 
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
     void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
-    vector<double> IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0);
+    vector<double> IKfun(vector<double> &P1, vector<double> &P2);
     void getDrummingPosAndAng();
     void getMotorPos();
     void getQ1AndQ2();
