@@ -108,6 +108,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
             { // Test 하는 모터
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
+                    InputData[0] += motorname + ",";
                     int kp = tMotor->Kp;
                     double kd = tMotor->Kd;
 
@@ -118,11 +119,13 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                             float val = tMotor->currentPos + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * tMotor->cwDir;
                             tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, val, 0, kp, kd, 0.0);
                             tMotor->sendBuffer.push(frame);
+                            InputData[time * c + i + 1] += to_string(val) + ",";
                         }
                     }
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
                 {
+                    InputData[0] += motorname + ",";
                     for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
@@ -130,6 +133,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                             float val = maxonMotor->currentPos + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * maxonMotor->cwDir;
                             maxoncmd.getTargetPosition(*maxonMotor, &frame, val);
                             maxonMotor->sendBuffer.push(frame);
+                            InputData[time * c + i + 1] += to_string(val) + ",";
                         }
                     }
                 }
@@ -138,6 +142,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
             { // Fixed 하는 모터
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
+                    InputData[0] += motorname + ",";
                     for (int c = 1; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
@@ -145,11 +150,13 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                             float val = tMotor->currentPos;
                             tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, val, 0, Kp_fixed, Kd_fixed, 0.0);
                             tMotor->sendBuffer.push(frame);
+                            InputData[time * c + i + 1] += to_string(val) + ",";
                         }
                     }
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
                 {
+                    InputData[0] += motorname + ",";
                     for (int c = 1; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
@@ -157,6 +164,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                             float val = maxonMotor->currentPos;
                             maxoncmd.getTargetPosition(*maxonMotor, &frame, val);
                             maxonMotor->sendBuffer.push(frame);
+                            InputData[time * c + i + 1] += to_string(val) + ",";
                         }
                     }
                 }
@@ -227,13 +235,14 @@ void TestManager::SendLoop()
 void TestManager::multiTestLoop()
 {
     string userInput;
+    vector<double> c_deg;
     double t = 4.0;
     int cycles = 1;
     int type = 0b00001;
-    int LnR = 2;
+    int LnR = 1;
     double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
-    while (true)
+    while (systemState.testMode != TestMode::Exit)
     {
         int result = system("clear");
         if (result != 0)
@@ -266,70 +275,68 @@ void TestManager::multiTestLoop()
         std::string LeftAndRight;
         if (LnR == 1)
         {
-            LeftAndRight = "[ Right move ]\n";
+            LeftAndRight = "<< Right move >>\n";
         }
         else if (LnR == 2)
         {
-            LeftAndRight = "[ Left move ]\n";
+            LeftAndRight = "<< Left move >>\n";
         }
         else if (LnR == 3)
         {
-            LeftAndRight = "[ Left and Right move ]\n";
+            LeftAndRight = "<< Left and Right move >>\n";
         }
 
         cout << "------------------------------------------------------------------------------------------------------------\n";
-        cout << LeftAndRight;
+        cout << "< Current Position >\n";
+        for (auto &motor : motors)
+        {
+            c_deg.push_back(motor.second->currentPos * motor.second->cwDir / M_PI * 180);
+            cout << motor.first << " : " << motor.second->currentPos * motor.second->cwDir / M_PI * 180 << "deg\n";
+        }
+        cout << "\n"
+             << LeftAndRight;
         cout << "Type : " << typeDescription << "\n";
         cout << "Period : " << t << "\n";
         cout << "Cycles : " << cycles << "\n";
-        cout << "Amplitude :\n";
+        cout << "\nAmplitude :\n";
         cout << "1) Arm3 = " << amplitude[0] << "\n";
         cout << "2) Arm2 = " << amplitude[1] << "\n";
         cout << "3) Arm1 = " << amplitude[2] << "\n";
         cout << "4) Waist = " << amplitude[3] << "\n";
         cout << "5) Wrist = " << amplitude[4] << "\n";
-        cout << "Motor_Kp :\n";
-        cout << "1) Arm3 = " << motors["R_arm3"]->Kp << "\n";
-        // cout << "2) Arm2 = " << motors["R_arm2"]->Kp << "\n";
-        // cout << "3) Arm1 = " << motors["R_arm1"]->Kp << "\n";
-        // cout << "4) Waist = " << motors["waist"]->Kp << "\n";
-        cout << "Motor_Kd :\n";
-        cout << "1) Arm3 = " << motors["R_arm3"]->Kd << "\n";
-        // cout << "2) Arm2 = " << motors["R_arm2"]->Kd << "\n";
-        // cout << "3) Arm1 = " << motors["R_arm1"]->Kd << "\n";
-        // cout << "4) Waist = " << motors["waist"]->Kd << "\n";
         cout << "------------------------------------------------------------------------------------------------------------\n";
 
-        cout << "Commands:\n";
+        cout << "[Commands]\n";
         cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles\n"
-             << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [r] : run | [e] : Exit\n";
+             << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [m] : move | [r] : run | [e] : Exit\n";
         cout << "Enter Command: ";
         cin >> userInput;
 
         if (userInput[0] == 'e')
         {
             systemState.testMode = TestMode::Exit;
+            systemState.main = Main::Ideal;
             break;
         }
         else if (userInput[0] == 'd')
         {
-            cout << "Enter Desired Direction:\n";
+            cout << "\n[Enter Desired Direction]\n";
             cout << "1: Right Move\n";
             cout << "2: Left Move\n";
             cout << "3: Left and Right Move\n";
-            cout << "Enter Path Type (1 or 2 or 3): ";
+            cout << "\nEnter Path Type (1 or 2 or 3): ";
             cin >> LnR;
         }
         else if (userInput[0] == 't')
         {
             int num;
-            cout << "Enter Desired Type:\n";
+            cout << "\n[Enter Desired Type]\n";
             cout << "1: Arm3 Turn ON/OFF\n";
             cout << "2: Arm2 Turn ON/OFF\n";
             cout << "3: Arm1 Turn ON/OFF\n";
             cout << "4: Waist Turn ON/OFF\n";
             cout << "5: Wrist Turn ON/OFF\n";
-            cout << "Enter Path Type (1 or 2 or 3 or 4 or 5): ";
+            cout << "\nEnter Path Type (1 or 2 or 3 or 4 or 5): ";
             cin >> num;
 
             if (num == 1)
@@ -355,43 +362,44 @@ void TestManager::multiTestLoop()
         }
         else if (userInput[0] == 'p')
         {
-            cout << "Enter Desired Period : ";
+            cout << "\nEnter Desired Period : ";
             cin >> t;
         }
         else if (userInput[0] == 'c')
         {
-            cout << "Enter Desired Cycles : ";
+            cout << "\nEnter Desired Cycles : ";
             cin >> cycles;
         }
         else if (userInput[0] == 'a')
         {
             int input;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
             cout << "5: Wrist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
-            cout << "Enter Desired Amplitude(degree) : ";
+            cout << "\nEnter Desired Amplitude(degree) : ";
             cin >> amplitude[input - 1];
         }
         else if (userInput == "kp")
         {
             char input;
             int kp;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
             if (input == '1')
             {
+                cout << "Arm3's Kp : " << motors["R_arm3"]->Kp << "\n";
                 cout << "Enter Arm3's Desired Kp : ";
                 cin >> kp;
                 motors["R_arm3"]->Kp = kp;
@@ -399,6 +407,7 @@ void TestManager::multiTestLoop()
             }
             else if (input == '2')
             {
+                cout << "Arm2's Kp : " << motors["R_arm2"]->Kp << "\n";
                 cout << "Enter Arm2's Desired Kp : ";
                 cin >> kp;
                 motors["R_arm2"]->Kp = kp;
@@ -406,6 +415,7 @@ void TestManager::multiTestLoop()
             }
             else if (input == '3')
             {
+                cout << "Arm1's Kp : " << motors["R_arm1"]->Kp << "\n";
                 cout << "Enter Arm1's Desired Kp : ";
                 cin >> kp;
                 motors["R_arm1"]->Kp = kp;
@@ -413,6 +423,7 @@ void TestManager::multiTestLoop()
             }
             else if (input == '4')
             {
+                cout << "Waist's Kp : " << motors["waist"]->Kp << "\n";
                 cout << "Enter Waist's Desired Kp : ";
                 cin >> kp;
                 motors["waist"]->Kp = kp;
@@ -422,16 +433,17 @@ void TestManager::multiTestLoop()
         {
             char input;
             int kd;
-            cout << "Choose Motor\n";
+            cout << "\n[Select Motor]\n";
             cout << "1: Arm3\n";
             cout << "2: Arm2\n";
             cout << "3: Arm1\n";
             cout << "4: Waist\n";
-            cout << "Enter Desired Motor : ";
+            cout << "\nEnter Desired Motor : ";
             cin >> input;
 
             if (input == '1')
             {
+                cout << "Arm3's Kd : " << motors["R_arm3"]->Kd << "\n";
                 cout << "Enter Arm3's Desired Kd : ";
                 cin >> kd;
                 motors["R_arm3"]->Kd = kd;
@@ -439,6 +451,7 @@ void TestManager::multiTestLoop()
             }
             else if (input == '2')
             {
+                cout << "Arm2's Kd : " << motors["R_arm2"]->Kd << "\n";
                 cout << "Enter Arm2's Desired Kd : ";
                 cin >> kd;
                 motors["R_arm2"]->Kd = kd;
@@ -446,6 +459,7 @@ void TestManager::multiTestLoop()
             }
             else if (input == '3')
             {
+                cout << "Arm1's Kd : " << motors["R_arm1"]->Kd << "\n";
                 cout << "Enter Arm1's Desired Kd : ";
                 cin >> kd;
                 motors["R_arm1"]->Kd = kd;
@@ -453,9 +467,46 @@ void TestManager::multiTestLoop()
             }
             else if (input == '4')
             {
+                cout << "Waist's Kd : " << motors["waist"]->Kd << "\n";
                 cout << "Enter Waist's Desired Kd : ";
                 cin >> kd;
                 motors["waist"]->Kd = kd;
+            }
+        }
+        else if (userInput[0] == 'm')
+        {
+            while (true)
+            {
+                string input;
+                double deg;
+                cout << "\n[Move to]\n";
+                int i = 0;
+                for (auto &motor : motors)
+                {
+                    cout << i + 1 << " - " << motor.first << " : " << c_deg[i] << "deg\n";
+                    i++;
+                }
+                cout << "m - Move\n";
+                cout << "e - Exit\n";
+                cout << "\nEnter Desired Option : ";
+                cin >> input;
+
+                if (input[0] == 'e')
+                {
+                    break;
+                }
+                else if (input[0] == 'm')
+                {
+                    // 움직이는 함수 작성
+                    // 나중에 이동할 위치 값 : c_deg * motor.second->cwDir / 180 * M_PI
+                    break;
+                }
+                else
+                {
+                    cout << "\nEnter Desired Degree : ";
+                    cin >> deg;
+                    c_deg[stoi(input) - 1] = deg;
+                }
             }
         }
         else if (userInput[0] == 'r')
@@ -471,6 +522,8 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 
     int time = t / 0.005;
     std::vector<std::string> SmotorName;
+    InputData.clear();
+    InputData.resize(time * cycles + 1);
 
     SmotorName = {"waist"};
     if ((type | 0b10111) == 0b11111) // Turn Waist
@@ -502,54 +555,22 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
     else
         mkArr(SmotorName, time, cycles, 0, 0);
 
-    // CSV 입력 파일 열기
+    // TXT 파일 열기
     string FileNamein = "../../READ/test_in.txt";
     ofstream csvFileIn(FileNamein);
     if (!csvFileIn.is_open())
     {
         std::cerr << "Error opening TXT file." << std::endl;
     }
-    // csvFileIn << "Waist,R_arm1,L_arm1,R_arm2,L_arm2,R_arm3,L_arm3,R_wrist,L_wrist,\n"; // header
-    for (auto &entry : motors)
+
+    // TXT 파일 입력
+    for (auto &data : InputData)
     {
-        csvFileIn << entry.second->nodeId << ",";
-    }
-    csvFileIn << "\n";
-
-    for (int c = 1; c < cycles; c++)
-    {
-        for (int i = 0; i < time; i++)
-        {
-            for (auto &entry : motors)
-            {
-                auto &motor = entry.second;
-                can_frame frame = motor->recieveBuffer.front();
-                motor->recieveBuffer.pop();
-                motor->recieveBuffer.push(frame);
-
-                float position;
-
-                // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-                {
-                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-                    position = std::get<1>(parsedData);
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-                {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    position = std::get<1>(parsedData);
-                }
-
-                csvFileIn << position << ",";
-            }
-            csvFileIn << "\n";
-        }
+        csvFileIn << data << "\n";
     }
 
     // CSV 파일 닫기
     csvFileIn.close();
-
     std::cout << "연주 txt_InData 파일이 생성되었습니다: " << FileNamein << std::endl;
 
     SendLoop();
@@ -1567,6 +1588,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
     struct can_frame frame;
 
     float p_act, tff_act;
+
     char input = 'a';
     std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[selectedMotor]);
 
@@ -1594,9 +1616,13 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
             canManager.sendAndRecv(motors[selectedMotor], frame);
             motorModeSet = true; // 모터 모드 설정 완료
         }
-        if (motorFixed)
-            break;
-
+        if (kbhit())
+        {
+            if (input == 'e')
+            {
+                break;
+            }
+        }
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
@@ -1625,10 +1651,11 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
                         csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
                         // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
-                        if (abs(tff_act) > tffThreshold && !reachedDrum)
+                        if (tff_act > tffThreshold && !reachedDrum)
                         {
-                            des_tff = backTorqueUnit * -direction;
+                            // des_tff = backTorqueUnit * -direction;
                             reachedDrum = true;
+                            // motorFixed = true;
                         }
 
                         // 특정 각도에 도달했는지 확인하는 조건
