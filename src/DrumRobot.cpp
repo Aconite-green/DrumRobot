@@ -567,7 +567,10 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 95);
+                canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
             }
             else if (name == "R_wrist")
@@ -575,7 +578,10 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 95);
+                canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
             }
             else if (name == "maxonForTest")
@@ -583,14 +589,14 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistanceZero(*maxonMotor, &frame);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 18);
+                canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
             }
 
             maxoncmd.getCurrentThreshold(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            maxoncmd.getHomePosition(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
         }
         else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
