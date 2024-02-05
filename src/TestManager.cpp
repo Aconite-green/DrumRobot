@@ -226,6 +226,9 @@ void TestManager::SendLoop()
                     maxoncmd.getSync(&frameToProcess);
                     canManager.txFrame(virtualMaxonMotor, frameToProcess);
                 }
+
+                canManager.readFramesFromAllSockets();
+                canManager.distributeFramesToMotors();
             }
         }
     } while (!allBuffersEmpty);
@@ -472,43 +475,43 @@ void TestManager::multiTestLoop()
                 cin >> kd;
                 motors["waist"]->Kd = kd;
             }
-        }
-        else if (userInput[0] == 'm')
-        {
-            while (true)
-            {
-                string input;
-                double deg;
-                cout << "\n[Move to]\n";
-                int i = 0;
-                for (auto &motor : motors)
-                {
-                    cout << i + 1 << " - " << motor.first << " : " << c_deg[i] << "deg\n";
-                    i++;
-                }
-                cout << "m - Move\n";
-                cout << "e - Exit\n";
-                cout << "\nEnter Desired Option : ";
-                cin >> input;
+        } /*
+         else if (userInput[0] == 'm')
+         {
+             while (true)
+             {
+                 string input;
+                 double deg;
+                 cout << "\n[Move to]\n";
+                 int i = 0;
+                 for (auto &motor : motors)
+                 {
+                     cout << i + 1 << " - " << motor.first << " : " << c_deg[i] << "deg\n";
+                     i++;
+                 }
+                 cout << "m - Move\n";
+                 cout << "e - Exit\n";
+                 cout << "\nEnter Desired Option : ";
+                 cin >> input;
 
-                if (input[0] == 'e')
-                {
-                    break;
-                }
-                else if (input[0] == 'm')
-                {
-                    // 움직이는 함수 작성
-                    // 나중에 이동할 위치 값 : c_deg * motor.second->cwDir / 180 * M_PI
-                    break;
-                }
-                else
-                {
-                    cout << "\nEnter Desired Degree : ";
-                    cin >> deg;
-                    c_deg[stoi(input) - 1] = deg;
-                }
-            }
-        }
+                 if (input[0] == 'e')
+                 {
+                     break;
+                 }
+                 else if (input[0] == 'm')
+                 {
+                     // 움직이는 함수 작성
+                     // 나중에 이동할 위치 값 : c_deg * motor.second->cwDir / 180 * M_PI
+                     break;
+                 }
+                 else
+                 {
+                     cout << "\nEnter Desired Degree : ";
+                     cin >> deg;
+                     c_deg[stoi(input) - 1] = deg;
+                 }
+             }
+         }*/
         else if (userInput[0] == 'r')
         {
             TestArr(t, cycles, type, LnR, amplitude);
@@ -574,6 +577,63 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
     std::cout << "연주 txt_InData 파일이 생성되었습니다: " << FileNamein << std::endl;
 
     SendLoop();
+
+    parse_and_save_to_csv("../../READ/DrumData_out.txt");
+}
+
+void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
+{
+    // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
+    std::ofstream ofs(csv_file_name, std::ios::app);
+    if (!ofs.is_open())
+    {
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
+
+    // 파일이 새로 생성되었으면 CSV 헤더를 추가
+    ofs.seekp(0, std::ios::end);
+    if (ofs.tellp() == 0)
+    {
+        ofs << "CAN_ID,p_act,tff_des,tff_act\n";
+    }
+
+    // 각 모터에 대한 처리
+    for (const auto &pair : motors)
+    {
+        auto &motor = pair.second;
+        if (!motor->recieveBuffer.empty())
+        {
+            can_frame frame = motor->recieveBuffer.front();
+            motor->recieveBuffer.pop();
+
+            int id = motor->nodeId;
+            float position, speed, torque;
+
+            // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                position = std::get<1>(parsedData);
+                speed = std::get<2>(parsedData);
+                torque = std::get<3>(parsedData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                position = std::get<1>(parsedData);
+                torque = std::get<2>(parsedData);
+                speed = 0.0;
+            }
+
+            // 데이터 CSV 파일에 쓰기
+            ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                << std::dec << position << "," << speed << "," << torque << "\n";
+        }
+    }
+
+    ofs.close();
+    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -660,6 +720,7 @@ void TestManager::TuningTmotor(float kp, float kd, float sine_t, const std::stri
     float tff_des = 0;
     float p_act, v_act, tff_act;
     std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor]);
+    chrono::system_clock::time_point external = std::chrono::system_clock::now();
     for (int cycle = 0; cycle < cycles; cycle++)
     {
         for (int i = 0; i < max_samples; i++)
@@ -699,14 +760,13 @@ void TestManager::TuningTmotor(float kp, float kd, float sine_t, const std::stri
             tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, kp, kd, tff_des);
             csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << tMotor->nodeId;
 
-            chrono::system_clock::time_point external = std::chrono::system_clock::now();
             while (1)
             {
                 chrono::system_clock::time_point internal = std::chrono::system_clock::now();
                 chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
                 if (elapsed_time.count() >= 5000)
                 {
-
+                    external = std::chrono::system_clock::now();
                     if (canManager.sendAndRecv(motors[selectedMotor], frame))
                     {
                         std::tuple<int, float, float, float> result = tmotorcmd.parseRecieveCommand(*tMotor, &frame);

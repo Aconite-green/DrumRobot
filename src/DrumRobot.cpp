@@ -175,7 +175,10 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "s")
         {
-            systemState.main = Main::Shutdown;
+            if (systemState.homeMode == HomeMode::NotHome)
+                systemState.main = Main::Shutdown;
+            else
+                systemState.main = Main::Back;
             return true;
         }
         if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
@@ -223,8 +226,7 @@ void DrumRobot::checkUserInput()
             systemState.runMode = RunMode::Pause;
         else if (input == 'e')
         {
-            systemState.runMode = RunMode::PrePreparation;
-            systemState.main = Main::Ideal;
+            systemState.main = Main::Back;
             pathManager.line = 0;
         }
         else if (input == 'r')
@@ -709,8 +711,13 @@ void DrumRobot::sendLoopForThread()
                 cout << "Get Back...\n";
                 pathManager.GetArr(pathManager.backarr);
                 SendReadyLoop();
-                systemState.runMode = RunMode::PrePreparation;
-                systemState.main = Main::Ideal;
+                if (systemState.runMode == RunMode::Running)
+                {
+                    systemState.runMode = RunMode::PrePreparation;
+                    systemState.main = Main::Ideal;
+                }
+                else
+                    systemState.main = Main::Shutdown;
             }
         }
         else if (systemState.main == Main::Ready)
@@ -967,7 +974,6 @@ void DrumRobot::recvLoopForThread()
         }
         while (systemState.main == Main::Perform)
         {
-
             usleep(50000); // Perform 상태일 때의 처리
 
             if (systemState.runMode == RunMode::Running)
