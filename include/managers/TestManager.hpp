@@ -55,6 +55,7 @@ private:
     void move();
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
     void SendLoop();
+    void parse_and_save_to_csv(const std::string &csv_file_name);
 
     // Single Mode Test
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
