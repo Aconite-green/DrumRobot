@@ -10,7 +10,7 @@ HomeManager::HomeManager(SystemState &systemStateRef,
 void HomeManager::mainLoop()
 {
     // MaxonEnable();
-    setMaxonMode("HMM");
+    
     while (systemState.main == Main::Homing)
     {
         displayHomingStatus();
@@ -326,6 +326,8 @@ void HomeManager::RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, ve
 
 void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 {
+
+    setMaxonMode("HMM");
     struct can_frame frame;
 
     canManager.clearReadBuffers();
@@ -397,6 +399,8 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 
         sleep(1); // 100ms 대기
     }
+
+    setMaxonMode("CSP");
 }
 
 void HomeManager::displayHomingStatus()
