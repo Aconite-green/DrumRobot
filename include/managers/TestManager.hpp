@@ -70,7 +70,7 @@ private:
 
     // Stick  Mode Test
     void TestStickLoop();
-    void TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold, int backTorqueUnit);
+    void TestStick(const std::string selectedMotor, int des_tff,float tffThreshold, float posThreshold, int backTorqueUnit);
     bool dct_fun(float positions[], float vel_th);
 
 };

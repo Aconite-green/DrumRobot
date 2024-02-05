@@ -1467,8 +1467,7 @@ void TestManager::TestStickLoop()
     std::string userInput;
     std::string selectedMotor = "maxonForTest";
     float des_tff = 0;
-    int direction = -1;
-    float posThreshold = -0.5; // 위치 임계값 초기화
+    float posThreshold = 1.57; // 위치 임계값 초기화
     float tffThreshold = 18;   // 토크 임계값 초기화
     int backTorqueUnit = 150;
     for (auto motor_pair : motors)
@@ -1485,7 +1484,6 @@ void TestManager::TestStickLoop()
             std::cerr << "Error during clear screen" << std::endl;
         }
 
-        std::string directionDescription = (direction == 1) ? "CW" : "CCW";
 
         std::cout << "================ Tuning Menu ================\n";
         std::cout << "Available Motors for Stick Mode:\n";
@@ -1503,7 +1501,6 @@ void TestManager::TestStickLoop()
         std::cout << "Selected Motor: " << selectedMotor << "\n";
 
         std::cout << "Des Torque: " << des_tff * 31.052 / 1000 << "[mNm]\n";
-        std::cout << "Direction: " << directionDescription << "\n";
         std::cout << "Torque Threshold: " << tffThreshold << " [mNm]\n"; // 현재 토크 임계값 출력
         std::cout << "Position Threshold: " << posThreshold << " [rad]\n";
         std::cout << "Back Torque: " << backTorqueUnit * 31.052 / 1000 << " [mNm]\n";
@@ -1544,24 +1541,14 @@ void TestManager::TestStickLoop()
             std::cout << "Enter Desired Position Threshold: ";
             std::cin >> posThreshold;
         }
-        else if (userInput == "b" && isMaxonMotor)
-        {
-            std::cout << "Enter Desired Direction (1: CW, -1: CCW): ";
-            std::cin >> direction;
-            if (direction != 1 && direction != -1)
-            {
-                std::cout << "Invalid direction type. Please enter 1 or 2.\n";
-                direction = 1;
-            }
-        }
         else if (userInput[0] == 'f' && isMaxonMotor)
         {
-            TestStick(selectedMotor, des_tff, direction, tffThreshold, posThreshold, backTorqueUnit);
+            TestStick(selectedMotor, des_tff,tffThreshold, posThreshold, backTorqueUnit);
         }
     }
 }
 
-void TestManager::TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold, int backTorqueUnit)
+void TestManager::TestStick(const std::string selectedMotor, int des_tff, float tffThreshold, float posThreshold, int backTorqueUnit)
 {
 
     canManager.setSocketsTimeout(0, 50000);
@@ -1589,7 +1576,6 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
 
     float p_act, tff_act;
 
-    char input = 'a';
     std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[selectedMotor]);
 
     for (int i = 0; i < (int)maxonMotor->nodeId - 1; i++)
@@ -1619,12 +1605,9 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
             canManager.sendAndRecv(motors[selectedMotor], frame);
             motorModeSet = true; // 모터 모드 설정 완료
         }
-        if (kbhit())
+        if (motorFixed)
         {
-            if (input == 'e' && motorFixed)
-            {
-                break;
-            }
+            break;
         }
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
@@ -1656,9 +1639,10 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
                         positionValues[posIndex % 4] = p_act;
                         posIndex++;
 
-                        if (dct_fun(positionValues, -0.03))
+                        if (dct_fun(positionValues, -0.03) && !reachedDrum)
                         {
-                            des_tff = backTorqueUnit * -direction;
+                            std::cout << "I Hit the Drum!\n";
+                            des_tff = backTorqueUnit;
                             reachedDrum = true;
                         }
 
@@ -1713,7 +1697,7 @@ bool TestManager::dct_fun(float positions[], float vel_th)
     float vel_k = ang_k - ang_k_1;
     float vel_k_1 = ang_k_1 - ang_k_2;
 
-    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < -M_PI / 2)
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < -0.25)
         return true;
     else if (ang_k < -0.25 * M_PI)
         return true;
