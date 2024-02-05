@@ -1621,7 +1621,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
         }
         if (kbhit())
         {
-            if (input == 'e')
+            if (input == 'e' && motorFixed)
             {
                 break;
             }

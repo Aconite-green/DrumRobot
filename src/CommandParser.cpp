@@ -433,46 +433,41 @@ void MaxonCommandParser::getFlowingErrorWindow(MaxonMotor &motor, struct can_fra
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    // 95 degree
+    // 1도당 값
+    float value_per_degree = 398.22;
+
+    // 입력된 각도에 대한 값을 계산
+    int value = static_cast<int>(degree * value_per_degree);
+
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB1;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xC7;
-    frame->data[5] = 0x93;
+    // 계산된 값의 리틀 엔디언 형식으로 분할하여 할당
+    frame->data[4] = value & 0xFF;        // 하위 바이트
+    frame->data[5] = (value >> 8) & 0xFF; // 상위 바이트
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getHomeoffsetDistanceZero(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    // 30 degree
-    frame->can_id = motor.canSendId;
-    frame->can_dlc = 8;
-    frame->data[0] = 0x22;
-    frame->data[1] = 0xB1;
-    frame->data[2] = 0x30;
-    frame->data[3] = 0x00;
-    frame->data[4] = 0x1E;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
-}
+    
+    float value_per_degree = 398.22;
+    int value = static_cast<int>(degree * value_per_degree);
 
-void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame)
-{
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB0;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
+    frame->data[4] = value & 0xFF;        // 하위 바이트
+    frame->data[5] = (value >> 8) & 0xFF; // 상위 바이트
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
 }
