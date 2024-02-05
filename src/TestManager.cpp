@@ -1607,6 +1607,9 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
     bool motorModeSet = false;
 
+    float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
+    int posIndex = 0;              // 현재 포지션 값 인덱스
+
     while (1)
     {
 
@@ -1650,12 +1653,13 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
                         csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
                         csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
-                        // 임계 토크 값을 체크하고, 조건을 충족하면 반대 방향으로 토크 주기
-                        if (tff_act > tffThreshold && !reachedDrum)
+                        positionValues[posIndex % 4] = p_act;
+                        posIndex++;
+
+                        if (dct_fun(positionValues, -0.03))
                         {
-                            // des_tff = backTorqueUnit * -direction;
+                            des_tff = backTorqueUnit * -direction;
                             reachedDrum = true;
-                            // motorFixed = true;
                         }
 
                         // 특정 각도에 도달했는지 확인하는 조건
@@ -1693,4 +1697,26 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, int di
 
     csvFileIn.close();
     csvFileOut.close();
+}
+
+bool TestManager::dct_fun(float positions[], float vel_th)
+{
+    // 포지션 배열에서 각각의 값을 추출합니다.
+    float the_k = positions[3]; // 가장 최신 값
+    float the_k_1 = positions[2];
+    float the_k_2 = positions[1];
+    float the_k_3 = positions[0]; // 가장 오래된 값
+
+    float ang_k = (the_k + the_k_1) / 2;
+    float ang_k_1 = (the_k_1 + the_k_2) / 2;
+    float ang_k_2 = (the_k_2 + the_k_3) / 2;
+    float vel_k = ang_k - ang_k_1;
+    float vel_k_1 = ang_k_1 - ang_k_2;
+
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < -M_PI / 2)
+        return true;
+    else if (ang_k < -0.25 * M_PI)
+        return true;
+    else
+        return false;
 }
