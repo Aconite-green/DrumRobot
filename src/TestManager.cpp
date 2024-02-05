@@ -71,7 +71,14 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
     int Kp_fixed = 450;
     double Kd_fixed = 4.5;
     map<string, bool> TestMotor;
-    if (LnR == 1) // 오른쪽만 Test
+    if (LnR == 0) // 양쪽 다 고정
+    {
+        for (auto &motorname : motorName)
+        {
+            TestMotor[motorname] = false;
+        }
+    }
+    else if (LnR == 1) // 오른쪽만 Test
     {
         for (auto &motorname : motorName)
         {
@@ -91,11 +98,11 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 TestMotor[motorname] = true;
         }
     }
-    else if (LnR == 0) // 양쪽 다 고정
+    else if (LnR == 3) // 양쪽 다 Test
     {
         for (auto &motorname : motorName)
         {
-            TestMotor[motorname] = false;
+            TestMotor[motorname] = true;
         }
     }
 
@@ -227,8 +234,8 @@ void TestManager::SendLoop()
                     canManager.txFrame(virtualMaxonMotor, frameToProcess);
                 }
 
-                canManager.readFramesFromAllSockets();
-                canManager.distributeFramesToMotors();
+                //canManager.readFramesFromAllSockets();
+                //canManager.distributeFramesToMotors();
             }
         }
     } while (!allBuffersEmpty);

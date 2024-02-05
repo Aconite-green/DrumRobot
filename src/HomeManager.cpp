@@ -127,7 +127,7 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2")
             additionalTorque = motors[i]->cwDir * (-3.0);
         else if (motorNames[i] == "L_arm3" || motorNames[i] == "R_arm3")
-            additionalTorque = motors[i]->cwDir * (2.0);
+            additionalTorque = motors[i]->cwDir * (2.1);
 
         sensorsBit.push_back(tMotors[i]->sensorBit);
 

@@ -125,14 +125,12 @@ void DrumRobot::displayAvailableCommands() const
         {
 
             std::cout << "- r : Move to Ready Position\n";
-            std::cout << "- b : Back to Zero Postion\n";
             std::cout << "- t : Start tuning\n";
         }
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
         {
             std::cout << "- p : Start Perform\n";
             std::cout << "- t : Start tuning\n";
-            std::cout << "- b : Back to Zero Postion\n";
         }
     }
     else if (systemState.main == Main::Perform)

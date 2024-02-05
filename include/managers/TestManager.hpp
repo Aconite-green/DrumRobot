@@ -34,7 +34,7 @@ class TestManager
 {
 public:
     TestManager(SystemState &systemStateRef,
-                CanManager &canManagerRef, 
+                CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void mainLoop();
@@ -42,7 +42,7 @@ public:
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 
 private:
-     SystemState &systemState;
+    SystemState &systemState;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
@@ -68,10 +68,8 @@ private:
     void setMaxonMode(std::string targetMode);
     int kbhit();
 
-
     // Stick  Mode Test
     void TestStickLoop();
     void TestStick(const std::string selectedMotor, int des_tff, int direction, float tffThreshold, float posThreshold, int backTorqueUnit);
     bool dct_fun(float positions[], float vel_th);
-
 };
