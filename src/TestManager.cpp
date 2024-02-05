@@ -1699,7 +1699,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                         positionValues[posIndex % 4] = p_act;
                         posIndex++;
 
-                        if (dct_fun(positionValues, -0.03) && !reachedDrum)
+                        if (dct_fun(positionValues, 0) && !reachedDrum)
                         {
                             std::cout << "I Hit the Drum!\n";
                             des_tff = backTorqueUnit;
@@ -1757,7 +1757,7 @@ bool TestManager::dct_fun(float positions[], float vel_th)
     float vel_k = ang_k - ang_k_1;
     float vel_k_1 = ang_k_1 - ang_k_2;
 
-    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < -0.25)
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.1*M_PI)
         return true;
     else if (ang_k < -0.25 * M_PI)
         return true;

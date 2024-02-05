@@ -328,6 +328,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 {
 
     setMaxonMode("HMM");
+    MaxonEnable();
     struct can_frame frame;
 
     canManager.clearReadBuffers();
@@ -401,6 +402,7 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
     }
 
     setMaxonMode("CSP");
+    
 }
 
 void HomeManager::displayHomingStatus()
