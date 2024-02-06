@@ -34,7 +34,7 @@ void DrumRobot::stateMachine()
             initializecanManager();
             motorSettingCmd();
             setMaxonMode("CSP");
-            std::cout << "Press Enter to go Home\n";
+            std::cout << "System Initialize Complete [ Press Enter ]/n";
             getchar();
             systemState.main = Main::Ideal;
             break;
@@ -56,7 +56,7 @@ void DrumRobot::stateMachine()
             testManager.mainLoop();
             break;
         case Main::Shutdown:
-            std::cout << "======= Shut down system =======\n";
+            DeactivateControlTask();
             break;
         case Main::Ready:
             if (!isReady)
@@ -98,8 +98,6 @@ void DrumRobot::stateMachine()
             break;
         }
     }
-
-    DeactivateControlTask();
 }
 
 void DrumRobot::sendLoopForThread()
@@ -209,15 +207,28 @@ bool DrumRobot::processInput(const std::string &input)
             }
             return true;
         }
-        if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.main == Main::Ready)
+    }
+    else if (systemState.main == Main::Ready)
+    {
+        if (input == "p")
         {
             systemState.main = Main::Perform;
             return true;
         }
-        else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
+        else if (input == "s")
         {
-            systemState.main = Main::Perform;
-            systemState.runMode = RunMode::Back;
+            systemState.main = Main::Back;
+            return true;
+        }
+        else if (input == "t")
+        {
+            systemState.testMode = TestMode::Ideal;
+            systemState.main = Main::Tune;
+            return true;
+        }
+        else if (input == "c")
+        {
+            systemState.main = Main::Check;
             return true;
         }
     }
@@ -729,7 +740,8 @@ void DrumRobot::MaxonEnable()
     }
 };
 
-void DrumRobot::MaxonDisable(){
+void DrumRobot::MaxonDisable()
+{
     struct can_frame frame;
 
     canManager.setSocketsTimeout(0, 50000);
