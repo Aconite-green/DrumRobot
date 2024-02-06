@@ -59,8 +59,9 @@ void DrumRobot::stateMachine()
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
             break;
-        default:
-            systemState.main = Main::Ideal;
+        case Main::Ready:
+            break;
+        case Main::Back:
             break;
         }
         /*if (currentState != systemState.main.load())
@@ -76,7 +77,8 @@ void DrumRobot::runModeLoop()
 {
     MaxonEnable();
     setMaxonMode("CSP");
-    bool isReady, isBack;
+    bool isReady = false;
+    bool isBack = false;
     while (systemState.main == Main::Perform)
     {
         switch (systemState.runMode.load())
@@ -86,12 +88,18 @@ void DrumRobot::runModeLoop()
         case RunMode::Ready:
             if (!isReady && canManager.checkAllMotors())
             {
+                getchar();
                 cout << "Get Ready...\n";
                 pathManager.GetArr(pathManager.standby);
                 SendReadyLoop();
                 isReady = true;
                 systemState.main = Main::Ideal;
             }
+            else
+            {
+                std::cout << "not in Get Ready\n";
+            }
+
             break;
         case RunMode::Running:
             isReady = false;
@@ -174,7 +182,9 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
+            systemState.main = Main::Perform;
             systemState.runMode = RunMode::Ready;
+
             return true;
         }
         else if (input == "x" && systemState.homeMode == HomeMode::NotHome)
@@ -191,8 +201,11 @@ bool DrumRobot::processInput(const std::string &input)
         {
             if (systemState.homeMode == HomeMode::NotHome)
                 systemState.main = Main::Shutdown;
-            else if(systemState.homeMode == HomeMode::HomeDone)
+            else if (systemState.homeMode == HomeMode::HomeDone)
+            {
+                systemState.main = Main::Perform;
                 systemState.runMode = RunMode::Back;
+            }
             return true;
         }
         if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
@@ -203,6 +216,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
         {
+            systemState.main = Main::Perform;
             systemState.runMode = RunMode::Back;
             return true;
         }
@@ -240,8 +254,7 @@ void DrumRobot::checkUserInput()
             systemState.runMode = RunMode::Pause;
         else if (input == 'e')
         {
-            systemState.runMode = RunMode::Stop;
-            systemState.main = Main::Ready;
+            systemState.runMode = RunMode::Ready;
             pathManager.line = 0;
         }
         else if (input == 'r')
@@ -956,21 +969,16 @@ void DrumRobot::recvLoopForThread()
     {
 
         usleep(50000);
-        if (systemState.main == Main::Ideal)
+        if (systemState.main == Main::Ideal && systemState.runMode == RunMode::PrePreparation)
         {
             canManager.checkCanPortsStatus();
             canManager.checkAllMotors();
             sleep(3);
         }
-        while (systemState.main == Main::Perform)
+        else if (systemState.main == Main::Perform && systemState.runMode == RunMode::Running)
         {
-            usleep(50000); // Perform 상태일 때의 처리
-
-            if (systemState.runMode == RunMode::Running)
-            {
-                canManager.clearReadBuffers();
-                RecieveLoop();
-            }
+            canManager.clearReadBuffers();
+            RecieveLoop();
         }
     }
 }
