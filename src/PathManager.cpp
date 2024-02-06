@@ -209,10 +209,10 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
     double X2 = P2[0], Y2 = P2[1], z2 = P2[2];
     double r1 = R[0], r2 = R[1], r3 = R[2], r4 = R[3];
 
-    vector<double> the3(181);
-    for (int i = 0; i < 181; i++)
-    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
-        the3[i] = -M_PI / 4 + (M_PI * i) / 240;
+    vector<double> the3(1801);
+    for (int i = 0; i < 1801; i++)
+    { // 오른팔 들어올리는 각도 범위 : -90deg ~ 90deg
+        the3[i] = -M_PI / 2 + (M_PI * i) / 1800;
     }
 
     double zeta = z0 - z2;
@@ -300,6 +300,9 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
             }
         }
     }
+
+    if(first)
+        std::cout << "IKfun Not Solved!!\n";
 
     for (auto &entry : motors)
     {
@@ -462,6 +465,8 @@ void PathManager::getQ3AndQ4()
 
 void PathManager::GetDrumPositoin()
 {
+    getMotorPos();
+
     ifstream inputFile("../include/managers/rT.txt");
 
     if (!inputFile.is_open())
@@ -478,9 +483,9 @@ void PathManager::GetDrumPositoin()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
-            if (i == 0 || i == 3)
+            if (i == 1 || i == 4)
             {
-                inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
+                inst_xyz[i][j] = inst_xyz[i][j] * 2.0;
             }
         }
     }
