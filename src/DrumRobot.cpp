@@ -225,6 +225,7 @@ void DrumRobot::checkUserInput()
             systemState.runMode = RunMode::Pause;
         else if (input == 'e')
         {
+           std::cout << "You Pressed E\n";
             systemState.main = Main::Back;
             pathManager.line = 0;
         }
