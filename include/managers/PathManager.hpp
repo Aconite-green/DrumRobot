@@ -87,20 +87,20 @@ private:
     double l_wrist = 0.0;
     int n_inst = 10;
 
-    /* 실측값
-    vector<double> P1 = {0.265, -1.0085, 0.1718};	 // RightArm Standby xyz
-    vector<double> P2 = {-0.265, -1.0085, 0.1718}; // LeftArm Standby xyz
-    vector<double> R = {0.368, 0.864, 0.368, 0.864};
-    double s = 0.530;
-    double z0 = 0.000;
-    */
+    // 실측값
+    vector<double> P1 = {0.3, 0.94344, 1.16582};       // RightArm Standby xyz
+    vector<double> P2 = {-0.3, 0.94344, 1.16582};      // LeftArm Standby xyz
+    vector<double> R = {0.363, 0.793, 0.363, 0.793};     // 오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱
+    double s = 0.600;
+    double z0 = 1.026;
 
-    // 임의값
+    /*// 임의값
     vector<double> P1 = {0.3, -1.0897, 0.0714};  // RightArm Standby xyz
     vector<double> P2 = {-0.3, -1.0897, 0.0714}; // LeftArm Standby xyz
     vector<double> R = {0.500, 0.850, 0.500, 0.850};    // 오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱
     double s = 0.600;
     double z0 = 0.000;
+    */
 
     // Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
     vector<double> Q1, Q2, Q3, Q4;
