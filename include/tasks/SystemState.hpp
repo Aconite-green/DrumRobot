@@ -25,17 +25,6 @@ enum class HomeMode
     HomeError
 };
 
-enum class RunMode
-{
-    PrePreparation,
-    Ready,
-    Running, // 연주중
-    Pause,   // 일시정지
-    Stop,    // 아예 멈춤
-    Back,
-    RunError
-};
-
 enum class TestMode
 {
     SingleMode,
@@ -49,11 +38,9 @@ struct SystemState
 {
     std::atomic<Main> main;
     std::atomic<HomeMode> homeMode;
-    std::atomic<RunMode> runMode;
     std::atomic<TestMode> testMode;
 
     SystemState() : main(Main::SystemInit),
                     homeMode(HomeMode::NotHome),
-                    runMode(RunMode::PrePreparation),
                     testMode(TestMode::SingleMode) {}
 };

@@ -850,7 +850,6 @@ void DrumRobot::SendLoop()
         if (allBuffersEmpty)
         {
             std::cout << "Performance is Over\n";
-            systemState.runMode = RunMode::PrePreparation;
             systemState.main = Main::Ideal;
         }
 
