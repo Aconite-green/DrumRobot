@@ -485,7 +485,7 @@ void PathManager::GetDrumPositoin()
             inputFile >> inst_xyz[i][j];
             if (i == 1 || i == 4)
             {
-                inst_xyz[i][j] = inst_xyz[i][j] * 2.0;
+                inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
             }
         }
     }
