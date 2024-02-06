@@ -62,8 +62,7 @@ private:
     /*Maxon*/
     void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors);
     void setMaxonMode(std::string targetMode);
-    void motorSettingCmd();
     void MaxonEnable();
-    void MaxonQuickStopEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
+    void MaxonDisable();
 };

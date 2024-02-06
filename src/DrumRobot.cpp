@@ -22,10 +22,12 @@ DrumRobot::DrumRobot(SystemState &systemStateRef,
 
 void DrumRobot::stateMachine()
 {
+    bool isReady = false;
+    bool isBack = false;
+
     while (systemState.main != Main::Shutdown)
     {
-        Main currentState = systemState.main.load();
-        switch (currentState)
+        switch (systemState.main.load())
         {
         case Main::SystemInit:
             initializeMotors();
@@ -41,16 +43,13 @@ void DrumRobot::stateMachine()
             break;
         case Main::Homing:
             homeManager.mainLoop();
-            MaxonEnable();
             break;
         case Main::Perform:
-            runModeLoop();
+            checkUserInput();
             break;
         case Main::Check:
             canManager.checkAllMotors();
             printCurrentPositions();
-            std::cout << "Press Enter to Go home\n";
-            getchar();
             systemState.main = Main::Ideal;
             break;
         case Main::Tune:
@@ -60,75 +59,86 @@ void DrumRobot::stateMachine()
             std::cout << "======= Shut down system =======\n";
             break;
         case Main::Ready:
+            if (!isReady)
+            {
+                if (canManager.checkAllMotors())
+                {
+                    MaxonEnable();
+                    setMaxonMode("CSP");
+                    cout << "Get Ready...\n";
+                    pathManager.GetArr(pathManager.standby);
+                    SendReadyLoop();
+                    isReady = true;
+                }
+            }
+            else
+            {
+                idealStateRoutine();
+            }
             break;
         case Main::Back:
+            if (!isBack)
+            {
+                if (canManager.checkAllMotors())
+                {
+                    clearMotorsSendBuffer();
+                    cout << "Get Back...\n";
+                    pathManager.GetArr(pathManager.backarr);
+                    SendReadyLoop();
+                    isBack = true;
+                }
+            }
+            else
+            {
+                systemState.main = Main::Shutdown;
+            }
+            break;
+        case Main::Pause:
+            checkUserInput();
             break;
         }
-        /*if (currentState != systemState.main.load())
-        {
-            emit stateChanged(systemState.main.load());
-        }*/
     }
 
     DeactivateControlTask();
 }
 
-void DrumRobot::runModeLoop()
+void DrumRobot::sendLoopForThread()
 {
-    MaxonEnable();
-    setMaxonMode("CSP");
-    bool isReady = false;
-    bool isBack = false;
-    while (systemState.main == Main::Perform)
+    initializePathManager();
+    while (systemState.main != Main::Shutdown)
     {
-        switch (systemState.runMode.load())
+        usleep(50000);
+
+        if (systemState.main == Main::Perform)
         {
-        case RunMode::PrePreparation:
-            break;
-        case RunMode::Ready:
-            if (!isReady && canManager.checkAllMotors())
+            if (canManager.checkAllMotors())
             {
-                getchar();
-                cout << "Get Ready...\n";
-                pathManager.GetArr(pathManager.standby);
-                SendReadyLoop();
-                isReady = true;
-                systemState.main = Main::Ideal;
+                SendLoop();
             }
-            else
-            {
-                std::cout << "not in Get Ready\n";
-            }
-
-            break;
-        case RunMode::Running:
-            isReady = false;
-            isBack = false;
-            checkUserInput();
-            break;
-        case RunMode::Pause:
-            checkUserInput();
-            break;
-        case RunMode::Stop:
-            break;
-        case RunMode::RunError:
-            // 오류 처리
-            break;
-        case RunMode::Back:
-            if (!isBack && canManager.checkAllMotors())
-            {
-                clearMotorsSendBuffer();
-                cout << "Get Back...\n";
-                pathManager.GetArr(pathManager.backarr);
-                SendReadyLoop();
-                systemState.main = Main::Ideal;
-            }
-
-            break;
         }
     }
 }
 
+void DrumRobot::recvLoopForThread()
+{
+
+    while (systemState.main != Main::Shutdown)
+    {
+
+        usleep(50000);
+        if (systemState.main == Main::Ideal)
+        {
+            canManager.checkCanPortsStatus();
+            canManager.checkAllMotors();
+            sleep(3);
+        }
+        else if (systemState.main == Main::Perform)
+        {
+            canManager.clearReadBuffers();
+            RecieveLoop();
+        }
+    }
+}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
@@ -139,28 +149,22 @@ void DrumRobot::displayAvailableCommands() const
 
     if (systemState.main == Main::Ideal)
     {
-        if (systemState.homeMode == HomeMode::NotHome && systemState.runMode == RunMode::PrePreparation)
+        if (systemState.homeMode == HomeMode::NotHome)
         {
             std::cout << "- h : Start Homing Mode\n";
             std::cout << "- x : Make home state by user\n";
         }
-        else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
+        else if (systemState.homeMode == HomeMode::HomeDone)
         {
-
             std::cout << "- r : Move to Ready Position\n";
             std::cout << "- t : Start tuning\n";
         }
-        else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
-        {
-            std::cout << "- p : Start Perform\n";
-            std::cout << "- t : Start tuning\n";
-        }
     }
-    else if (systemState.main == Main::Perform)
+    else if (systemState.main == Main::Ready)
     {
-        // 나중에 필요하면 추가
+        std::cout << "- p : Start Perform\n";
+        std::cout << "- t : Start tuning\n";
     }
-
     std::cout << "- s : Shut down the system\n";
     std::cout << "- c : Check Motors position\n";
 }
@@ -180,11 +184,9 @@ bool DrumRobot::processInput(const std::string &input)
             systemState.main = Main::Tune;
             return true;
         }
-        else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
+        else if (input == "r" && systemState.homeMode == HomeMode::HomeDone)
         {
-            systemState.main = Main::Perform;
-            systemState.runMode = RunMode::Ready;
-
+            systemState.main = Main::Ready;
             return true;
         }
         else if (input == "x" && systemState.homeMode == HomeMode::NotHome)
@@ -203,15 +205,13 @@ bool DrumRobot::processInput(const std::string &input)
                 systemState.main = Main::Shutdown;
             else if (systemState.homeMode == HomeMode::HomeDone)
             {
-                systemState.main = Main::Perform;
-                systemState.runMode = RunMode::Back;
+                systemState.main = Main::Back;
             }
             return true;
         }
-        if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
+        if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.main == Main::Ready)
         {
             systemState.main = Main::Perform;
-            systemState.runMode = RunMode::Running;
             return true;
         }
         else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
@@ -251,14 +251,14 @@ void DrumRobot::checkUserInput()
     {
         char input = getchar();
         if (input == 'q')
-            systemState.runMode = RunMode::Pause;
+            systemState.main = Main::Pause;
         else if (input == 'e')
         {
-            systemState.runMode = RunMode::Ready;
+            systemState.main = Main::Ready;
             pathManager.line = 0;
         }
         else if (input == 'r')
-            systemState.runMode = RunMode::Running;
+            systemState.main = Main::Perform;
     }
 
     usleep(500000);
@@ -514,6 +514,8 @@ void DrumRobot::printCurrentPositions()
 
     cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
     cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
+    getchar();
+    printf("Print Enter to Go Home\n");
 }
 
 void DrumRobot::setMaxonMode(std::string targetMode)
@@ -727,27 +729,46 @@ void DrumRobot::MaxonEnable()
     }
 };
 
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 Send Thread Loop                           */
-///////////////////////////////////////////////////////////////////////////////
+void DrumRobot::MaxonDisable(){
+    struct can_frame frame;
 
-void DrumRobot::sendLoopForThread()
-{
-    initializePathManager();
-    while (systemState.main != Main::Shutdown)
+    canManager.setSocketsTimeout(0, 50000);
+
+    for (auto &motorPair : motors)
     {
-        usleep(50000);
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
 
-        if (systemState.main == Main::Perform && systemState.runMode == RunMode::Running)
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
+            maxoncmd.getQuickStop(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
 
-            if (canManager.checkAllMotors())
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+            if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
-                SendLoop();
+                while (!motor->recieveBuffer.empty())
+                {
+                    frame = motor->recieveBuffer.front();
+                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                    {
+
+                        break;
+                    }
+                    motor->recieveBuffer.pop();
+                }
+            }
+            else
+            {
+                std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
             }
         }
     }
 }
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Send Thread Loop                           */
+///////////////////////////////////////////////////////////////////////////////
 
 void DrumRobot::SendLoop()
 {
@@ -769,10 +790,10 @@ void DrumRobot::SendLoop()
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::Stop)
+    while (systemState.main == Main::Perform || systemState.main == Main::Pause)
     {
 
-        if (systemState.runMode == RunMode::Pause)
+        if (systemState.main == Main::Pause)
         {
             continue;
         }
@@ -962,27 +983,6 @@ void DrumRobot::clearMotorsSendBuffer()
 /*                                 Recive Thread Loop                         */
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrumRobot::recvLoopForThread()
-{
-
-    while (systemState.main != Main::Shutdown)
-    {
-
-        usleep(50000);
-        if (systemState.main == Main::Ideal && systemState.runMode == RunMode::PrePreparation)
-        {
-            canManager.checkCanPortsStatus();
-            canManager.checkAllMotors();
-            sleep(3);
-        }
-        else if (systemState.main == Main::Perform && systemState.runMode == RunMode::Running)
-        {
-            canManager.clearReadBuffers();
-            RecieveLoop();
-        }
-    }
-}
-
 void DrumRobot::RecieveLoop()
 {
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
@@ -996,10 +996,10 @@ void DrumRobot::RecieveLoop()
         cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
     }
 
-    while (systemState.runMode != RunMode::PrePreparation)
+    while (systemState.main == Main::Perform || systemState.main == Main::Pause)
     {
 
-        if (systemState.runMode == RunMode::Pause)
+        if (systemState.main == Main::Pause)
         {
             continue;
         }

@@ -9,8 +9,6 @@ HomeManager::HomeManager(SystemState &systemStateRef,
 
 void HomeManager::mainLoop()
 {
-    // MaxonEnable();
-    
     while (systemState.main == Main::Homing)
     {
         displayHomingStatus();
@@ -19,7 +17,7 @@ void HomeManager::mainLoop()
         std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
         std::cin >> motorName;
 
-        if (motorName == "all")     // 차례행로 동시실행
+        if (motorName == "all") // 차례행로 동시실행
         {
             // 우선순위가 높은 순서대로 먼저 홈
             vector<vector<string>> Priority = {{"L_arm1", "R_arm1"}, {"L_arm2", "R_arm2"}, {"L_arm3", "R_arm3"}};
@@ -52,7 +50,7 @@ void HomeManager::mainLoop()
                 SetMaxonHome(Pmotors);
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
-        {   // 원하는 하나의 모터 실행
+        { // 원하는 하나의 모터 실행
             vector<shared_ptr<GenericMotor>> Pmotor;
             vector<string> Pnames;
             // 타입에 따라 적절한 캐스팅과 초기화 수행
@@ -400,9 +398,8 @@ void HomeManager::SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors)
 
         sleep(1); // 100ms 대기
     }
-
     setMaxonMode("CSP");
-    
+    MaxonDisable();
 }
 
 void HomeManager::displayHomingStatus()
@@ -524,23 +521,24 @@ void HomeManager::MaxonEnable()
     }
 };
 
-void HomeManager::MaxonQuickStopEnable()
+void HomeManager::MaxonDisable()
 {
     struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
 
-    for (const auto &motorPair : motors)
+    canManager.setSocketsTimeout(0, 50000);
+
+    for (auto &motorPair : motors)
     {
         std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        auto &motor = motorPair.second;
+
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
-
             if (canManager.recvToBuff(motor, canManager.maxonCnt))
             {
                 while (!motor->recieveBuffer.empty())
@@ -548,34 +546,19 @@ void HomeManager::MaxonQuickStopEnable()
                     frame = motor->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
                     {
-                        std::cout << "Maxon Quick Stopped\n";
+
+                        break;
                     }
                     motor->recieveBuffer.pop();
                 }
             }
-
-            maxoncmd.getEnable(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
+            else
             {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
-                        std::cout << "Maxon Enabled \n";
-                    }
-                    motor->recieveBuffer.pop();
-                }
+                std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
             }
         }
     }
 }
-
 
 void HomeManager::setMaxonMode(std::string targetMode)
 {

@@ -84,6 +84,7 @@ private:
     void motorSettingCmd();
     void setMaxonMode(std::string targetMode);
     void MaxonEnable();
+    void MaxonDisable();
 
     // Perform
     void runModeLoop();

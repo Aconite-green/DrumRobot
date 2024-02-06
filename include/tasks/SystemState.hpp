@@ -14,7 +14,8 @@ enum class Main
     Check,      // 현재 모터들의 포지션을 체크하는 상태
     Shutdown,   // 시스템 종료 및 모든 작업 마무리
     Ready,
-    Back
+    Back,
+    Pause
 };
 
 enum class HomeMode
