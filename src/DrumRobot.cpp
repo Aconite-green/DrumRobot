@@ -31,7 +31,6 @@ void DrumRobot::stateMachine()
             initializeMotors();
             initializecanManager();
             motorSettingCmd();
-            MaxonEnable();
             setMaxonMode("CSP");
             std::cout << "Press Enter to go Home\n";
             getchar();

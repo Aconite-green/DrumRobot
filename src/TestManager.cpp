@@ -1552,7 +1552,6 @@ void TestManager::TestStickLoop()
             std::cerr << "Error during clear screen" << std::endl;
         }
 
-
         std::cout << "================ Tuning Menu ================\n";
         std::cout << "Available Motors for Stick Mode:\n";
         for (const auto &motor_pair : motors)
@@ -1611,7 +1610,7 @@ void TestManager::TestStickLoop()
         }
         else if (userInput[0] == 'f' && isMaxonMotor)
         {
-            TestStick(selectedMotor, des_tff,tffThreshold, posThreshold, backTorqueUnit);
+            TestStick(selectedMotor, des_tff, tffThreshold, posThreshold, backTorqueUnit);
         }
     }
 }
@@ -1700,16 +1699,14 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
 
                         p_act = std::get<1>(result);
                         tff_act = std::get<2>(result);
-                        // tff_des = kp * (p_des - p_act) + kd * (v_des - v_act);
                         csvFileOut << "0x" << std::hex << std::setw(4) << std::setfill('0') << maxonMotor->nodeId;
                         csvFileOut << ',' << std::dec << p_act << "," << tff_act << '\n';
 
                         positionValues[posIndex % 4] = p_act;
                         posIndex++;
 
-                        if (dct_fun(positionValues, -0.03) && !reachedDrum)
+                        if (!reachedDrum && dct_fun(positionValues, 0))
                         {
-                            std::cout << "I Hit the Drum!\n";
                             des_tff = backTorqueUnit;
                             reachedDrum = true;
                         }
@@ -1765,7 +1762,7 @@ bool TestManager::dct_fun(float positions[], float vel_th)
     float vel_k = ang_k - ang_k_1;
     float vel_k_1 = ang_k_1 - ang_k_2;
 
-    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < -0.25)
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.1 * M_PI)
         return true;
     else if (ang_k < -0.25 * M_PI)
         return true;
