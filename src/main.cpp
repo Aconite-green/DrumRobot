@@ -5,16 +5,16 @@
 #include <cctype>
 #include <memory>
 #include <map>
+#include <atomic>
 
 #include "../include/motors/Motor.hpp"
 #include "../include/managers/PathManager.hpp"
 #include "../include/managers/CanManager.hpp"
 #include "../include/managers/TestManager.hpp"
 #include "../include/managers/HomeManager.hpp"
-
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
-#include <atomic>
+
 
 using namespace std;
 

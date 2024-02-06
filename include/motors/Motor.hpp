@@ -55,10 +55,6 @@ public:
 
     int sensorBit;
 
-    //std::queue<TMotorData> sendBuffer;
-    //std::queue<can_frame> recieveBuffer;
-    // void addTMotorData(float position, float velocity, float kp, float kd, float torqueOffset);
-
 private:
 };
 
@@ -70,11 +66,6 @@ class MaxonMotor : public GenericMotor
 {
 public:
     MaxonMotor(uint32_t nodeId);
-
-    //std::queue<MaxonMotorData> sendBuffer;
-    //std::queue<can_frame> recieveBuffer;
-
-    //void addMaxonMotorData(int position);
 
     uint32_t canSendId;
     uint32_t canReceiveId;
