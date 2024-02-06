@@ -59,10 +59,6 @@ void DrumRobot::stateMachine()
         case Main::Shutdown:
             std::cout << "======= Shut down system =======\n";
             break;
-        case Main::Back:
-            break;
-        case Main::Ready:
-            break;
         default:
             systemState.main = Main::Ideal;
             break;
@@ -80,6 +76,7 @@ void DrumRobot::runModeLoop()
 {
     MaxonEnable();
     setMaxonMode("CSP");
+    bool isReady, isBack;
     while (systemState.main == Main::Perform)
     {
         switch (systemState.runMode.load())
@@ -87,8 +84,18 @@ void DrumRobot::runModeLoop()
         case RunMode::PrePreparation:
             break;
         case RunMode::Ready:
+            if (!isReady && canManager.checkAllMotors())
+            {
+                cout << "Get Ready...\n";
+                pathManager.GetArr(pathManager.standby);
+                SendReadyLoop();
+                isReady = true;
+                systemState.main = Main::Ideal;
+            }
             break;
         case RunMode::Running:
+            isReady = false;
+            isBack = false;
             checkUserInput();
             break;
         case RunMode::Pause:
@@ -98,6 +105,17 @@ void DrumRobot::runModeLoop()
             break;
         case RunMode::RunError:
             // 오류 처리
+            break;
+        case RunMode::Back:
+            if (!isBack && canManager.checkAllMotors())
+            {
+                clearMotorsSendBuffer();
+                cout << "Get Back...\n";
+                pathManager.GetArr(pathManager.backarr);
+                SendReadyLoop();
+                systemState.main = Main::Ideal;
+            }
+
             break;
         }
     }
@@ -156,7 +174,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "r" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::PrePreparation)
         {
-            systemState.main = Main::Ready;
+            systemState.runMode = RunMode::Ready;
             return true;
         }
         else if (input == "x" && systemState.homeMode == HomeMode::NotHome)
@@ -173,8 +191,8 @@ bool DrumRobot::processInput(const std::string &input)
         {
             if (systemState.homeMode == HomeMode::NotHome)
                 systemState.main = Main::Shutdown;
-            else
-                systemState.main = Main::Back;
+            else if(systemState.homeMode == HomeMode::HomeDone)
+                systemState.runMode = RunMode::Back;
             return true;
         }
         if (input == "p" && systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
@@ -185,7 +203,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "b" && systemState.homeMode == HomeMode::HomeDone)
         {
-            systemState.main = Main::Back;
+            systemState.runMode = RunMode::Back;
             return true;
         }
     }
@@ -706,47 +724,13 @@ void DrumRobot::sendLoopForThread()
     while (systemState.main != Main::Shutdown)
     {
         usleep(50000);
-        if (systemState.main == Main::Back)
+
+        if (systemState.main == Main::Perform && systemState.runMode == RunMode::Running)
         {
+
             if (canManager.checkAllMotors())
             {
-                clearMotorsSendBuffer();
-                cout << "Get Back...\n";
-                pathManager.GetArr(pathManager.backarr);
-                SendReadyLoop();
-                if (systemState.runMode == RunMode::Stop)
-                {   // 연주 중 정지했을 경우
-                    systemState.runMode = RunMode::PrePreparation;
-                    systemState.main = Main::Ideal;
-                }
-                else
-                    systemState.main = Main::Shutdown;
-            }
-        }
-        else if (systemState.main == Main::Ready)
-        {
-            if (canManager.checkAllMotors())
-            {
-                cout << "Get Ready...\n";
-                pathManager.GetArr(pathManager.standby);
-                SendReadyLoop();
-                if (systemState.runMode == RunMode::Stop) // 연주 중 정지했을 경우
-                    systemState.main = Main::Back;
-                else
-                {
-                    systemState.runMode = RunMode::Ready;
-                    systemState.main = Main::Ideal;
-                }
-            }
-        }
-        else if (systemState.main == Main::Perform)
-        {
-            if (systemState.runMode == RunMode::Running)
-            {
-                if (canManager.checkAllMotors())
-                {
-                    SendLoop();
-                }
+                SendLoop();
             }
         }
     }
