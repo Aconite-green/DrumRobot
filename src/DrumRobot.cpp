@@ -124,14 +124,12 @@ void DrumRobot::displayAvailableCommands() const
         {
 
             std::cout << "- r : Move to Ready Position\n";
-            std::cout << "- b : Back to Zero Postion\n";
             std::cout << "- t : Start tuning\n";
         }
         else if (systemState.homeMode == HomeMode::HomeDone && systemState.runMode == RunMode::Ready)
         {
             std::cout << "- p : Start Perform\n";
             std::cout << "- t : Start tuning\n";
-            std::cout << "- b : Back to Zero Postion\n";
         }
     }
     else if (systemState.main == Main::Perform)
@@ -154,6 +152,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "t" && systemState.homeMode == HomeMode::HomeDone)
         {
+            systemState.testMode = TestMode::Ideal;
             systemState.main = Main::Tune;
             return true;
         }
@@ -225,7 +224,7 @@ void DrumRobot::checkUserInput()
             systemState.runMode = RunMode::Pause;
         else if (input == 'e')
         {
-           std::cout << "You Pressed E\n";
+            systemState.runMode = RunMode::Stop;
             systemState.main = Main::Back;
             pathManager.line = 0;
         }
@@ -292,7 +291,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 350;
+                tMotor->Kp = 400;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = true;
                 tMotor->interFaceName = "can0";
@@ -325,8 +324,8 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 4;
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 250;
-                tMotor->Kd = 2.5;
+                tMotor->Kp = 350;
+                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
             }
@@ -336,7 +335,7 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
-                tMotor->Kp = 200;
+                tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can1";
@@ -347,8 +346,8 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 1;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 4.0f;  // 45deg
-                tMotor->Kp = 250;
-                tMotor->Kd = 2.5;
+                tMotor->Kp = 350;
+                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
             }
@@ -358,7 +357,7 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI * 0.75f; // -135deg
                 tMotor->rMax = 0.0f;          // 0deg
-                tMotor->Kp = 200;
+                tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->interFaceName = "can0";
@@ -717,7 +716,7 @@ void DrumRobot::sendLoopForThread()
                 cout << "Get Back...\n";
                 pathManager.GetArr(pathManager.backarr);
                 SendReadyLoop();
-                if (systemState.runMode == RunMode::Running)
+                if (systemState.runMode == RunMode::Stop)
                 {
                     systemState.runMode = RunMode::PrePreparation;
                     systemState.main = Main::Ideal;
@@ -772,7 +771,7 @@ void DrumRobot::SendLoop()
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.runMode != RunMode::PrePreparation)
+    while (systemState.runMode != RunMode::Stop)
     {
 
         if (systemState.runMode == RunMode::Pause)
@@ -882,7 +881,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     // CSV 파일 닫기
     csvFile.close();
 
-    std::cout << "연주 txt_InData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 DrumData_in 파일이 생성되었습니다: " << csv_file_name << std::endl;
 
     std::cout << "SendLoop terminated\n";
 }

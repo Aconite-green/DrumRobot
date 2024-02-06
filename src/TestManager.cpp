@@ -71,7 +71,14 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
     int Kp_fixed = 450;
     double Kd_fixed = 4.5;
     map<string, bool> TestMotor;
-    if (LnR == 1) // 오른쪽만 Test
+    if (LnR == 0) // 양쪽 다 고정
+    {
+        for (auto &motorname : motorName)
+        {
+            TestMotor[motorname] = false;
+        }
+    }
+    else if (LnR == 1) // 오른쪽만 Test
     {
         for (auto &motorname : motorName)
         {
@@ -91,11 +98,11 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 TestMotor[motorname] = true;
         }
     }
-    else if (LnR == 0) // 양쪽 다 고정
+    else if (LnR == 3) // 양쪽 다 Test
     {
         for (auto &motorname : motorName)
         {
-            TestMotor[motorname] = false;
+            TestMotor[motorname] = true;
         }
     }
 
@@ -104,11 +111,13 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
     {
         if (motors.find(motorname) != motors.end())
         {
+            std::cout << motorname << " ";
             if (TestMotor[motorname])
             { // Test 하는 모터
+                std::cout << "Move\n";
+                InputData[0] += motorname + ",";
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
-                    InputData[0] += motorname + ",";
                     int kp = tMotor->Kp;
                     double kd = tMotor->Kd;
 
@@ -125,7 +134,6 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
                 {
-                    InputData[0] += motorname + ",";
                     for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
@@ -140,10 +148,11 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
             }
             else
             { // Fixed 하는 모터
+                std::cout << "Fixed\n";
+                InputData[0] += motorname + ",";
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
-                    InputData[0] += motorname + ",";
-                    for (int c = 1; c < cycles; c++)
+                    for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
                         {
@@ -156,8 +165,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
                 {
-                    InputData[0] += motorname + ",";
-                    for (int c = 1; c < cycles; c++)
+                    for (int c = 0; c < cycles; c++)
                     {
                         for (int i = 0; i < time; i++)
                         {
@@ -175,7 +183,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
 
 void TestManager::SendLoop()
 {
-    cout << "Settig...\n";
+    std::cout << "Settig...\n";
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
     std::shared_ptr<GenericMotor> virtualMaxonMotor;
@@ -227,8 +235,8 @@ void TestManager::SendLoop()
                     canManager.txFrame(virtualMaxonMotor, frameToProcess);
                 }
 
-                canManager.readFramesFromAllSockets();
-                canManager.distributeFramesToMotors();
+                //canManager.readFramesFromAllSockets();
+                //canManager.distributeFramesToMotors();
             }
         }
     } while (!allBuffersEmpty);
@@ -289,58 +297,58 @@ void TestManager::multiTestLoop()
             LeftAndRight = "<< Left and Right move >>\n";
         }
 
-        cout << "------------------------------------------------------------------------------------------------------------\n";
-        cout << "< Current Position >\n";
+        std::cout << "------------------------------------------------------------------------------------------------------------\n";
+        std::cout << "< Current Position >\n";
         for (auto &motor : motors)
         {
             c_deg.push_back(motor.second->currentPos * motor.second->cwDir / M_PI * 180);
-            cout << motor.first << " : " << motor.second->currentPos * motor.second->cwDir / M_PI * 180 << "deg\n";
+            std::cout << motor.first << " : " << motor.second->currentPos * motor.second->cwDir / M_PI * 180 << "deg\n";
         }
-        cout << "\n"
+        std::cout << "\n"
              << LeftAndRight;
-        cout << "Type : " << typeDescription << "\n";
-        cout << "Period : " << t << "\n";
-        cout << "Cycles : " << cycles << "\n";
-        cout << "\nAmplitude :\n";
-        cout << "1) Arm3 = " << amplitude[0] << "\n";
-        cout << "2) Arm2 = " << amplitude[1] << "\n";
-        cout << "3) Arm1 = " << amplitude[2] << "\n";
-        cout << "4) Waist = " << amplitude[3] << "\n";
-        cout << "5) Wrist = " << amplitude[4] << "\n";
-        cout << "------------------------------------------------------------------------------------------------------------\n";
+        std::cout << "Type : " << typeDescription << "\n";
+        std::cout << "Period : " << t << "\n";
+        std::cout << "Cycles : " << cycles << "\n";
+        std::cout << "\nAmplitude :\n";
+        std::cout << "1) Arm3 = " << amplitude[0] << "\n";
+        std::cout << "2) Arm2 = " << amplitude[1] << "\n";
+        std::cout << "3) Arm1 = " << amplitude[2] << "\n";
+        std::cout << "4) Waist = " << amplitude[3] << "\n";
+        std::cout << "5) Wrist = " << amplitude[4] << "\n";
+        std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
-        cout << "[Commands]\n";
-        cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles\n"
+        std::cout << "[Commands]\n";
+        std::cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles\n"
              << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [m] : move | [r] : run | [e] : Exit\n";
-        cout << "Enter Command: ";
-        cin >> userInput;
+        std::cout << "Enter Command: ";
+        std::cin >> userInput;
 
         if (userInput[0] == 'e')
         {
-            systemState.testMode = TestMode::Exit;
+            systemState.testMode = TestMode::Ideal;
             systemState.main = Main::Ideal;
             break;
         }
         else if (userInput[0] == 'd')
         {
-            cout << "\n[Enter Desired Direction]\n";
-            cout << "1: Right Move\n";
-            cout << "2: Left Move\n";
-            cout << "3: Left and Right Move\n";
-            cout << "\nEnter Path Type (1 or 2 or 3): ";
-            cin >> LnR;
+            std::cout << "\n[Enter Desired Direction]\n";
+            std::cout << "1: Right Move\n";
+            std::cout << "2: Left Move\n";
+            std::cout << "3: Left and Right Move\n";
+            std::cout << "\nEnter Path Type (1 or 2 or 3): ";
+            std::cin >> LnR;
         }
         else if (userInput[0] == 't')
         {
             int num;
-            cout << "\n[Enter Desired Type]\n";
-            cout << "1: Arm3 Turn ON/OFF\n";
-            cout << "2: Arm2 Turn ON/OFF\n";
-            cout << "3: Arm1 Turn ON/OFF\n";
-            cout << "4: Waist Turn ON/OFF\n";
-            cout << "5: Wrist Turn ON/OFF\n";
-            cout << "\nEnter Path Type (1 or 2 or 3 or 4 or 5): ";
-            cin >> num;
+            std::cout << "\n[Enter Desired Type]\n";
+            std::cout << "1: Arm3 Turn ON/OFF\n";
+            std::cout << "2: Arm2 Turn ON/OFF\n";
+            std::cout << "3: Arm1 Turn ON/OFF\n";
+            std::cout << "4: Waist Turn ON/OFF\n";
+            std::cout << "5: Wrist Turn ON/OFF\n";
+            std::cout << "\nEnter Path Type (1 or 2 or 3 or 4 or 5): ";
+            std::cin >> num;
 
             if (num == 1)
             {
@@ -365,70 +373,70 @@ void TestManager::multiTestLoop()
         }
         else if (userInput[0] == 'p')
         {
-            cout << "\nEnter Desired Period : ";
-            cin >> t;
+            std::cout << "\nEnter Desired Period : ";
+            std::cin >> t;
         }
         else if (userInput[0] == 'c')
         {
-            cout << "\nEnter Desired Cycles : ";
-            cin >> cycles;
+            std::cout << "\nEnter Desired Cycles : ";
+            std::cin >> cycles;
         }
         else if (userInput[0] == 'a')
         {
             int input;
-            cout << "\n[Select Motor]\n";
-            cout << "1: Arm3\n";
-            cout << "2: Arm2\n";
-            cout << "3: Arm1\n";
-            cout << "4: Waist\n";
-            cout << "5: Wrist\n";
-            cout << "\nEnter Desired Motor : ";
-            cin >> input;
+            std::cout << "\n[Select Motor]\n";
+            std::cout << "1: Arm3\n";
+            std::cout << "2: Arm2\n";
+            std::cout << "3: Arm1\n";
+            std::cout << "4: Waist\n";
+            std::cout << "5: Wrist\n";
+            std::cout << "\nEnter Desired Motor : ";
+            std::cin >> input;
 
-            cout << "\nEnter Desired Amplitude(degree) : ";
-            cin >> amplitude[input - 1];
+            std::cout << "\nEnter Desired Amplitude(degree) : ";
+            std::cin >> amplitude[input - 1];
         }
         else if (userInput == "kp")
         {
             char input;
             int kp;
-            cout << "\n[Select Motor]\n";
-            cout << "1: Arm3\n";
-            cout << "2: Arm2\n";
-            cout << "3: Arm1\n";
-            cout << "4: Waist\n";
-            cout << "\nEnter Desired Motor : ";
-            cin >> input;
+            std::cout << "\n[Select Motor]\n";
+            std::cout << "1: Arm3\n";
+            std::cout << "2: Arm2\n";
+            std::cout << "3: Arm1\n";
+            std::cout << "4: Waist\n";
+            std::cout << "\nEnter Desired Motor : ";
+            std::cin >> input;
 
             if (input == '1')
             {
-                cout << "Arm3's Kp : " << motors["R_arm3"]->Kp << "\n";
-                cout << "Enter Arm3's Desired Kp : ";
-                cin >> kp;
+                std::cout << "Arm3's Kp : " << motors["R_arm3"]->Kp << "\n";
+                std::cout << "Enter Arm3's Desired Kp : ";
+                std::cin >> kp;
                 motors["R_arm3"]->Kp = kp;
                 // motors["L_arm3"]->Kp = kp;
             }
             else if (input == '2')
             {
-                cout << "Arm2's Kp : " << motors["R_arm2"]->Kp << "\n";
-                cout << "Enter Arm2's Desired Kp : ";
-                cin >> kp;
+                std::cout << "Arm2's Kp : " << motors["R_arm2"]->Kp << "\n";
+                std::cout << "Enter Arm2's Desired Kp : ";
+                std::cin >> kp;
                 motors["R_arm2"]->Kp = kp;
                 motors["L_arm2"]->Kp = kp;
             }
             else if (input == '3')
             {
-                cout << "Arm1's Kp : " << motors["R_arm1"]->Kp << "\n";
-                cout << "Enter Arm1's Desired Kp : ";
-                cin >> kp;
+                std::cout << "Arm1's Kp : " << motors["R_arm1"]->Kp << "\n";
+                std::cout << "Enter Arm1's Desired Kp : ";
+                std::cin >> kp;
                 motors["R_arm1"]->Kp = kp;
                 motors["L_arm1"]->Kp = kp;
             }
             else if (input == '4')
             {
-                cout << "Waist's Kp : " << motors["waist"]->Kp << "\n";
-                cout << "Enter Waist's Desired Kp : ";
-                cin >> kp;
+                std::cout << "Waist's Kp : " << motors["waist"]->Kp << "\n";
+                std::cout << "Enter Waist's Desired Kp : ";
+                std::cin >> kp;
                 motors["waist"]->Kp = kp;
             }
         }
@@ -436,43 +444,43 @@ void TestManager::multiTestLoop()
         {
             char input;
             int kd;
-            cout << "\n[Select Motor]\n";
-            cout << "1: Arm3\n";
-            cout << "2: Arm2\n";
-            cout << "3: Arm1\n";
-            cout << "4: Waist\n";
-            cout << "\nEnter Desired Motor : ";
-            cin >> input;
+            std::cout << "\n[Select Motor]\n";
+            std::cout << "1: Arm3\n";
+            std::cout << "2: Arm2\n";
+            std::cout << "3: Arm1\n";
+            std::cout << "4: Waist\n";
+            std::cout << "\nEnter Desired Motor : ";
+            std::cin >> input;
 
             if (input == '1')
             {
-                cout << "Arm3's Kd : " << motors["R_arm3"]->Kd << "\n";
-                cout << "Enter Arm3's Desired Kd : ";
-                cin >> kd;
+                std::cout << "Arm3's Kd : " << motors["R_arm3"]->Kd << "\n";
+                std::cout << "Enter Arm3's Desired Kd : ";
+                std::cin >> kd;
                 motors["R_arm3"]->Kd = kd;
                 // motors["L_arm3"]->Kd = kd;
             }
             else if (input == '2')
             {
-                cout << "Arm2's Kd : " << motors["R_arm2"]->Kd << "\n";
-                cout << "Enter Arm2's Desired Kd : ";
-                cin >> kd;
+                std::cout << "Arm2's Kd : " << motors["R_arm2"]->Kd << "\n";
+                std::cout << "Enter Arm2's Desired Kd : ";
+                std::cin >> kd;
                 motors["R_arm2"]->Kd = kd;
                 motors["L_arm2"]->Kd = kd;
             }
             else if (input == '3')
             {
-                cout << "Arm1's Kd : " << motors["R_arm1"]->Kd << "\n";
-                cout << "Enter Arm1's Desired Kd : ";
-                cin >> kd;
+                std::cout << "Arm1's Kd : " << motors["R_arm1"]->Kd << "\n";
+                std::cout << "Enter Arm1's Desired Kd : ";
+                std::cin >> kd;
                 motors["R_arm1"]->Kd = kd;
                 motors["L_arm1"]->Kd = kd;
             }
             else if (input == '4')
             {
-                cout << "Waist's Kd : " << motors["waist"]->Kd << "\n";
-                cout << "Enter Waist's Desired Kd : ";
-                cin >> kd;
+                std::cout << "Waist's Kd : " << motors["waist"]->Kd << "\n";
+                std::cout << "Enter Waist's Desired Kd : ";
+                std::cin >> kd;
                 motors["waist"]->Kd = kd;
             }
         } /*
@@ -521,7 +529,7 @@ void TestManager::multiTestLoop()
 
 void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 {
-    cout << "Test Start!!\n";
+    std::cout << "Test Start!!\n";
 
     int time = t / 0.005;
     std::vector<std::string> SmotorName;
@@ -578,7 +586,7 @@ void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
 
     SendLoop();
 
-    parse_and_save_to_csv("../../READ/DrumData_out.txt");
+    parse_and_save_to_csv("../../READ/test_out.txt");
 }
 
 void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
