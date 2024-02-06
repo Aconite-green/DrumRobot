@@ -31,7 +31,6 @@ void DrumRobot::stateMachine()
             initializeMotors();
             initializecanManager();
             motorSettingCmd();
-            setMaxonMode("CSP");
             std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
             systemState.main = Main::Ideal;
@@ -177,7 +176,6 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "t" && systemState.homeMode == HomeMode::HomeDone)
         {
-            systemState.testMode = TestMode::Ideal;
             systemState.main = Main::Tune;
             return true;
         }
@@ -221,7 +219,6 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "t")
         {
-            systemState.testMode = TestMode::Ideal;
             systemState.main = Main::Tune;
             return true;
         }

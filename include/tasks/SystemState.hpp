@@ -25,22 +25,13 @@ enum class HomeMode
     HomeError
 };
 
-enum class TestMode
-{
-    SingleMode,
-    MultiMode,
-    StickMode,
-    Ideal,
-    Exit
-};
-
 struct SystemState
 {
     std::atomic<Main> main;
     std::atomic<HomeMode> homeMode;
-    std::atomic<TestMode> testMode;
 
     SystemState() : main(Main::SystemInit),
-                    homeMode(HomeMode::NotHome),
-                    testMode(TestMode::SingleMode) {}
+                    homeMode(HomeMode::NotHome)
+    {
+    }
 };
