@@ -22,8 +22,6 @@ DrumRobot::DrumRobot(SystemState &systemStateRef,
 
 void DrumRobot::stateMachine()
 {
-    bool isReady = false;
-    bool isBack = false;
 
     while (systemState.main != Main::Shutdown)
     {
@@ -34,7 +32,7 @@ void DrumRobot::stateMachine()
             initializecanManager();
             motorSettingCmd();
             setMaxonMode("CSP");
-            std::cout << "System Initialize Complete [ Press Enter ]/n";
+            std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
             systemState.main = Main::Ideal;
             break;
@@ -56,7 +54,6 @@ void DrumRobot::stateMachine()
             testManager.mainLoop();
             break;
         case Main::Shutdown:
-            DeactivateControlTask();
             break;
         case Main::Ready:
             if (!isReady)
@@ -66,6 +63,7 @@ void DrumRobot::stateMachine()
                     MaxonEnable();
                     setMaxonMode("CSP");
                     cout << "Get Ready...\n";
+                    clearMotorsSendBuffer();
                     pathManager.GetArr(pathManager.standby);
                     SendReadyLoop();
                     isReady = true;
@@ -81,8 +79,8 @@ void DrumRobot::stateMachine()
             {
                 if (canManager.checkAllMotors())
                 {
-                    clearMotorsSendBuffer();
                     cout << "Get Back...\n";
+                    clearMotorsSendBuffer();
                     pathManager.GetArr(pathManager.backarr);
                     SendReadyLoop();
                     isBack = true;
@@ -91,6 +89,7 @@ void DrumRobot::stateMachine()
             else
             {
                 systemState.main = Main::Shutdown;
+                DeactivateControlTask();
             }
             break;
         case Main::Pause:
@@ -265,6 +264,7 @@ void DrumRobot::checkUserInput()
             systemState.main = Main::Pause;
         else if (input == 'e')
         {
+            isReady = false;
             systemState.main = Main::Ready;
             pathManager.line = 0;
         }
