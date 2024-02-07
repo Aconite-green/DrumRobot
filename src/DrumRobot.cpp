@@ -781,7 +781,6 @@ void DrumRobot::MaxonDisable()
 
 void DrumRobot::SendLoop()
 {
-
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
     std::shared_ptr<GenericMotor> virtualMaxonMotor;
@@ -826,10 +825,9 @@ void DrumRobot::SendLoop()
             }
             else if (pathManager.line == pathManager.total)
             {
-                std::cout << "Turn Back\n";
-                canManager.checkAllMotors();
-                pathManager.GetArr(pathManager.backarr);
-                pathManager.line++;
+                std::cout << "Perform Done\n";
+                systemState.main = Main::Ready;
+                pathManager.line = 0;
             }
         }
 
