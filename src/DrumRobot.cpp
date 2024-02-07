@@ -35,15 +35,32 @@ void DrumRobot::stateMachine()
             getchar();
             systemState.main = Main::Ideal;
             break;
+
         case Main::Ideal:
             idealStateRoutine();
             break;
+
         case Main::Homing:
             homeManager.mainLoop();
             break;
+
+        case Main::Perform:
+            checkUserInput();
+            break;
+
+        case Main::Check:
+            canManager.checkAllMotors();
+            printCurrentPositions();
+            systemState.main = Main::Ideal;
+            break;
+
         case Main::Tune:
             testManager.mainLoop();
             break;
+
+        case Main::Shutdown:
+            break;
+
         case Main::Ready:
             if (!isReady)
             {
@@ -59,16 +76,9 @@ void DrumRobot::stateMachine()
                 }
             }
             else
-            {
                 idealStateRoutine();
-            }
             break;
-        case Main::Perform:
-            checkUserInput();
-            break;
-        case Main::Pause:
-            checkUserInput();
-            break;
+
         case Main::Back:
             if (!isBack)
             {
@@ -87,12 +97,8 @@ void DrumRobot::stateMachine()
                 DeactivateControlTask();
             }
             break;
-        case Main::Shutdown:
-            break;
-        case Main::Check:
-            canManager.checkAllMotors();
-            printCurrentPositions();
-            systemState.main = Main::Ideal;
+        case Main::Pause:
+            checkUserInput();
             break;
         }
     }
@@ -104,10 +110,12 @@ void DrumRobot::sendLoopForThread()
     while (systemState.main != Main::Shutdown)
     {
         usleep(50000);
-
         if (systemState.main == Main::Perform)
         {
-            SendLoop();
+            if (canManager.checkAllMotors())
+            {
+                SendLoop();
+            }
         }
     }
 }
@@ -117,7 +125,6 @@ void DrumRobot::recvLoopForThread()
 
     while (systemState.main != Main::Shutdown)
     {
-
         usleep(50000);
         if (systemState.main == Main::Ideal)
         {
@@ -196,9 +203,7 @@ bool DrumRobot::processInput(const std::string &input)
             if (systemState.homeMode == HomeMode::NotHome)
                 systemState.main = Main::Shutdown;
             else if (systemState.homeMode == HomeMode::HomeDone)
-            {
                 systemState.main = Main::Back;
-            }
             return true;
         }
     }
@@ -242,9 +247,7 @@ void DrumRobot::idealStateRoutine()
     std::getline(std::cin, input);
 
     if (!processInput(input))
-    {
         std::cout << "Invalid command or not allowed in current state!\n";
-    }
 
     usleep(2000);
 }
@@ -265,7 +268,6 @@ void DrumRobot::checkUserInput()
         else if (input == 'r')
             systemState.main = Main::Perform;
     }
-
     usleep(500000);
 }
 
@@ -468,13 +470,9 @@ void DrumRobot::DeactivateControlTask()
 
             tmotorcmd.getExit(*tMotor, &frame);
             if (canManager.sendAndRecv(motor, frame))
-            {
                 std::cout << "Exiting for motor [" << name << "]" << std::endl;
-            }
             else
-            {
                 std::cerr << "Failed to exit control mode for motor [" << name << "]." << std::endl;
-            }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
@@ -497,9 +495,7 @@ void DrumRobot::DeactivateControlTask()
                 }
             }
             else
-            {
                 std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
-            }
         }
     }
 }
@@ -519,8 +515,8 @@ void DrumRobot::printCurrentPositions()
 
     cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
     cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
-    getchar();
     printf("Print Enter to Go Home\n");
+    getchar();
 }
 
 void DrumRobot::setMaxonMode(std::string targetMode)
@@ -598,7 +594,6 @@ void DrumRobot::motorSettingCmd()
 
             if (name == "L_wrist")
             {
-
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
@@ -658,9 +653,7 @@ void DrumRobot::MaxonEnable()
     {
         // 각 요소가 MaxonMotor 타입인지 확인
         if (std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
             maxonMotorCount++;
-        }
     }
 
     // 제어 모드 설정
@@ -686,9 +679,7 @@ void DrumRobot::MaxonEnable()
                 {
                     frame = motor->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
                         std::cout << "Maxon Enabled \n";
-                    }
                     motor->recieveBuffer.pop();
                 }
             }
@@ -705,9 +696,7 @@ void DrumRobot::MaxonEnable()
                 {
                     frame = motor->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
                         std::cout << "Maxon Quick Stopped\n";
-                    }
                     motor->recieveBuffer.pop();
                 }
             }
@@ -724,9 +713,7 @@ void DrumRobot::MaxonEnable()
                 {
                     frame = motor->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
                         std::cout << "Maxon Enabled \n";
-                    }
                     motor->recieveBuffer.pop();
                 }
             }
@@ -758,17 +745,12 @@ void DrumRobot::MaxonDisable()
                 {
                     frame = motor->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
-
                         break;
-                    }
                     motor->recieveBuffer.pop();
                 }
             }
             else
-            {
                 std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
-            }
         }
     }
 }
@@ -778,7 +760,6 @@ void DrumRobot::MaxonDisable()
 
 void DrumRobot::SendLoop()
 {
-
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
     std::shared_ptr<GenericMotor> virtualMaxonMotor;
@@ -800,9 +781,7 @@ void DrumRobot::SendLoop()
     {
 
         if (systemState.main == Main::Pause)
-        {
             continue;
-        }
 
         bool isAnyBufferLessThanTen = false;
         for (const auto &motor_pair : motors)
@@ -823,10 +802,9 @@ void DrumRobot::SendLoop()
             }
             else if (pathManager.line == pathManager.total)
             {
-                std::cout << "Turn Back\n";
-                canManager.checkAllMotors();
-                pathManager.GetArr(pathManager.backarr);
-                pathManager.line++;
+                std::cout << "Perform Done\n";
+                systemState.main = Main::Ready;
+                pathManager.line = 0;
             }
         }
 
@@ -881,9 +859,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     std::ofstream csvFile(csv_file_name);
 
     if (!csvFile.is_open())
-    {
         std::cerr << "Error opening CSV file." << std::endl;
-    }
 
     // 헤더 추가
     csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
@@ -895,9 +871,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
         {
             csvFile << std::fixed << std::setprecision(5) << cell;
             if (&cell != &row.back())
-            {
                 csvFile << ","; // 쉼표로 셀 구분
-            }
         }
         csvFile << "\n"; // 다음 행으로 이동
     }
@@ -979,9 +953,7 @@ void DrumRobot::initializePathManager()
 void DrumRobot::clearMotorsSendBuffer()
 {
     for (auto motor_pair : motors)
-    {
         motor_pair.second->clearSendBuffer();
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -997,17 +969,12 @@ void DrumRobot::RecieveLoop()
 
     sensor.connect();
     if (!sensor.connected)
-    {
         cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
-    }
 
     while (systemState.main == Main::Perform || systemState.main == Main::Pause)
     {
-
         if (systemState.main == Main::Pause)
-        {
             continue;
-        }
 
         /*if (sensor.connected && (sensor.ReadVal() & 1) != 0)
         {
@@ -1041,9 +1008,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     // 파일이 새로 생성되었으면 CSV 헤더를 추가
     ofs.seekp(0, std::ios::end);
     if (ofs.tellp() == 0)
-    {
         ofs << "CAN_ID,p_act,tff_des,tff_act\n";
-    }
 
     // 각 모터에 대한 처리
     for (const auto &pair : motors)

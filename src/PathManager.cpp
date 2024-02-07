@@ -301,8 +301,10 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
         }
     }
 
-    if(first)
+    if(first){
         std::cout << "IKfun Not Solved!!\n";
+        //systemState.main = Main::Pause;
+    }
 
     for (auto &entry : motors)
     {
@@ -484,9 +486,7 @@ void PathManager::GetDrumPositoin()
         {
             inputFile >> inst_xyz[i][j];
             if (i == 1 || i == 4)
-            {
                 inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
-            }
         }
     }
 
@@ -550,9 +550,7 @@ void PathManager::GetMusicSheet()
 
     ifstream file(score_path);
     if (!file.is_open())
-    {
         cerr << "Error opening file." << endl;
-    }
 
     string line;
     int lineIndex = 0;
@@ -578,13 +576,9 @@ void PathManager::GetMusicSheet()
             time_arr.push_back(stod(columns[1]) * 100 / bpm);
 
             if (columns[2] != "0")
-            {
                 inst_arr_R[instrument_mapping[columns[2]]] = 1;
-            }
             if (columns[3] != "0")
-            {
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
-            }
 
             RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
             LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
