@@ -41,18 +41,8 @@ void DrumRobot::stateMachine()
         case Main::Homing:
             homeManager.mainLoop();
             break;
-        case Main::Perform:
-            checkUserInput();
-            break;
-        case Main::Check:
-            canManager.checkAllMotors();
-            printCurrentPositions();
-            systemState.main = Main::Ideal;
-            break;
         case Main::Tune:
             testManager.mainLoop();
-            break;
-        case Main::Shutdown:
             break;
         case Main::Ready:
             if (!isReady)
@@ -73,6 +63,12 @@ void DrumRobot::stateMachine()
                 idealStateRoutine();
             }
             break;
+        case Main::Perform:
+            checkUserInput();
+            break;
+        case Main::Pause:
+            checkUserInput();
+            break;
         case Main::Back:
             if (!isBack)
             {
@@ -91,8 +87,12 @@ void DrumRobot::stateMachine()
                 DeactivateControlTask();
             }
             break;
-        case Main::Pause:
-            checkUserInput();
+        case Main::Shutdown:
+            break;
+        case Main::Check:
+            canManager.checkAllMotors();
+            printCurrentPositions();
+            systemState.main = Main::Ideal;
             break;
         }
     }
@@ -107,10 +107,7 @@ void DrumRobot::sendLoopForThread()
 
         if (systemState.main == Main::Perform)
         {
-            if (canManager.checkAllMotors())
-            {
-                SendLoop();
-            }
+            SendLoop();
         }
     }
 }

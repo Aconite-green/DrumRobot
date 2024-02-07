@@ -20,7 +20,7 @@ enum class Main
 
 enum class HomeMode
 {
-    NotHome,  // Homing이 완료되춤지 않은 초기상태
+    NotHome,  // Homing이 완료되지 않은 초기상태
     HomeDone, // Home 완료
     HomeError
 };
