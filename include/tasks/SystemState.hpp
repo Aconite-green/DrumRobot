@@ -31,7 +31,5 @@ struct SystemState
     std::atomic<HomeMode> homeMode;
 
     SystemState() : main(Main::SystemInit),
-                    homeMode(HomeMode::NotHome)
-    {
-    }
+                    homeMode(HomeMode::NotHome) {}
 };

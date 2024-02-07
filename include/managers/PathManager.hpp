@@ -73,6 +73,7 @@ private:
     vector<vector<double>> right_inst;
     vector<vector<double>> left_inst;
 
+    int n_inst = 10;
     double bpm = 10;
     vector<double> time_arr;
     vector<vector<int>> RA, LA;
@@ -85,7 +86,6 @@ private:
 
     double r_wrist = 0.0;
     double l_wrist = 0.0;
-    int n_inst = 10;
 
     // 실측값
     vector<double> P1 = {0.3, 0.94344, 1.16582};       // RightArm Standby xyz
@@ -104,6 +104,11 @@ private:
 
     // Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
     vector<double> Q1, Q2, Q3, Q4;
+
+    double ElbowAngle_ready = M_PI / 36;    // -0.5일 때 들어올리는 팔꿈치 각도 : 5deg
+    double ElbowAngle_hit = M_PI / 18;      // -1일 때 들어올리는 팔꿈치 각도 : 10deg
+    double WristAngle_ready = M_PI / 4;     // -0.5일 때 들어올리는 손목 각도 : 45deg
+    double WristAngle_hit = M_PI / 2;       // -1일 때 들어올리는 손목 각도 : 90deg
 
     // 각 악기별 치는 손목 각도
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
