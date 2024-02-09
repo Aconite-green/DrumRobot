@@ -259,7 +259,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
                                 { // 왼팔 돌리는 각도 범위 : 30deg ~ 180deg
                                     Lp = sqrt(L * L + zeta * zeta);
                                     det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
-                                    if (det_the6 > 1 && det_the6 > -1)
+                                    if (det_the6 < 1 && det_the6 > -1)
                                     {
                                         the6 = acos(det_the6);
                                         if (the6 > 0 && the6 < M_PI * 0.75)
@@ -301,8 +301,10 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
         }
     }
 
-    if(first)
+    if(first){
         std::cout << "IKfun Not Solved!!\n";
+        systemState.main = Main::Pause;
+    }
 
     for (auto &entry : motors)
     {
@@ -352,13 +354,13 @@ void PathManager::getQ1AndQ2()
         Q1 = c_MotorAngle;
         if (p_R == 1)
         {
-            Q1[4] = Q1[4] + M_PI / 36 * motor_dir[4];
-            Q1[7] = Q1[7] + M_PI / 36 * motor_dir[7];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
         }
         if (p_L == 1)
         {
-            Q1[6] = Q1[6] + M_PI / 36 * motor_dir[6];
-            Q1[8] = Q1[8] + M_PI / 36 * motor_dir[8];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
         }
         Q2 = Q1;
     }
@@ -370,28 +372,28 @@ void PathManager::getQ1AndQ2()
         Q2 = Q1;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + M_PI / 18 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 18 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 18 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 18 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q1[4] = Q1[4] + M_PI / 36 * motor_dir[4];
-            Q2[4] = Q2[4] + M_PI / 36 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 18 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 36 * motor_dir[7];
-            Q2[7] = Q2[7] + M_PI / 36 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 18 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q2[4] = Q2[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
+            Q2[7] = Q2[7] + WristAngle_ready * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q1[4] = Q1[4] + M_PI / 18 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 36 * motor_dir[6];
-            Q2[6] = Q2[6] + M_PI / 36 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 18 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 36 * motor_dir[8];
-            Q2[8] = Q2[8] + M_PI / 36 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q2[6] = Q2[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
+            Q2[8] = Q2[8] + WristAngle_ready * motor_dir[8];
         }
         // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
         Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
@@ -409,13 +411,13 @@ void PathManager::getQ3AndQ4()
         Q3 = Q2;
         if (p_R == 1)
         {
-            Q3[4] = Q3[4] + M_PI / 36 * motor_dir[4];
-            Q3[7] = Q3[7] + M_PI / 36 * motor_dir[7];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
         }
         if (p_L == 1)
         {
-            Q3[6] = Q3[6] + M_PI / 36 * motor_dir[6];
-            Q3[8] = Q3[8] + M_PI / 36 * motor_dir[8];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
         }
         Q4 = Q3;
     }
@@ -427,28 +429,28 @@ void PathManager::getQ3AndQ4()
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + M_PI / 18 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 18 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 18 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 18 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q3[4] = Q3[4] + M_PI / 36 * motor_dir[4];
-            Q4[4] = Q4[4] + M_PI / 36 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 18 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 36 * motor_dir[7];
-            Q4[7] = Q4[7] + M_PI / 36 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 18 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q4[4] = Q4[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
+            Q4[7] = Q4[7] + WristAngle_ready * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q3[4] = Q3[4] + M_PI / 18 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 36 * motor_dir[6];
-            Q4[6] = Q4[6] + M_PI / 36 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 18 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 36 * motor_dir[8];
-            Q4[8] = Q4[8] + M_PI / 36 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q4[6] = Q4[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
+            Q4[8] = Q4[8] + WristAngle_ready * motor_dir[8];
         }
         // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
         Q3[0] = (Q4[0] + Q2[0]) / 2.0;
@@ -484,9 +486,7 @@ void PathManager::GetDrumPositoin()
         {
             inputFile >> inst_xyz[i][j];
             if (i == 1 || i == 4)
-            {
                 inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
-            }
         }
     }
 
@@ -550,9 +550,7 @@ void PathManager::GetMusicSheet()
 
     ifstream file(score_path);
     if (!file.is_open())
-    {
         cerr << "Error opening file." << endl;
-    }
 
     string line;
     int lineIndex = 0;
@@ -578,13 +576,9 @@ void PathManager::GetMusicSheet()
             time_arr.push_back(stod(columns[1]) * 100 / bpm);
 
             if (columns[2] != "0")
-            {
                 inst_arr_R[instrument_mapping[columns[2]]] = 1;
-            }
             if (columns[3] != "0")
-            {
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
-            }
 
             RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
             LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);

@@ -29,7 +29,7 @@
 #include "../include/managers/PathManager.hpp"
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
-//#include "../include/tasks/TaskUtility.hpp"
+// #include "../include/tasks/TaskUtility.hpp"
 #include "../include/managers/TestManager.hpp"
 #include "../include/managers/HomeManager.hpp"
 
@@ -77,6 +77,9 @@ private:
     void printCurrentPositions();
     int kbhit();
 
+    bool isReady = false;
+    bool isBack = false;
+
     // System Initiallize
     void initializeMotors();
     void initializecanManager();
@@ -86,15 +89,11 @@ private:
     void MaxonEnable();
     void MaxonDisable();
 
-    // Perform
-    void runModeLoop();
-
-
     // Send Thread Loop
     void SendLoop();
     void save_to_txt_inputData(const string &csv_file_name);
     void SendReadyLoop();
-    int writeFailCount=0;
+    int writeFailCount = 0;
     void initializePathManager();
     void clearMotorsSendBuffer();
 

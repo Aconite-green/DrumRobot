@@ -12,7 +12,7 @@ void TestManager::mainLoop()
     int choice;
     canManager.checkAllMotors();
     setMaxonMode("CSP");
-    while (systemState.testMode != TestMode::Exit)
+    while (systemState.main == Main::Tune)
     {
         // 사용자에게 선택지 제공
         std::cout << "1: MultiMode\n2: SingleMode\n3: StickMode\n4: Exit\n";
@@ -23,39 +23,20 @@ void TestManager::mainLoop()
         switch (choice)
         {
         case 1:
-            systemState.testMode.store(TestMode::MultiMode);
+            multiTestLoop();
             break;
         case 2:
-            systemState.testMode.store(TestMode::SingleMode);
+            TuningLoopTask();
             break;
         case 3:
-            systemState.testMode.store(TestMode::StickMode);
+            TestStickLoop();
             break;
         case 4:
-            systemState.testMode.store(TestMode::Exit);
+            systemState.main = Main::Ideal;
             break;
         default:
             std::cout << "Invalid choice. Please try again.\n";
             continue;
-        }
-
-        // testMode에 따라 적절한 함수 호출
-        switch (systemState.testMode.load())
-        {
-        case TestMode::MultiMode:
-            multiTestLoop();
-            break;
-        case TestMode::SingleMode:
-            TuningLoopTask();
-            break;
-        case TestMode::StickMode:
-            TestStickLoop();
-            break;
-        case TestMode::Ideal:
-            break;
-        case TestMode::Exit:
-            systemState.main = Main::Ideal;
-            break;
         }
     }
 }
@@ -235,8 +216,8 @@ void TestManager::SendLoop()
                     canManager.txFrame(virtualMaxonMotor, frameToProcess);
                 }
 
-                //canManager.readFramesFromAllSockets();
-                //canManager.distributeFramesToMotors();
+                // canManager.readFramesFromAllSockets();
+                // canManager.distributeFramesToMotors();
             }
         }
     } while (!allBuffersEmpty);
@@ -253,7 +234,7 @@ void TestManager::multiTestLoop()
     int LnR = 1;
     double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
-    while (systemState.testMode != TestMode::Exit)
+    while (systemState.main == Main::Tune)
     {
         int result = system("clear");
         if (result != 0)
@@ -305,7 +286,7 @@ void TestManager::multiTestLoop()
             std::cout << motor.first << " : " << motor.second->currentPos * motor.second->cwDir / M_PI * 180 << "deg\n";
         }
         std::cout << "\n"
-             << LeftAndRight;
+                  << LeftAndRight;
         std::cout << "Type : " << typeDescription << "\n";
         std::cout << "Period : " << t << "\n";
         std::cout << "Cycles : " << cycles << "\n";
@@ -319,13 +300,12 @@ void TestManager::multiTestLoop()
 
         std::cout << "[Commands]\n";
         std::cout << "[d] : Left and Right | [t] : Type | [p] : Period | [c] : Cycles\n"
-             << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [m] : move | [r] : run | [e] : Exit\n";
+                  << "[a] : Amplitude | [kp] : Kp | [kd] : Kd | [m] : move | [r] : run | [e] : Exit\n";
         std::cout << "Enter Command: ";
         std::cin >> userInput;
 
         if (userInput[0] == 'e')
         {
-            systemState.testMode = TestMode::Ideal;
             systemState.main = Main::Ideal;
             break;
         }

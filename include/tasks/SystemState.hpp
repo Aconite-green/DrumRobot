@@ -20,27 +20,16 @@ enum class Main
 
 enum class HomeMode
 {
-    NotHome,  // Homing이 완료되춤지 않은 초기상태
+    NotHome,  // Homing이 완료되지 않은 초기상태
     HomeDone, // Home 완료
     HomeError
-};
-
-enum class TestMode
-{
-    SingleMode,
-    MultiMode,
-    StickMode,
-    Ideal,
-    Exit
 };
 
 struct SystemState
 {
     std::atomic<Main> main;
     std::atomic<HomeMode> homeMode;
-    std::atomic<TestMode> testMode;
 
     SystemState() : main(Main::SystemInit),
-                    homeMode(HomeMode::NotHome),
-                    testMode(TestMode::SingleMode) {}
+                    homeMode(HomeMode::NotHome) {}
 };
