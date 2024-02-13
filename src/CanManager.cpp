@@ -455,15 +455,22 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
+    int framesRead = 0; // 읽은 프레임의 수를 저장할 변수
+
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
         while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
+            framesRead++; // 프레임을 하나 읽을 때마다 카운트 증가
         }
     }
+
+    // 읽은 프레임의 총 개수를 출력
+    cout << "Read " << framesRead << " frames from CAN sockets." << endl;
 }
+
 
 void CanManager::distributeFramesToMotors()
 {
