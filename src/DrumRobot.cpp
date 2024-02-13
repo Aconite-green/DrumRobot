@@ -55,7 +55,9 @@ void DrumRobot::stateMachine()
             break;
 
         case Main::Tune:
+            MaxonEnable();
             testManager.mainLoop();
+            MaxonDisable();
             break;
 
         case Main::Shutdown:
