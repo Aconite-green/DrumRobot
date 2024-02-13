@@ -15,7 +15,7 @@ This endeavor stands as a testament to the potential of robotics in the arts, sh
 - **SeongYong Park**: Key developer responsible for the entire project's core components. Developed advanced algorithms in C++ for precision motor control, implemented real-time system performance using Linux Ubuntu with a Real-Time Kernel, and integrated control logic with a collaboratively developed Qt user interface Also responsible for implementing the CAN Bus Protocol with SocketCAN Library for motor communications, and incorporating USB IO devices and proximity sensors for accurate robotic movement and positioning.
 
 
-- **Partner's Name**: Partner's role and contributions in the project
+<!-- - **Partner's Name**: Partner's role and contributions in the project-->
 
 ## Features
 - **Precision Motor Control**: Utilizing advanced algorithms in C++ to control Tmotor and Maxon motors with high precision, enabling accurate and dynamic drumming.
@@ -70,8 +70,8 @@ Remember to adjust these steps based on your project's specific requirements and
 Include some screenshots of your project in action, and/or links to demo videos.
 
 <img src="./image/Robot.jpg" width="500" alt="Screenshot Front Robot">
-<img src="url-to-screenshot" width="500" alt="Screenshot Ready Position diagonal">
-[Link to Demo Video](url-to-demo)
+<!--  <img src="url-to-screenshot" width="500" alt="Screenshot Ready Position diagonal">
+[Link to Demo Video](url-to-demo)-->
 
 
 ## License
@@ -84,12 +84,12 @@ For any questions, feedback, or further information, feel free to reach out to u
 - **SeongYong Park**
   - Email: park50260@gmail.com
   - Resume : [Go to Resume](https://aconite-green.github.io/)
-  - LinkedIn: [Go to LinkedIn ](your-linkedin-url)
+  <!--- LinkedIn: [Go to LinkedIn ](your-linkedin-url)-->
   - 
-- **Your Teammate's Name**
+<!-- - **Your Teammate's Name**
   - Email: teammate.email@example.com
-  - LinkedIn: [Teammate's LinkedIn](teammate-linkedin-url)
+  - LinkedIn: [Teammate's LinkedIn](teammate-linkedin-url)-->
 
 Additional resources and information:
-- Project Link: [Welcome To DrumRobot Project WebSite](https://seongyongs-organization.gitbook.io/design-system/)
+- Project Link: [handover document](https://seongyongs-organization.gitbook.io/design-system/)
 
