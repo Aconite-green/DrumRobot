@@ -104,8 +104,7 @@ private:
     void clearMotorsSendBuffer(); ///< 모터 송신 버퍼 클리어 메소드.
 
     // Receive Thread Loop 메소드들
-    const int NUM_FRAMES; ///< 처리할 프레임 수.
-    const int TIME_THRESHOLD_MS; ///< 시간 임계값.
+    const int TIME_THRESHOLD_MS = 5; ///< 시간 임계값.
 
     void RecieveLoop(); ///< 수신 루프 메소드.
     void parse_and_save_to_csv(const std::string &csv_file_name); ///< 파싱 후 CSV 파일로 저장하는 메소드.
