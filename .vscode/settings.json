@@ -75,7 +75,8 @@
         "future": "cpp",
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cerrno": "cpp"
     },
     "makefile.launchConfigurations": [
         {

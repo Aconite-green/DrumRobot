@@ -93,11 +93,11 @@ public:
     vector<vector<double>> v;   ///< 속도 경로 벡터
 
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                        0    , 90    , 90    , 45    , 75    , 45    , 75    , 0      , 0        [deg]
-    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, 0, 0};
+    //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
+    vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, M_PI / 6, M_PI / 6};
 
     //     Back Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                        0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60        [deg]
+    //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60 }      [deg]
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
 private:
@@ -136,10 +136,10 @@ private:
 
     vector<double> Q1, Q2, Q3, Q4;  ///< Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
 
-    double ElbowAngle_ready = M_PI / 36;    ///< -0.5일 때 들어올리는 팔꿈치 각도 : 5deg
-    double ElbowAngle_hit = M_PI / 18;      ///< -1일 때 들어올리는 팔꿈치 각도 : 10deg
-    double WristAngle_ready = M_PI / 4;     ///< -0.5일 때 들어올리는 손목 각도 : 45deg
-    double WristAngle_hit = M_PI / 2;       ///< -1일 때 들어올리는 손목 각도 : 90deg
+    double ElbowAngle_stay = M_PI / 12;    ///< -0.5일 때 들어올리는 팔꿈치 각도 : 15deg
+    double ElbowAngle_ready = M_PI / 6;      ///< -1일 때 들어올리는 팔꿈치 각도 : 30deg
+    double WristAngle_stay = M_PI / 6;     ///< -0.5일 때 들어올리는 손목 각도 : 30deg
+    double WristAngle_ready = M_PI / 2;       ///< -1일 때 들어올리는 손목 각도 : 90deg
 
     vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  ///< 각 악기별 치는 손목 각도
 

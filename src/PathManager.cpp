@@ -335,13 +335,11 @@ void PathManager::getDrummingPosAndAng()
         if (RA[line][j] != 0)
         {
             P1 = right_inst[j];
-            r_wrist = wrist[j];
             c_R = 1;
         }
         if (LA[line][j] != 0)
         {
             P2 = left_inst[j];
-            l_wrist = wrist[j];
             c_L = 1;
         }
     }
@@ -352,16 +350,6 @@ void PathManager::getQ1AndQ2()
     if (c_R == 0 && c_L == 0)
     { // 왼손 & 오른손 안침
         Q1 = c_MotorAngle;
-        if (p_R == 1)
-        {
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-        }
-        if (p_L == 1)
-        {
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-        }
         Q2 = Q1;
     }
     else
@@ -372,35 +360,25 @@ void PathManager::getQ1AndQ2()
         Q2 = Q1;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q2[4] = Q2[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-            Q2[7] = Q2[7] + WristAngle_ready * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_stay * motor_dir[7];
+            Q2[7] = Q2[7] + WristAngle_stay * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q2[6] = Q2[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-            Q2[8] = Q2[8] + WristAngle_ready * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_stay * motor_dir[8];
+            Q2[8] = Q2[8] + WristAngle_stay * motor_dir[8];
         }
-        // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
-        Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
-        Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
-        Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
-        Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
-        Q1[5] = (Q2[5] + c_MotorAngle[5]) / 2.0;
     }
 }
 
@@ -411,13 +389,13 @@ void PathManager::getQ3AndQ4()
         Q3 = Q2;
         if (p_R == 1)
         {
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
+            Q3[4] = Q3[4] + ElbowAngle_stay * motor_dir[4];
+            Q3[7] = Q3[7] + WristAngle_stay * motor_dir[7];
         }
         if (p_L == 1)
         {
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
+            Q3[6] = Q3[6] + ElbowAngle_stay * motor_dir[6];
+            Q3[8] = Q3[8] + WristAngle_stay * motor_dir[8];
         }
         Q4 = Q3;
     }
@@ -429,35 +407,29 @@ void PathManager::getQ3AndQ4()
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q4[4] = Q4[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
-            Q4[7] = Q4[7] + WristAngle_ready * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_stay * motor_dir[4];
+            Q4[4] = Q4[4] + ElbowAngle_stay * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_stay * motor_dir[7];
+            Q4[7] = Q4[7] + WristAngle_stay * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q4[6] = Q4[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
-            Q4[8] = Q4[8] + WristAngle_ready * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_stay * motor_dir[6];
+            Q4[6] = Q4[6] + ElbowAngle_stay * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_stay * motor_dir[8];
+            Q4[8] = Q4[8] + WristAngle_stay * motor_dir[8];
         }
-        // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
-        Q3[0] = (Q4[0] + Q2[0]) / 2.0;
-        Q3[1] = (Q4[1] + Q2[1]) / 2.0;
-        Q3[2] = (Q4[2] + Q2[2]) / 2.0;
-        Q3[3] = (Q4[3] + Q2[3]) / 2.0;
-        Q3[5] = (Q4[5] + Q2[5]) / 2.0;
     }
 }
 
