@@ -604,7 +604,7 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, -90);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, -95);
                 canManager.sendAndRecv(motor, frame);
             }
             else if (name == "R_wrist")
@@ -615,7 +615,7 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, -90);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, -95);
                 canManager.sendAndRecv(motor, frame);
             }
             else if (name == "maxonForTest")

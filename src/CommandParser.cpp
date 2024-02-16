@@ -456,9 +456,9 @@ void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_fra
 
 void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    
-    float value_per_degree = 398.22;
-    int value = static_cast<int>(degree * value_per_degree);
+    float value_per_degree = 398.22*motor.cwDir;
+    // int 대신 int32_t 사용하여 플랫폼 독립적인 크기 보장
+    int32_t value = static_cast<int32_t>(degree * value_per_degree);
 
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
@@ -466,11 +466,13 @@ void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *fr
     frame->data[1] = 0xB0;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = value & 0xFF;        // 하위 바이트
-    frame->data[5] = (value >> 8) & 0xFF; // 상위 바이트
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+    // 음수 값을 포함하여 value를 올바르게 바이트로 변환
+    frame->data[4] = value & 0xFF;                // 가장 낮은 바이트
+    frame->data[5] = (value >> 8) & 0xFF;         // 다음 낮은 바이트
+    frame->data[6] = (value >> 16) & 0xFF;        // 다음 높은 바이트
+    frame->data[7] = (value >> 24) & 0xFF;        // 가장 높은 바이트
 }
+
 
 void MaxonCommandParser::getHomingMethodL(MaxonMotor &motor, struct can_frame *frame)
 {
