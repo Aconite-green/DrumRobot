@@ -1742,9 +1742,9 @@ bool TestManager::dct_fun(float positions[], float vel_th)
     float vel_k = ang_k - ang_k_1;
     float vel_k_1 = ang_k_1 - ang_k_2;
 
-    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.1 * M_PI)
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.05)
         return true;
-    else if (ang_k < -0.25 * M_PI)
+    else if (ang_k < -0.25 )
         return true;
     else
         return false;
