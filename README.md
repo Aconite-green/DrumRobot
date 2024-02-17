@@ -66,8 +66,6 @@ To set up and use this robotic drummer, please follow the outlined steps:
 
 Remember to adjust these steps based on your project's specific requirements and the hardware components used.
 
-## Screenshots and Demo
-Include some screenshots of your project in action, and/or links to demo videos.
 
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
