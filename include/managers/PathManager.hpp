@@ -116,6 +116,7 @@ private:
     int n_inst = 10;    ///< 총 악기의 수.
     double bpm = 10;    /// 악보의 BPM 정보.
     vector<double> time_arr;    ///< 악보의 시간간격 정보.
+    vector<double> time_arr_F;    ///< 악보의 시간간격 정보.
     vector<vector<int>> RA, LA; ///< 오른팔 / 왼팔이 치는 악기.
     vector<int> RF, LF;         ///< 오른발 / 왼발이 치는 악기.;
 

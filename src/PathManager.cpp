@@ -301,7 +301,8 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
         }
     }
 
-    if(first){
+    if (first)
+    {
         std::cout << "IKfun Not Solved!!\n";
         systemState.main = Main::Pause;
     }
@@ -554,6 +555,7 @@ void PathManager::GetMusicSheet()
 
     string line;
     int lineIndex = 0;
+    double time = 0.0;
     while (getline(file, line))
     {
         istringstream iss(line);
@@ -573,18 +575,26 @@ void PathManager::GetMusicSheet()
         else
         {
             vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-            time_arr.push_back(stod(columns[1]) * 100 / bpm);
+            time += stod(columns[1]) * 100 / bpm;
 
             if (columns[2] != "0")
                 inst_arr_R[instrument_mapping[columns[2]]] = 1;
             if (columns[3] != "0")
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
 
-            RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-            LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+            if (columns[2] != "0" || columns[3] != "0")
+            {
+                time_arr.push_back(time);
+                RA.push_back(inst_arr_R);
+                LA.push_back(inst_arr_L);
+            }
 
-            RA.push_back(inst_arr_R);
-            LA.push_back(inst_arr_L);
+            if (columns[2] != "0" || columns[3] != "0")
+            {
+                time_arr_F.push_back(time);
+                RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
+                LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+            }
         }
 
         lineIndex++;
