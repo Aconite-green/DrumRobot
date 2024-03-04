@@ -66,12 +66,16 @@ To set up and use this robotic drummer, please follow the outlined steps:
 
 Remember to adjust these steps based on your project's specific requirements and the hardware components used.
 
+
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
 
-<img src="./image/Robot.jpg" width="500" alt="Screenshot Front Robot">
-<!--  <img src="url-to-screenshot" width="500" alt="Screenshot Ready Position diagonal">
-[Link to Demo Video](url-to-demo)-->
+<img src="./image/Ready_Pos.jpg" width="500" alt="Screenshot Front Robot">
+<img src="./image/Ready_Pos2.jpg" width="500" alt="Screenshot Ready Position diagonal Robot">
+
+### 🎥 **Check out the drum robot video playlist here:** [**Drum Robot Video Playlist Link**](https://www.youtube.com/playlist?list=PLZbG63B7tdmLVjM_1uWHxAeesx-kkmfXY)
+
+
 
 
 ## License
@@ -85,7 +89,7 @@ For any questions, feedback, or further information, feel free to reach out to u
   - Email: park50260@gmail.com
   - Resume : [Go to Resume](https://aconite-green.github.io/)
   <!--- LinkedIn: [Go to LinkedIn ](your-linkedin-url)-->
-  - 
+  
 <!-- - **Your Teammate's Name**
   - Email: teammate.email@example.com
   - LinkedIn: [Teammate's LinkedIn](teammate-linkedin-url)-->

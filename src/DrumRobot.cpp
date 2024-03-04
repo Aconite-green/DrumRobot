@@ -139,6 +139,8 @@ void DrumRobot::recvLoopForThread()
             canManager.clearReadBuffers();
             RecieveLoop();
         }
+
+        //
     }
 }
 /////////////////////////////////////////////////////////////////////////////////
