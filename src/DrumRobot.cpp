@@ -334,7 +334,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 400;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = true;
-                tMotor->interFaceName = "can0";
+                
             }
             else if (motor_pair.first == "R_arm1")
             {
@@ -345,7 +345,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can1";
+                
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -356,7 +356,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -367,7 +367,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 350;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can1";
+                
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -378,7 +378,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can1";
+                
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -389,7 +389,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 350;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -400,7 +400,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                tMotor->interFaceName = "can0";
+                
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -417,7 +417,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->interFaceName = "can2";
+               
             }
             else if (motor_pair.first == "R_wrist")
             {
@@ -430,7 +430,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x408; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->interFaceName = "can2";
+                
             }
             else if (motor_pair.first == "maxonForTest")
             {
