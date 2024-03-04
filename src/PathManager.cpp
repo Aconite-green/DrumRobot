@@ -573,13 +573,15 @@ void PathManager::GetMusicSheet()
         else
         {
             vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-            time_arr.push_back(stod(columns[1]) * 100 / bpm);
 
+            if (columns[2] == "0" && columns[3] == "0")
+                continue;
             if (columns[2] != "0")
                 inst_arr_R[instrument_mapping[columns[2]]] = 1;
             if (columns[3] != "0")
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
 
+            time_arr.push_back(stod(columns[1]) * 100 / bpm);
             RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
             LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
 
