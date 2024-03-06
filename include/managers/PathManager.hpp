@@ -211,4 +211,12 @@ private:
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
     */
     void Motors_sendBuffer();
+
+
+    ////////////////////////////// New Motor Generation ///////////////////////////////
+    /**
+     * @brief 
+    */
+    
+
 };
