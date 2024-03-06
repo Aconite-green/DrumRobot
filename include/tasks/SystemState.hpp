@@ -30,6 +30,34 @@ enum class HomeMode
     HomeDone, ///< Home 완료.
     HomeError ///< Homing 중 오류 발생.
 };
+/**
+ * @enum Maxon
+ * @brief Maxon 모터의 제어 모드 상태를 관리다 합니다
+ */
+enum class Maxon
+{
+    Position,     ///< 맥슨 모터 위치 제어중
+    Torque_Move,  ///< 맥슨 모터 토크 제어 시작
+    Torque_Touch, ///< 맥슨 모터 드럼 감지
+    Torque_Back,  ///< 맥슨 모터 감지 후 반대 방향 토크 제어 시작
+    Torque_InPos  ///< 맥슨 모터 고정 위치 도달(위치 제어 시작 요청)
+};
+
+/**
+ * @struct MaxonState
+ * @brief 각각의 맥슨 모터 상태를 관리합니다.
+ */
+struct MaxonState
+{
+    std::atomic<Maxon> state; ///< 맥슨 모터의 현재 상태.
+
+    /**
+     * @brief MaxonState의 기본 생성자.
+     *
+     * 맥슨 모터를 위치 제어 상태(`Position`)로 초기화합니다.
+     */
+    MaxonState() : state(Maxon::Position) {}
+};
 
 /**
  * @struct SystemState
@@ -40,14 +68,18 @@ enum class HomeMode
  */
 struct SystemState
 {
-    std::atomic<Main> main; ///< 시스템의 주 상태.
+    std::atomic<Main> main;         ///< 시스템의 주 상태.
     std::atomic<HomeMode> homeMode; ///< 홈 모드의 상태.
-
+    MaxonState leftMaxon;           ///< 왼쪽 맥슨 모터 상태.
+    MaxonState rightMaxon;          ///< 오른쪽 맥슨 모터 상태
     /**
      * @brief SystemState의 기본 생성자.
-     * 
-     * 시스템을 시작 상태(`SystemInit`)와 홈 모드를 미완료 상태(`NotHome`)로 초기화합니다.
+     *
+     * 시스템을 시작 상태(`SystemInit`), 홈 모드를 미완료 상태(`NotHome`),
+     * 맥슨 모터('Position 제어')로 초기화합니다.
      */
     SystemState() : main(Main::SystemInit),
-                    homeMode(HomeMode::NotHome) {}
+                    homeMode(HomeMode::NotHome)
+    {
+    }
 };
