@@ -51,15 +51,15 @@ public:
      */
     void connect();
 
-    bool connected; ///< 센서 연결 상태를 나타냅니다. 연결되면 true, 그렇지 않으면 false입니다.
+    bool connected=false; ///< 센서 연결 상태를 나타냅니다. 연결되면 true, 그렇지 않으면 false입니다.
 
 private:
-    int DeviceID; ///< 디바이스 ID입니다. USB2051_32와 같은 상수를 사용합니다.
-    BYTE BoardID; ///< 보드 ID입니다. 특정 디바이스를 식별하는 데 사용됩니다.
+    int DeviceID=USB2051_32; ///< 디바이스 ID입니다. USB2051_32와 같은 상수를 사용합니다.
+    BYTE BoardID=0x02; ///< 보드 ID입니다. 특정 디바이스를 식별하는 데 사용됩니다.
     BYTE total_di; ///< 디지털 입력 채널의 총 수입니다.
     int DevNum, res; ///< 디바이스 번호와 결과 코드를 저장합니다.
     char module_name[15]; ///< 모듈 이름을 저장합니다.
-    DWORD DIValue; ///< 최근 읽어온 디지털 입력 값입니다.
+    DWORD DIValue=0; ///< 최근 읽어온 디지털 입력 값입니다.
     DWORD o_dwDICntValue[USBIO_DI_MAX_CHANNEL]; ///< 채널별 디지털 입력 카운트 값을 저장합니다.
 
     struct timespec start, end; ///< 연산 수행 시간 측정을 위한 시작 및 종료 시간입니다.
