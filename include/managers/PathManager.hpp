@@ -128,6 +128,8 @@ private:
     double r_wrist = 0.0;   ///< 오른손목 각도.
     double l_wrist = 0.0;   ///< 왼손목 각도.
 
+    double reference_pos; ///< 드럼 타격 후 원상태 위치
+
     /* 실측값 */
     vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
     vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
