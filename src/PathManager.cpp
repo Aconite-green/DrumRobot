@@ -323,116 +323,14 @@ string trimWhitespace(const std::string &str)
     return str.substr(first, (last - first + 1));
 }
 
-void PathManager::getDrummingPosAndAng()
-{
-    for (int j = 0; j < n_inst; ++j)
-    { // 악기에 맞는 오/왼 손목 위치 및 손목 각도
-        if (RA[line][j] != 0)
-        {
-            P1 = right_inst[j];
-            c_R = 1;
-        }
-        if (LA[line][j] != 0)
-        {
-            P2 = left_inst[j];
-            c_L = 1;
-        }
-    }
-}
 
-void PathManager::getQ1AndQ2()
-{
-    if (c_R == 0 && c_L == 0)
-    { // 왼손 & 오른손 안침
-        Q1 = c_MotorAngle;
-        Q2 = Q1;
-    }
-    else
-    {
-        Q1 = IKfun(P1, P2);
-        Q1.push_back(r_wrist);
-        Q1.push_back(l_wrist);
-        Q2 = Q1;
-        if (c_R != 0 && c_L != 0)
-        { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-        }
-        else if (c_L != 0)
-        { // 왼손만 침
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_stay * motor_dir[7];
-            Q2[7] = Q2[7] + WristAngle_stay * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-        }
-        else if (c_R != 0)
-        { // 오른손만 침
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_stay * motor_dir[8];
-            Q2[8] = Q2[8] + WristAngle_stay * motor_dir[8];
-        }
-    }
-}
 
-void PathManager::getQ3AndQ4()
-{
-    if (c_R == 0 && c_L == 0)
-    { // 왼손 & 오른손 안침
-        Q3 = Q2;
-        if (p_R == 1)
-        {
-            Q3[4] = Q3[4] + ElbowAngle_stay * motor_dir[4];
-            Q3[7] = Q3[7] + WristAngle_stay * motor_dir[7];
-        }
-        if (p_L == 1)
-        {
-            Q3[6] = Q3[6] + ElbowAngle_stay * motor_dir[6];
-            Q3[8] = Q3[8] + WristAngle_stay * motor_dir[8];
-        }
-        Q4 = Q3;
-    }
-    else
-    {
-        Q3 = IKfun(P1, P2);
-        Q3.push_back(r_wrist);
-        Q3.push_back(l_wrist);
-        Q4 = Q3;
-        if (c_R != 0 && c_L != 0)
-        { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
-        }
-        else if (c_L != 0)
-        { // 왼손만 침
-            Q3[4] = Q3[4] + ElbowAngle_stay * motor_dir[4];
-            Q4[4] = Q4[4] + ElbowAngle_stay * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_stay * motor_dir[7];
-            Q4[7] = Q4[7] + WristAngle_stay * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
-        }
-        else if (c_R != 0)
-        { // 오른손만 침
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_stay * motor_dir[6];
-            Q4[6] = Q4[6] + ElbowAngle_stay * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_stay * motor_dir[8];
-            Q4[8] = Q4[8] + WristAngle_stay * motor_dir[8];
-        }
-    }
-}
 
 vector<vector<double>> PathManager::tms_fun(double t2_0, double t2_1, vector<double> &inst2_0, vector<double> &inst2_1)
 {
 }
 
-void PathManager::itms0_fun(vector<double> &t2, vector<vector<int>> &inst2)
+void PathManager::itms0_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
     MatrixXd T(18,1);
 
@@ -577,23 +475,23 @@ void PathManager::itms0_fun(vector<double> &t2, vector<vector<int>> &inst2)
                  std::accumulate(t4_inst4[17].begin(), t4_inst4[17].end(), 0.0)}};
 }
 
-void PathManager::itms_fun(vector<double> &t2, vector<vector<int>> &inst2)
+void PathManager::itms_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
 {
 }
 
-vector<double> PathManager::pos_madi_fun(std::vector<double> &A)
+vector<double> PathManager::pos_madi_fun(MatrixXd &A)
 {
 }
 
-vector<vector<double>> PathManager::sts2wrist_fun(vector<vector<double>> &AA, double v_wrist)
+vector<vector<double>> PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
 {
 }
 
-vector<vector<double>> PathManager::sts2elbow_fun(vector<vector<double>> &AA, double v_elbow)
+vector<vector<double>> PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
 {
 }
 
-vector<double> PathManager::ikfun_final(vector<double> &pR, vector<double> &pL, vector<double> &part_length, double s0, double z0)
+vector<double> PathManager::ikfun_final(vector<double> &pR, vector<double> &pL, MatrixXd &part_length, double s0, double z0)
 {
 }
 
@@ -706,6 +604,7 @@ void PathManager::GetMusicSheet()
 
     string line;
     int lineIndex = 0;
+    double time = 0.0;
     while (getline(file, line))
     {
         istringstream iss(line);
@@ -724,8 +623,8 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            vector<int> inst_arr_R(9, 0), inst_arr_L(9, 0);
-            vector<int> inst_arr(18);
+            MatrixXd inst_arr_R(9, 1), inst_arr_L(9, 1);
+            MatrixXd inst_col(18, 1);
 
             if (columns[2] == "0" && columns[3] == "0")
                 continue;
@@ -734,11 +633,10 @@ void PathManager::GetMusicSheet()
             if (columns[3] != "0")
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
 
-            time_arr.push_back(stod(columns[1]) * 100 / bpm);
-            RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-            LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-            inst_arr.insert(inst_arr.end(), inst_arr_R.begin(), inst_arr_R.end());
-            inst_arr.insert(inst_arr.end(), inst_arr_L.begin(), inst_arr_L.end());
+            time += stod(columns[1]) * 100 / bpm;
+            time_arr.push_back(time);
+            inst_col << inst_arr_R, inst_arr_L;
+            inst_arr.col(inst_arr.cols()) = inst_col;
         }
 
         lineIndex++;
@@ -746,7 +644,7 @@ void PathManager::GetMusicSheet()
 
     file.close();
 
-    total = RF.size();
+    total = time_arr.size();
 }
 
 void PathManager::PathLoopTask()
@@ -755,14 +653,14 @@ void PathManager::PathLoopTask()
     double v_elbow = 0.5 * M_PI;
     double t_now = time_arr[line];
 
-    vector<double> qt(7);
-    vector<double> qv_in(7);
-    A30.resize(19, vector<double>(3)); // 크기가 19x3인 2차원 벡터
-    A31.resize(19, vector<double>(3)); // 크기가 19x3인 2차원 벡터
-    AA40.resize(3, vector<double>(4)); // 크기가 3x4인 2차원 벡터
-    AA41.resize(3, vector<double>(4)); // 크기가 3x4인 2차원 벡터
-    B.resize(19, vector<double>(3));   // 크기가 19x3인 2차원 벡터
-    BB.resize(3, vector<double>(4));   // 크기가 3x4인 2차원 벡터
+    MatrixXd qt = MatrixXd::Zero(7, 1);
+    MatrixXd qv_in = MatrixXd::Zero(7, 1);
+    MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
+    MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
+    MatrixXd B = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
+    MatrixXd BB = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
 
     vector<double> p1, p2, p3;
     vector<vector<double>> t_wrist_madi, t_elbow_madi;
@@ -771,21 +669,12 @@ void PathManager::PathLoopTask()
     if (line == 0)
     {
         std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
-        std::vector<std::vector<int>> inst2;
-        for (size_t i = 0; i < inst_arr.size(); ++i)
-        {
-            std::vector<int> row(inst_arr[i].begin(), inst_arr[i].begin() + 5);
-            inst2.push_back(row);
-        }
-        itms0_fun(t2, inst2);
-
-        std::vector<double> A1, A2, A3;
-        for (size_t i = 0; i < A30.size(); ++i)
-        {
-            A1.push_back(A30[i][0]);
-            A2.push_back(A30[i][1]);
-            A3.push_back(A30[i][2]);
-        }
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+        
+        MatrixXd A1 = A30.col(0);
+        MatrixXd A2 = A30.col(1);
+        MatrixXd A3 = A30.col(2);
         p1 = pos_madi_fun(A1);
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
@@ -795,13 +684,9 @@ void PathManager::PathLoopTask()
     }
     else if (line == 1)
     {
-        std::vector<double> A1, A2, A3;
-        for (size_t i = 0; i < A31.size(); ++i)
-        {
-            A1.push_back(A31[i][0]);
-            A2.push_back(A31[i][1]);
-            A3.push_back(A31[i][2]);
-        }
+        MatrixXd A1 = A31.col(0);
+        MatrixXd A2 = A31.col(1);
+        MatrixXd A3 = A31.col(2);
         p1 = pos_madi_fun(A1);
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
@@ -812,21 +697,12 @@ void PathManager::PathLoopTask()
     else
     {
         std::vector<double> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
-        std::vector<std::vector<int>> inst2;
-        for (size_t i = 0; i < inst_arr.size(); ++i)
-        {
-            std::vector<int> row(inst_arr[i].begin() + line - 1, inst_arr[i].begin() + line + 4);
-            inst2.push_back(row);
-        }
-        itms_fun(t2, inst2);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, line + 4);
+        itms_fun(t2, inst2, B, BB);
 
-        std::vector<double> B1, B2, B3;
-        for (size_t i = 0; i < B.size(); ++i)
-        {
-            B1.push_back(B[i][0]);
-            B2.push_back(B[i][1]);
-            B3.push_back(B[i][2]);
-        }
+        MatrixXd B1 = B.col(0);
+        MatrixXd B2 = B.col(1);
+        MatrixXd B3 = B.col(2);
         p1 = pos_madi_fun(B1);
         p2 = pos_madi_fun(B2);
         p3 = pos_madi_fun(B3);
