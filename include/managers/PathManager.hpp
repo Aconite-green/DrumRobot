@@ -27,8 +27,11 @@
 #include <cmath>
 #include <chrono>
 #include <set>
+#include <numeric>
+#include "../include/eigen-3.4.0/Eigen/Dense"
 
 using namespace std;
+using Eigen::MatrixXd;
 
 /**
  * @class PathManager
@@ -115,9 +118,18 @@ private:
 
     int n_inst = 10;    ///< 총 악기의 수.
     double bpm = 10;    /// 악보의 BPM 정보.
+
     vector<double> time_arr;    ///< 악보의 시간간격 정보.
+    vector<vector<int>> inst_arr;  ///< 오른팔 / 왼팔이 치는 악기.
     vector<vector<int>> RA, LA; ///< 오른팔 / 왼팔이 치는 악기.
-    vector<int> RF, LF;         ///< 오른발 / 왼발이 치는 악기.;
+    vector<int> RF, LF;         ///< 오른발 / 왼발이 치는 악기.
+
+    vector<vector<double>> A30; // 크기가 19x3인 2차원 벡터
+    vector<vector<double>> A31; // 크기가 19x3인 2차원 벡터
+    vector<vector<double>> AA40; // 크기가 3x4인 2차원 벡터
+    vector<vector<double>> AA41; // 크기가 3x4인 2차원 벡터
+    vector<vector<double>> B; // 크기가 19x3인 2차원 벡터
+    vector<vector<double>> BB; // 크기가 3x4인 2차원 벡터
 
     double p_R = 0; ///< 오른손 이전 악기 유무.
     double p_L = 0; ///< 왼손 이전 악기 유무.
@@ -130,9 +142,11 @@ private:
     /* 실측값 */
     vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
     vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
+    vector<double> part_length = {0.363, 0.393, 0.363, 0.393, 0.400, 0.400};   ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
     vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
     double s = 0.600;   ///< 허리 길이.
     double z0 = 1.026;  ///< 바닥부터 허리까지의 높이.
+
 
     vector<double> Q1, Q2, Q3, Q4;  ///< Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
 
@@ -210,13 +224,23 @@ private:
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
     */
-    void Motors_sendBuffer();
+    void Motors_sendBuffer(vector<double> &Qi, vector<double> &Vi);
 
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**
      * @brief 
     */
-    
+    vector<vector<double>> tms_fun(double t2_0, double t2_1, vector<double> &inst2_0, vector<double> &inst2_1);
+    void itms0_fun(vector<double> &t, vector<vector<int>> &inst2);
+    void itms_fun(vector<double> &t, vector<vector<int>> &inst2);
+    vector<double> pos_madi_fun(std::vector<double> &A);
+    vector<vector<double>> sts2wrist_fun(vector<vector<double>> &AA, double v_wrist);
+    vector<vector<double>> sts2elbow_fun(vector<vector<double>> &AA, double v_elbow);
+    vector<double> ikfun_final(vector<double> &pR, vector<double> &pL, vector<double> &part_length, double s0, double z0);
+    double con_fun();
+    pair<double, double> iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t);
+    pair<double, double> q78_fun(vector<vector<double>> &t_madi, double);
+    pair<double, double> q46_fun(vector<vector<double>> &t_madi, double);
 
 };

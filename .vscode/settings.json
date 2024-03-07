@@ -76,7 +76,9 @@
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
         "valarray": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "dense": "cpp",
+        "hash_map": "cpp"
     },
     "makefile.launchConfigurations": [
         {

@@ -11,21 +11,15 @@ PathManager::PathManager(SystemState &systemStateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer()
+void PathManager::Motors_sendBuffer(vector<double> &Qi, vector<double> &Vi)
 {
     struct can_frame frame;
-
-    vector<double> Pi;
-    vector<double> Vi;
-
-    Pi = p.back();
-    Vi = v.back();
 
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Pi[motor_mapping[entry.first]];
+            float p_des = Qi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
@@ -33,7 +27,7 @@ void PathManager::Motors_sendBuffer()
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Pi[motor_mapping[entry.first]];
+            float p_des = Qi[motor_mapping[entry.first]];
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
             entry.second->sendBuffer.push(frame);
         }
@@ -434,6 +428,190 @@ void PathManager::getQ3AndQ4()
     }
 }
 
+vector<vector<double>> PathManager::tms_fun(double t2_0, double t2_1, vector<double> &inst2_0, vector<double> &inst2_1)
+{
+}
+
+void PathManager::itms0_fun(vector<double> &t2, vector<vector<int>> &inst2)
+{
+    MatrixXd T(18,1);
+
+    for (int k = 0; k < 4; ++k)
+    {
+        vector<double> inst_0, inst_1;
+        for (size_t i = 0; i < inst2.size(); ++i)
+        {
+            inst_0.push_back(inst2[i][k]);
+            inst_1.push_back(inst2[i][k + 1]);
+        }
+        vector<vector<double>> inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
+
+        int n = T[0].size();
+        if (n == 1)
+            T = inst3;
+        else
+        {
+            for (size_t i = 0; i < T.size(); ++i)
+            {
+                
+            }
+            T = {T[0], inst3};
+        }
+        
+    }
+
+    int nn = T[0].size();
+
+    for (int k = 1; k < nn; ++k)
+    {
+        double norm_prev = 0.0;
+        for (int i = 1; i <= 9; ++i)
+            norm_prev += std::abs(T[i][k - 1]);
+
+        if (std::accumulate(T[1].begin() + 1, T[10].begin() + 1, 0.0) == 0)
+        {
+            double scale_factor = 0.5 * norm_prev / std::sqrt(norm_prev);
+            for (int i = 1; i <= 9; ++i)
+                T[i][k] = -0.5 * std::abs(T[i][k - 1]) / norm_prev;
+        }
+
+        norm_prev = 0.0;
+        for (int i = 11; i <= 19; ++i)
+            norm_prev += std::abs(T[i][k - 1]);
+
+        if (std::accumulate(T[11].begin() + 1, T[19].begin() + 1, 0.0) == 0)
+        {
+            double scale_factor = 0.5 * norm_prev / std::sqrt(norm_prev);
+            for (int i = 11; i <= 19; ++i)
+                T[i][k] = -0.5 * std::abs(T[i][k - 1]) / norm_prev;
+        }
+    }
+
+    int j = 0;
+    std::vector<std::vector<double>> t4_inst4(18, std::vector<double>(1, 0.0)); // 타격/준비/대기/해당없음 4개의 상태로 표현된 악보등장
+
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T[0][k] <= t2[3])
+        {
+            ++j;
+            t4_inst4[k] = T[k];
+        }
+    }
+
+    std::vector<std::vector<double>> hit3_0, hit3_1, state4_0, state4_1;
+
+    int kk = 0;
+    for (int k = 0; k < j; ++k)
+    {
+        for (int i = 1; i <= 3; ++i)
+        {
+            if (t4_inst4[0][k] == t2[i])
+            {
+                if (kk == 0)
+                {
+                    hit3_0 = {t4_inst4[k]};
+                    kk = 1;
+                }
+                else
+                    hit3_0.push_back(t4_inst4[k]);
+            }
+        }
+    }
+
+    state4_0 = {{t4_inst4[0][0], t4_inst4[0][1], t4_inst4[0][2], t4_inst4[0][3]},
+                {std::accumulate(t4_inst4[1].begin(), t4_inst4[1].end(), 0.0),
+                 std::accumulate(t4_inst4[2].begin(), t4_inst4[2].end(), 0.0),
+                 std::accumulate(t4_inst4[3].begin(), t4_inst4[3].end(), 0.0),
+                 std::accumulate(t4_inst4[4].begin(), t4_inst4[4].end(), 0.0),
+                 std::accumulate(t4_inst4[5].begin(), t4_inst4[5].end(), 0.0),
+                 std::accumulate(t4_inst4[6].begin(), t4_inst4[6].end(), 0.0),
+                 std::accumulate(t4_inst4[7].begin(), t4_inst4[7].end(), 0.0),
+                 std::accumulate(t4_inst4[8].begin(), t4_inst4[8].end(), 0.0),
+                 std::accumulate(t4_inst4[9].begin(), t4_inst4[9].end(), 0.0)},
+                {std::accumulate(t4_inst4[10].begin(), t4_inst4[10].end(), 0.0),
+                 std::accumulate(t4_inst4[11].begin(), t4_inst4[11].end(), 0.0),
+                 std::accumulate(t4_inst4[12].begin(), t4_inst4[12].end(), 0.0),
+                 std::accumulate(t4_inst4[13].begin(), t4_inst4[13].end(), 0.0),
+                 std::accumulate(t4_inst4[14].begin(), t4_inst4[14].end(), 0.0),
+                 std::accumulate(t4_inst4[15].begin(), t4_inst4[15].end(), 0.0),
+                 std::accumulate(t4_inst4[16].begin(), t4_inst4[16].end(), 0.0),
+                 std::accumulate(t4_inst4[17].begin(), t4_inst4[17].end(), 0.0),
+                 std::accumulate(t4_inst4[18].begin(), t4_inst4[18].end(), 0.0)}};
+
+    int kk = 0;
+    for (int k = 0; k < j; ++k)
+    {
+        for (int i = 1; i <= 3; ++i)
+        {
+            if (t4_inst4[0][k] == t2[i])
+            {
+                if (kk == 0)
+                {
+                    hit3_1 = {t4_inst4[k]};
+                    kk = 1;
+                }
+                else
+                    hit3_1.push_back(t4_inst4[k]);
+            }
+        }
+    }
+
+    state4_1 = {{t4_inst4[0][0], t4_inst4[0][1], t4_inst4[0][2], t4_inst4[0][3]},
+                {std::accumulate(t4_inst4[1].begin(), t4_inst4[1].end(), 0.0),
+                 std::accumulate(t4_inst4[2].begin(), t4_inst4[2].end(), 0.0),
+                 std::accumulate(t4_inst4[3].begin(), t4_inst4[3].end(), 0.0),
+                 std::accumulate(t4_inst4[4].begin(), t4_inst4[4].end(), 0.0),
+                 std::accumulate(t4_inst4[5].begin(), t4_inst4[5].end(), 0.0),
+                 std::accumulate(t4_inst4[6].begin(), t4_inst4[6].end(), 0.0),
+                 std::accumulate(t4_inst4[7].begin(), t4_inst4[7].end(), 0.0),
+                 std::accumulate(t4_inst4[8].begin(), t4_inst4[8].end(), 0.0)},
+                {std::accumulate(t4_inst4[9].begin(), t4_inst4[9].end(), 0.0),
+                 std::accumulate(t4_inst4[10].begin(), t4_inst4[10].end(), 0.0),
+                 std::accumulate(t4_inst4[11].begin(), t4_inst4[11].end(), 0.0),
+                 std::accumulate(t4_inst4[12].begin(), t4_inst4[12].end(), 0.0),
+                 std::accumulate(t4_inst4[13].begin(), t4_inst4[13].end(), 0.0),
+                 std::accumulate(t4_inst4[14].begin(), t4_inst4[14].end(), 0.0),
+                 std::accumulate(t4_inst4[15].begin(), t4_inst4[15].end(), 0.0),
+                 std::accumulate(t4_inst4[16].begin(), t4_inst4[16].end(), 0.0),
+                 std::accumulate(t4_inst4[17].begin(), t4_inst4[17].end(), 0.0)}};
+}
+
+void PathManager::itms_fun(vector<double> &t2, vector<vector<int>> &inst2)
+{
+}
+
+vector<double> PathManager::pos_madi_fun(std::vector<double> &A)
+{
+}
+
+vector<vector<double>> PathManager::sts2wrist_fun(vector<vector<double>> &AA, double v_wrist)
+{
+}
+
+vector<vector<double>> PathManager::sts2elbow_fun(vector<vector<double>> &AA, double v_elbow)
+{
+}
+
+vector<double> PathManager::ikfun_final(vector<double> &pR, vector<double> &pL, vector<double> &part_length, double s0, double z0)
+{
+}
+
+double PathManager::con_fun()
+{
+}
+
+pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t)
+{
+}
+
+pair<double, double> PathManager::q78_fun(vector<vector<double>> &t_madi, double)
+{
+}
+
+pair<double, double> PathManager::q46_fun(vector<vector<double>> &t_madi, double)
+{
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  MAKE PATH                                 */
@@ -510,15 +688,15 @@ void PathManager::GetDrumPositoin()
     }
 
     // Combine the elements into right_inst and left_inst
-    right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
-    left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
+    right_inst = {right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
+    left_inst = {left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
 }
 
 void PathManager::GetMusicSheet()
 {
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
-        {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
+        {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
 
     string score_path = "../include/managers/codeConfession.txt";
 
@@ -546,7 +724,8 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
+            vector<int> inst_arr_R(9, 0), inst_arr_L(9, 0);
+            vector<int> inst_arr(18);
 
             if (columns[2] == "0" && columns[3] == "0")
                 continue;
@@ -558,8 +737,8 @@ void PathManager::GetMusicSheet()
             time_arr.push_back(stod(columns[1]) * 100 / bpm);
             RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
             LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-            RA.push_back(inst_arr_R);
-            LA.push_back(inst_arr_L);
+            inst_arr.insert(inst_arr.end(), inst_arr_R.begin(), inst_arr_R.end());
+            inst_arr.insert(inst_arr.end(), inst_arr_L.begin(), inst_arr_L.end());
         }
 
         lineIndex++;
@@ -572,52 +751,127 @@ void PathManager::GetMusicSheet()
 
 void PathManager::PathLoopTask()
 {
+    double v_wrist = M_PI;
+    double v_elbow = 0.5 * M_PI;
+    double t_now = time_arr[line];
+
+    vector<double> qt(7);
+    vector<double> qv_in(7);
+    A30.resize(19, vector<double>(3)); // 크기가 19x3인 2차원 벡터
+    A31.resize(19, vector<double>(3)); // 크기가 19x3인 2차원 벡터
+    AA40.resize(3, vector<double>(4)); // 크기가 3x4인 2차원 벡터
+    AA41.resize(3, vector<double>(4)); // 크기가 3x4인 2차원 벡터
+    B.resize(19, vector<double>(3));   // 크기가 19x3인 2차원 벡터
+    BB.resize(3, vector<double>(4));   // 크기가 3x4인 2차원 벡터
+
+    vector<double> p1, p2, p3;
+    vector<vector<double>> t_wrist_madi, t_elbow_madi;
+
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
     {
-        c_R = 0;
-        c_L = 0;
+        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        std::vector<std::vector<int>> inst2;
+        for (size_t i = 0; i < inst_arr.size(); ++i)
+        {
+            std::vector<int> row(inst_arr[i].begin(), inst_arr[i].begin() + 5);
+            inst2.push_back(row);
+        }
+        itms0_fun(t2, inst2);
 
-        getDrummingPosAndAng();
-        getQ1AndQ2();
+        std::vector<double> A1, A2, A3;
+        for (size_t i = 0; i < A30.size(); ++i)
+        {
+            A1.push_back(A30[i][0]);
+            A2.push_back(A30[i][1]);
+            A3.push_back(A30[i][2]);
+        }
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
 
-        p_R = c_R;
-        p_L = c_L;
+        t_wrist_madi = sts2wrist_fun(AA40, v_wrist);
+        t_elbow_madi = sts2elbow_fun(AA40, v_elbow);
+    }
+    else if (line == 1)
+    {
+        std::vector<double> A1, A2, A3;
+        for (size_t i = 0; i < A31.size(); ++i)
+        {
+            A1.push_back(A31[i][0]);
+            A2.push_back(A31[i][1]);
+            A3.push_back(A31[i][2]);
+        }
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
 
-        line++;
+        t_wrist_madi = sts2wrist_fun(AA41, v_wrist);
+        t_elbow_madi = sts2elbow_fun(AA41, v_elbow);
+    }
+    else
+    {
+        std::vector<double> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        std::vector<std::vector<int>> inst2;
+        for (size_t i = 0; i < inst_arr.size(); ++i)
+        {
+            std::vector<int> row(inst_arr[i].begin() + line - 1, inst_arr[i].begin() + line + 4);
+            inst2.push_back(row);
+        }
+        itms_fun(t2, inst2);
 
-        p.push_back(c_MotorAngle);
-        v.push_back({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        std::vector<double> B1, B2, B3;
+        for (size_t i = 0; i < B.size(); ++i)
+        {
+            B1.push_back(B[i][0]);
+            B2.push_back(B[i][1]);
+            B3.push_back(B[i][2]);
+        }
+        p1 = pos_madi_fun(B1);
+        p2 = pos_madi_fun(B2);
+        p3 = pos_madi_fun(B3);
+
+        t_wrist_madi = sts2wrist_fun(BB, v_wrist);
+        t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
 
-    c_R = 0;
-    c_L = 0;
+    line++;
 
-    getDrummingPosAndAng();
-    getQ3AndQ4();
+    // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
+    std::vector<double> pR(p1.begin() + 1, p1.begin() + 4);
+    std::vector<double> pL(p1.begin() + 4, p1.begin() + 7);
+    std::vector<double> qk1_06 = ikfun_final(pR, pL, part_length, s, z0);
+    std::vector<double> pR(p2.begin() + 1, p2.begin() + 4);
+    std::vector<double> pL(p2.begin() + 4, p2.begin() + 7);
+    std::vector<double> qk2_06 = ikfun_final(pR, pL, part_length, s, z0);
+    std::vector<double> pR(p3.begin() + 1, p3.begin() + 4);
+    std::vector<double> pL(p3.begin() + 4, p3.begin() + 7);
+    std::vector<double> qk3_06 = ikfun_final(pR, pL, part_length, s, z0);
 
-    p_R = c_R;
-    p_L = c_L;
+    double t1 = p2[0] - p1[0];
+    double t2 = p3[0] - p1[0];
+    double dt = 0.005;
+    int n = t1 / dt;
 
-    double t1 = time_arr[line - 1];
-    double t2 = time_arr[line];
-    double t = 0.005;
-    int n = round((t1 / 2) / t);
-    vector<double> V0 = v.back();
     for (int i = 0; i < n; i++)
     {
-        iconnect(c_MotorAngle, Q1, Q2, V0, t1 / 2, t1, t * i);
-        Motors_sendBuffer();
+        for (int m = 0; m < 7; m++)
+        {
+            pair<double, double> p = iconf_fun(qk1_06[m], qk2_06[m], qk3_06[m], qv_in[m], t1, t2, t_now - p1[0] + dt * (i - 1));
+            qt[m] = p.first;
+            qv_in[m] = p.second;
+        }
+
+        pair<double, double> qWrist = q78_fun(t_wrist_madi, t_now + dt * (i - 1));
+        pair<double, double> qElbow = q46_fun(t_elbow_madi, t_now + dt * (i - 1));
+
+        qt[4] += qElbow.first;
+        qt[6] += qElbow.second;
+        qt[7] = qWrist.first;
+        qt[8] = qWrist.second;
+
+        Motors_sendBuffer(qt, qv_in);
     }
-    V0 = v.back();
-    for (int i = 0; i < n; i++)
-    {
-        iconnect(Q1, Q2, Q3, V0, t1 / 2, (t1 + t2) / 2, t * i);
-        Motors_sendBuffer();
-    }
-    c_MotorAngle = p.back();
-    Q1 = Q3;
-    Q2 = Q4;
 }
 
 void PathManager::GetArr(vector<double> &arr)
