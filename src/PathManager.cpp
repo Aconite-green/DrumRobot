@@ -11,7 +11,7 @@ PathManager::PathManager(SystemState &systemStateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(vector<double> &Qi, vector<double> &Vi)
+void PathManager::Motors_sendBuffer(MatrixXd &Qi, MatrixXd &Vi)
 {
     struct can_frame frame;
 
@@ -323,156 +323,177 @@ string trimWhitespace(const std::string &str)
     return str.substr(first, (last - first + 1));
 }
 
-
-
-
-vector<vector<double>> PathManager::tms_fun(double t2_0, double t2_1, vector<double> &inst2_0, vector<double> &inst2_1)
+MatrixXd PathManager::tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, MatrixXd &inst2_b)
 {
+    // flag 변수 초기화
+    int flag = 0;
+
+    // inst_c 행렬 초기화
+    MatrixXd inst_c = -100 * MatrixXd::Ones(18, 1);
+
+    // t3와 t3_inst3 행렬 선언 (double과 MatrixXd의 조합)
+    double t3;
+    MatrixXd t3_inst3(36, 3);
+
+    // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
+    if ((inst2_a.block(0, 0, 9, 1).norm() == 1) && (inst2_b.block(0, 0, 9, 1).norm() == 1)) {
+        // 오른손
+        inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
+        t3 = 0.5 * (t2_b + t2_a);
+        t3_inst3 << t2_a, t3, t2_b,
+                    inst2_a, inst_c, inst2_b; // left
+        flag = 1;
+    }
+
+    if ((inst2_a.block(9, 0, 9, 1).norm() == 1) && (inst2_b.block(9, 0, 9, 1).norm() == 1)) {
+        // 왼손
+        inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
+        t3 = 0.5 * (t2_a + t2_b);
+        t3_inst3 << t2_a, t3, t2_b,
+                    inst2_a, inst_c, inst2_b;
+        flag = 1;
+    }
 }
 
-void PathManager::itms0_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
+void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
-    MatrixXd T(18,1);
+    MatrixXd T(18, 1);
 
     for (int k = 0; k < 4; ++k)
     {
-        vector<double> inst_0, inst_1;
-        for (size_t i = 0; i < inst2.size(); ++i)
-        {
-            inst_0.push_back(inst2[i][k]);
-            inst_1.push_back(inst2[i][k + 1]);
-        }
-        vector<vector<double>> inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
+        MatrixXd inst_0 = inst2.col(k);
+        MatrixXd inst_1 = inst2.col(k + 1);
+        MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
-        int n = T[0].size();
+        int n = T.cols();
+
         if (n == 1)
             T = inst3;
         else
         {
             for (size_t i = 0; i < T.size(); ++i)
             {
-                
+                MatrixXd temp = T.block(0, 0, T.rows(), n - 1);
+                T.resize(T.rows(), n);
+                T << temp, inst3;
             }
             T = {T[0], inst3};
         }
-        
     }
 
-    int nn = T[0].size();
+    /* 빈 자리에 -0.5 집어넣기:  */
+    int nn = T.cols();
 
     for (int k = 1; k < nn; ++k)
     {
-        double norm_prev = 0.0;
-        for (int i = 1; i <= 9; ++i)
-            norm_prev += std::abs(T[i][k - 1]);
-
-        if (std::accumulate(T[1].begin() + 1, T[10].begin() + 1, 0.0) == 0)
+        // T의 2행부터 10행까지의 합이 0인지 확인하고 조건에 따라 업데이트
+        if (T.block(1, k, 9, 1).sum() == 0)
         {
-            double scale_factor = 0.5 * norm_prev / std::sqrt(norm_prev);
-            for (int i = 1; i <= 9; ++i)
-                T[i][k] = -0.5 * std::abs(T[i][k - 1]) / norm_prev;
+            double norm_val = T.block(1, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(1, k - 1, 9, 1);
+            T.block(1, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
         }
 
-        norm_prev = 0.0;
-        for (int i = 11; i <= 19; ++i)
-            norm_prev += std::abs(T[i][k - 1]);
-
-        if (std::accumulate(T[11].begin() + 1, T[19].begin() + 1, 0.0) == 0)
+        // T의 11행부터 19행까지의 합이 0인지 확인하고 조건에 따라 업데이트
+        if (T.block(10, k, 9, 1).sum() == 0)
         {
-            double scale_factor = 0.5 * norm_prev / std::sqrt(norm_prev);
-            for (int i = 11; i <= 19; ++i)
-                T[i][k] = -0.5 * std::abs(T[i][k - 1]) / norm_prev;
+            double norm_val = T.block(10, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(10, k - 1, 9, 1);
+            T.block(10, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
         }
     }
 
+    /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
-    std::vector<std::vector<double>> t4_inst4(18, std::vector<double>(1, 0.0)); // 타격/준비/대기/해당없음 4개의 상태로 표현된 악보등장
 
+    // t4_inst4의 크기를 결정하기 위해 먼저 반복문을 실행하여 t2(4)보다 작거나 같은 열의 개수를 계산
     for (int k = 0; k < nn; ++k)
     {
-        if (T[0][k] <= t2[3])
+        if (T(0, k) <= t2[3])
         {
-            ++j;
-            t4_inst4[k] = T[k];
+            j++;
         }
     }
 
-    std::vector<std::vector<double>> hit3_0, hit3_1, state4_0, state4_1;
+    // t4_inst4 행렬 선언 및 크기 지정
+    MatrixXd t4_inst4(T.rows(), j);
 
+    // 다시 반복하여 T의 열을 t4_inst4에 복사
+    j = 0; // j 초기화
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T(0, k) <= t2[3])
+        {
+            t4_inst4.col(j) = T.col(k);
+            j++;
+        }
+    }
+
+    /* hit31: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
     int kk = 0;
+    j = t4_inst4.cols();
+    // 반복문을 사용하여 t4_inst4의 각 열에 대해 검사
     for (int k = 0; k < j; ++k)
     {
+        // t4_inst4의 첫 번째 행이 t2의 두 번째부터 네 번째 요소 중 하나와 같은지 확인
         for (int i = 1; i <= 3; ++i)
         {
-            if (t4_inst4[0][k] == t2[i])
+            if (t4_inst4(0, k) == t2[i])
             {
                 if (kk == 0)
                 {
-                    hit3_0 = {t4_inst4[k]};
+                    // kk가 0이면 A31에 현재 열을 복사
+                    A31 = t4_inst4.col(k);
                     kk = 1;
                 }
                 else
-                    hit3_0.push_back(t4_inst4[k]);
+                {
+                    // kk가 0이 아니면 A31에 현재 열을 추가
+                    A31.conservativeResize(A31.rows(), A31.cols() + 1);
+                    A31.col(A31.cols() - 1) = t4_inst4.col(k);
+                }
             }
         }
     }
 
-    state4_0 = {{t4_inst4[0][0], t4_inst4[0][1], t4_inst4[0][2], t4_inst4[0][3]},
-                {std::accumulate(t4_inst4[1].begin(), t4_inst4[1].end(), 0.0),
-                 std::accumulate(t4_inst4[2].begin(), t4_inst4[2].end(), 0.0),
-                 std::accumulate(t4_inst4[3].begin(), t4_inst4[3].end(), 0.0),
-                 std::accumulate(t4_inst4[4].begin(), t4_inst4[4].end(), 0.0),
-                 std::accumulate(t4_inst4[5].begin(), t4_inst4[5].end(), 0.0),
-                 std::accumulate(t4_inst4[6].begin(), t4_inst4[6].end(), 0.0),
-                 std::accumulate(t4_inst4[7].begin(), t4_inst4[7].end(), 0.0),
-                 std::accumulate(t4_inst4[8].begin(), t4_inst4[8].end(), 0.0),
-                 std::accumulate(t4_inst4[9].begin(), t4_inst4[9].end(), 0.0)},
-                {std::accumulate(t4_inst4[10].begin(), t4_inst4[10].end(), 0.0),
-                 std::accumulate(t4_inst4[11].begin(), t4_inst4[11].end(), 0.0),
-                 std::accumulate(t4_inst4[12].begin(), t4_inst4[12].end(), 0.0),
-                 std::accumulate(t4_inst4[13].begin(), t4_inst4[13].end(), 0.0),
-                 std::accumulate(t4_inst4[14].begin(), t4_inst4[14].end(), 0.0),
-                 std::accumulate(t4_inst4[15].begin(), t4_inst4[15].end(), 0.0),
-                 std::accumulate(t4_inst4[16].begin(), t4_inst4[16].end(), 0.0),
-                 std::accumulate(t4_inst4[17].begin(), t4_inst4[17].end(), 0.0),
-                 std::accumulate(t4_inst4[18].begin(), t4_inst4[18].end(), 0.0)}};
-
-    int kk = 0;
+    /* state31: t2(2)에서 시작해서 3개의 연속된 t4_inst4를 골라냄 */
     for (int k = 0; k < j; ++k)
     {
-        for (int i = 1; i <= 3; ++i)
+        // t4_inst4의 두 번째 행이 t2의 두 번째 요소와 같은지 확인
+        if (t4_inst4(0, k) == t2[1])
         {
-            if (t4_inst4[0][k] == t2[i])
-            {
-                if (kk == 0)
-                {
-                    hit3_1 = {t4_inst4[k]};
+            // AA41에 값을 할당
+            AA41.resize(3, 4);
+            AA41 << t4_inst4(0, k), t4_inst4(0, k + 1), t4_inst4(0, k + 2), t4_inst4(0, k + 3),
+                t4_inst4.block(1, k, 9, 1).sum(), t4_inst4.block(1, k + 1, 9, 1).sum(), t4_inst4.block(1, k + 2, 9, 1).sum(), t4_inst4.block(1, k + 3, 9, 1).sum(),
+                t4_inst4.block(10, k, 9, 1).sum(), t4_inst4.block(10, k + 1, 9, 1).sum(), t4_inst4.block(10, k + 2, 9, 1).sum(), t4_inst4.block(10, k + 3, 9, 1).sum();
+            break; // 조건을 만족하는 첫 번째 열을 찾으면 반복문 종료
+        }
+    }
+
+    int kk = 0;
+    for (int k = 0; k < j; ++k) {
+        // t4_inst4의 첫 번째 행이 t2의 첫 번째부터 세 번째 요소 중 하나와 같은지 확인
+        for (int i = 0; i < 3; ++i) {
+            if (t4_inst4(0, k) == t2[i]) {
+                if (kk == 0) {
+                    // kk가 0이면 A30에 현재 열을 복사
+                    A30 = t4_inst4.col(k);
                     kk = 1;
+                } else {
+                    // kk가 0이 아니면 A30에 현재 열을 추가
+                    A30.conservativeResize(A30.rows(), A30.cols() + 1);
+                    A30.col(A30.cols() - 1) = t4_inst4.col(k);
                 }
-                else
-                    hit3_1.push_back(t4_inst4[k]);
             }
         }
     }
 
-    state4_1 = {{t4_inst4[0][0], t4_inst4[0][1], t4_inst4[0][2], t4_inst4[0][3]},
-                {std::accumulate(t4_inst4[1].begin(), t4_inst4[1].end(), 0.0),
-                 std::accumulate(t4_inst4[2].begin(), t4_inst4[2].end(), 0.0),
-                 std::accumulate(t4_inst4[3].begin(), t4_inst4[3].end(), 0.0),
-                 std::accumulate(t4_inst4[4].begin(), t4_inst4[4].end(), 0.0),
-                 std::accumulate(t4_inst4[5].begin(), t4_inst4[5].end(), 0.0),
-                 std::accumulate(t4_inst4[6].begin(), t4_inst4[6].end(), 0.0),
-                 std::accumulate(t4_inst4[7].begin(), t4_inst4[7].end(), 0.0),
-                 std::accumulate(t4_inst4[8].begin(), t4_inst4[8].end(), 0.0)},
-                {std::accumulate(t4_inst4[9].begin(), t4_inst4[9].end(), 0.0),
-                 std::accumulate(t4_inst4[10].begin(), t4_inst4[10].end(), 0.0),
-                 std::accumulate(t4_inst4[11].begin(), t4_inst4[11].end(), 0.0),
-                 std::accumulate(t4_inst4[12].begin(), t4_inst4[12].end(), 0.0),
-                 std::accumulate(t4_inst4[13].begin(), t4_inst4[13].end(), 0.0),
-                 std::accumulate(t4_inst4[14].begin(), t4_inst4[14].end(), 0.0),
-                 std::accumulate(t4_inst4[15].begin(), t4_inst4[15].end(), 0.0),
-                 std::accumulate(t4_inst4[16].begin(), t4_inst4[16].end(), 0.0),
-                 std::accumulate(t4_inst4[17].begin(), t4_inst4[17].end(), 0.0)}};
+    AA40.resize(4, 4);
+    AA40 << t4_inst4.col(0), t4_inst4.col(1), t4_inst4.col(2), t4_inst4.col(3),
+                t4_inst4.block(1, 0, 9, 1).colwise().sum(), t4_inst4.block(1, 1, 9, 1).colwise().sum(), 
+                t4_inst4.block(10, 0, 9, 1).colwise().sum(), t4_inst4.block(10, 1, 9, 1).colwise().sum();
+
 }
 
 void PathManager::itms_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -659,8 +680,8 @@ void PathManager::PathLoopTask()
     MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
     MatrixXd AA41 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
-    MatrixXd B = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
-    MatrixXd BB = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
+    MatrixXd B = MatrixXd::Zero(19, 3);   // 크기가 19x3인 2차원 벡터
+    MatrixXd BB = MatrixXd::Zero(3, 4);   // 크기가 3x4인 2차원 벡터
 
     vector<double> p1, p2, p3;
     vector<vector<double>> t_wrist_madi, t_elbow_madi;
@@ -671,7 +692,7 @@ void PathManager::PathLoopTask()
         std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
         MatrixXd inst2 = inst_arr.middleCols(0, 5);
         itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-        
+
         MatrixXd A1 = A30.col(0);
         MatrixXd A2 = A30.col(1);
         MatrixXd A3 = A30.col(2);

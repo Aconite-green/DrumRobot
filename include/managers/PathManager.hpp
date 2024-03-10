@@ -209,16 +209,16 @@ private:
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
     */
-    void Motors_sendBuffer(vector<double> &Qi, vector<double> &Vi);
+    void Motors_sendBuffer(MatrixXd &Qi, MatrixXd &Vi);
 
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**
      * @brief 
     */
-    vector<vector<double>> tms_fun(double t2_0, double t2_1, vector<double> &inst2_0, vector<double> &inst2_1);
-    void itms0_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
-    void itms_fun(vector<double> &t, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);
+    MatrixXd tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, MatrixXd &inst2_b);
+    void itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
+    void itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);
     vector<double> pos_madi_fun(MatrixXd &A);
     vector<vector<double>> sts2wrist_fun(MatrixXd &AA, double v_wrist);
     vector<vector<double>> sts2elbow_fun(MatrixXd &AA, double v_elbow);
