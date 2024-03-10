@@ -491,7 +491,7 @@ vector<vector<double>> PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
 {
 }
 
-vector<double> PathManager::ikfun_final(vector<double> &pR, vector<double> &pL, MatrixXd &part_length, double s0, double z0)
+MatrixXd PathManager::ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s0, double z0)
 {
 }
 
@@ -714,15 +714,15 @@ void PathManager::PathLoopTask()
     line++;
 
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
-    std::vector<double> pR(p1.begin() + 1, p1.begin() + 4);
-    std::vector<double> pL(p1.begin() + 4, p1.begin() + 7);
-    std::vector<double> qk1_06 = ikfun_final(pR, pL, part_length, s, z0);
-    std::vector<double> pR(p2.begin() + 1, p2.begin() + 4);
-    std::vector<double> pL(p2.begin() + 4, p2.begin() + 7);
-    std::vector<double> qk2_06 = ikfun_final(pR, pL, part_length, s, z0);
-    std::vector<double> pR(p3.begin() + 1, p3.begin() + 4);
-    std::vector<double> pL(p3.begin() + 4, p3.begin() + 7);
-    std::vector<double> qk3_06 = ikfun_final(pR, pL, part_length, s, z0);
+    MatrixXd pR(p1.begin() + 1, p1.begin() + 4);
+    MatrixXd pL(p1.begin() + 4, p1.begin() + 7);
+    MatrixXd qk1_06 = ikfun_final(pR, pL, part_length, s, z0);
+    MatrixXd pR(p2.begin() + 1, p2.begin() + 4);
+    MatrixXd pL(p2.begin() + 4, p2.begin() + 7);
+    MatrixXd qk2_06 = ikfun_final(pR, pL, part_length, s, z0);
+    MatrixXd pR(p3.begin() + 1, p3.begin() + 4);
+    MatrixXd pL(p3.begin() + 4, p3.begin() + 7);
+    MatrixXd qk3_06 = ikfun_final(pR, pL, part_length, s, z0);
 
     double t1 = p2[0] - p1[0];
     double t2 = p3[0] - p1[0];

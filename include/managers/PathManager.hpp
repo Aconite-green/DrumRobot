@@ -222,7 +222,7 @@ private:
     vector<double> pos_madi_fun(MatrixXd &A);
     vector<vector<double>> sts2wrist_fun(MatrixXd &AA, double v_wrist);
     vector<vector<double>> sts2elbow_fun(MatrixXd &AA, double v_elbow);
-    vector<double> ikfun_final(vector<double> &pR, vector<double> &pL, MatrixXd &part_length, double s0, double z0);
+    MatrixXd ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s0, double z0);
     double con_fun();
     pair<double, double> iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t);
     pair<double, double> q78_fun(vector<vector<double>> &t_madi, double);
