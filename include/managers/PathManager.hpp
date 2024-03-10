@@ -32,6 +32,7 @@
 
 using namespace std;
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 /**
  * @class PathManager
@@ -113,8 +114,8 @@ private:
 
     // Functions for DrumRobot PathGenerating
     vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};  ///< 경로 생성 시 사용되는 현재 모터 위치 값.
-    vector<vector<double>> right_inst;  ///< 오른팔의 각 악기별 위치 좌표 벡터.
-    vector<vector<double>> left_inst;   ///< 왼팔의 각 악기별 위치 좌표 벡터.
+    MatrixXd right_inst;  ///< 오른팔의 각 악기별 위치 좌표 벡터.
+    MatrixXd left_inst;   ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
     int n_inst = 10;    ///< 총 악기의 수.
     double bpm = 10;    /// 악보의 BPM 정보.
