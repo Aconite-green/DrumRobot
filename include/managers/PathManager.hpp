@@ -31,8 +31,7 @@
 #include "../include/eigen-3.4.0/Eigen/Dense"
 
 using namespace std;
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
+using namespace Eigen;
 
 /**
  * @class PathManager
@@ -168,44 +167,9 @@ private:
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
 
     /**
-     * @brief 두 위치를 5차함수로 연결합니다.
-     * @param P0 현재 위치 벡터입니다.
-     * @param P1 첫번째 위치 벡터입니다.
-     * @param P2 두번째 위치 벡터입니다.
-     * @param V0 현재 속도 벡터입니다.
-     * @param t1 첫번재 시간간격입니다.
-     * @param t2 두번째 시간간격입니다.
-     * @param t 시간 인덱스입니다.
-    */
-    void iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t);
-
-    /**
-     * @brief 오른팔 / 왼팔의 좌표에 따라 Inverse Kinematics을 진행합니다.
-     * @param P1 오른팔 스틱 끝의 좌표입니다.
-     * @param P2 왼팔 스틱 끝의 좌표입니다.
-     * @return vector<double> 해당 좌표에 알맞는 각 모터의 위치 벡터입니다.
-    */
-    vector<double> IKfun(vector<double> &P1, vector<double> &P2);
-
-    /**
-     * @brief 현재 line에서 연주하는 악기에 따른 오른팔 / 왼팔의 좌표를 불러옵니다.
-    */
-    void getDrummingPosAndAng();
-
-    /**
      * @brief 각 모터의 현재위치 값을 불러옵니다.
     */
     void getMotorPos();
-
-    /**
-     * @brief 처음 시작하는 line인 경우, 위치벡터 Q1 / Q2 벡터를 생성합니다.
-    */
-    void getQ1AndQ2();
-
-    /**
-     * @brief line이 진행됨에 따라 Q3 / Q4 벡터를 생성합니다.
-    */
-    void getQ3AndQ4();
 
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
@@ -220,13 +184,11 @@ private:
     MatrixXd tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, MatrixXd &inst2_b);
     void itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
     void itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);
-    vector<double> pos_madi_fun(MatrixXd &A);
-    vector<vector<double>> sts2wrist_fun(MatrixXd &AA, double v_wrist);
-    vector<vector<double>> sts2elbow_fun(MatrixXd &AA, double v_elbow);
-    MatrixXd ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s0, double z0);
-    double con_fun();
+    MatrixXd pos_madi_fun(MatrixXd &A);
+    MatrixXd sts2wrist_fun(MatrixXd &AA, double v_wrist);
+    MatrixXd sts2elbow_fun(MatrixXd &AA, double v_elbow);
+    MatrixXd ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s, double z0);
+    double con_fun(double t_a, double t_b, double th_a, double th_b, double t_now);
     pair<double, double> iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t);
-    pair<double, double> q78_fun(vector<vector<double>> &t_madi, double);
-    pair<double, double> q46_fun(vector<vector<double>> &t_madi, double);
-
+    pair<double, double> qRL_fun(MatrixXd &t_madi, double t_now);
 };
