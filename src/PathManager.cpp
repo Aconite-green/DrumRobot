@@ -800,12 +800,12 @@ void PathManager::GetMusicSheet()
     if (!file.is_open())
         cerr << "Error opening file." << endl;
 
-    string line;
+    string row;
     int lineIndex = 0;
     double time = 0.0;
-    while (getline(file, line))
+    while (getline(file, row))
     {
-        istringstream iss(line);
+        istringstream iss(row);
         string item;
         vector<string> columns;
         while (getline(iss, item, '\t'))

@@ -87,7 +87,6 @@ public:
     */
     void GetArr(vector<double> &arr);
 
-
     int total = 0;  ///< 악보의 전체 줄 수.
     int line = 0;   ///< 연주를 진행하고 있는 줄.
 
@@ -121,26 +120,15 @@ private:
 
     vector<double> time_arr;    ///< 악보의 시간간격 정보.
     MatrixXd inst_arr;  ///< 오른팔 / 왼팔이 치는 악기.
-    MatrixXd RA, LA; ///< 오른팔 / 왼팔이 치는 악기.
-    MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
+    //MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
     /* 실측값 */
-    vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
-    vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
+    //vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
+    //vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
+    //vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
     MatrixXd part_length = {0.363, 0.393, 0.363, 0.393, 0.400, 0.400};   ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
-    vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
     double s = 0.600;   ///< 허리 길이.
     double z0 = 1.026;  ///< 바닥부터 허리까지의 높이.
-
-
-    vector<double> Q1, Q2, Q3, Q4;  ///< Q1, Q3 : 악기를 연주하기 전 들어올린 상태 / Q2 : 이번에 치는 악기 위치 / Q4 : 다음에 치는 악기 위치
-
-    double ElbowAngle_stay = M_PI / 12;    ///< -0.5일 때 들어올리는 팔꿈치 각도 : 15deg
-    double ElbowAngle_ready = M_PI / 6;      ///< -1일 때 들어올리는 팔꿈치 각도 : 30deg
-    double WristAngle_stay = M_PI / 6;     ///< -0.5일 때 들어올리는 손목 각도 : 30deg
-    double WristAngle_ready = M_PI / 2;       ///< -1일 때 들어올리는 손목 각도 : 90deg
-
-    vector<double> wrist = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  ///< 각 악기별 치는 손목 각도
 
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
