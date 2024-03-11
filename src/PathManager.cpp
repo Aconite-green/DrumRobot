@@ -14,20 +14,20 @@ PathManager::PathManager(SystemState &systemStateRef,
 void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
 {
     struct can_frame frame;
-    
+
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Qi[motor_mapping[entry.first]];
-            float v_des = Vi[motor_mapping[entry.first]];
+            float p_des = Qi(motor_mapping[entry.first]);
+            float v_des = Vi(motor_mapping[entry.first]);
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
             entry.second->sendBuffer.push(frame);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Qi[motor_mapping[entry.first]];
+            float p_des = Qi(motor_mapping[entry.first]);
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
             entry.second->sendBuffer.push(frame);
         }
@@ -47,6 +47,28 @@ void PathManager::ApplyDir()
         backarr[motor_mapping[entry.first]] *= motor->cwDir;
         motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
+}
+
+vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int k, int n)
+{
+    vector<double> Qi;
+    std::vector<double> A, B;
+
+    // Compute A and Bk
+    for (long unsigned int i = 0; i < Q1.size(); ++i)
+    {
+        A.push_back(0.5 * (Q1[i] - Q2[i]));
+        B.push_back(0.5 * (Q1[i] + Q2[i]));
+    }
+
+    // Compute Qi using the provided formula
+    for (long unsigned int i = 0; i < Q1.size(); ++i)
+    {
+        double val = A[i] * cos(M_PI * k / n) + B[i];
+        Qi.push_back(val);
+    }
+
+    return Qi;
 }
 
 void PathManager::getMotorPos()
@@ -164,7 +186,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
         else
         {
-            for (size_t i = 0; i < T.size(); ++i)
+            for (long int i = 0; i < T.size(); ++i)
             {
                 MatrixXd temp = T.leftCols(n - 1);
                 T.resize(T.rows(), n + 2);
@@ -251,7 +273,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    int kk = 0;
+    kk = 0;
     for (int k = 0; k < j; ++k)
     {
         for (int i = 0; i < 3; ++i)
@@ -297,7 +319,7 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
         else
         {
-            for (size_t i = 0; i < T.size(); ++i)
+            for (long int i = 0; i < T.size(); ++i)
             {
                 MatrixXd temp = T.leftCols(n - 1);
                 T.resize(T.rows(), n + 2);
@@ -385,10 +407,10 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
 {
-    double time = A(0, 0);
+    double time = A(0);
 
-    VectorXd inst_right = A.block(1, 0, 9, 1);
-    VectorXd inst_left = A.block(10, 0, 9, 1);
+    VectorXd inst_right = A.segment(1, 9);
+    VectorXd inst_left = A.segment(10, 9);
 
     VectorXd inst_right_01 = inst_right / inst_right.sum();
     VectorXd inst_left_01 = inst_left / inst_left.sum();
@@ -396,7 +418,7 @@ VectorXd PathManager::pos_madi_fun(VectorXd &A)
     double inst_right_state = inst_right.sum();
     double inst_left_state = inst_left.sum();
 
-    VectorXd inst_p(18, 1);
+    VectorXd inst_p(18);
     inst_p << inst_right_01,
         inst_left_01;
 
@@ -404,7 +426,7 @@ VectorXd PathManager::pos_madi_fun(VectorXd &A)
     combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
     MatrixXd p = combined * inst_p;
 
-    VectorXd output(9, 1);
+    VectorXd output(9);
     output << time,
         p,
         inst_right_state,
@@ -600,6 +622,34 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     return Qf;
 }
 
+vector<double> PathManager::fkfun()
+{
+    vector<double> P;
+    vector<double> theta(7);
+    for (auto &motorPair : motors)
+    {
+        auto &name = motorPair.first;
+        auto &motor = motorPair.second;
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        {
+            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
+        }
+    }
+    double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
+    double r, l;
+    r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
+    l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
+
+    P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]));
+    P.push_back(0.5 * s * cos(theta[0] + M_PI) + l * cos(theta[0] + theta[2]));
+    P.push_back(0.5 * s * sin(theta[0] + M_PI) + l * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));
+
+    return P;
+}
+
 double PathManager::con_fun(double t_a, double t_b, double th_a, double th_b, double t_now)
 {
     return (th_b - th_a) * (t_now - t_a) / (t_b - t_a) + th_a;
@@ -690,6 +740,7 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
 void PathManager::GetDrumPositoin()
 {
     getMotorPos();
+    part_length << 0.363, 0.393, 0.363, 0.393, 0.400, 0.400; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 
@@ -794,21 +845,21 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            MatrixXd inst_arr_R(9, 1), inst_arr_L(9, 1);
-            MatrixXd inst_col(18, 1);
+            VectorXd inst_arr_R(9), inst_arr_L(9);
+            VectorXd inst_col(18);
 
             if (columns[2] == "0" && columns[3] == "0")
                 continue;
             if (columns[2] != "0")
-                inst_arr_R[instrument_mapping[columns[2]]] = 1;
+                inst_arr_R(instrument_mapping[columns[2]]) = 1;
             if (columns[3] != "0")
-                inst_arr_L[instrument_mapping[columns[3]]] = 1;
+                inst_arr_L(instrument_mapping[columns[3]]) = 1;
 
             time += stod(columns[1]) * 100 / bpm;
             time_arr.push_back(time);
             inst_col << inst_arr_R, inst_arr_L;
-            inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + inst_col.cols());
-            inst_arr.rightCols(inst_col.cols()) = inst_col;
+            inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
+            inst_arr.rightCols(inst_arr.cols() - 1) = inst_col;
         }
 
         lineIndex++;
@@ -825,8 +876,8 @@ void PathManager::PathLoopTask()
     double v_elbow = 0.5 * M_PI;
     double t_now = time_arr[line];
 
-    VectorXd qt = MatrixXd::Zero(7);
-    VectorXd qv_in = MatrixXd::Zero(7);
+    VectorXd qt = VectorXd::Zero(7);
+    VectorXd qv_in = VectorXd::Zero(7);
     MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
