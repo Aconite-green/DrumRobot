@@ -14,7 +14,7 @@ PathManager::PathManager(SystemState &systemStateRef,
 void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
 {
     struct can_frame frame;
-
+    
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
@@ -73,13 +73,10 @@ string trimWhitespace(const std::string &str)
 
 MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b)
 {
-    // flag 변수 초기화
     int flag = 0;
 
-    // inst_c 행렬 초기화
     MatrixXd inst_c = -100 * MatrixXd::Ones(18, 1);
 
-    // t3와 t3_inst3 행렬 선언 (double과 MatrixXd의 조합)
     double t3;
     MatrixXd t3_inst3(19, 3);
 
@@ -150,7 +147,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
 
 void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
-    MatrixXd T(18, 1);
+    MatrixXd T;
 
     for (int k = 0; k < 4; ++k)
     {
@@ -160,14 +157,17 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
         int n = T.cols();
 
-        if (n == 1)
+        if (n == 0)
+        {
+            T.resize(19, 3);
             T = inst3;
+        }
         else
         {
             for (size_t i = 0; i < T.size(); ++i)
             {
-                MatrixXd temp = T.block(0, 0, T.rows(), n - 1);
-                T.resize(T.rows(), n + 3);
+                MatrixXd temp = T.leftCols(n - 1);
+                T.resize(T.rows(), n + 2);
                 T << temp, inst3;
             }
         }
@@ -218,7 +218,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
     /* hit31: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
     int kk = 0;
-    j = t4_inst4.cols();
     for (int k = 0; k < j; ++k)
     {
         for (int i = 1; i <= 3; ++i)
@@ -291,15 +290,17 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
         int n = T.cols();
 
-        if (n == 1)
-            T.resize(19,3);
+        if (n == 0)
+        {
+            T.resize(19, 3);
             T = inst3;
+        }
         else
         {
             for (size_t i = 0; i < T.size(); ++i)
             {
-                MatrixXd temp = T.block(0, 0, T.rows(), n - 1);
-                T.resize(T.rows(), n + 3);
+                MatrixXd temp = T.leftCols(n - 1);
+                T.resize(T.rows(), n + 2);
                 T << temp, inst3;
             }
         }
@@ -348,7 +349,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
     /* B: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
     int kk = 0;
-    j = t4_inst4.cols();
     for (int k = 0; k < j; ++k)
     {
         for (int i = 1; i <= 3; ++i)
@@ -404,7 +404,7 @@ VectorXd PathManager::pos_madi_fun(VectorXd &A)
     combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
     MatrixXd p = combined * inst_p;
 
-    VectorXd output(6, 1);
+    VectorXd output(9, 1);
     output << time,
         p,
         inst_right_state,
@@ -825,8 +825,8 @@ void PathManager::PathLoopTask()
     double v_elbow = 0.5 * M_PI;
     double t_now = time_arr[line];
 
-    VectorXd qt = MatrixXd::Zero(7, 1);
-    VectorXd qv_in = MatrixXd::Zero(7, 1);
+    VectorXd qt = MatrixXd::Zero(7);
+    VectorXd qv_in = MatrixXd::Zero(7);
     MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
@@ -834,8 +834,8 @@ void PathManager::PathLoopTask()
     MatrixXd B = MatrixXd::Zero(19, 3);   // 크기가 19x3인 2차원 벡터
     MatrixXd BB = MatrixXd::Zero(3, 4);   // 크기가 3x4인 2차원 벡터
 
-    VectorXd p1, p2, p3;
-    MatrixXd t_wrist_madi, t_elbow_madi;
+    VectorXd p1(9), p2(9), p3(9);
+    MatrixXd t_wrist_madi(3, 3), t_elbow_madi(3, 3);
 
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
@@ -912,8 +912,8 @@ void PathManager::PathLoopTask()
             qv_in(m) = p.second;
         }
 
-        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * (i - 1));
         pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * (i - 1));
+        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * (i - 1));
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
