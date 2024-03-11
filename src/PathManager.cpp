@@ -876,7 +876,7 @@ void PathManager::PathLoopTask()
     double v_elbow = 0.5 * M_PI;
     double t_now = time_arr[line];
 
-    VectorXd qt = VectorXd::Zero(7);
+    VectorXd qt = VectorXd::Zero(9);
     VectorXd qv_in = VectorXd::Zero(7);
     MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
@@ -972,6 +972,10 @@ void PathManager::PathLoopTask()
         qt(8) = qWrist.second;
 
         Motors_sendBuffer(qt, qv_in);
+        vector<double> qt_vector(qt.data(), qt.data() + qt.size());
+        p.push_back(qt_vector);
+        vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
+        v.push_back(qv_in_vector);
     }
 }
 
