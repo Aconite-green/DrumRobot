@@ -126,7 +126,7 @@ private:
     //vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
     //vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
     //vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
-    MatrixXd part_length = {0.363, 0.393, 0.363, 0.393, 0.400, 0.400};   ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
+    VectorXd part_length = {0.363, 0.393, 0.363, 0.393, 0.400, 0.400};   ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
     double s = 0.600;   ///< 허리 길이.
     double z0 = 1.026;  ///< 바닥부터 허리까지의 높이.
 
@@ -162,20 +162,20 @@ private:
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
     */
-    void Motors_sendBuffer(MatrixXd &Qi, MatrixXd &Vi);
+    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi);
 
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**
      * @brief 
     */
-    MatrixXd tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, MatrixXd &inst2_b);
+    MatrixXd tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
     void itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
     void itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);
-    MatrixXd pos_madi_fun(MatrixXd &A);
+    VectorXd pos_madi_fun(VectorXd &A);
     MatrixXd sts2wrist_fun(MatrixXd &AA, double v_wrist);
     MatrixXd sts2elbow_fun(MatrixXd &AA, double v_elbow);
-    MatrixXd ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s, double z0);
+    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, double s, double z0);
     double con_fun(double t_a, double t_b, double th_a, double th_b, double t_now);
     pair<double, double> iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t);
     pair<double, double> qRL_fun(MatrixXd &t_madi, double t_now);

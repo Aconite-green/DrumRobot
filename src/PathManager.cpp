@@ -11,7 +11,7 @@ PathManager::PathManager(SystemState &systemStateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(MatrixXd &Qi, MatrixXd &Vi)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
 {
     struct can_frame frame;
 
@@ -71,8 +71,7 @@ string trimWhitespace(const std::string &str)
     return str.substr(first, (last - first + 1));
 }
 
-
-MatrixXd PathManager::tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, MatrixXd &inst2_b)
+MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b)
 {
     // flag 변수 초기화
     int flag = 0;
@@ -82,7 +81,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, MatrixXd &inst2_a, Matri
 
     // t3와 t3_inst3 행렬 선언 (double과 MatrixXd의 조합)
     double t3;
-    MatrixXd t3_inst3(36, 3);
+    MatrixXd t3_inst3(19, 3);
 
     // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
     if ((inst2_a.block(0, 0, 9, 1).norm() == 1) && (inst2_b.block(0, 0, 9, 1).norm() == 1))
@@ -155,8 +154,8 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
     for (int k = 0; k < 4; ++k)
     {
-        MatrixXd inst_0 = inst2.col(k);
-        MatrixXd inst_1 = inst2.col(k + 1);
+        VectorXd inst_0 = inst2.col(k);
+        VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
         int n = T.cols();
@@ -168,10 +167,9 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
             for (size_t i = 0; i < T.size(); ++i)
             {
                 MatrixXd temp = T.block(0, 0, T.rows(), n - 1);
-                T.resize(T.rows(), n);
+                T.resize(T.rows(), n + 3);
                 T << temp, inst3;
             }
-            T = {T[0], inst3};
         }
     }
 
@@ -180,7 +178,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
     for (int k = 1; k < nn; ++k)
     {
-        // T의 2행부터 10행까지의 합이 0인지 확인하고 조건에 따라 업데이트
         if (T.block(1, k, 9, 1).sum() == 0)
         {
             double norm_val = T.block(1, k - 1, 9, 1).norm();
@@ -188,7 +185,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
             T.block(1, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
         }
 
-        // T의 11행부터 19행까지의 합이 0인지 확인하고 조건에 따라 업데이트
         if (T.block(10, k, 9, 1).sum() == 0)
         {
             double norm_val = T.block(10, k - 1, 9, 1).norm();
@@ -209,10 +205,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    // t4_inst4 행렬 선언 및 크기 지정
     MatrixXd t4_inst4(T.rows(), j);
-
-    // 다시 반복하여 T의 열을 t4_inst4에 복사
     j = 0; // j 초기화
     for (int k = 0; k < nn; ++k)
     {
@@ -226,23 +219,19 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     /* hit31: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
     int kk = 0;
     j = t4_inst4.cols();
-    // 반복문을 사용하여 t4_inst4의 각 열에 대해 검사
     for (int k = 0; k < j; ++k)
     {
-        // t4_inst4의 첫 번째 행이 t2의 두 번째부터 네 번째 요소 중 하나와 같은지 확인
         for (int i = 1; i <= 3; ++i)
         {
             if (t4_inst4(0, k) == t2[i])
             {
                 if (kk == 0)
                 {
-                    // kk가 0이면 A31에 현재 열을 복사
                     A31 = t4_inst4.col(k);
                     kk = 1;
                 }
                 else
                 {
-                    // kk가 0이 아니면 A31에 현재 열을 추가
                     A31.conservativeResize(A31.rows(), A31.cols() + 1);
                     A31.col(A31.cols() - 1) = t4_inst4.col(k);
                 }
@@ -253,35 +242,30 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     /* state31: t2(2)에서 시작해서 3개의 연속된 t4_inst4를 골라냄 */
     for (int k = 0; k < j; ++k)
     {
-        // t4_inst4의 두 번째 행이 t2의 두 번째 요소와 같은지 확인
         if (t4_inst4(0, k) == t2[1])
         {
-            // AA41에 값을 할당
             AA41.resize(3, 4);
             AA41 << t4_inst4(0, k), t4_inst4(0, k + 1), t4_inst4(0, k + 2), t4_inst4(0, k + 3),
                 t4_inst4.block(1, k, 9, 1).sum(), t4_inst4.block(1, k + 1, 9, 1).sum(), t4_inst4.block(1, k + 2, 9, 1).sum(), t4_inst4.block(1, k + 3, 9, 1).sum(),
                 t4_inst4.block(10, k, 9, 1).sum(), t4_inst4.block(10, k + 1, 9, 1).sum(), t4_inst4.block(10, k + 2, 9, 1).sum(), t4_inst4.block(10, k + 3, 9, 1).sum();
-            break; // 조건을 만족하는 첫 번째 열을 찾으면 반복문 종료
+            break;
         }
     }
 
     int kk = 0;
     for (int k = 0; k < j; ++k)
     {
-        // t4_inst4의 첫 번째 행이 t2의 첫 번째부터 세 번째 요소 중 하나와 같은지 확인
         for (int i = 0; i < 3; ++i)
         {
             if (t4_inst4(0, k) == t2[i])
             {
                 if (kk == 0)
                 {
-                    // kk가 0이면 A30에 현재 열을 복사
                     A30 = t4_inst4.col(k);
                     kk = 1;
                 }
                 else
                 {
-                    // kk가 0이 아니면 A30에 현재 열을 추가
                     A30.conservativeResize(A30.rows(), A30.cols() + 1);
                     A30.col(A30.cols() - 1) = t4_inst4.col(k);
                 }
@@ -297,27 +281,27 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
 {
-    MatrixXd T(18, 1);
+    MatrixXd T;
 
     for (int k = 0; k < 4; ++k)
     {
-        MatrixXd inst_0 = inst2.col(k);
-        MatrixXd inst_1 = inst2.col(k + 1);
+        VectorXd inst_0 = inst2.col(k);
+        VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
         int n = T.cols();
 
         if (n == 1)
+            T.resize(19,3);
             T = inst3;
         else
         {
             for (size_t i = 0; i < T.size(); ++i)
             {
                 MatrixXd temp = T.block(0, 0, T.rows(), n - 1);
-                T.resize(T.rows(), n);
+                T.resize(T.rows(), n + 3);
                 T << temp, inst3;
             }
-            T = {T[0], inst3};
         }
     }
 
@@ -326,7 +310,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
     for (int k = 1; k < nn; ++k)
     {
-        // T의 2행부터 10행까지의 합이 0인지 확인하고 조건에 따라 업데이트
         if (T.block(1, k, 9, 1).sum() == 0)
         {
             double norm_val = T.block(1, k - 1, 9, 1).norm();
@@ -334,7 +317,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             T.block(1, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
         }
 
-        // T의 11행부터 19행까지의 합이 0인지 확인하고 조건에 따라 업데이트
         if (T.block(10, k, 9, 1).sum() == 0)
         {
             double norm_val = T.block(10, k - 1, 9, 1).norm();
@@ -345,8 +327,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
     /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
-
-    // t4_inst4의 크기를 결정하기 위해 먼저 반복문을 실행하여 t2(4)보다 작거나 같은 열의 개수를 계산
     for (int k = 0; k < nn; ++k)
     {
         if (T(0, k) >= t2[1] && T(0, k) <= t2[4])
@@ -355,10 +335,7 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
-    // t4_inst4 행렬 선언 및 크기 지정
     MatrixXd t4_inst4(T.rows(), j);
-
-    // 다시 반복하여 T의 열을 t4_inst4에 복사
     j = 0; // j 초기화
     for (int k = 0; k < nn; ++k)
     {
@@ -372,23 +349,19 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
     /* B: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
     int kk = 0;
     j = t4_inst4.cols();
-    // 반복문을 사용하여 t4_inst4의 각 열에 대해 검사
     for (int k = 0; k < j; ++k)
     {
-        // t4_inst4의 첫 번째 행이 t2의 두 번째부터 네 번째 요소 중 하나와 같은지 확인
         for (int i = 1; i <= 3; ++i)
         {
             if (t4_inst4(0, k) == t2[i])
             {
                 if (kk == 0)
                 {
-                    // kk가 0이면 B에 현재 열을 복사
                     B = t4_inst4.col(k);
                     kk = 1;
                 }
                 else
                 {
-                    // kk가 0이 아니면 B에 현재 열을 추가
                     B.conservativeResize(B.rows(), B.cols() + 1);
                     B.col(B.cols() - 1) = t4_inst4.col(k);
                 }
@@ -399,33 +372,31 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
     /* state31: t2(2)에서 시작해서 3개의 연속된 t4_inst4를 골라냄 */
     for (int k = 0; k < j; ++k)
     {
-        // t4_inst4의 두 번째 행이 t2의 두 번째 요소와 같은지 확인
         if (t4_inst4(0, k) == t2[1])
         {
-            // BB에 값을 할당
             BB.resize(3, 4);
             BB << t4_inst4(0, k), t4_inst4(0, k + 1), t4_inst4(0, k + 2), t4_inst4(0, k + 3),
                 t4_inst4.block(1, k, 9, 1).sum(), t4_inst4.block(1, k + 1, 9, 1).sum(), t4_inst4.block(1, k + 2, 9, 1).sum(), t4_inst4.block(1, k + 3, 9, 1).sum(),
                 t4_inst4.block(10, k, 9, 1).sum(), t4_inst4.block(10, k + 1, 9, 1).sum(), t4_inst4.block(10, k + 2, 9, 1).sum(), t4_inst4.block(10, k + 3, 9, 1).sum();
-            break; // 조건을 만족하는 첫 번째 열을 찾으면 반복문 종료
+            break;
         }
     }
 }
 
-MatrixXd PathManager::pos_madi_fun(MatrixXd &A)
+VectorXd PathManager::pos_madi_fun(VectorXd &A)
 {
     double time = A(0, 0);
 
-    MatrixXd inst_right = A.block(1, 0, 9, 1);
-    MatrixXd inst_left = A.block(10, 0, 9, 1);
+    VectorXd inst_right = A.block(1, 0, 9, 1);
+    VectorXd inst_left = A.block(10, 0, 9, 1);
 
-    MatrixXd inst_right_01 = inst_right / inst_right.sum();
-    MatrixXd inst_left_01 = inst_left / inst_left.sum();
+    VectorXd inst_right_01 = inst_right / inst_right.sum();
+    VectorXd inst_left_01 = inst_left / inst_left.sum();
 
     double inst_right_state = inst_right.sum();
     double inst_left_state = inst_left.sum();
 
-    MatrixXd inst_p(18, 1);
+    VectorXd inst_p(18, 1);
     inst_p << inst_right_01,
         inst_left_01;
 
@@ -433,11 +404,13 @@ MatrixXd PathManager::pos_madi_fun(MatrixXd &A)
     combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
     MatrixXd p = combined * inst_p;
 
-    MatrixXd output(6, 1);
+    VectorXd output(6, 1);
     output << time,
         p,
         inst_right_state,
         inst_left_state;
+
+    return output;
 }
 
 MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
@@ -538,7 +511,7 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
     return t_elbow_madi;
 }
 
-MatrixXd PathManager::ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_length, double s, double z0)
+VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, double s, double z0)
 {
     double direction = 0.0 * M_PI;
 
@@ -552,7 +525,7 @@ MatrixXd PathManager::ikfun_final(MatrixXd &pR, MatrixXd &pL, MatrixXd &part_len
     int j = 0;
     double the3[1801];
     double zeta = z0 - z2;
-    MatrixXd Qf(7, 1);
+    VectorXd Qf(7);
     double the0_f = 0;
 
     // the3 배열 초기화
@@ -834,7 +807,8 @@ void PathManager::GetMusicSheet()
             time += stod(columns[1]) * 100 / bpm;
             time_arr.push_back(time);
             inst_col << inst_arr_R, inst_arr_L;
-            inst_arr.col(inst_arr.cols()) = inst_col;
+            inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + inst_col.cols());
+            inst_arr.rightCols(inst_col.cols()) = inst_col;
         }
 
         lineIndex++;
@@ -851,8 +825,8 @@ void PathManager::PathLoopTask()
     double v_elbow = 0.5 * M_PI;
     double t_now = time_arr[line];
 
-    MatrixXd qt = MatrixXd::Zero(7, 1);
-    MatrixXd qv_in = MatrixXd::Zero(7, 1);
+    VectorXd qt = MatrixXd::Zero(7, 1);
+    VectorXd qv_in = MatrixXd::Zero(7, 1);
     MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
     MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
@@ -860,7 +834,7 @@ void PathManager::PathLoopTask()
     MatrixXd B = MatrixXd::Zero(19, 3);   // 크기가 19x3인 2차원 벡터
     MatrixXd BB = MatrixXd::Zero(3, 4);   // 크기가 3x4인 2차원 벡터
 
-    MatrixXd p1, p2, p3;
+    VectorXd p1, p2, p3;
     MatrixXd t_wrist_madi, t_elbow_madi;
 
     // 연주 처음 시작할 때 Q1, Q2 계산
@@ -870,9 +844,9 @@ void PathManager::PathLoopTask()
         MatrixXd inst2 = inst_arr.middleCols(0, 5);
         itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
-        MatrixXd A1 = A30.col(0);
-        MatrixXd A2 = A30.col(1);
-        MatrixXd A3 = A30.col(2);
+        VectorXd A1 = A30.col(0);
+        VectorXd A2 = A30.col(1);
+        VectorXd A3 = A30.col(2);
         p1 = pos_madi_fun(A1);
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
@@ -882,9 +856,9 @@ void PathManager::PathLoopTask()
     }
     else if (line == 1)
     {
-        MatrixXd A1 = A31.col(0);
-        MatrixXd A2 = A31.col(1);
-        MatrixXd A3 = A31.col(2);
+        VectorXd A1 = A31.col(0);
+        VectorXd A2 = A31.col(1);
+        VectorXd A3 = A31.col(2);
         p1 = pos_madi_fun(A1);
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
@@ -898,9 +872,9 @@ void PathManager::PathLoopTask()
         MatrixXd inst2 = inst_arr.middleCols(line - 1, line + 4);
         itms_fun(t2, inst2, B, BB);
 
-        MatrixXd B1 = B.col(0);
-        MatrixXd B2 = B.col(1);
-        MatrixXd B3 = B.col(2);
+        VectorXd B1 = B.col(0);
+        VectorXd B2 = B.col(1);
+        VectorXd B3 = B.col(2);
         p1 = pos_madi_fun(B1);
         p2 = pos_madi_fun(B2);
         p3 = pos_madi_fun(B3);
@@ -912,17 +886,17 @@ void PathManager::PathLoopTask()
     line++;
 
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
-    MatrixXd pR1 = MatrixXd::Map(p1.data() + 1, 3, 1);
-    MatrixXd pL1 = MatrixXd::Map(p1.data() + 4, 3, 1);
-    MatrixXd qk1_06 = ikfun_final(pR1, pL1, part_length, s, z0);
+    VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
+    VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
+    VectorXd qk1_06 = ikfun_final(pR1, pL1, part_length, s, z0);
 
-    MatrixXd pR2 = MatrixXd::Map(p2.data() + 1, 3, 1);
-    MatrixXd pL2 = MatrixXd::Map(p2.data() + 4, 3, 1);
-    MatrixXd qk2_06 = ikfun_final(pR2, pL2, part_length, s, z0);
+    VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
+    VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
+    VectorXd qk2_06 = ikfun_final(pR2, pL2, part_length, s, z0);
 
-    MatrixXd pR3 = MatrixXd::Map(p3.data() + 1, 3, 1);
-    MatrixXd pL3 = MatrixXd::Map(p3.data() + 4, 3, 1);
-    MatrixXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
+    VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
+    VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
+    VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
