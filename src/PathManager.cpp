@@ -545,16 +545,16 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     double L2 = part_length(3) + part_length(5);
 
     int j = 0;
-    double the3[1801];
+    double the3[1351];
     double zeta = z0 - z2;
     VectorXd Qf(7);
     double the0_f = 0;
 
     // the3 배열 초기화
-    for (int i = 0; i < 1801; ++i)
-        the3[i] = -M_PI / 2.0 + i * M_PI / 1800.0;
+    for (int i = 0; i < 1351; ++i)
+        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
 
-    for (int i = 0; i < 1800; ++i)
+    for (int i = 0; i < 1351; ++i)
     {
         double det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
 
@@ -563,7 +563,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
             double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             double the4 = the34 - the3[i];
 
-            if (the4 > 0)
+            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
             {
                 double r = r1 * sin(the3[i]) + r2 * sin(the34);
                 double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
@@ -571,7 +571,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                 if (det_the1 < 1 && det_the1 > -1)
                 {
                     double the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < M_PI * (5.0 / 6.0))
+                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
                     {
                         double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
                         double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
@@ -579,34 +579,42 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                         if (det_the0 < 1 && det_the0 > -1)
                         {
                             double the0 = asin(det_the0) - alpha;
-                            double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
-                            double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
-
-                            if (det_the2 < 1 && det_the2 > -1)
+                            if (the0 > -M_PI / 2 && the0 < M_PI / 2) // the0 범위 : -90deg ~ 90deg
                             {
-                                double the2 = acos(det_the2) - the0;
-                                if (the2 > M_PI / 6.0 && the2 < M_PI)
+                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+
+                                if (det_the2 < 1 && det_the2 > -1)
                                 {
-                                    double Lp = sqrt(L * L + zeta * zeta);
-                                    double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
-
-                                    if (det_the6 < 1 && det_the6 > -1)
+                                    double the2 = acos(det_the2) - the0;
+                                    if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
                                     {
-                                        double the6 = acos(det_the6);
-                                        double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
-                                        double det_the5 = L * L + zeta * zeta - T * T;
+                                        double Lp = sqrt(L * L + zeta * zeta);
+                                        double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
 
-                                        if (det_the5 > 0)
+                                        if (det_the6 < 1 && det_the6 > -1)
                                         {
-                                            double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
-                                            sol /= (L * L + zeta * zeta);
-                                            double the5 = asin(sol);
-
-                                            if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
+                                            double the6 = acos(det_the6);
+                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
                                             {
-                                                Qf << the0, the1, the2, the3[i], the4, the5, the6;
-                                                the0_f = the0;
-                                                j = 1;
+                                                double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                double det_the5 = L * L + zeta * zeta - T * T;
+
+                                                if (det_the5 > 0)
+                                                {
+                                                    double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    sol /= (L * L + zeta * zeta);
+                                                    double the5 = asin(sol);
+                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2)    // the5 범위 : -45deg ~ 90deg
+                                                    {
+                                                        if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
+                                                        {
+                                                            Qf << the0, the1, the2, the3[i], the4, the5, the6;
+                                                            the0_f = the0;
+                                                            j = 1;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -618,6 +626,9 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
             }
         }
     }
+
+    if (j == 0)
+        cout << "IKFUN is not solved!!\n";
 
     return Qf;
 }
@@ -740,6 +751,7 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
 void PathManager::GetDrumPositoin()
 {
     getMotorPos();
+    part_length.resize(6);
     part_length << 0.363, 0.393, 0.363, 0.393, 0.400, 0.400; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
