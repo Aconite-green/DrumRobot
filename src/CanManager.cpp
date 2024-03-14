@@ -390,11 +390,13 @@ void CanManager::setMotorsSocket()
     struct can_frame frame;
     setSocketsTimeout(0, 10000);
 
+    std::map<int, int> localMotorsPerSocket;
+
     // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
-
+        int motorsConnectedToSocket = 0;
         for (auto &motor_pair : motors)
         {
             auto &motor = motor_pair.second;
@@ -418,13 +420,19 @@ void CanManager::setMotorsSocket()
             if (sendAndRecv(motor, frame))
             {
                 motor->isConected = true;
+                motorsConnectedToSocket++;
             }
             else
             {
                 motor->socket = original_socket;
             }
         }
+
+        localMotorsPerSocket[socket_fd] = motorsConnectedToSocket;
+
     }
+
+    motorsPerSocket = localMotorsPerSocket;
 
     // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 삭제
     for (auto it = motors.begin(); it != motors.end();)
@@ -455,22 +463,27 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    int framesRead = 0; // 읽은 프레임의 수를 저장할 변수
 
     for (const auto &socketPair : sockets)
     {
+        int framesRead = 0;
         int socket_fd = socketPair.second;
-        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        while (framesRead <= motorsPerSocket[socket_fd])
         {
-            tempFrames[socket_fd].push_back(frame);
-            framesRead++; // 프레임을 하나 읽을 때마다 카운트 증가
+            ssize_t nbytes = read(socket_fd, &frame, sizeof(frame));
+            if (nbytes == sizeof(frame))
+            {
+                tempFrames[socket_fd].push_back(frame);
+                framesRead++;
+            }
+            else
+            {
+                break;
+            }
         }
+
     }
-
-    // 읽은 프레임의 총 개수를 출력
-    cout << "Read " << framesRead << " frames from CAN sockets." << endl;
 }
-
 
 void CanManager::distributeFramesToMotors()
 {
@@ -503,7 +516,7 @@ void CanManager::distributeFramesToMotors()
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     maxonMotor->currentPos = std::get<1>(parsedData);
                     maxonMotor->currentTor = std::get<2>(parsedData);
-                    maxonMotor->recieveBuffer.push(frame); 
+                    maxonMotor->recieveBuffer.push(frame);
                 }
             }
         }

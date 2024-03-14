@@ -70,7 +70,7 @@ void DrumRobot::stateMachine()
                 {
                     MaxonEnable();
                     setMaxonMode("CSP");
-                    cout << "Get Ready...\n";
+                    std::cout << "Get Ready...\n";
                     clearMotorsSendBuffer();
                     pathManager.GetArr(pathManager.standby);
                     SendReadyLoop();
@@ -86,7 +86,7 @@ void DrumRobot::stateMachine()
             {
                 if (canManager.checkAllMotors())
                 {
-                    cout << "Get Back...\n";
+                    std::cout << "Get Back...\n";
                     clearMotorsSendBuffer();
                     pathManager.GetArr(pathManager.backarr);
                     SendReadyLoop();
@@ -242,7 +242,7 @@ void DrumRobot::idealStateRoutine()
 {
     int ret = system("clear");
     if (ret == -1)
-        cout << "system clear error" << endl;
+        std::cout << "system clear error" << endl;
 
     displayAvailableCommands();
 
@@ -334,7 +334,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 400;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = true;
-                
             }
             else if (motor_pair.first == "R_arm1")
             {
@@ -345,7 +344,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
-                
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -356,7 +354,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
-                
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -367,7 +364,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 350;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -378,7 +374,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -389,7 +384,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 350;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -400,7 +394,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
-                
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -417,7 +410,6 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
-               
             }
             else if (motor_pair.first == "R_wrist")
             {
@@ -430,7 +422,6 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x408; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
-                
             }
             else if (motor_pair.first == "maxonForTest")
             {
@@ -517,8 +508,8 @@ void DrumRobot::printCurrentPositions()
     vector<double> P(6);
     P = pathManager.fkfun();
 
-    cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
-    cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
+    std::cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
+    std::cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
     printf("Print Enter to Go Home\n");
     getchar();
 }
@@ -890,7 +881,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
 
 void DrumRobot::SendReadyLoop()
 {
-    cout << "Settig...\n";
+    std::cout << "Settig...\n";
     struct can_frame frameToProcess;
     std::string maxonCanInterface;
     std::shared_ptr<GenericMotor> virtualMaxonMotor;
@@ -968,31 +959,36 @@ void DrumRobot::RecieveLoop()
 {
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    canManager.setSocketsTimeout(0, 50000);
+    canManager.setSocketsTimeout(0, 5000);
     canManager.clearReadBuffers();
 
     sensor.connect();
     if (!sensor.connected)
-        cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
+        std::cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
 
     while (systemState.main == Main::Perform || systemState.main == Main::Pause)
     {
         if (systemState.main == Main::Pause)
             continue;
 
-        /*if (sensor.connected && (sensor.ReadVal() & 1) != 0)
-        {
-            cout << "Motors at Sensor Location please check!!!\n";
-            systemState.runMode = RunMode::Pause;
-        }*/
-
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-        chrono::milliseconds elapsed_time = chrono::duration_cast<chrono::milliseconds>(internal - external);
-        if (elapsed_time.count() >= TIME_THRESHOLD_MS)
+
+        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
+
+        // auto epoch_internal = internal.time_since_epoch();
+        // auto value_internal = chrono::duration_cast<chrono::milliseconds>(epoch_internal);
+        // std::cout << "internal: " << value_internal.count() << " ms " << endl;
+        //
+        // auto epoch_external = external.time_since_epoch();
+        // auto value_external = chrono::duration_cast<chrono::milliseconds>(epoch_external);
+        // std::cout << "external: " << value_external.count() << " ms " << endl;
+
+        if (elapsed_time.count() > 5000)
         {
-            external = std::chrono::system_clock::now();
+            std::cout << "elasped: " << elapsed_time.count() << "\n";
             canManager.readFramesFromAllSockets();
             canManager.distributeFramesToMotors();
+            external = std::chrono::system_clock::now();
         }
     }
 

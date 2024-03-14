@@ -149,6 +149,7 @@ public:
     std::map<std::string, int> sockets; ///< 모터와 통신하는 소켓의 맵.
     std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
     int maxonCnt=0; ///< 연결된 Maxon 모터의 수.
+    std::map<int, int> motorsPerSocket;
 
 private:
     std::vector<std::string> ifnames; ///< 사용 가능한 인터페이스 이름 목록.
