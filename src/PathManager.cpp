@@ -248,6 +248,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
             {
                 if (kk == 0)
                 {
+                    A31.resize(t4_inst4.rows(), 1);
                     A31 = t4_inst4.col(k);
                     kk = 1;
                 }
@@ -282,6 +283,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
             {
                 if (kk == 0)
                 {
+                    A30.resize(t4_inst4.rows(), 1);
                     A30 = t4_inst4.col(k);
                     kk = 1;
                 }
@@ -294,10 +296,10 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    AA40.resize(4, 4);
-    AA40 << t4_inst4.col(0), t4_inst4.col(1), t4_inst4.col(2), t4_inst4.col(3),
-        t4_inst4.block(1, 0, 9, 1).colwise().sum(), t4_inst4.block(1, 1, 9, 1).colwise().sum(),
-        t4_inst4.block(10, 0, 9, 1).colwise().sum(), t4_inst4.block(10, 1, 9, 1).colwise().sum();
+    AA40.resize(3, 4);
+    AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
+                t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
+                t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -379,6 +381,7 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             {
                 if (kk == 0)
                 {
+                    B.resize(t4_inst4.rows(), 1);
                     B = t4_inst4.col(k);
                     kk = 1;
                 }
@@ -839,6 +842,7 @@ void PathManager::GetMusicSheet()
     string row;
     int lineIndex = 0;
     double time = 0.0;
+    inst_arr.resize(18, 1);
     while (getline(file, row))
     {
         istringstream iss(row);
@@ -871,7 +875,7 @@ void PathManager::GetMusicSheet()
             time_arr.push_back(time);
             inst_col << inst_arr_R, inst_arr_L;
             inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
-            inst_arr.rightCols(inst_arr.cols() - 1) = inst_col;
+            inst_arr.col(inst_arr.cols() - 1) = inst_col;
         }
 
         lineIndex++;
@@ -890,12 +894,12 @@ void PathManager::PathLoopTask()
 
     VectorXd qt = VectorXd::Zero(9);
     VectorXd qv_in = VectorXd::Zero(7);
-    MatrixXd A30 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
-    MatrixXd A31 = MatrixXd::Zero(19, 3); // 크기가 19x3인 2차원 벡터
-    MatrixXd AA40 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
-    MatrixXd AA41 = MatrixXd::Zero(3, 4); // 크기가 3x4인 2차원 벡터
-    MatrixXd B = MatrixXd::Zero(19, 3);   // 크기가 19x3인 2차원 벡터
-    MatrixXd BB = MatrixXd::Zero(3, 4);   // 크기가 3x4인 2차원 벡터
+    MatrixXd A30; // 크기가 19x3인 2차원 벡터
+    MatrixXd A31; // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41; // 크기가 3x4인 2차원 벡터
+    MatrixXd B;   // 크기가 19x3인 2차원 벡터
+    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
 
     VectorXd p1(9), p2(9), p3(9);
     MatrixXd t_wrist_madi(3, 3), t_elbow_madi(3, 3);
