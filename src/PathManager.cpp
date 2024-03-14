@@ -960,8 +960,6 @@ void PathManager::PathLoopTask()
         t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
 
-    line++;
-
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
     VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
