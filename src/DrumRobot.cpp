@@ -137,7 +137,9 @@ void DrumRobot::recvLoopForThread()
         else if (systemState.main == Main::Perform)
         {
             canManager.clearReadBuffers();
+            canManager.setSocketNonBlock();
             RecieveLoop();
+            canManager.setSocketBlock();
         }
 
         //
@@ -975,17 +977,10 @@ void DrumRobot::RecieveLoop()
 
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
 
-        // auto epoch_internal = internal.time_since_epoch();
-        // auto value_internal = chrono::duration_cast<chrono::milliseconds>(epoch_internal);
-        // std::cout << "internal: " << value_internal.count() << " ms " << endl;
-        //
-        // auto epoch_external = external.time_since_epoch();
-        // auto value_external = chrono::duration_cast<chrono::milliseconds>(epoch_external);
-        // std::cout << "external: " << value_external.count() << " ms " << endl;
+        
 
         if (elapsed_time.count() > 5000)
         {
-            std::cout << "elasped: " << elapsed_time.count() << "\n";
             canManager.readFramesFromAllSockets();
             canManager.distributeFramesToMotors();
             external = std::chrono::system_clock::now();
