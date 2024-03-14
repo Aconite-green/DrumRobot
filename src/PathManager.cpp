@@ -97,7 +97,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
 {
     int flag = 0;
 
-    MatrixXd inst_c = -100 * MatrixXd::Ones(18, 1);
+    VectorXd inst_c = -100 * VectorXd::Ones(18);
 
     double t3;
     MatrixXd t3_inst3;
@@ -106,26 +106,26 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     if ((inst2_a.segment(0, 9).norm() == 1) && (inst2_b.segment(0, 9).norm() == 1))
     {
         // 오른손
-        inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
+        inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
         t3 = 0.5 * (t2_b + t2_a);
         t3_inst3.resize(19, 3);
         t3_inst3.row(0) << t2_a, t3, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst_c;
-        t3_inst3.block(1, 2, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
         flag = 1;
     }
 
     if ((inst2_a.segment(9, 9).norm() == 1) && (inst2_b.segment(9, 9).norm() == 1))
     {
         // 왼손
-        inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
+        inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
         t3 = 0.5 * (t2_a + t2_b);
         t3_inst3.resize(19, 3);
         t3_inst3.row(0) << t2_a, t3, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst_c;
-        t3_inst3.block(1, 2, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
         flag = 1;
     }
 
@@ -133,51 +133,53 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 1))
     {
         // 오른손
-        inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
+        inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
         t3 = 0.5 * (t2_a + t2_b);
         t3_inst3.resize(19, 3);
         t3_inst3.row(0) << t2_a, t3, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst_c;
-        t3_inst3.block(1, 2, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
     }
 
     if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 1))
     {
         // 왼손
-        inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
+        inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
         t3 = 0.5 * (t2_a + t2_b);
         t3_inst3.resize(19, 3);
         t3_inst3.row(0) << t2_a, t3, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst_c;
-        t3_inst3.block(1, 2, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
     }
 
     // 3번 룰: 1번 룰을 거치지 않았고 inst1이 0 이고 inst2에 1이 있으면, inst1에 -1을 넣는다.
     if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 0))
     {
-        inst2_a.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
+        inst2_a.segment(0, 9) = -inst2_b.segment(0, 9);
         t3_inst3.resize(19, 2);
         t3_inst3.row(0) << t2_a, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
     }
 
     if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 0))
     {
-        inst2_a.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
+        inst2_a.segment(9, 9) = -inst2_b.segment(9, 9);
+        t3_inst3.resize(19, 2);
         t3_inst3.row(0) << t2_a, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
     }
 
     // 악보 끝까지 연주하기 위해서 inst2_b에 0 행렬이 인위적으로 들어가는 경우, 그대로 내보냄
     if ((inst2_b.norm() == 0) && (flag == 0))
     {
         t3_inst3.row(0) << t2_a, t2_b;
-        t3_inst3.block(1, 0, 9, 1) = inst2_a;
-        t3_inst3.block(1, 1, 9, 1) = inst2_b;
+        t3_inst3.resize(19, 2);
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
     }
 
     return t3_inst3;
@@ -689,48 +691,40 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
 {
     double p_out, v_out/*, V1_out*/;
 
-    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
-    { // 방향 지속의 경우, 2차 함수
-        // p(t) = a*t^2 + b*t + c;  position
-        // v(t) = 2*a*t + b;        velocity
+    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0) { // 방향 지속의 경우, 2차 함수
+        double c = qk1_06;
+        double b = qv_in;
+        double a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
 
-        double c = qk1_06;                                     // 초기 위치
-        double b = qv_in;                                      // 초기 속도로 정해짐.
-        double a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1); // 이것에 제한을 둠, |a| < k 로 함, 만약 a가 k보다 크면, k로 한점을 둠.
-
-        p_out = a * t * t + b * t + c; // position
-        v_out = 2 * a * t + b;         // velocity
-        //V1_out = 2 * a * t1 + b;       // t1 시점에서의 속도
-    }
-    else
-    { // 방향 전환의 경우, 3차 함수
-        // p(t) = a*t^3 + b*t^2 + c*t + d;  position
-        // v(t) = 3*a*t^2 + 2*b*t + c;      velocity
-
+        p_out = a * t * t + b * t + c; // 위치
+        v_out = 2 * a * t + b; // 속도
+        //V1_out = 2 * a * t1 + b; // t1 시점에서의 속도
+    } else { // 방향 전환의 경우, 3차 함수
         double c = qv_in;
         double d = qk1_06;
 
-        double t1_squared = t1 * t1;
-        double t1_cubed = t1_squared * t1;
-        double t1_squared_times_3 = 3 * t1_squared;
-        double t1_squared_times_2 = 2 * t1_squared;
+        double T11 = t1 * t1 * t1;
+        double T12 = t1 * t1;
+        double T21 = 3 * t1 * t1;
+        double T22 = 2 * t1;
 
-        double T[2][2] = {{t1_cubed, t1_squared},
-                          {t1_squared_times_3, t1_squared_times_2}};
+        // 역행렬 계산을 위한 수식 처리
+        double det = T11 * T22 - T12 * T21;
+        double invT11 = T22 / det;
+        double invT12 = -T12 / det;
+        double invT21 = -T21 / det;
+        double invT22 = T11 / det;
 
-        double ANS[2] = {-(c * t1 + d) + qk2_06,
-                         -c};
+        double ANS1 = -c * t1 - d + qk2_06;
+        double ANS2 = -c;
 
-        double det_T = T[0][0] * T[1][1] - T[0][1] * T[1][0];
-        double inv_T[2][2] = {{T[1][1] / det_T, -T[0][1] / det_T},
-                              {-T[1][0] / det_T, T[0][0] / det_T}};
+        // 행렬식을 이용한 계산
+        double a = invT11 * ANS1 + invT12 * ANS2;
+        double b = invT21 * ANS1 + invT22 * ANS2;
 
-        double a = inv_T[0][0] * ANS[0] + inv_T[0][1] * ANS[1];
-        double b = inv_T[1][0] * ANS[0] + inv_T[1][1] * ANS[1];
-
-        p_out = a * t * t * t + b * t * t + c * t + d;
-        v_out = 3 * a * t * t + 2 * b * t + c;
-        //V1_out = 3 * a * t1_squared + 2 * b * t1 + c;
+        p_out = a * t * t * t + b * t * t + c * t + d; // 위치
+        v_out = 3 * a * t * t + 2 * b * t + c; // 속도
+        //V1_out = 3 * a * t1 * t1 + 2 * b * t1 + c; // t1 시점에서의 속도
     }
 
     return std::make_pair(p_out, v_out);
