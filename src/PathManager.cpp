@@ -103,7 +103,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     MatrixXd t3_inst3;
 
     // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
-    if ((inst2_a.block(0, 0, 9, 1).norm() == 1) && (inst2_b.block(0, 0, 9, 1).norm() == 1))
+    if ((inst2_a.segment(0, 9).norm() == 1) && (inst2_b.segment(0, 9).norm() == 1))
     {
         // 오른손
         inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
@@ -116,7 +116,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         flag = 1;
     }
 
-    if ((inst2_a.block(9, 0, 9, 1).norm() == 1) && (inst2_b.block(9, 0, 9, 1).norm() == 1))
+    if ((inst2_a.segment(9, 9).norm() == 1) && (inst2_b.segment(9, 9).norm() == 1))
     {
         // 왼손
         inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
@@ -130,7 +130,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     }
 
     // 2번 룰: 1번 룰에 의해 새로운 시점/악기가 정의되어 있고(flag = 1) inst2에 1이 있으면 inst3에 -1을 넣는다.
-    if ((inst2_a.block(0, 0, 9, 1).norm() == 0) && (inst2_b.block(0, 0, 9, 1).norm() == 1) && (flag == 1))
+    if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 1))
     {
         // 오른손
         inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
@@ -142,7 +142,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         t3_inst3.block(1, 2, 9, 1) = inst2_b;
     }
 
-    if ((inst2_a.block(9, 0, 9, 1).norm() == 0) && (inst2_b.block(9, 0, 9, 1).norm() == 1) && (flag == 1))
+    if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 1))
     {
         // 왼손
         inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
@@ -155,7 +155,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     }
 
     // 3번 룰: 1번 룰을 거치지 않았고 inst1이 0 이고 inst2에 1이 있으면, inst1에 -1을 넣는다.
-    if ((inst2_a.block(0, 0, 9, 1).norm() == 0) && (inst2_b.block(0, 0, 9, 1).norm() == 1) && (flag == 0))
+    if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 0))
     {
         inst2_a.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
         t3_inst3.resize(19, 2);
@@ -164,7 +164,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         t3_inst3.block(1, 1, 9, 1) = inst2_b;
     }
 
-    if ((inst2_a.block(9, 0, 9, 1).norm() == 0) && (inst2_b.block(9, 0, 9, 1).norm() == 1) && (flag == 0))
+    if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 0))
     {
         inst2_a.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
         t3_inst3.row(0) << t2_a, t2_b;
