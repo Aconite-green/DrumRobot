@@ -100,7 +100,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     MatrixXd inst_c = -100 * MatrixXd::Ones(18, 1);
 
     double t3;
-    MatrixXd t3_inst3(19, 3);
+    MatrixXd t3_inst3;
 
     // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
     if ((inst2_a.block(0, 0, 9, 1).norm() == 1) && (inst2_b.block(0, 0, 9, 1).norm() == 1))
@@ -108,8 +108,11 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         // 오른손
         inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
         t3 = 0.5 * (t2_b + t2_a);
-        t3_inst3 << t2_a, t3, t2_b,
-            inst2_a, inst_c, inst2_b; // left
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst_c;
+        t3_inst3.block(1, 2, 9, 1) = inst2_b;
         flag = 1;
     }
 
@@ -118,8 +121,11 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         // 왼손
         inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
         t3 = 0.5 * (t2_a + t2_b);
-        t3_inst3 << t2_a, t3, t2_b,
-            inst2_a, inst_c, inst2_b;
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst_c;
+        t3_inst3.block(1, 2, 9, 1) = inst2_b;
         flag = 1;
     }
 
@@ -129,8 +135,11 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         // 오른손
         inst_c.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
         t3 = 0.5 * (t2_a + t2_b);
-        t3_inst3 << t2_a, t3, t2_b,
-            inst2_a, inst_c, inst2_b;
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst_c;
+        t3_inst3.block(1, 2, 9, 1) = inst2_b;
     }
 
     if ((inst2_a.block(9, 0, 9, 1).norm() == 0) && (inst2_b.block(9, 0, 9, 1).norm() == 1) && (flag == 1))
@@ -138,30 +147,37 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         // 왼손
         inst_c.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
         t3 = 0.5 * (t2_a + t2_b);
-        t3_inst3 << t2_a, t3, t2_b,
-            inst2_a, inst_c, inst2_b;
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst_c;
+        t3_inst3.block(1, 2, 9, 1) = inst2_b;
     }
 
     // 3번 룰: 1번 룰을 거치지 않았고 inst1이 0 이고 inst2에 1이 있으면, inst1에 -1을 넣는다.
     if ((inst2_a.block(0, 0, 9, 1).norm() == 0) && (inst2_b.block(0, 0, 9, 1).norm() == 1) && (flag == 0))
     {
         inst2_a.block(0, 0, 9, 1) = -inst2_b.block(0, 0, 9, 1);
-        t3_inst3 << t2_a, t2_b,
-            inst2_a, inst2_b;
+        t3_inst3.resize(19, 2);
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst2_b;
     }
 
     if ((inst2_a.block(9, 0, 9, 1).norm() == 0) && (inst2_b.block(9, 0, 9, 1).norm() == 1) && (flag == 0))
     {
         inst2_a.block(9, 0, 9, 1) = -inst2_b.block(9, 0, 9, 1);
-        t3_inst3 << t2_a, t2_b,
-            inst2_a, inst2_b;
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst2_b;
     }
 
     // 악보 끝까지 연주하기 위해서 inst2_b에 0 행렬이 인위적으로 들어가는 경우, 그대로 내보냄
     if ((inst2_b.norm() == 0) && (flag == 0))
     {
-        t3_inst3 << t2_a, t2_b,
-            inst2_a, inst2_b;
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 9, 1) = inst2_a;
+        t3_inst3.block(1, 1, 9, 1) = inst2_b;
     }
 
     return t3_inst3;
@@ -298,8 +314,8 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
 
     AA40.resize(3, 4);
     AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
-                t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
-                t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
+        t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
+        t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -608,7 +624,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                                                     double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
                                                     sol /= (L * L + zeta * zeta);
                                                     double the5 = asin(sol);
-                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2)    // the5 범위 : -45deg ~ 90deg
+                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
@@ -671,7 +687,7 @@ double PathManager::con_fun(double t_a, double t_b, double th_a, double th_b, do
 
 pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t)
 {
-    double p_out, v_out, V1_out;
+    double p_out, v_out/*, V1_out*/;
 
     if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
     { // 방향 지속의 경우, 2차 함수
@@ -684,7 +700,7 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
 
         p_out = a * t * t + b * t + c; // position
         v_out = 2 * a * t + b;         // velocity
-        V1_out = 2 * a * t1 + b;       // t1 시점에서의 속도
+        //V1_out = 2 * a * t1 + b;       // t1 시점에서의 속도
     }
     else
     { // 방향 전환의 경우, 3차 함수
@@ -714,7 +730,7 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
 
         p_out = a * t * t * t + b * t * t + c * t + d;
         v_out = 3 * a * t * t + 2 * b * t + c;
-        V1_out = 3 * a * t1_squared + 2 * b * t1 + c;
+        //V1_out = 3 * a * t1_squared + 2 * b * t1 + c;
     }
 
     return std::make_pair(p_out, v_out);
@@ -782,7 +798,7 @@ void PathManager::GetDrumPositoin()
     left_inst.resize(3, 9);
 
     // Extract the desired elements
-    Vector3d right_B = {0, 0, 0};
+    //Vector3d right_B = {0, 0, 0};
     Vector3d right_S;
     Vector3d right_FT;
     Vector3d right_MT;
@@ -792,7 +808,7 @@ void PathManager::GetDrumPositoin()
     Vector3d right_RC;
     Vector3d right_LC;
 
-    Vector3d left_B = {0, 0, 0};
+    //Vector3d left_B = {0, 0, 0};
     Vector3d left_S;
     Vector3d left_FT;
     Vector3d left_MT;
@@ -894,11 +910,11 @@ void PathManager::PathLoopTask()
 
     VectorXd qt = VectorXd::Zero(9);
     VectorXd qv_in = VectorXd::Zero(7);
-    MatrixXd A30; // 크기가 19x3인 2차원 벡터
-    MatrixXd A31; // 크기가 19x3인 2차원 벡터
+    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
+    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
     MatrixXd AA40; // 크기가 3x4인 2차원 벡터
     MatrixXd AA41; // 크기가 3x4인 2차원 벡터
-    MatrixXd B;   // 크기가 19x3인 2차원 벡터
+    MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
 
     VectorXd p1(9), p2(9), p3(9);
