@@ -467,20 +467,13 @@ void CanManager::readFramesFromAllSockets()
     {
         int framesRead = 0;
         int socket_fd = socketPair.second;
-        while (framesRead <= motorsPerSocket[socket_fd])
+        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
-            ssize_t nbytes = read(socket_fd, &frame, sizeof(frame));
-            if (nbytes == sizeof(frame))
-            {
-                tempFrames[socket_fd].push_back(frame);
-                framesRead++;
-            }
-            else
-            {
-                break;
-            }
-            std::cout << "frames read for one port: " << framesRead << endl;
+
+            tempFrames[socket_fd].push_back(frame);
+            framesRead++;
         }
+        std::cout << "frames read for one port: " << framesRead << endl;
     }
 }
 
