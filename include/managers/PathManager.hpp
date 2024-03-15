@@ -36,7 +36,7 @@ using namespace Eigen;
 /**
  * @class PathManager
  * @brief 드럼 로봇의 연주 경로를 생성하는 부분을 담당하는 클래스입니다.
- * 
+ *
  * 이 클래스는 주어진 악보를 분석하여 정해진 알고리즘을 따라 알맞은 경로를 생성하도록 합니다.
  */
 
@@ -63,36 +63,36 @@ public:
 
     /**
      * @brief 각 모터의 회전방향에 따라 경로 방향을 적용시킵니다.
-    */
+     */
     void ApplyDir();
 
     /**
      * @brief rT.txtㅇ에 저장되어 있는 드럼의 위치정보를 불러옵니다.
-    */
+     */
     void GetDrumPositoin();
 
     /**
      * @brief codeConfession.txtㅇ에 저장되어 있는 악보 정보를 불러옵니다.
-    */
+     */
     void GetMusicSheet();
 
     /**
      * @brief 연주를 진행하고 있는 line에 대한 연주 경로를 생성합니다.
-    */
+     */
     void PathLoopTask();
 
     /**
      * @brief 현재 위치부터 원하는 위치까지 이동시키는 경로를 생성합니다.
      * @param arr 이동하고자하는 위치 정보값입니다.
-    */
+     */
     void GetArr(vector<double> &arr);
 
-    int total = 0;  ///< 악보의 전체 줄 수.
-    int line = 0;   ///< 연주를 진행하고 있는 줄.
+    int total = 0; ///< 악보의 전체 줄 수.
+    int line = 0;  ///< 연주를 진행하고 있는 줄.
 
     // 악보에 따른 position & velocity 값 저장 (5ms 단위)
-    vector<vector<double>> p;   ///< 위치 경로 벡터
-    vector<vector<double>> v;   ///< 속도 경로 벡터
+    vector<vector<double>> p; ///< 위치 경로 벡터
+    vector<vector<double>> v; ///< 속도 경로 벡터
 
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
@@ -103,36 +103,44 @@ public:
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
 private:
-    TMotorCommandParser TParser;    ///< T 모터 명령어 파서.
-    MaxonCommandParser MParser;     ///< Maxon 모터 명령어 파서
-    
-    SystemState &systemState;   ///< 시스템의 현재 상태입니다.
-    CanManager &canManager;     ///< CAN 통신을 통한 모터 제어를 담당합니다.
-    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;   ///< 연결된 모터들의 정보입니다.
+    TMotorCommandParser TParser; ///< T 모터 명령어 파서.
+    MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
+
+    SystemState &systemState;                                     ///< 시스템의 현재 상태입니다.
+    CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
 
     // Functions for DrumRobot PathGenerating
-    vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0};  ///< 경로 생성 시 사용되는 현재 모터 위치 값.
-    MatrixXd right_inst;  ///< 오른팔의 각 악기별 위치 좌표 벡터.
-    MatrixXd left_inst;   ///< 왼팔의 각 악기별 위치 좌표 벡터.
+    vector<double> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
+    MatrixXd right_inst;                                       ///< 오른팔의 각 악기별 위치 좌표 벡터.
+    MatrixXd left_inst;                                        ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
-    int n_inst = 10;    ///< 총 악기의 수.
-    double bpm = 10;    /// 악보의 BPM 정보.
+    int n_inst = 10; ///< 총 악기의 수.
+    double bpm = 10; /// 악보의 BPM 정보.
 
-    vector<double> time_arr;    ///< 악보의 시간간격 정보.
-    MatrixXd inst_arr;  ///< 오른팔 / 왼팔이 치는 악기.
-    //MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
+    vector<double> time_arr; ///< 악보의 시간간격 정보.
+    MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
+    // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
     /* 실측값 */
-    //vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
-    //vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
-    //vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
+    // vector<double> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
+    // vector<double> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
+    // vector<double> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
     VectorXd part_length;
-    double s = 0.600;   ///< 허리 길이.
-    double z0 = 1.026;  ///< 바닥부터 허리까지의 높이.
+    double s = 0.600;  ///< 허리 길이.
+    double z0 = 1.026; ///< 바닥부터 허리까지의 높이.
 
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
-        {"waist", 0}, {"R_arm1", 1}, {"L_arm1", 2}, {"R_arm2", 3}, {"R_arm3", 4}, {"L_arm2", 5}, {"L_arm3", 6}, {"R_wrist", 7}, {"L_wrist", 8}};
-    
+        {"waist", 0},
+        {"R_arm1", 1},
+        {"L_arm1", 2},
+        {"R_arm2", 3},
+        {"R_arm3", 4},
+        {"L_arm2", 5},
+        {"L_arm3", 6},
+        {"R_wrist", 7},
+        {"L_wrist", 8}};
+
     map<int, int> motor_dir = { ///< 각 열에 해당하는 관절방향 [ 1 : CW , -1 : CCW ]
         {0, 1},
         {1, 1},
@@ -151,24 +159,23 @@ private:
      * @param k 벡터의 인덱스 값입니다.
      * @param n 연결하는데 사용되는 총 벡터 수입니다.
      * @return vector<double> 총 n개의 벡터 중 k번째 벡터를 나타냅니다.
-    */
+     */
     vector<double> connect(vector<double> &Q1, vector<double> &Q2, int k, int n);
 
     /**
      * @brief 각 모터의 현재위치 값을 불러옵니다.
-    */
+     */
     void getMotorPos();
 
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
-    */
+     */
     void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi);
-
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**
-     * @brief 
-    */
+     * @brief
+     */
     MatrixXd tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
     void itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
     void itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);

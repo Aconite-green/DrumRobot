@@ -19,15 +19,15 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]);
-            float v_des = Vi(motor_mapping[entry.first]);
+            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            float v_des = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
             entry.second->sendBuffer.push(frame);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]);
+            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
             entry.second->sendBuffer.push(frame);
         }
@@ -97,13 +97,13 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
 {
     int flag = 0;
 
-    VectorXd inst_c = -100 * VectorXd::Ones(18);
+    VectorXd inst_c = VectorXd::Zero(18);
 
     double t3;
     MatrixXd t3_inst3;
 
     // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
-    if ((inst2_a.segment(0, 9).norm() == 1) && (inst2_b.segment(0, 9).norm() == 1))
+    if ((round(inst2_a.segment(0, 9).norm()) == 1) && (round(inst2_b.segment(0, 9).norm()) == 1))
     {
         // 오른손
         inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
@@ -116,7 +116,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         flag = 1;
     }
 
-    if ((inst2_a.segment(9, 9).norm() == 1) && (inst2_b.segment(9, 9).norm() == 1))
+    if ((round(inst2_a.segment(9, 9).norm()) == 1) && (round(inst2_b.segment(9, 9).norm()) == 1))
     {
         // 왼손
         inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
@@ -130,7 +130,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     }
 
     // 2번 룰: 1번 룰에 의해 새로운 시점/악기가 정의되어 있고(flag = 1) inst2에 1이 있으면 inst3에 -1을 넣는다.
-    if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 1))
+    if ((round(inst2_a.segment(0, 9).norm()) == 0) && (round(inst2_b.segment(0, 9).norm()) == 1) && (flag == 1))
     {
         // 오른손
         inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
@@ -142,7 +142,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         t3_inst3.block(1, 2, 18, 1) = inst2_b;
     }
 
-    if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 1))
+    if ((round(inst2_a.segment(9, 9).norm()) == 0) && (round(inst2_b.segment(9, 9).norm()) == 1) && (flag == 1))
     {
         // 왼손
         inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
@@ -155,7 +155,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     }
 
     // 3번 룰: 1번 룰을 거치지 않았고 inst1이 0 이고 inst2에 1이 있으면, inst1에 -1을 넣는다.
-    if ((inst2_a.segment(0, 9).norm() == 0) && (inst2_b.segment(0, 9).norm() == 1) && (flag == 0))
+    if ((round(inst2_a.segment(0, 9).norm()) == 0) && (round(inst2_b.segment(0, 9).norm()) == 1) && (flag == 0))
     {
         inst2_a.segment(0, 9) = -inst2_b.segment(0, 9);
         t3_inst3.resize(19, 2);
@@ -164,7 +164,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
         t3_inst3.block(1, 1, 18, 1) = inst2_b;
     }
 
-    if ((inst2_a.segment(9, 9).norm() == 0) && (inst2_b.segment(9, 9).norm() == 1) && (flag == 0))
+    if ((round(inst2_a.segment(9, 9).norm()) == 0) && (round(inst2_b.segment(9, 9).norm()) == 1) && (flag == 0))
     {
         inst2_a.segment(9, 9) = -inst2_b.segment(9, 9);
         t3_inst3.resize(19, 2);
@@ -174,10 +174,10 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     }
 
     // 악보 끝까지 연주하기 위해서 inst2_b에 0 행렬이 인위적으로 들어가는 경우, 그대로 내보냄
-    if ((inst2_b.norm() == 0) && (flag == 0))
+    if (round((inst2_b.norm()) == 0) && (flag == 0))
     {
-        t3_inst3.row(0) << t2_a, t2_b;
         t3_inst3.resize(19, 2);
+        t3_inst3.row(0) << t2_a, t2_b;
         t3_inst3.block(1, 0, 18, 1) = inst2_a;
         t3_inst3.block(1, 1, 18, 1) = inst2_b;
     }
@@ -187,7 +187,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
 
 void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
-    MatrixXd T;
+    MatrixXd T(0, 0);
 
     for (int k = 0; k < 4; ++k)
     {
@@ -195,48 +195,43 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
-        int n = T.cols();
-
-        if (n == 0)
+        if (T.cols() == 0)
         {
-            T.resize(19, 3);
+            T.resize(inst3.rows(), inst3.cols());
             T = inst3;
         }
         else
         {
-            for (long int i = 0; i < T.size(); ++i)
-            {
-                MatrixXd temp = T.leftCols(n - 1);
-                T.resize(T.rows(), n + 2);
-                T << temp, inst3;
-            }
+            MatrixXd temp = T.leftCols(T.cols() - 1);
+            T.resize(T.rows(), T.cols() - 1 + inst3.cols());
+            T << temp, inst3;
         }
     }
+
+    cout << "\nT : \n" << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
     for (int k = 1; k < nn; ++k)
     {
-        if (T.block(1, k, 9, 1).sum() == 0)
+        if (round(T.block(1, k, 9, 1).sum()) == 0)
         {
             double norm_val = T.block(1, k - 1, 9, 1).norm();
             MatrixXd block = T.block(1, k - 1, 9, 1);
-            T.block(1, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
+            T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
 
-        if (T.block(10, k, 9, 1).sum() == 0)
+        if (round(T.block(10, k, 9, 1).sum()) == 0)
         {
             double norm_val = T.block(10, k - 1, 9, 1).norm();
             MatrixXd block = T.block(10, k - 1, 9, 1);
-            T.block(10, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
+            T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
     }
 
     /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
-
-    // t4_inst4의 크기를 결정하기 위해 먼저 반복문을 실행하여 t2(4)보다 작거나 같은 열의 개수를 계산
     for (int k = 0; k < nn; ++k)
     {
         if (T(0, k) <= t2[3])
@@ -245,7 +240,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    MatrixXd t4_inst4(T.rows(), j);
+    MatrixXd t4_inst4 = MatrixXd::Zero(T.rows(), j);
     j = 0; // j 초기화
     for (int k = 0; k < nn; ++k)
     {
@@ -318,11 +313,13 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
         t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
         t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
+
+    cout << "\nA30 :\n" << A30 << "\nA31 :\n" << A31 << "\nAA40 :\n" << AA40 << "\nAA41 :\n" << AA41;
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
 {
-    MatrixXd T;
+    MatrixXd T(0, 0);
 
     for (int k = 0; k < 4; ++k)
     {
@@ -330,41 +327,40 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
-        int n = T.cols();
+        cout << "\nk : " << k << "\n" << inst3 << "\n";
 
-        if (n == 0)
+        if (T.cols() == 0)
         {
-            T.resize(19, 3);
+            T.resize(inst3.rows(), inst3.cols());
             T = inst3;
         }
         else
         {
-            for (long int i = 0; i < T.size(); ++i)
-            {
-                MatrixXd temp = T.leftCols(n - 1);
-                T.resize(T.rows(), n + 2);
-                T << temp, inst3;
-            }
+            MatrixXd temp = T.leftCols(T.cols() - 1);
+            T.resize(T.rows(), T.cols() - 1 + inst3.cols());
+            T << temp, inst3;
         }
     }
+
+    cout << "\nT : \n" << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
     for (int k = 1; k < nn; ++k)
     {
-        if (T.block(1, k, 9, 1).sum() == 0)
+        if (round(T.block(1, k, 9, 1).sum()) == 0)
         {
             double norm_val = T.block(1, k - 1, 9, 1).norm();
             MatrixXd block = T.block(1, k - 1, 9, 1);
-            T.block(1, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
+            T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
 
-        if (T.block(10, k, 9, 1).sum() == 0)
+        if (round(T.block(10, k, 9, 1).sum()) == 0)
         {
             double norm_val = T.block(10, k - 1, 9, 1).norm();
             MatrixXd block = T.block(10, k - 1, 9, 1);
-            T.block(10, k, 9, 1) = -0.5 * block.array().abs() / norm_val;
+            T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
     }
 
@@ -424,6 +420,8 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             break;
         }
     }
+
+    cout << "\nB :\n" << B << "\nBB :\n" << BB;
 }
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
@@ -689,17 +687,20 @@ double PathManager::con_fun(double t_a, double t_b, double th_a, double th_b, do
 
 pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t)
 {
-    double p_out, v_out/*, V1_out*/;
+    double p_out, v_out /*, V1_out*/;
 
-    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0) { // 방향 지속의 경우, 2차 함수
+    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
+    { // 방향 지속의 경우, 2차 함수
         double c = qk1_06;
         double b = qv_in;
         double a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
 
         p_out = a * t * t + b * t + c; // 위치
-        v_out = 2 * a * t + b; // 속도
-        //V1_out = 2 * a * t1 + b; // t1 시점에서의 속도
-    } else { // 방향 전환의 경우, 3차 함수
+        v_out = 2 * a * t + b;         // 속도
+        // V1_out = 2 * a * t1 + b; // t1 시점에서의 속도
+    }
+    else
+    { // 방향 전환의 경우, 3차 함수
         double c = qv_in;
         double d = qk1_06;
 
@@ -723,8 +724,8 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
         double b = invT21 * ANS1 + invT22 * ANS2;
 
         p_out = a * t * t * t + b * t * t + c * t + d; // 위치
-        v_out = 3 * a * t * t + 2 * b * t + c; // 속도
-        //V1_out = 3 * a * t1 * t1 + 2 * b * t1 + c; // t1 시점에서의 속도
+        v_out = 3 * a * t * t + 2 * b * t + c;         // 속도
+        // V1_out = 3 * a * t1 * t1 + 2 * b * t1 + c; // t1 시점에서의 속도
     }
 
     return std::make_pair(p_out, v_out);
@@ -738,7 +739,7 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
     VectorXd q7_madi = t_madi.row(1);
     VectorXd q8_madi = t_madi.row(2);
 
-    if (t_now >= time_madi(0) && t_now < q7_madi(1))
+    if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
         qR_t = con_fun(time_madi(0), time_madi(1), q7_madi(0), q7_madi(1), t_now);
         qL_t = con_fun(time_madi(0), time_madi(1), q8_madi(0), q8_madi(1), t_now);
@@ -792,7 +793,7 @@ void PathManager::GetDrumPositoin()
     left_inst.resize(3, 9);
 
     // Extract the desired elements
-    //Vector3d right_B = {0, 0, 0};
+    // Vector3d right_B = {0, 0, 0};
     Vector3d right_S;
     Vector3d right_FT;
     Vector3d right_MT;
@@ -802,7 +803,7 @@ void PathManager::GetDrumPositoin()
     Vector3d right_RC;
     Vector3d right_LC;
 
-    //Vector3d left_B = {0, 0, 0};
+    // Vector3d left_B = {0, 0, 0};
     Vector3d left_S;
     Vector3d left_FT;
     Vector3d left_MT;
@@ -839,11 +840,17 @@ void PathManager::GetDrumPositoin()
 
 void PathManager::GetMusicSheet()
 {
+
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
         {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
 
-    string score_path = "../include/managers/codeConfession.txt";
+    /*VectorXd default_right(9);
+    VectorXd default_left(9);
+    default_right << 0, 0, 0, 0, 0, 0, 0, 1, 0;
+    default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;*/
+
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
@@ -852,7 +859,11 @@ void PathManager::GetMusicSheet()
     string row;
     int lineIndex = 0;
     double time = 0.0;
+    time_arr.push_back(time);
     inst_arr.resize(18, 1);
+    inst_arr << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0;
+    //inst_arr.block(0, 0, 9, 1) = default_right;
+    //inst_arr.block(9, 0, 9, 1) = default_left;
     while (getline(file, row))
     {
         istringstream iss(row);
@@ -871,17 +882,17 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            VectorXd inst_arr_R(9), inst_arr_L(9);
-            VectorXd inst_col(18);
+            VectorXd inst_arr_R = VectorXd::Zero(9), inst_arr_L = VectorXd::Zero(9);
+            VectorXd inst_col = VectorXd::Zero(18);
 
             if (columns[2] == "0" && columns[3] == "0")
                 continue;
             if (columns[2] != "0")
-                inst_arr_R(instrument_mapping[columns[2]]) = 1;
+                inst_arr_R(instrument_mapping[columns[2]]) = 1.0;
             if (columns[3] != "0")
-                inst_arr_L(instrument_mapping[columns[3]]) = 1;
+                inst_arr_L(instrument_mapping[columns[3]]) = 1.0;
 
-            time += stod(columns[1]) * 100 / bpm;
+            time += stod(columns[1]) * 100.0 / bpm;
             time_arr.push_back(time);
             inst_col << inst_arr_R, inst_arr_L;
             inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
@@ -893,7 +904,55 @@ void PathManager::GetMusicSheet()
 
     file.close();
 
-    total = time_arr.size();
+    time_arr.push_back(time + 1);
+    time_arr.push_back(time + 2);
+    time_arr.push_back(time + 3);
+
+    VectorXd inst_col = VectorXd::Zero(18);
+    inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 3);
+    inst_arr.col(inst_arr.cols() - 1) = inst_col;
+    inst_arr.col(inst_arr.cols() - 2) = inst_col;
+    inst_arr.col(inst_arr.cols() - 3) = inst_col;
+
+    /*
+    time_arr = { 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0 };
+
+    // 기본 스틱 위치 설정
+    MatrixXd default_right(9, 9);
+    MatrixXd default_left(9, 9);
+    default_right.setZero();
+    default_left.setZero();
+    default_right(7, 0) = 1;
+    default_left(7, 0) = 1;
+
+    // 오른손 SCORE 초기화 및 채우기
+    MatrixXd SCORE_R = MatrixXd::Zero(9, 10);
+    SCORE_R.block(0, 0, 9, 1) = default_right;
+    SCORE_R(2, 2) = 1;
+    SCORE_R(4, 3) = 1;
+    SCORE_R(1, 5) = 1;
+    SCORE_R(1, 6) = 1;
+    SCORE_R.conservativeResize(9, 13);
+    SCORE_R.block(0, 10, 9, 3).setZero();
+
+    // 왼손 SCORE 초기화 및 채우기
+    MatrixXd SCORE_L = MatrixXd::Zero(9, 10);
+    SCORE_L.block(0, 0, 9, 1) = default_left;
+    SCORE_L(4, 1) = 1;
+    SCORE_L(4, 2) = 1;
+    SCORE_L(1, 4) = 1;
+    SCORE_L(3, 5) = 1;
+    SCORE_L(1, 6) = 1;
+    SCORE_L.conservativeResize(9, 13);
+    SCORE_L.block(0, 10, 9, 3).setZero();
+
+    // 최종 악기 배열
+    inst_arr.resize(18, 13);
+    inst_arr << SCORE_R, SCORE_L; */
+
+    total = time_arr.size() - 3;
+
+    cout << time_arr.size() << ", " << inst_arr.cols() << "\n";
 }
 
 void PathManager::PathLoopTask()
@@ -933,6 +992,10 @@ void PathManager::PathLoopTask()
     }
     else if (line == 1)
     {
+        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+
         VectorXd A1 = A31.col(0);
         VectorXd A2 = A31.col(1);
         VectorXd A3 = A31.col(2);
@@ -943,10 +1006,10 @@ void PathManager::PathLoopTask()
         t_wrist_madi = sts2wrist_fun(AA41, v_wrist);
         t_elbow_madi = sts2elbow_fun(AA41, v_elbow);
     }
-    else
+    else if (line > 1)
     {
         std::vector<double> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
-        MatrixXd inst2 = inst_arr.middleCols(line - 1, line + 4);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
         itms_fun(t2, inst2, B, BB);
 
         VectorXd B1 = B.col(0);
@@ -959,6 +1022,8 @@ void PathManager::PathLoopTask()
         t_wrist_madi = sts2wrist_fun(BB, v_wrist);
         t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
+
+    cout << "\nt_wrist_madi :\n" << t_wrist_madi << "\nt_elbow_madi :\n" << t_elbow_madi;
 
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
@@ -973,6 +1038,8 @@ void PathManager::PathLoopTask()
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
     VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
 
+    cout << "\nqk1_06 : \n" << qk1_06 << "\nqk2_06 :\n" << qk2_06 << "\nqk3_06 :\n" << qk3_06;
+
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
     double dt = 0.005;
@@ -982,13 +1049,13 @@ void PathManager::PathLoopTask()
     {
         for (int m = 0; m < 7; m++)
         {
-            pair<double, double> p = iconf_fun(qk1_06(m), qk2_06(m), qk3_06(m), qv_in(m), t1, t2, t_now - p1(0) + dt * (i - 1));
+            pair<double, double> p = iconf_fun(qk1_06(m), qk2_06(m), qk3_06(m), qv_in(m), t1, t2, t_now - p1(0) + dt * i);
             qt(m) = p.first;
             qv_in(m) = p.second;
         }
 
-        pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * (i - 1));
-        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * (i - 1));
+        pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
+        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;

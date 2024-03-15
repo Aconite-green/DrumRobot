@@ -83,8 +83,8 @@ private:
     void printCurrentPositions(); ///< 현재 모터 위치를 출력하는 메소드.
     int kbhit(); ///< 키보드 입력이 있는지 확인하는 메소드.
 
-    bool isReady; ///< 준비 상태 플래그.
-    bool isBack; ///< 되돌아가기 플래그.
+    bool isReady = false; ///< 준비 상태 플래그.
+    bool isBack = false; ///< 되돌아가기 플래그.
 
     // System Initialize 메소드들
     void initializeMotors(); ///< 모터 초기화 메소드.
