@@ -208,7 +208,8 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    cout << "\nT : \n" << T;
+    cout << "\nT : \n"
+         << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
@@ -314,7 +315,11 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
         t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
 
-    cout << "\nA30 :\n" << A30 << "\nA31 :\n" << A31 << "\nAA40 :\n" << AA40 << "\nAA41 :\n" << AA41;
+    cout << "\nA30 :\n"
+         << A30 << "\nA31 :\n"
+         << A31 << "\nAA40 :\n"
+         << AA40 << "\nAA41 :\n"
+         << AA41;
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -327,7 +332,8 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
-        cout << "\nk : " << k << "\n" << inst3 << "\n";
+        cout << "\nk : " << k << "\n"
+             << inst3 << "\n";
 
         if (T.cols() == 0)
         {
@@ -342,7 +348,8 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
-    cout << "\nT : \n" << T;
+    cout << "\nT : \n"
+         << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
@@ -421,7 +428,9 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
-    cout << "\nB :\n" << B << "\nBB :\n" << BB;
+    cout << "\nB :\n"
+         << B << "\nBB :\n"
+         << BB;
 }
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
@@ -840,15 +849,14 @@ void PathManager::GetDrumPositoin()
 
 void PathManager::GetMusicSheet()
 {
-
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
         {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
 
-    /*VectorXd default_right(9);
-    VectorXd default_left(9);
+    default_right.resize(9);
+    default_left.resize(9);
     default_right << 0, 0, 0, 0, 0, 0, 0, 1, 0;
-    default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;*/
+    default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;
 
     string score_path = "../include/managers/codeConfession copy.txt";
 
@@ -861,9 +869,8 @@ void PathManager::GetMusicSheet()
     double time = 0.0;
     time_arr.push_back(time);
     inst_arr.resize(18, 1);
-    inst_arr << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0;
-    //inst_arr.block(0, 0, 9, 1) = default_right;
-    //inst_arr.block(9, 0, 9, 1) = default_left;
+    inst_arr.block(0, 0, 9, 1) = default_right;
+    inst_arr.block(9, 0, 9, 1) = default_left;
     while (getline(file, row))
     {
         istringstream iss(row);
@@ -914,45 +921,14 @@ void PathManager::GetMusicSheet()
     inst_arr.col(inst_arr.cols() - 2) = inst_col;
     inst_arr.col(inst_arr.cols() - 3) = inst_col;
 
-    /*
-    time_arr = { 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0 };
-
-    // 기본 스틱 위치 설정
-    MatrixXd default_right(9, 9);
-    MatrixXd default_left(9, 9);
-    default_right.setZero();
-    default_left.setZero();
-    default_right(7, 0) = 1;
-    default_left(7, 0) = 1;
-
-    // 오른손 SCORE 초기화 및 채우기
-    MatrixXd SCORE_R = MatrixXd::Zero(9, 10);
-    SCORE_R.block(0, 0, 9, 1) = default_right;
-    SCORE_R(2, 2) = 1;
-    SCORE_R(4, 3) = 1;
-    SCORE_R(1, 5) = 1;
-    SCORE_R(1, 6) = 1;
-    SCORE_R.conservativeResize(9, 13);
-    SCORE_R.block(0, 10, 9, 3).setZero();
-
-    // 왼손 SCORE 초기화 및 채우기
-    MatrixXd SCORE_L = MatrixXd::Zero(9, 10);
-    SCORE_L.block(0, 0, 9, 1) = default_left;
-    SCORE_L(4, 1) = 1;
-    SCORE_L(4, 2) = 1;
-    SCORE_L(1, 4) = 1;
-    SCORE_L(3, 5) = 1;
-    SCORE_L(1, 6) = 1;
-    SCORE_L.conservativeResize(9, 13);
-    SCORE_L.block(0, 10, 9, 3).setZero();
-
-    // 최종 악기 배열
-    inst_arr.resize(18, 13);
-    inst_arr << SCORE_R, SCORE_L; */
-
     total = time_arr.size() - 3;
 
     cout << time_arr.size() << ", " << inst_arr.cols() << "\n";
+}
+
+void PathManager::SetReadyAng()
+{
+    
 }
 
 void PathManager::PathLoopTask()
@@ -1023,7 +999,9 @@ void PathManager::PathLoopTask()
         t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
 
-    cout << "\nt_wrist_madi :\n" << t_wrist_madi << "\nt_elbow_madi :\n" << t_elbow_madi;
+    cout << "\nt_wrist_madi :\n"
+         << t_wrist_madi << "\nt_elbow_madi :\n"
+         << t_elbow_madi;
 
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
@@ -1038,7 +1016,10 @@ void PathManager::PathLoopTask()
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
     VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
 
-    cout << "\nqk1_06 : \n" << qk1_06 << "\nqk2_06 :\n" << qk2_06 << "\nqk3_06 :\n" << qk3_06;
+    cout << "\nqk1_06 : \n"
+         << qk1_06 << "\nqk2_06 :\n"
+         << qk2_06 << "\nqk3_06 :\n"
+         << qk3_06;
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);

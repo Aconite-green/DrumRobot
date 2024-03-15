@@ -77,6 +77,11 @@ public:
     void GetMusicSheet();
 
     /**
+     * @brief 원하는 준비 동작에 따라 준비동작 각도를 추출합니다.
+    */
+   void SetReadyAng();
+
+    /**
      * @brief 연주를 진행하고 있는 line에 대한 연주 경로를 생성합니다.
      */
     void PathLoopTask();
@@ -120,6 +125,8 @@ private:
 
     vector<double> time_arr; ///< 악보의 시간간격 정보.
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
+    VectorXd default_right;
+    VectorXd default_left;
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
     /* 실측값 */
