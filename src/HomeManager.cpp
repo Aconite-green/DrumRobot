@@ -1,15 +1,15 @@
 #include "../include/managers/HomeManager.hpp"
 
-HomeManager::HomeManager(SystemState &systemStateRef,
+HomeManager::HomeManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
 void HomeManager::mainLoop()
 {
-    while (systemState.main == Main::Homing)
+    while (state.main == Main::Homing)
     {
         displayHomingStatus();
 
@@ -426,13 +426,10 @@ void HomeManager::UpdateHomingStatus()
 
     if (allMotorsHomed)
     {
-        systemState.homeMode = HomeMode::HomeDone;
-        systemState.main = Main::Ideal;
+        state.home = HomeSub::Done;
+        state.main = Main::Ideal;
     }
-    else
-    {
-        systemState.homeMode = HomeMode::NotHome;
-    }
+
 }
 
 void HomeManager::MaxonEnable()

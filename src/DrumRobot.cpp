@@ -1,19 +1,20 @@
 #include "../include/tasks/DrumRobot.hpp"
 
 // DrumRobot 클래스의 생성자
-DrumRobot::DrumRobot(SystemState &systemStateRef,
+DrumRobot::DrumRobot(State &stateRef,
                      CanManager &canManagerRef,
                      PathManager &pathManagerRef,
                      HomeManager &homeManagerRef,
                      TestManager &testManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef),
+    : state(stateRef),
       canManager(canManagerRef),
       pathManager(pathManagerRef),
       homeManager(homeManagerRef),
       testManager(testManagerRef),
       motors(motorsRef)
 {
+    StandardTime = chrono::system_clock::now();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -23,9 +24,9 @@ DrumRobot::DrumRobot(SystemState &systemStateRef,
 void DrumRobot::stateMachine()
 {
 
-    while (systemState.main != Main::Shutdown)
+    while (state.main != Main::Shutdown)
     {
-        switch (systemState.main.load())
+        switch (state.main.load())
         {
         case Main::SystemInit:
             initializeMotors();
@@ -33,7 +34,7 @@ void DrumRobot::stateMachine()
             motorSettingCmd();
             std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
-            systemState.main = Main::Ideal;
+            state.main = Main::Ideal;
             break;
 
         case Main::Ideal:
@@ -51,7 +52,7 @@ void DrumRobot::stateMachine()
         case Main::Check:
             canManager.checkAllMotors();
             printCurrentPositions();
-            systemState.main = Main::Ideal;
+            state.main = Main::Ideal;
             break;
 
         case Main::Tune:
@@ -95,7 +96,7 @@ void DrumRobot::stateMachine()
             }
             else
             {
-                systemState.main = Main::Shutdown;
+                state.main = Main::Shutdown;
                 DeactivateControlTask();
             }
             break;
@@ -109,38 +110,90 @@ void DrumRobot::stateMachine()
 void DrumRobot::sendLoopForThread()
 {
     initializePathManager();
-    while (systemState.main != Main::Shutdown)
+    while (state.main != Main::Shutdown)
     {
         usleep(50000);
-        if (systemState.main == Main::Perform)
+        if (state.main == Main::Perform)
         {
             if (canManager.checkAllMotors())
             {
                 SendLoop();
             }
         }
+        else if (state.main == Main::Ideal)
+        {
+            canManager.checkCanPortsStatus();
+            canManager.checkAllMotors();
+            sleep(3);
+        }
+    }
+}
+
+void DrumRobot::ReadProcess(int periodMicroSec)
+{
+    auto currentTime = chrono::system_clock::now();
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - StandardTime);
+
+    // sensor.connect();
+    // if (!sensor.connected)
+    //     std::cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
+
+    switch (state.read.load())
+    {
+    case ReadSub::TimeCheck:
+        if (elapsed_time.count() >= periodMicroSec)
+        {
+            state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
+            StandardTime = currentTime;         // 현재 시간으로 시간 객체 초기화
+        }
+        break;
+    case ReadSub::ReadCANFrame:
+        canManager.readFramesFromAllSockets(); // CAN frame 읽기
+        state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+        break;
+
+    case ReadSub::UpdateMotorInfo:
+        canManager.distributeFramesToMotors(); // 읽은 데이터를 모터 정보로 업데이트
+        state.read = ReadSub::TimeCheck;       // 작업 완료 상태로 전환
+        break;
     }
 }
 
 void DrumRobot::recvLoopForThread()
 {
 
-    while (systemState.main != Main::Shutdown)
+    while (state.main != Main::Shutdown)
     {
-        usleep(50000);
-        if (systemState.main == Main::Ideal)
+        switch (state.main.load())
         {
-            canManager.checkCanPortsStatus();
-            canManager.checkAllMotors();
-            sleep(3);
+        case Main::SystemInit:
+            usleep(500000);
+            break;
+        case Main::Ideal:
+            ReadProcess(500000); /*500ms*/
+            break;
+        case Main::Homing:
+            ReadProcess(5000); /*5ms*/
+            break;
+        case Main::Perform:
+            ReadProcess(5000);
+            break;
+        case Main::AddStance:
+            ReadProcess(5000);
+            break;
+        case Main::Check:
+            usleep(500000);
+            break;
+        case Main::Tune:
+            usleep(500000);
+            break;
+        case Main::Shutdown:
+            parse_and_save_to_csv("../../READ/DrumData_out.txt");
+            break;
+        case Main::Pause:
+            ReadProcess(5000); /*5ms*/
+            break;
         }
-        else if (systemState.main == Main::Perform)
-        {
-            canManager.clearReadBuffers();
-            RecieveLoop();
-        }
-
-        //
     }
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -151,20 +204,20 @@ void DrumRobot::displayAvailableCommands() const
 {
     std::cout << "Available Commands:\n";
 
-    if (systemState.main == Main::Ideal)
+    if (state.main == Main::Ideal)
     {
-        if (systemState.homeMode == HomeMode::NotHome)
+        if (!(state.home == HomeSub::Done))
         {
             std::cout << "- h : Start Homing Mode\n";
             std::cout << "- x : Make home state by user\n";
         }
-        else if (systemState.homeMode == HomeMode::HomeDone)
+        else
         {
             std::cout << "- r : Move to Ready Position\n";
             std::cout << "- t : Start tuning\n";
         }
     }
-    else if (systemState.main == Main::Ready)
+    else if (state.main == Main::Ready)
     {
         std::cout << "- p : Start Perform\n";
         std::cout << "- t : Start tuning\n";
@@ -175,62 +228,66 @@ void DrumRobot::displayAvailableCommands() const
 
 bool DrumRobot::processInput(const std::string &input)
 {
-    if (systemState.main == Main::Ideal)
+    if (state.main == Main::Ideal)
     {
-        if (input == "h" && systemState.homeMode == HomeMode::NotHome)
+        if (input == "h" && !(state.home == HomeSub::Done))
         {
-            systemState.main = Main::Homing;
+            state.main = Main::Homing;
             return true;
         }
-        else if (input == "t" && systemState.homeMode == HomeMode::HomeDone)
+        else if (input == "t" && state.home == HomeSub::Done)
         {
-            systemState.main = Main::Tune;
+            state.main = Main::Tune;
             return true;
         }
-        else if (input == "r" && systemState.homeMode == HomeMode::HomeDone)
+        else if (input == "r" && state.home == HomeSub::Done)
         {
-            systemState.main = Main::Ready;
+            state.main = Main::Ready;
             return true;
         }
-        else if (input == "x" && systemState.homeMode == HomeMode::NotHome)
+        else if (input == "x" && !(state.home == HomeSub::Done))
         {
-            systemState.homeMode = HomeMode::HomeDone;
+            state.home = HomeSub::Done;
             return true;
         }
         else if (input == "c")
         {
-            systemState.main = Main::Check;
+            state.main = Main::Check;
             return true;
         }
         else if (input == "s")
         {
-            if (systemState.homeMode == HomeMode::NotHome)
-                systemState.main = Main::Shutdown;
-            else if (systemState.homeMode == HomeMode::HomeDone)
-                systemState.main = Main::Back;
+            if (state.home == HomeSub::Done)
+            {
+                state.main = Main::Back;
+            }
+            else
+            {
+                state.main = Main::Shutdown;
+            }
             return true;
         }
     }
-    else if (systemState.main == Main::Ready)
+    else if (state.main == Main::Ready)
     {
         if (input == "p")
         {
-            systemState.main = Main::Perform;
+            state.main = Main::Perform;
             return true;
         }
         else if (input == "s")
         {
-            systemState.main = Main::Back;
+            state.main = Main::Back;
             return true;
         }
         else if (input == "t")
         {
-            systemState.main = Main::Tune;
+            state.main = Main::Tune;
             return true;
         }
         else if (input == "c")
         {
-            systemState.main = Main::Check;
+            state.main = Main::Check;
             return true;
         }
     }
@@ -262,15 +319,15 @@ void DrumRobot::checkUserInput()
     {
         char input = getchar();
         if (input == 'q')
-            systemState.main = Main::Pause;
+            state.main = Main::Pause;
         else if (input == 'e')
         {
             isReady = false;
-            systemState.main = Main::Ready;
+            state.main = Main::Ready;
             pathManager.line = 0;
         }
         else if (input == 'r')
-            systemState.main = Main::Perform;
+            state.main = Main::Perform;
     }
     usleep(500000);
 }
@@ -772,10 +829,10 @@ void DrumRobot::SendLoop()
     }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
-    while (systemState.main == Main::Perform || systemState.main == Main::Pause)
+    while (state.main == Main::Perform || state.main == Main::Pause)
     {
 
-        if (systemState.main == Main::Pause)
+        if (state.main == Main::Pause)
             continue;
 
         bool isAnyBufferLessThanTen = false;
@@ -798,7 +855,7 @@ void DrumRobot::SendLoop()
             else if (pathManager.line == pathManager.total)
             {
                 std::cout << "Perform Done\n";
-                systemState.main = Main::Ready;
+                state.main = Main::Ready;
                 pathManager.line = 0;
             }
         }
@@ -817,7 +874,7 @@ void DrumRobot::SendLoop()
         if (allBuffersEmpty)
         {
             std::cout << "Performance is Over\n";
-            systemState.main = Main::Ideal;
+            state.main = Main::Ideal;
         }
 
         chrono::system_clock::time_point internal = std::chrono::system_clock::now();
@@ -954,46 +1011,6 @@ void DrumRobot::clearMotorsSendBuffer()
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Recive Thread Loop                         */
 ///////////////////////////////////////////////////////////////////////////////
-
-void DrumRobot::RecieveLoop()
-{
-    chrono::system_clock::time_point external = std::chrono::system_clock::now();
-
-    canManager.setSocketsTimeout(0, 5000);
-    canManager.clearReadBuffers();
-
-    sensor.connect();
-    if (!sensor.connected)
-        std::cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
-
-    while (systemState.main == Main::Perform || systemState.main == Main::Pause)
-    {
-        if (systemState.main == Main::Pause)
-            continue;
-
-        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-
-        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-
-        // auto epoch_internal = internal.time_since_epoch();
-        // auto value_internal = chrono::duration_cast<chrono::milliseconds>(epoch_internal);
-        // std::cout << "internal: " << value_internal.count() << " ms " << endl;
-        //
-        // auto epoch_external = external.time_since_epoch();
-        // auto value_external = chrono::duration_cast<chrono::milliseconds>(epoch_external);
-        // std::cout << "external: " << value_external.count() << " ms " << endl;
-
-        if (elapsed_time.count() > 5000)
-        {
-            std::cout << "elasped: " << elapsed_time.count() << "\n";
-            canManager.readFramesFromAllSockets();
-            canManager.distributeFramesToMotors();
-            external = std::chrono::system_clock::now();
-        }
-    }
-
-    parse_and_save_to_csv("../../READ/DrumData_out.txt");
-}
 
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {
