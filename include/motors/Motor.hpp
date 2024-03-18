@@ -37,6 +37,8 @@ public:
     std::queue<can_frame> sendBuffer; ///< 송신 버퍼.
     std::queue<can_frame> recieveBuffer; ///< 수신 버퍼.
 
+    struct can_frame sendFrame;
+
     GenericMotor(uint32_t nodeId);
     virtual ~GenericMotor() = default;
 
