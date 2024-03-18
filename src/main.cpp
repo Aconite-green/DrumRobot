@@ -35,15 +35,15 @@ int main(int argc, char *argv[])
 {
 
     // Create Share Resource
-    SystemState systemState;
+    State state;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
 
     CanManager canManager(motors);
-    PathManager pathManager(systemState, canManager, motors);
-    TestManager testManager(systemState, canManager, motors);
-    HomeManager homeManager(systemState, canManager, motors);
+    PathManager pathManager(state, canManager, motors);
+    TestManager testManager(state, canManager, motors);
+    HomeManager homeManager(state, canManager, motors);
 
-    DrumRobot drumRobot(systemState, canManager, pathManager, homeManager, testManager, motors);
+    DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors);
 
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);

@@ -45,7 +45,7 @@ public:
      * @param canManagerRef CAN 통신 관리자에 대한 참조입니다.
      * @param motorsRef 모터 객체에 대한 참조를 매핑합니다.
      */
-    HomeManager(SystemState &systemStateRef,
+    HomeManager(State &stateRef,
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
@@ -55,7 +55,7 @@ public:
     void mainLoop();
 
 private:
-    SystemState &systemState;
+    State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 

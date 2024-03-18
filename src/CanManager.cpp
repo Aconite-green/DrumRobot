@@ -322,6 +322,22 @@ int CanManager::setSocketTimeout(int socket, int sec, int usec)
     return 0;
 }
 
+void CanManager::setSocketNonBlock(){
+    for(auto& socket : sockets) { // sockets는 std::map<std::string, int> 타입
+        int flags = fcntl(socket.second, F_GETFL, 0); // 현재 플래그를 가져옴
+        if(flags < 0) continue; // 에러 체크
+        fcntl(socket.second, F_SETFL, flags | O_NONBLOCK); // 논블록 플래그 추가
+    }
+}
+
+void CanManager::setSocketBlock(){
+    for(auto& socket : sockets) {
+        int flags = fcntl(socket.second, F_GETFL, 0);
+        if(flags < 0) continue;
+        fcntl(socket.second, F_SETFL, flags & ~O_NONBLOCK); // 논블록 플래그 제거
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                Utility Functions                                          */
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -462,19 +478,18 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-
+    int framescnt = 0;
     for (const auto &socketPair : sockets)
     {
-        int framesRead = 0;
+
         int socket_fd = socketPair.second;
         while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
-
             tempFrames[socket_fd].push_back(frame);
-            framesRead++;
+            framescnt++;
         }
-        std::cout << "frames read for one port: " << framesRead << endl;
     }
+    std::cout << framescnt << endl;
 }
 
 void CanManager::distributeFramesToMotors()

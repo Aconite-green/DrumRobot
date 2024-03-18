@@ -45,7 +45,7 @@ public:
      * @param canManagerRef CAN 통신을 관리하는 CanManager 클래스의 참조입니다.
      * @param motorsRef 연결된 모터들의 정보를 담고 있는 맵입니다.
      */
-    TestManager(SystemState &systemStateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     /**
      * @brief 테스트 매니저의 메인 루프를 실행하는 함수입니다.
@@ -70,7 +70,7 @@ public:
     void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 
 private:
-    SystemState &systemState; ///< 시스템의 현재 상태입니다.
+    State &state; ///< 시스템의 현재 상태입니다.
     CanManager &canManager; ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
 
