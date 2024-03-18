@@ -14,7 +14,8 @@ DrumRobot::DrumRobot(State &stateRef,
       testManager(testManagerRef),
       motors(motorsRef)
 {
-    StandardTime = chrono::system_clock::now();
+    ReadStandard = chrono::system_clock::now();
+    SendStandard = chrono::system_clock::now();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -37,21 +38,17 @@ void DrumRobot::stateMachine()
             getchar();
             state.main = Main::Ideal;
             break;
-
         case Main::Ideal:
             idealStateRoutine();
             break;
-
         case Main::Homing:
             canManager.setSocketBlock();
             homeManager.mainLoop();
             canManager.setSocketNonBlock();
             break;
-
         case Main::Perform:
             checkUserInput();
             break;
-
         case Main::Check:
             canManager.setSocketBlock();
             canManager.checkAllMotors();
@@ -59,17 +56,70 @@ void DrumRobot::stateMachine()
             state.main = Main::Ideal;
             canManager.setSocketNonBlock();
             break;
-
         case Main::Tune:
             MaxonEnable();
             testManager.mainLoop();
             MaxonDisable();
             break;
-
         case Main::Shutdown:
+            usleep(500000);
             break;
-
         case Main::Ready:
+            usleep(500000);
+            break;
+        case Main::Back:
+            usleep(500000);
+            break;
+        case Main::Pause:
+            checkUserInput();
+            break;
+        case Main::AddStance:
+            checkUserInput();
+            break;
+        }
+    }
+}
+
+void DrumRobot::sendLoopForThread()
+{
+    initializePathManager();
+    while (state.main != Main::Shutdown)
+    {
+        switch (state.main.load())
+        {
+        case Main::SystemInit:
+            usleep(500000);
+            break;
+        case Main::Ideal:
+            canManager.checkCanPortsStatus();
+            canManager.checkAllMotors();
+            usleep(500000);
+            break;
+        case Main::Homing:
+            usleep(500000);
+            break;
+        case Main::Perform:
+            //SendLoop();
+            SendPerformProcess(5000);
+            break;
+        case Main::AddStance:
+            usleep(5000);
+            // ReadProcess(5000);
+            break;
+        case Main::Check:
+            usleep(500000);
+            break;
+        case Main::Tune:
+            usleep(500000);
+            break;
+        case Main::Shutdown:
+            save_to_txt_inputData("../../READ/DrumData_in.txt");
+            break;
+        case Main::Pause:
+            usleep(5000);
+            break;
+        case Main::Ready:
+            // 이 State는 삭제예정
             if (!isReady)
             {
                 if (canManager.checkAllMotors())
@@ -86,8 +136,8 @@ void DrumRobot::stateMachine()
             else
                 idealStateRoutine();
             break;
-
         case Main::Back:
+            // 이 State는 삭제예정
             if (!isBack)
             {
                 if (canManager.checkAllMotors())
@@ -105,62 +155,89 @@ void DrumRobot::stateMachine()
                 DeactivateControlTask();
             }
             break;
-        case Main::Pause:
-            checkUserInput();
-            break;
-        case Main::AddStance:
-            checkUserInput();
-            break;
         }
     }
 }
 
-void DrumRobot::sendLoopForThread()
-{
-    initializePathManager();
-    while (state.main != Main::Shutdown)
-    {
-        usleep(50000);
-        if (state.main == Main::Perform)
-        {
-            SendLoop();
-        }
-        else if (state.main == Main::Ideal)
-        {
-            canManager.checkCanPortsStatus();
-            canManager.checkAllMotors();
-            sleep(3);
-        }
-    }
-}
-
-void DrumRobot::ReadProcess(int periodMicroSec)
+void DrumRobot::SendPerformProcess(int periodMicroSec)
 {
     auto currentTime = chrono::system_clock::now();
-    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - StandardTime);
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
 
-    // sensor.connect();
-    // if (!sensor.connected)
-    //     std::cout << "Sensor initialization failed. Skipping sensor related logic." << endl;
-
-    switch (state.read.load())
+    switch (state.perform.load())
     {
-    case ReadSub::TimeCheck:
+    case PerformSub::TimeCheck:
+    {
         if (elapsed_time.count() >= periodMicroSec)
         {
-            state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
-            StandardTime = currentTime;         // 현재 시간으로 시간 객체 초기화
+            state.perform = PerformSub::CheckBuf; // 주기가 되면 ReadCANFrame 상태로 진입
+            SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
         }
         break;
-    case ReadSub::ReadCANFrame:
-        canManager.readFramesFromAllSockets(); // CAN frame 읽기
-        state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+    }
+    case PerformSub::CheckBuf:
+    {
+        for (const auto &motor_pair : motors)
+        {
+            if (motor_pair.second->sendBuffer.size() < 10) state.perform = PerformSub::GeneratePath;
+            else state.perform = PerformSub::SafetyCheck;
+            break;
+        }
         break;
-
-    case ReadSub::UpdateMotorInfo:
-        canManager.distributeFramesToMotors(); // 읽은 데이터를 모터 정보로 업데이트
-        state.read = ReadSub::TimeCheck;       // 작업 완료 상태로 전환
+    }
+    case PerformSub::GeneratePath:
+    {
+        if (pathManager.line < pathManager.total)
+        {
+            std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
+            pathManager.PathLoopTask();
+            pathManager.line++;
+            state.perform = PerformSub::CheckBuf;
+        }
+        else if (pathManager.line == pathManager.total)
+        {
+            std::cout << "Perform Done\n";
+            state.main = Main::Ready;
+            pathManager.line = 0;
+        }
         break;
+    }
+    case PerformSub::SafetyCheck:
+        state.perform = PerformSub::SendCANFrame;
+        break;
+    case PerformSub::BufEmpty:
+    {
+        bool allBuffersEmpty = true;
+        for (const auto &motor_pair : motors)
+        {
+            if (!motor_pair.second->sendBuffer.empty())
+            {
+                allBuffersEmpty = false;
+                break;
+            }
+        }
+        if (allBuffersEmpty)
+        {
+            std::cout << "Performance is Over\n";
+            state.main = Main::Ideal;
+        }
+        break;
+    }
+    case PerformSub::SendCANFrame:
+    {
+        for (auto &motor_pair : motors)
+        {
+            shared_ptr<GenericMotor> motor = motor_pair.second;
+            canManager.sendFromBuff(motor);
+        }
+        if (maxonMotorCount != 0)
+        {
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(virtualMaxonMotor, frame);
+        }
+        state.perform = PerformSub::TimeCheck;
+        break;
+    }
     }
 }
 
@@ -183,7 +260,6 @@ void DrumRobot::recvLoopForThread()
             // ReadProcess(5000); /*5ms*/
             break;
         case Main::Perform:
-
             ReadProcess(5000);
             break;
         case Main::AddStance:
@@ -213,6 +289,33 @@ void DrumRobot::recvLoopForThread()
         }
     }
 }
+
+void DrumRobot::ReadProcess(int periodMicroSec)
+{
+    auto currentTime = chrono::system_clock::now();
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
+
+    switch (state.read.load())
+    {
+    case ReadSub::TimeCheck:
+        if (elapsed_time.count() >= periodMicroSec)
+        {
+            state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
+            ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
+        }
+        break;
+    case ReadSub::ReadCANFrame:
+        canManager.readFramesFromAllSockets(); // CAN frame 읽기
+        state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+        break;
+
+    case ReadSub::UpdateMotorInfo:
+        canManager.distributeFramesToMotors(); // 읽은 데이터를 모터 정보로 업데이트
+        state.read = ReadSub::TimeCheck;       // 작업 완료 상태로 전환
+        break;
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,6 +478,7 @@ int DrumRobot::kbhit()
 
     return 0;
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 SYSTEM                                     */
 ///////////////////////////////////////////////////////////////////////////////
@@ -624,6 +728,17 @@ void DrumRobot::setMaxonMode(std::string targetMode)
 
 void DrumRobot::motorSettingCmd()
 {
+
+    // Count Maxon Motors
+    for (const auto &motor_pair : motors)
+    {
+        // 각 요소가 MaxonMotor 타입인지 확인
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            maxonMotorCount++;
+        }
+    }
+
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
     for (const auto &motorPair : motors)
@@ -830,20 +945,7 @@ void DrumRobot::MaxonDisable()
 void DrumRobot::SendLoop()
 {
     struct can_frame frameToProcess;
-    std::string maxonCanInterface;
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
 
-    int maxonMotorCount = 0;
-    for (const auto &motor_pair : motors)
-    {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonMotorCount++;
-            maxonCanInterface = maxonMotor->interFaceName;
-            virtualMaxonMotor = motor_pair.second;
-        }
-    }
     chrono::system_clock::time_point external = std::chrono::system_clock::now();
 
     while (state.main == Main::Perform || state.main == Main::Pause)

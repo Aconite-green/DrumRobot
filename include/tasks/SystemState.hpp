@@ -31,12 +31,12 @@ enum class HomeSub {
 };
 
 enum class PerformSub {
-    Start,
+    TimeCheck,
     CheckBuf,
-    FillBuf,
+    GeneratePath,
     SafetyCheck,
     SendCANFrame,
-    Done,
+    BufEmpty
 };
 
 enum class AddStanceSub {
@@ -84,7 +84,7 @@ struct State
     
     State() : main(Main::SystemInit),
               home(HomeSub::Start),
-              perform(PerformSub::Start),
+              perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::Start),
               read(ReadSub::TimeCheck)
     {

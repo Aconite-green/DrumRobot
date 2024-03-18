@@ -478,7 +478,7 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    int framescnt = 0;
+    //int framescnt = 0;
     for (const auto &socketPair : sockets)
     {
 
@@ -486,10 +486,10 @@ void CanManager::readFramesFromAllSockets()
         while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
-            framescnt++;
+            //framescnt++;
         }
     }
-    std::cout << framescnt << endl;
+    //std::cout << framescnt << endl;
 }
 
 void CanManager::distributeFramesToMotors()
