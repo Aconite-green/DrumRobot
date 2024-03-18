@@ -32,6 +32,7 @@ void DrumRobot::stateMachine()
             initializeMotors();
             initializecanManager();
             motorSettingCmd();
+            canManager.setSocketNonBlock();
             std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
             state.main = Main::Ideal;
@@ -42,7 +43,9 @@ void DrumRobot::stateMachine()
             break;
 
         case Main::Homing:
+            canManager.setSocketBlock();
             homeManager.mainLoop();
+            canManager.setSocketNonBlock();
             break;
 
         case Main::Perform:
@@ -50,9 +53,11 @@ void DrumRobot::stateMachine()
             break;
 
         case Main::Check:
+            canManager.setSocketBlock();
             canManager.checkAllMotors();
             printCurrentPositions();
             state.main = Main::Ideal;
+            canManager.setSocketNonBlock();
             break;
 
         case Main::Tune:
@@ -118,10 +123,7 @@ void DrumRobot::sendLoopForThread()
         usleep(50000);
         if (state.main == Main::Perform)
         {
-            if (canManager.checkAllMotors())
-            {
-                SendLoop();
-            }
+            SendLoop();
         }
         else if (state.main == Main::Ideal)
         {
@@ -148,13 +150,12 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         {
             state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
             StandardTime = currentTime;         // 현재 시간으로 시간 객체 초기화
-            std::cout << "Time checking" << endl;
         }
         break;
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
-        std::cout << "ReadSomgthing" << endl;
+
         break;
 
     case ReadSub::UpdateMotorInfo:
@@ -175,16 +176,20 @@ void DrumRobot::recvLoopForThread()
             usleep(500000);
             break;
         case Main::Ideal:
-            ReadProcess(500000); /*500ms*/
+            usleep(500000);
+            // ReadProcess(500000); /*500ms*/
             break;
         case Main::Homing:
-            ReadProcess(5000); /*5ms*/
+            usleep(500000);
+            // ReadProcess(5000); /*5ms*/
             break;
         case Main::Perform:
+
             ReadProcess(5000);
             break;
         case Main::AddStance:
-            ReadProcess(5000);
+            usleep(5000);
+            // ReadProcess(5000);
             break;
         case Main::Check:
             usleep(500000);
@@ -199,9 +204,11 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(5000); /*5ms*/
             break;
         case Main::Ready:
+            usleep(500000);
             // 이 State는 삭제예정
             break;
         case Main::Back:
+            usleep(500000);
             // 이 State는 삭제예정
             break;
         }

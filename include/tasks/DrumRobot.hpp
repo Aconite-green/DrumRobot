@@ -72,7 +72,8 @@ private:
     int kbhit(); 
 
     bool isReady=false; 
-    bool isBack=false; 
+    bool isBack=false;
+    bool nonBlockSocket = false;
 
     // System Initialize 메소드들
     void initializeMotors(); 
