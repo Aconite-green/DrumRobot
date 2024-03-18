@@ -597,21 +597,3 @@ bool CanManager::checkAllMotors()
     return allMotorsChecked;
 }
 
-void CanManager::setSocketNonBlock()
-{
-    for (const auto &socketPair : sockets)
-    {
-        int socket_fd = socketPair.second;
-        fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-    }
-}
-
-void CanManager::setSocketBlock()
-{
-    for (const auto &socketPair : sockets)
-    {
-        int socket_fd = socketPair.second;
-        int flags = fcntl(socket_fd, F_GETFL, 0);
-        fcntl(socket_fd, F_SETFL, flags & ~O_NONBLOCK);
-    }
-}
