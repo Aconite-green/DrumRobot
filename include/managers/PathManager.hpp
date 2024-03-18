@@ -47,7 +47,7 @@ public:
      * @param canManagerRef CAN 통신 관리자에 대한 참조입니다.
      * @param motorsRef 모터 객체에 대한 참조를 매핑합니다.
      */
-    PathManager(SystemState &systemStateRef,
+    PathManager(State &stateRef,
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
@@ -104,7 +104,7 @@ private:
     TMotorCommandParser TParser;    ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;     ///< Maxon 모터 명령어 파서
     
-    SystemState &systemState;   ///< 시스템의 현재 상태입니다.
+    State &state;  ///< 시스템의 현재 상태입니다.
     CanManager &canManager;     ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;   ///< 연결된 모터들의 정보입니다.
 

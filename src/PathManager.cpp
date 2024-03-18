@@ -1,9 +1,9 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(SystemState &systemStateRef,
+PathManager::PathManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -304,7 +304,7 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
     if (first)
     {
         std::cout << "IKfun Not Solved!!\n";
-        systemState.main = Main::Pause;
+        state.main = Main::Pause;
     }
 
     for (auto &entry : motors)

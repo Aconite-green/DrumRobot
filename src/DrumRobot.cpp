@@ -103,6 +103,9 @@ void DrumRobot::stateMachine()
         case Main::Pause:
             checkUserInput();
             break;
+        case Main::AddStance:
+            checkUserInput();
+            break;
         }
     }
 }
@@ -145,11 +148,13 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         {
             state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
             StandardTime = currentTime;         // 현재 시간으로 시간 객체 초기화
+            std::cout << "Time checking" << endl;
         }
         break;
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+        std::cout << "ReadSomgthing" << endl;
         break;
 
     case ReadSub::UpdateMotorInfo:
@@ -192,6 +197,12 @@ void DrumRobot::recvLoopForThread()
             break;
         case Main::Pause:
             ReadProcess(5000); /*5ms*/
+            break;
+        case Main::Ready:
+            // 이 State는 삭제예정
+            break;
+        case Main::Back:
+            // 이 State는 삭제예정
             break;
         }
     }

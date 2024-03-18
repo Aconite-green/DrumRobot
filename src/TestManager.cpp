@@ -2,8 +2,8 @@
 
 using namespace std;
 
-TestManager::TestManager(SystemState &systemStateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
+TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -12,7 +12,7 @@ void TestManager::mainLoop()
     int choice;
     canManager.checkAllMotors();
     setMaxonMode("CSP");
-    while (systemState.main == Main::Tune)
+    while (state.main == Main::Tune)
     {
         // 사용자에게 선택지 제공
         std::cout << "1: MultiMode\n2: SingleMode\n3: StickMode\n4: Exit\n";
@@ -32,7 +32,7 @@ void TestManager::mainLoop()
             TestStickLoop();
             break;
         case 4:
-            systemState.main = Main::Ideal;
+            state.main = Main::Ideal;
             break;
         default:
             std::cout << "Invalid choice. Please try again.\n";
@@ -234,7 +234,7 @@ void TestManager::multiTestLoop()
     int LnR = 1;
     double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
-    while (systemState.main == Main::Tune)
+    while (state.main == Main::Tune)
     {
         int result = system("clear");
         if (result != 0)
@@ -306,7 +306,7 @@ void TestManager::multiTestLoop()
 
         if (userInput[0] == 'e')
         {
-            systemState.main = Main::Ideal;
+            state.main = Main::Ideal;
             break;
         }
         else if (userInput[0] == 'd')
