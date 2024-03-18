@@ -155,7 +155,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
-
         break;
 
     case ReadSub::UpdateMotorInfo:
