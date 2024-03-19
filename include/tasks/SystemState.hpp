@@ -15,7 +15,8 @@ enum class Main
     Ready,      
     Back,       
     Pause,
-    AddStance       
+    AddStance,
+    Error  
 };
 
 enum class HomeSub {

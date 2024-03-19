@@ -383,6 +383,15 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
     }
     return false;
 }
+bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> &motor){
+    struct can_frame frame;
+    if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
+    {
+        // perror("CAN write error");
+        return false;
+    }
+    return true;
+}
 
 bool CanManager::recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount)
 {

@@ -56,6 +56,8 @@ public:
 
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
 
+    bool sendMotorFrame(std::shared_ptr<GenericMotor> &motor);
+
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
