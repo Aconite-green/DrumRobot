@@ -240,8 +240,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     }
 }
-
-void DrumRobot::recvLoopForThread()
+sendLoopForThreadsendLoopForThread
+void DrumRobot::recvLoopForThread()sendLoopForThread
 {
 
     while (state.main != Main::Shutdown)
