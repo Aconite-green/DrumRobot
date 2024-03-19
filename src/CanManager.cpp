@@ -467,8 +467,6 @@ void CanManager::readFramesFromAllSockets()
         }
     }
 
-    // 읽은 프레임의 총 개수를 출력
-    cout << "Read " << framesRead << " frames from CAN sockets." << endl;
 }
 
 

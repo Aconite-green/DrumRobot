@@ -127,14 +127,14 @@
         "numericaldiff": "cpp",
         "sparseextra": "cpp",
         "specialfunctions": "cpp",
-        "splines": "cpp"
+        "splines": "cpp",
+        "*.expression": "cpp"
     },
     "makefile.launchConfigurations": [
         {
-            "cwd": "/home/shy//DrumRobot_v1.0",
-            "binaryPath": "/home/shy//DrumRobot_v1.0/bin/main.out",
+            "cwd": "/home/shy//DrumRobot",
+            "binaryPath": "/home/shy//DrumRobot/bin/main.out",
             "binaryArgs": []
         }
-    ],
-    "cmake.configureOnOpen": false
+    ]
 }
