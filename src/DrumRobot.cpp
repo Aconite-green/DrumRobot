@@ -76,10 +76,6 @@ void DrumRobot::stateMachine()
         case Main::AddStance:
             checkUserInput();
             break;
-        case Main::Error:
-            std::cout << "In error state by Postion diff\n";
-            sleep(2);
-            break;
         }
     }
 }
@@ -159,9 +155,6 @@ void DrumRobot::sendLoopForThread()
                 DeactivateControlTask();
             }
             break;
-        case Main::Error:
-            sleep(2);
-            break;
         }
     }
 }
@@ -203,33 +196,28 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             pathManager.line++;
             state.perform = PerformSub::CheckBuf;
         }
-        else if (pathManager.line == pathManager.total)
+        else
         {
-            std::cout << "Perform Done\n";
-            state.main = Main::Ready;
-            pathManager.line = 0;
-        }
-        break;
-    }
-    case PerformSub::SafetyCheck:
-        state.perform = PerformSub::SendCANFrame;
-        break;
-    case PerformSub::BufEmpty:
-    {
-        bool allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (!motor_pair.second->sendBuffer.empty())
+            bool allBuffersEmpty = true;
+            for (const auto &motor_pair : motors)
             {
-                allBuffersEmpty = false;
-                break;
+                if (!motor_pair.second->sendBuffer.empty())
+                {
+                    allBuffersEmpty = false;
+                    break;
+                }
             }
+            if (allBuffersEmpty)
+            {
+                std::cout << "Performance is Over\n";
+                state.main = Main::Ready;
+                pathManager.line = 0;
+                isReady = false;
+            }
+            else
+                state.perform = PerformSub::SafetyCheck;
         }
-        if (allBuffersEmpty)
-        {
-            std::cout << "Performance is Over\n";
-            state.main = Main::Ideal;
-        }
+
         break;
     }
     case PerformSub::SafetyCheck:
@@ -240,7 +228,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            canManager.sendMotorFrame(motor);
+            canManager.sendFromBuff(motor);
         }
         if (maxonMotorCount != 0)
         {
@@ -295,10 +283,6 @@ void DrumRobot::recvLoopForThread()
             // 이 State는 삭제예정
             break;
         case Main::Back:
-            usleep(500000);
-            // 이 State는 삭제예정
-            break;
-        case Main::Error:
             usleep(500000);
             // 이 State는 삭제예정
             break;
