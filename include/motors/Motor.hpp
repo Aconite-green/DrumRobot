@@ -12,34 +12,56 @@
 #include <vector>
 #include <queue>
 #include <linux/can/raw.h>
+#include <iostream>
+using namespace std;
+
 
 class GenericMotor
 {
 public:
-    uint32_t nodeId;
-    std::string interFaceName;
-    double currentPos;
-    float cwDir;
-    bool isHomed, isConected;
-    float rMin, rMax;
-    int socket;
-    std::queue<can_frame> sendBuffer;
-    std::queue<can_frame> recieveBuffer;
+    uint32_t nodeId; 
+    std::string interFaceName; 
+    float desPos, desVel, desTor; 
+    float currentPos, currentVel, currentTor; 
+    float cwDir; 
+    bool isHomed, isConected; 
+    float rMin, rMax; 
+    int socket; 
+    int Kp; 
+    double Kd; 
+    std::queue<can_frame> sendBuffer; 
+    std::queue<can_frame> recieveBuffer; 
 
-    GenericMotor(uint32_t nodeId, const std::string &interFaceName) : nodeId(nodeId), interFaceName(interFaceName), currentPos(0), cwDir(0), isHomed(false), isConected(false), rMin(0), rMax(0), socket(0) {}
+    struct can_frame sendFrame;
+
+    GenericMotor(uint32_t nodeId);
     virtual ~GenericMotor() = default;
+
+    void clearSendBuffer(); 
+    void clearReceiveBuffer(); 
+};
+
+struct TMotorData
+{
+    float position;
+    float velocity;
 };
 
 class TMotor : public GenericMotor
 {
 public:
     TMotor(uint32_t nodeId, const std::string &motorType);
-    std::string motorType;
+    std::string motorType; 
 
-    int sensorBit;
-    float desPos, desVel, desTor, outPos, outVel, outTor;
+    int sensorBit; 
+    std::queue<TMotorData> commandBuffer;
 
 private:
+};
+
+struct MaxonData
+{
+    float position;
 };
 
 class MaxonMotor : public GenericMotor
@@ -47,13 +69,13 @@ class MaxonMotor : public GenericMotor
 public:
     MaxonMotor(uint32_t nodeId);
 
-    uint32_t canSendId;
-    uint32_t canReceiveId;
+    uint32_t canSendId; 
+    uint32_t canReceiveId; 
 
-    uint32_t txPdoIds[4]; // 변경된 부분
-    uint32_t rxPdoIds[4]; // 변경된 부분
+    uint32_t txPdoIds[4]; 
+    uint32_t rxPdoIds[4]; 
 
-    float outPos, outTor;
+    std::queue<MaxonData> commandBuffer;
 };
 
-#endif
+#endif // MOTOR_H

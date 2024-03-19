@@ -1,21 +1,15 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(queue<can_frame> &sendBufferRef, queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : sendBuffer(sendBufferRef), recieveBuffer(recieveBufferRef), motors(motorsRef)
+PathManager::PathManager(State &stateRef,
+                         CanManager &canManagerRef,
+                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
-
-void PathManager::motorInitialize(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-{
-    this->motors = motorsRef;
-
-    // 모터 방향에 따른 +/- 값 적용
-    ApplyDir();
-}
 
 void PathManager::Motors_sendBuffer()
 {
@@ -34,18 +28,16 @@ void PathManager::Motors_sendBuffer()
             float p_des = Pi[motor_mapping[entry.first]];
             float v_des = Vi[motor_mapping[entry.first]];
 
-            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, 200.0, 3.0, 0.0);
-            sendBuffer.push(frame);
+            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
+            entry.second->sendBuffer.push(frame);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
             float p_des = Pi[motor_mapping[entry.first]];
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
-            sendBuffer.push(frame);
+            entry.second->sendBuffer.push(frame);
         }
     }
-    MParser.getSync(&frame);
-    sendBuffer.push(frame);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -56,9 +48,10 @@ void PathManager::ApplyDir()
 { // CW / CCW에 따른 방향 적용
     for (auto &entry : motors)
     {
-        standby[motor_mapping[entry.first]] *= entry.second->cwDir;
-        backarr[motor_mapping[entry.first]] *= entry.second->cwDir;
-        motor_dir[motor_mapping[entry.first]] = entry.second->cwDir;
+        shared_ptr<GenericMotor> motor = entry.second;
+        standby[motor_mapping[entry.first]] *= motor->cwDir;
+        backarr[motor_mapping[entry.first]] *= motor->cwDir;
+        motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
 }
 
@@ -174,59 +167,64 @@ void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double
     v.push_back(v_out);
 }
 
-vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector<double> &R, double s, double z0)
+vector<double> PathManager::fkfun()
+{
+    vector<double> P;
+    vector<double> theta(7);
+    for (auto &motorPair : motors)
+    {
+        auto &name = motorPair.first;
+        auto &motor = motorPair.second;
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        {
+            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
+        }
+    }
+    double r1 = R[0], r2 = R[1], l1 = R[2], l2 = R[3];
+    double r, l;
+    r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
+    l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
+
+    P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]));
+    P.push_back(0.5 * s * cos(theta[0] + M_PI) + l * cos(theta[0] + theta[2]));
+    P.push_back(0.5 * s * sin(theta[0] + M_PI) + l * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));
+
+    return P;
+}
+
+vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
 {
     // 드럼위치의 중점 각도
-    double direction = 0.0; //-M_PI / 3.0;
+    double direction = 0.0 * M_PI; //-M_PI / 3.0;
 
     // 몸통과 팔이 부딧히지 않을 각도 => 36deg
     double differ = M_PI / 5.0;
 
-    vector<double> Qf;
+    vector<double> Qf(7);
 
     double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
     double X2 = P2[0], Y2 = P2[1], z2 = P2[2];
     double r1 = R[0], r2 = R[1], r3 = R[2], r4 = R[3];
 
-    int j = 0;
-    vector<double> the3(180);
-    for (int i = 0; i < 135; i++)
-    { // 오른팔 들어올리는 각도 범위 : -45deg ~ 90deg
-        the3[i] = -M_PI / 4 + (M_PI * 0.75 * i) / 134;
+    vector<double> the3(1801);
+    for (int i = 0; i < 1801; i++)
+    { // 오른팔 들어올리는 각도 범위 : -90deg ~ 90deg
+        the3[i] = -M_PI / 2 + (M_PI * i) / 1800;
     }
 
     double zeta = z0 - z2;
 
-    double det_the4;
-    double the34;
-    double the4;
-    double r;
-    double det_the1;
-    double the1;
-    double det_the0;
-    double the0;
-    double L;
-    double det_the2;
-    double the2;
-    double T;
-    double det_the5;
+    double det_the0, det_the1, det_the2, det_the4, det_the5, det_the6;
+    double the0_f, the0, the1, the2, the34, the4, the5, the6;
+    double r, L, Lp, T;
     double sol;
-    double the5;
-    double alpha, beta, gamma;
-    double det_the6;
-    double rol;
-    double the6;
-    double Z;
+    double alpha;
+    bool first = true;
 
-    vector<double> q0;
-    vector<double> q1;
-    vector<double> q2;
-    vector<double> q3;
-    vector<double> q4;
-    vector<double> q5;
-    vector<double> q6;
-
-    for (int i = 0; i < 179; i++)
+    for (long unsigned int i = 0; i < the3.size(); i++)
     {
         det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
 
@@ -259,42 +257,36 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
                                 the2 = acos(det_the2) - the0;
                                 if (the2 > differ && the2 < M_PI)
                                 { // 왼팔 돌리는 각도 범위 : 30deg ~ 180deg
-                                    T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
-                                    det_the5 = L * L + zeta * zeta - T * T;
-
-                                    if (det_the5 > 0)
+                                    Lp = sqrt(L * L + zeta * zeta);
+                                    det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
+                                    if (det_the6 < 1 && det_the6 > -1)
                                     {
-                                        sol = T * L - abs(zeta) * sqrt(L * L + zeta * zeta - T * T);
-                                        sol /= (L * L + zeta * zeta);
-                                        the5 = asin(sol);
-                                        if (the5 > -M_PI / 4 && the5 < M_PI / 2)
-                                        { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
-                                            alpha = L - r3 * sin(the5);
-                                            beta = r4 * sin(the5);
-                                            gamma = r4 * cos(the5);
+                                        the6 = acos(det_the6);
+                                        if (the6 > 0 && the6 < M_PI * 0.75)
+                                        { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
+                                            T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
+                                            det_the5 = L * L + zeta * zeta - T * T;
 
-                                            det_the6 = gamma * gamma + beta * beta - alpha * alpha;
-
-                                            if (det_the6 > 0)
+                                            if (det_the5 > 0)
                                             {
-                                                rol = alpha * beta - abs(gamma) * sqrt(det_the6);
-                                                rol /= (beta * beta + gamma * gamma);
-                                                the6 = acos(rol);
-                                                if (the6 > 0 && the6 < M_PI * 0.75)
-                                                { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
-                                                    Z = z0 - r1 * cos(the5) - r2 * cos(the5 + the6);
+                                                sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                sol /= (L * L + zeta * zeta);
+                                                the5 = asin(sol);
+                                                if (the5 > -M_PI / 4 && the5 < M_PI / 2)
+                                                { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
 
-                                                    if (Z < z2 + 0.001 && Z > z2 - 0.001)
+                                                    if (first || abs(the0 - direction) < abs(the0_f - direction))
                                                     {
-                                                        q0.push_back(the0);
-                                                        q1.push_back(the1);
-                                                        q2.push_back(the2);
-                                                        q3.push_back(the3[i]);
-                                                        q4.push_back(the4);
-                                                        q5.push_back(the5);
-                                                        q6.push_back(the6);
+                                                        the0_f = the0;
+                                                        Qf[0] = the0;
+                                                        Qf[1] = the1;
+                                                        Qf[2] = the2;
+                                                        Qf[3] = the3[i];
+                                                        Qf[4] = the4;
+                                                        Qf[5] = the5;
+                                                        Qf[6] = the6;
 
-                                                        j++;
+                                                        first = false;
                                                     }
                                                 }
                                             }
@@ -309,31 +301,17 @@ vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2, vector
         }
     }
 
-    vector<vector<double>> Q;
-    Q.push_back(q0);
-    Q.push_back(q1);
-    Q.push_back(q2);
-    Q.push_back(q3);
-    Q.push_back(q4);
-    Q.push_back(q5);
-    Q.push_back(q6);
-
-    int index_theta0_min = 0;
-
-    // Find index of minimum absolute difference
-    for (long unsigned int i = 1; i < Q[0].size(); i++)
+    if (first)
     {
-        if (abs(direction - Q[0][i]) < abs(direction - Q[0][index_theta0_min]))
-            index_theta0_min = i;
+        std::cout << "IKfun Not Solved!!\n";
+        state.main = Main::Pause;
     }
-
-    Qf.resize(7);
 
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            Qf[motor_mapping[entry.first]] = Q[motor_mapping[entry.first]][index_theta0_min] * tMotor->cwDir;
+            Qf[motor_mapping[entry.first]] *= tMotor->cwDir;
         }
     }
 
@@ -377,46 +355,46 @@ void PathManager::getQ1AndQ2()
         Q1 = c_MotorAngle;
         if (p_R == 1)
         {
-            Q1[4] = Q1[4] + M_PI / 36 * motor_dir[4];
-            Q1[7] = Q1[7] + M_PI / 36 * motor_dir[7];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
         }
         if (p_L == 1)
         {
-            Q1[6] = Q1[6] + M_PI / 36 * motor_dir[6];
-            Q1[8] = Q1[8] + M_PI / 36 * motor_dir[8];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
         }
         Q2 = Q1;
     }
     else
     {
-        Q1 = IKfun(P1, P2, R, s, z0);
+        Q1 = IKfun(P1, P2);
         Q1.push_back(r_wrist);
         Q1.push_back(l_wrist);
         Q2 = Q1;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + M_PI / 18 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 18 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 18 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 18 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q1[4] = Q1[4] + M_PI / 36 * motor_dir[4];
-            Q2[4] = Q2[4] + M_PI / 36 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 18 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 36 * motor_dir[7];
-            Q2[7] = Q2[7] + M_PI / 36 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 18 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
+            Q2[4] = Q2[4] + ElbowAngle_ready * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
+            Q2[7] = Q2[7] + WristAngle_ready * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q1[4] = Q1[4] + M_PI / 18 * motor_dir[4];
-            Q1[6] = Q1[6] + M_PI / 36 * motor_dir[6];
-            Q2[6] = Q2[6] + M_PI / 36 * motor_dir[6];
-            Q1[7] = Q1[7] + M_PI / 18 * motor_dir[7];
-            Q1[8] = Q1[8] + M_PI / 36 * motor_dir[8];
-            Q2[8] = Q2[8] + M_PI / 36 * motor_dir[8];
+            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
+            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
+            Q2[6] = Q2[6] + ElbowAngle_ready * motor_dir[6];
+            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
+            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
+            Q2[8] = Q2[8] + WristAngle_ready * motor_dir[8];
         }
         // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
         Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
@@ -434,46 +412,46 @@ void PathManager::getQ3AndQ4()
         Q3 = Q2;
         if (p_R == 1)
         {
-            Q3[4] = Q3[4] + M_PI / 36 * motor_dir[4];
-            Q3[7] = Q3[7] + M_PI / 36 * motor_dir[7];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
         }
         if (p_L == 1)
         {
-            Q3[6] = Q3[6] + M_PI / 36 * motor_dir[6];
-            Q3[8] = Q3[8] + M_PI / 36 * motor_dir[8];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
         }
         Q4 = Q3;
     }
     else
     {
-        Q3 = IKfun(P1, P2, R, s, z0);
+        Q3 = IKfun(P1, P2);
         Q3.push_back(r_wrist);
         Q3.push_back(l_wrist);
         Q4 = Q3;
         if (c_R != 0 && c_L != 0)
         { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + M_PI / 18 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 18 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 18 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 18 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_L != 0)
         { // 왼손만 침
-            Q3[4] = Q3[4] + M_PI / 36 * motor_dir[4];
-            Q4[4] = Q4[4] + M_PI / 36 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 18 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 36 * motor_dir[7];
-            Q4[7] = Q4[7] + M_PI / 36 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 18 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
+            Q4[4] = Q4[4] + ElbowAngle_ready * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
+            Q4[7] = Q4[7] + WristAngle_ready * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
         }
         else if (c_R != 0)
         { // 오른손만 침
-            Q3[4] = Q3[4] + M_PI / 18 * motor_dir[4];
-            Q3[6] = Q3[6] + M_PI / 36 * motor_dir[6];
-            Q4[6] = Q4[6] + M_PI / 36 * motor_dir[6];
-            Q3[7] = Q3[7] + M_PI / 18 * motor_dir[7];
-            Q3[8] = Q3[8] + M_PI / 36 * motor_dir[8];
-            Q4[8] = Q4[8] + M_PI / 36 * motor_dir[8];
+            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
+            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
+            Q4[6] = Q4[6] + ElbowAngle_ready * motor_dir[6];
+            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
+            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
+            Q4[8] = Q4[8] + WristAngle_ready * motor_dir[8];
         }
         // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
         Q3[0] = (Q4[0] + Q2[0]) / 2.0;
@@ -490,6 +468,8 @@ void PathManager::getQ3AndQ4()
 
 void PathManager::GetDrumPositoin()
 {
+    getMotorPos();
+
     ifstream inputFile("../include/managers/rT.txt");
 
     if (!inputFile.is_open())
@@ -506,10 +486,8 @@ void PathManager::GetDrumPositoin()
         for (int j = 0; j < 8; ++j)
         {
             inputFile >> inst_xyz[i][j];
-            if (i == 0 || i == 3)
-            {
+            if (i == 1 || i == 4)
                 inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
-            }
         }
     }
 
@@ -573,12 +551,11 @@ void PathManager::GetMusicSheet()
 
     ifstream file(score_path);
     if (!file.is_open())
-    {
         cerr << "Error opening file." << endl;
-    }
 
     string line;
     int lineIndex = 0;
+    double time = 0.0;
     while (getline(file, line))
     {
         istringstream iss(line);
@@ -598,22 +575,28 @@ void PathManager::GetMusicSheet()
         else
         {
             vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-            time_arr.push_back(stod(columns[1]) * 100 / bpm);
+            time += stod(columns[1]) * 100 / bpm;
 
+            if (columns[2] == "0" && columns[3] == "0")
+                continue;
             if (columns[2] != "0")
-            {
                 inst_arr_R[instrument_mapping[columns[2]]] = 1;
-            }
             if (columns[3] != "0")
-            {
                 inst_arr_L[instrument_mapping[columns[3]]] = 1;
+
+            if (columns[2] != "0" || columns[3] != "0")
+            {
+                time_arr.push_back(time);
+                RA.push_back(inst_arr_R);
+                LA.push_back(inst_arr_L);
             }
 
-            RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-            LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-
-            RA.push_back(inst_arr_R);
-            LA.push_back(inst_arr_L);
+            if (columns[2] != "0" || columns[3] != "0")
+            {
+                time_arr_F.push_back(time);
+                RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
+                LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
+            }
         }
 
         lineIndex++;
@@ -697,18 +680,16 @@ void PathManager::GetArr(vector<double> &arr)
             if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 float p_des = Qi[motor_mapping[entry.first]];
-                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, 200.0, 3.0, 0.0);
-                sendBuffer.push(frame);
+                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, motor->Kp, motor->Kd, 0.0);
+                entry.second->sendBuffer.push(frame);
             }
             else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
                 float p_des = Qi[motor_mapping[entry.first]];
                 MParser.getTargetPosition(*motor, &frame, p_des);
-                sendBuffer.push(frame);
+                entry.second->sendBuffer.push(frame);
             }
         }
-        MParser.getSync(&frame);
-        sendBuffer.push(frame);
     }
 
     c_MotorAngle = Qi;

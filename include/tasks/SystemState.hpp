@@ -1,46 +1,93 @@
-
-
 #pragma once
 
 #include <atomic>
 
+
 enum class Main
 {
-    SystemInit, // 시스템 시작: CAN 포트 열기 및 모터 연결 상태 확인
-    Ideal,      // 기본 상태
-    Homing,     // Home : Homing 동작 제어
-    Tune,       // 모터 뮤닝상태
-    Perform,    // 드럼 연주 모드
-    Check,      // 현재 모터들의 포지션을 체크하는 상태
-    Shutdown,    // 시스템 종료 및 모든 작업 마무리
-    Back
+    SystemInit, 
+    Ideal,      
+    Homing,     
+    Tune,       
+    Perform,    
+    Check,      
+    Shutdown,   
+    Ready,      
+    Back,       
+    Pause,
+    AddStance,
+    Error  
 };
 
-enum class HomeMode
-{
-    NotHome,  // Homing이 완료되춤지 않은 초기상태
-    HomeDone, // Home 완료
-    HomeError
+enum class HomeSub {
+    Start,
+    MoveToSensor,
+    StopAtSensor,
+    MoveToZeroPositionInit,
+    MoveToZeroPositionCheck,
+    StopAtZeroPosition,
+    SetZero,
+    Done,
+    SafetyCheck
 };
 
-enum class RunMode
-{
-    PrePreparation,
-    Preparing,
-    Ready,
-    Running, // 연주중
-    Pause,   // 일시정지
-    Stop,    // 아예 멈춤
-    RunError
+enum class PerformSub {
+    TimeCheck,
+    CheckBuf,
+    GeneratePath,
+    SafetyCheck,
+    SendCANFrame,
+    BufEmpty
 };
 
-struct SystemState
-{
-    std::atomic<Main> main;
-    std::atomic<HomeMode> homeMode;
-    std::atomic<RunMode> runMode;
+enum class AddStanceSub {
+    Start,
+    CheckBuf,
+    FillBuf,
+    SafetyCheck,
+    SendCANFrame,
+    Done,
+};
 
-    SystemState() : main(Main::SystemInit),
-                    homeMode(HomeMode::NotHome),
-                    runMode(RunMode::PrePreparation) {}
+enum class ReadSub{
+    TimeCheck,
+    ReadCANFrame,
+    UpdateMotorInfo
+};
+
+
+enum class Maxon
+{
+    Position,     
+    Torque_Move,  
+    Torque_Touch, 
+    Torque_Back,  
+    Torque_InPos  
+};
+
+
+struct MaxonState
+{
+    std::atomic<Maxon> state; 
+    MaxonState() : state(Maxon::Position) {}
+};
+
+
+struct State
+{
+    std::atomic<Main> main;         
+    std::atomic<HomeSub> home;
+    std::atomic<PerformSub> perform;
+    std::atomic<AddStanceSub> addstance;
+    std::atomic<ReadSub> read;
+    MaxonState leftMaxon;           
+    MaxonState rightMaxon;          
+    
+    State() : main(Main::SystemInit),
+              home(HomeSub::Start),
+              perform(PerformSub::TimeCheck),
+              addstance(AddStanceSub::Start),
+              read(ReadSub::TimeCheck)
+    {
+    }
 };

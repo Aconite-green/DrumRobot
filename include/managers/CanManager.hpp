@@ -1,5 +1,6 @@
 #ifndef CAN_SOCKET_UTILS_H
 #define CAN_SOCKET_UTILS_H
+
 #include <linux/can.h>
 #include <math.h>
 #include <stdio.h>
@@ -25,61 +26,76 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
+using namespace std;
+
 class CanManager
 {
 public:
     static const int ERR_SOCKET_CREATE_FAILURE = -1;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
 
-    // Public Methods
-    CanManager(std::queue<can_frame> &sendBufferRef, std::queue<can_frame> &recieveBufferRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+
     ~CanManager();
 
     void initializeCAN();
+
     void restartCanPorts();
+
     void setSocketsTimeout(int sec, int usec);
+
     void checkCanPortsStatus();
+
     void setMotorsSocket();
 
-    // Basic Function
+    bool checkConnection(std::shared_ptr<GenericMotor> motor);
+
+    bool checkAllMotors();
+
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
+
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
+
+    bool sendMotorFrame(std::shared_ptr<GenericMotor> &motor);
+
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
+    bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
 
+    bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
 
-    // Buffer Uitility
+    void readFramesFromAllSockets();
+
+    void distributeFramesToMotors();
+
     void clearReadBuffers();
+
+    void setSocketNonBlock();
+
+    void setSocketBlock();
 
     std::map<std::string, int> sockets;
     std::map<std::string, bool> isConnected;
+    int maxonCnt = 0;
+    std::map<int, int> motorsPerSocket;
 
 private:
     std::vector<std::string> ifnames;
-    std::queue<can_frame> &sendBuffer;
-    std::queue<can_frame> &recieveBuffer;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
 
-    // Basic Function
-    bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
-    bool rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame,int readCount);
+    std::map<int, std::vector<can_frame>> tempFrames;
 
-
-    // Port
     bool getCanPortStatus(const char *port);
     void activateCanPort(const char *port);
     void list_and_activate_available_can_ports();
     void deactivateCanPort(const char *port);
 
-    // Network (Socket)
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
-    void releaseBusyResources();
 
-    // Buffer Uitility
     void clearCanBuffer(int canSocket);
 };
 

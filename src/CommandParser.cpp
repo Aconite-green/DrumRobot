@@ -114,9 +114,9 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     speed = uintToFloat(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
     torque = uintToFloat(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
 
-    motor.outPos = position;
-    motor.outVel = speed;
-    motor.outTor = torque;
+    motor.currentPos = position;
+    motor.currentVel = speed;
+    motor.currentTor = torque;
 
     return std::make_tuple(id, position, speed, torque);
 }
@@ -227,7 +227,6 @@ void TMotorCommandParser::getQuickStop(TMotor &motor, struct can_frame *frame)
 /*                                                      Maxon Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
 {
     int id = frame->can_id;
@@ -243,17 +242,17 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor
     torqueActualValue |= static_cast<uint8_t>(frame->data[7]) << 8;
 
     // Motor rated torque 값을 N·m 단위로 변환 (mNm -> N·m)
-    const float motorRatedTorqueNm = 0.127f; // 127 mNm = 0.127 N·m
+    const float motorRatedTorquemNm = 31.052; //
 
     // 실제 토크 값을 N·m 단위로 계산
     // Torque actual value는 천분의 일 단위이므로, 실제 토크 값은 (torqueActualValue / 1000) * motorRatedTorqueNm
-    float currentTorqueNm = (static_cast<float>(torqueActualValue) / 1000.0f) * motorRatedTorqueNm;
+    float currentTorqueNm = (static_cast<float>(torqueActualValue) / 1000.0f) * motorRatedTorquemNm;
 
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-    motor.outPos = currentPositionRadians;
-    motor.outTor = currentTorqueNm;
+    motor.currentPos = currentPositionRadians;
+    motor.currentTor = currentTorqueNm;
 
     return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
 }
@@ -434,34 +433,46 @@ void MaxonCommandParser::getFlowingErrorWindow(MaxonMotor &motor, struct can_fra
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    // 95 degree
+    // 1도당 값
+    float value_per_degree = 398.22;
+
+    // 입력된 각도에 대한 값을 계산
+    int value = static_cast<int>(degree * value_per_degree);
+
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB1;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xC7;
-    frame->data[5] = 0x93;
+    // 계산된 값의 리틀 엔디언 형식으로 분할하여 할당
+    frame->data[4] = value & 0xFF;        // 하위 바이트
+    frame->data[5] = (value >> 8) & 0xFF; // 상위 바이트
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
+    float value_per_degree = 398.22*motor.cwDir;
+    // int 대신 int32_t 사용하여 플랫폼 독립적인 크기 보장
+    int32_t value = static_cast<int32_t>(degree * value_per_degree);
+
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;
     frame->data[0] = 0x22;
     frame->data[1] = 0xB0;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0x00;
-    frame->data[5] = 0x00;
-    frame->data[6] = 0x00;
-    frame->data[7] = 0x00;
+    // 음수 값을 포함하여 value를 올바르게 바이트로 변환
+    frame->data[4] = value & 0xFF;                // 가장 낮은 바이트
+    frame->data[5] = (value >> 8) & 0xFF;         // 다음 낮은 바이트
+    frame->data[6] = (value >> 16) & 0xFF;        // 다음 높은 바이트
+    frame->data[7] = (value >> 24) & 0xFF;        // 가장 높은 바이트
 }
+
 
 void MaxonCommandParser::getHomingMethodL(MaxonMotor &motor, struct can_frame *frame)
 {
@@ -485,7 +496,7 @@ void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *f
     frame->data[1] = 0x98;
     frame->data[2] = 0x60;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xFC;
+    frame->data[4] = 0xFD;
     frame->data[5] = 0xFF;
     frame->data[6] = 0xFF;
     frame->data[7] = 0xFF;
