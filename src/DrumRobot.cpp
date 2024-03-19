@@ -41,6 +41,7 @@ void DrumRobot::stateMachine()
             break;
 
         case Main::Homing:
+            
             homeManager.mainLoop();
             break;
 
