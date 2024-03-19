@@ -62,6 +62,7 @@ private:
 struct MaxonData
 {
     float position;
+    bool isTorqueMode;
 };
 
 class MaxonMotor : public GenericMotor
@@ -74,6 +75,19 @@ public:
 
     uint32_t txPdoIds[4]; 
     uint32_t rxPdoIds[4]; 
+
+    float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
+    int posIndex = 0;
+    
+    bool hitDrum=false;
+    bool hitting = false;
+    
+    bool atPosition = false;
+    bool positioning =false;
+    float targetPos = 0;
+    
+    bool checked=false;
+   
 
     std::queue<MaxonData> commandBuffer;
 };
