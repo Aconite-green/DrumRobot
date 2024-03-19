@@ -208,6 +208,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             std::cout << "Perform Done\n";
             state.main = Main::Ready;
             pathManager.line = 0;
+            std::cout << "help\n";
         }
         break;
     }
