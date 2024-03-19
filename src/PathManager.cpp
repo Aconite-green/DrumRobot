@@ -207,9 +207,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    cout << "\nT : \n"
-         << T;
-
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
@@ -313,12 +310,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
         t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
         t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
-
-    cout << "\nA30 :\n"
-         << A30 << "\nA31 :\n"
-         << A31 << "\nAA40 :\n"
-         << AA40 << "\nAA41 :\n"
-         << AA41;
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -330,9 +321,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         VectorXd inst_0 = inst2.col(k);
         VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
-
-        cout << "\nk : " << k << "\n"
-             << inst3 << "\n";
 
         if (T.cols() == 0)
         {
@@ -346,9 +334,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             T << temp, inst3;
         }
     }
-
-    cout << "\nT : \n"
-         << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
@@ -426,10 +411,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             break;
         }
     }
-
-    cout << "\nB :\n"
-         << B << "\nBB :\n"
-         << BB;
 }
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
@@ -857,7 +838,7 @@ void PathManager::GetMusicSheet()
     default_right << 0, 0, 0, 0, 0, 0, 0, 1, 0;
     default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
+    string score_path = "../include/managers/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
@@ -921,8 +902,6 @@ void PathManager::GetMusicSheet()
     inst_arr.col(inst_arr.cols() - 3) = inst_col;
 
     total = time_arr.size() - 3;
-
-    cout << time_arr.size() << ", " << inst_arr.cols() << "\n";
 }
 
 void PathManager::SetReadyAng()
@@ -943,12 +922,6 @@ void PathManager::SetReadyAng()
     {
         standby[i] = qk(i);
     }
-
-    std::cout << "standby values:" << std::endl;
-    for (const auto& value : standby) {
-        std::cout << value << " ";
-    }
-    std::cout << std::endl;
 }
 
 void PathManager::PathLoopTask()
@@ -1019,10 +992,6 @@ void PathManager::PathLoopTask()
         t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
 
-    cout << "\nt_wrist_madi :\n"
-         << t_wrist_madi << "\nt_elbow_madi :\n"
-         << t_elbow_madi;
-
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
     VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
@@ -1035,11 +1004,6 @@ void PathManager::PathLoopTask()
     VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
     VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
-
-    cout << "\nqk1_06 : \n"
-         << qk1_06 << "\nqk2_06 :\n"
-         << qk2_06 << "\nqk3_06 :\n"
-         << qk3_06;
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
