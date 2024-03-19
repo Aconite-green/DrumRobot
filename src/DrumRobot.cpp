@@ -104,7 +104,7 @@ void DrumRobot::sendLoopForThread()
             break;
         case Main::AddStance:
             usleep(5000);
-            // ReadProcess(5000);
+            // SendAddStanceProcess(5000);
             break;
         case Main::Check:
             usleep(500000);
