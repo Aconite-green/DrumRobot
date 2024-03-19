@@ -72,8 +72,8 @@ private:
     void printCurrentPositions();
     int kbhit();
 
-    bool isReady = false;
-    bool isBack = false;
+    bool isReady = false; ///< 준비 상태 플래그.
+    bool isBack = false; ///< 되돌아가기 플래그.
 
     // System Initialize 메소드들
     void initializeMotors();
