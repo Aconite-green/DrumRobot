@@ -947,9 +947,10 @@ void DrumRobot::SendReadyLoop()
 
 void DrumRobot::initializePathManager()
 {
-    pathManager.ApplyDir();
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
+    pathManager.SetReadyAng();
+    pathManager.ApplyDir();
 }
 
 void DrumRobot::clearMotorsSendBuffer()

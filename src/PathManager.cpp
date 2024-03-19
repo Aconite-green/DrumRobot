@@ -45,7 +45,6 @@ void PathManager::ApplyDir()
         shared_ptr<GenericMotor> motor = entry.second;
         standby[motor_mapping[entry.first]] *= motor->cwDir;
         backarr[motor_mapping[entry.first]] *= motor->cwDir;
-        motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
 }
 
@@ -936,11 +935,20 @@ void PathManager::SetReadyAng()
     combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
     MatrixXd p = combined * inst_p;
 
-    VectorXd pR = VectorXd::Map(p.data() + 1, 3, 1);
-    VectorXd pL = VectorXd::Map(p.data() + 4, 3, 1);
+    VectorXd pR = VectorXd::Map(p.data(), 3, 1);
+    VectorXd pL = VectorXd::Map(p.data() + 3, 3, 1);
     VectorXd qk = ikfun_final(pR, pL, part_length, s, z0);
 
-    
+    for (int i = 0; i < qk.size(); ++i)
+    {
+        standby[i] = qk(i);
+    }
+
+    std::cout << "standby values:" << std::endl;
+    for (const auto& value : standby) {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
 }
 
 void PathManager::PathLoopTask()
