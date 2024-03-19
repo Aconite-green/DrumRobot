@@ -13,23 +13,22 @@ PathManager::PathManager(State &stateRef,
 
 void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
 {
-    struct can_frame frame;
-
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
-            float v_des = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
+            TMotorData newData;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
-            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
-            entry.second->sendBuffer.push(frame);
+            tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
-            MParser.getTargetPosition(*maxonMotor, &frame, p_des);
-            entry.second->sendBuffer.push(frame);
+            MaxonData newData;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+
+            maxonMotor->commandBuffer.push(newData);
         }
     }
 }
@@ -855,7 +854,7 @@ void PathManager::GetMusicSheet()
     {
         istringstream iss(row);
         string item;
-        
+
         vector<string> columns;
         while (getline(iss, item, '\t'))
         {

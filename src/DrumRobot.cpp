@@ -76,6 +76,9 @@ void DrumRobot::stateMachine()
         case Main::AddStance:
             checkUserInput();
             break;
+        case Main::Error:
+            sleep(2);
+            break;
         }
     }
 }
@@ -155,6 +158,9 @@ void DrumRobot::sendLoopForThread()
                 DeactivateControlTask();
             }
             break;
+        case Main::Error:
+            sleep(2);
+            break;
         }
     }
 }
@@ -179,7 +185,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     {
         for (const auto &motor_pair : motors)
         {
-            if (motor_pair.second->sendBuffer.size() < 10)
+            std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second);
+            if (tMotor->commandBuffer.size() < 10)
                 state.perform = PerformSub::GeneratePath;
             else
                 state.perform = PerformSub::SafetyCheck;
@@ -201,7 +208,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             bool allBuffersEmpty = true;
             for (const auto &motor_pair : motors)
             {
-                if (!motor_pair.second->sendBuffer.empty())
+                if (!dynamic_pointer_cast<TMotor>(motor_pair.second)->commandBuffer.empty())
                 {
                     allBuffersEmpty = false;
                     break;
@@ -217,18 +224,54 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             else
                 state.perform = PerformSub::SafetyCheck;
         }
-
         break;
     }
     case PerformSub::SafetyCheck:
-        state.perform = PerformSub::SendCANFrame;
+    {
+        bool isSafe = true;
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                MaxonData mData = maxonMotor->commandBuffer.front();
+                maxonMotor->commandBuffer.pop();
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                {
+                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    isSafe = false;
+                }
+                else
+                {
+                    maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+                }
+            }
+            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                TMotorData tData = tMotor->commandBuffer.front();
+                tMotor->commandBuffer.pop();
+                if (abs(tMotor->currentPos - tData.position) > 0.2)
+                {
+                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    isSafe = false;
+                }
+                else
+                {
+                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                }
+            }
+        }
+        if (isSafe)
+            state.perform = PerformSub::SendCANFrame;
+        else
+            state.main = Main::Error;
         break;
+    }
     case PerformSub::SendCANFrame:
     {
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            canManager.sendFromBuff(motor);
+            canManager.sendMotorFrame(motor);
         }
         if (maxonMotorCount != 0)
         {
@@ -241,9 +284,13 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
 }
 
+void DrumRobot::SendAddStanceProcess(int periodMicroSec)
+{
+    
+}
+
 void DrumRobot::recvLoopForThread()
 {
-
     while (state.main != Main::Shutdown)
     {
         switch (state.main.load())
@@ -279,12 +326,15 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(5000); /*5ms*/
             break;
         case Main::Ready:
-            usleep(500000);
+            ReadProcess(5000);
             // 이 State는 삭제예정
             break;
         case Main::Back:
-            usleep(500000);
+            ReadProcess(5000);
             // 이 State는 삭제예정
+            break;
+        case Main::Error:
+            sleep(2);
             break;
         }
     }

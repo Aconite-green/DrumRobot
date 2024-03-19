@@ -94,7 +94,7 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendHomeProcess();
-    void SendAddStanceProcess();
+    void SendAddStanceProcess(int periodMicroSec);
 
     can_frame frame;
 

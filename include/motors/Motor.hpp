@@ -62,6 +62,7 @@ private:
 struct MaxonData
 {
     float position;
+
 };
 
 class MaxonMotor : public GenericMotor
@@ -69,11 +70,11 @@ class MaxonMotor : public GenericMotor
 public:
     MaxonMotor(uint32_t nodeId);
 
-    uint32_t canSendId; 
+    uint32_t canSendId;
     uint32_t canReceiveId; 
 
     uint32_t txPdoIds[4]; 
-    uint32_t rxPdoIds[4]; 
+    uint32_t rxPdoIds[4];
 
     std::queue<MaxonData> commandBuffer;
 };
