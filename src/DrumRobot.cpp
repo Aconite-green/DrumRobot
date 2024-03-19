@@ -194,12 +194,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             pathManager.line++;
             state.perform = PerformSub::CheckBuf;
         }
-        else if (pathManager.line == pathManager.total)
-        {
-            std::cout << "Perform Done\n";
-            state.main = Main::Ready;
-            pathManager.line = 0;
-        }
         break;
     }
     case PerformSub::SafetyCheck:
@@ -219,7 +213,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         if (allBuffersEmpty)
         {
             std::cout << "Performance is Over\n";
-            state.main = Main::Ideal;
+            state.main = Main::Ready;
+            pathManager.line = 0;
         }
         break;
     }
@@ -240,8 +235,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     }
 }
-sendLoopForThreadsendLoopForThread
-void DrumRobot::recvLoopForThread()sendLoopForThread
+
+void DrumRobot::recvLoopForThread()
 {
 
     while (state.main != Main::Shutdown)
