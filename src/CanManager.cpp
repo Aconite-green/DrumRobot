@@ -532,6 +532,8 @@ void CanManager::distributeFramesToMotors()
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     maxonMotor->currentPos = std::get<1>(parsedData);
                     maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->positionValues[maxonMotor->posIndex%4] = std::get<1>(parsedData);
+                    maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
                 }
             }

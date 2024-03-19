@@ -51,7 +51,10 @@ enum class AddStanceSub {
 enum class ReadSub{
     TimeCheck,
     ReadCANFrame,
-    UpdateMotorInfo
+    UpdateMotorInfo,
+    CheckMaxonControl,
+    CheckDrumHit,
+    CheckReachedPosition
 };
 
 

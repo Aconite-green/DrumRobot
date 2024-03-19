@@ -1600,7 +1600,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
 
     canManager.setSocketsTimeout(0, 50000);
     std::string FileName1 = "../../READ/" + selectedMotor + "_cst_in.txt";
-
+    
     std::ofstream csvFileIn(FileName1);
 
     if (!csvFileIn.is_open())

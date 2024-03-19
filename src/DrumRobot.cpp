@@ -358,10 +358,76 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
         break;
-
     case ReadSub::UpdateMotorInfo:
-        canManager.distributeFramesToMotors(); // 읽은 데이터를 모터 정보로 업데이트
-        state.read = ReadSub::TimeCheck;       // 작업 완료 상태로 전환
+        canManager.distributeFramesToMotors();
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                maxonMotor->checked = false;
+            }
+        }
+         
+        break;
+    case ReadSub::CheckMaxonControl:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->hitting && !maxonMotor->checked)
+                {
+                    state.read = ReadSub::CheckDrumHit;
+                    break;
+                }
+                else if (maxonMotor->positioning && !maxonMotor->checked)
+                {
+                    state.read = ReadSub::CheckReachedPosition;
+                    break;
+                }
+                else
+                {
+                    state.read = ReadSub::TimeCheck;
+                }
+                
+            }
+        }
+    case ReadSub::CheckDrumHit:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->hitting)
+                {
+                    if (dct_fun(maxonMotor->positionValues, 0))
+                    {
+                        maxonMotor->hitDrum = true; // 여기서 pathManager 에서 접근
+                    }
+                    maxonMotor->checked = true;
+                }
+            }
+        }
+        state.read = ReadSub::CheckMaxonControl;
+        break;
+     case ReadSub::CheckReachedPosition:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->positioning)
+                {
+                    if (maxonMotor->targetPos < maxonMotor->currentPos )
+                    {
+                        maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
+                    }
+                    maxonMotor->checked = true;
+                }
+            }
+        }
+        state.read = ReadSub::CheckMaxonControl;
         break;
     }
 }
@@ -1233,4 +1299,26 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 
     ofs.close();
     std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+}
+
+bool DrumRobot::dct_fun(float positions[], float vel_th)
+{
+    // 포지션 배열에서 각각의 값을 추출합니다.
+    float the_k = positions[3]; // 가장 최신 값
+    float the_k_1 = positions[2];
+    float the_k_2 = positions[1];
+    float the_k_3 = positions[0]; // 가장 오래된 값
+
+    float ang_k = (the_k + the_k_1) / 2;
+    float ang_k_1 = (the_k_1 + the_k_2) / 2;
+    float ang_k_2 = (the_k_2 + the_k_3) / 2;
+    float vel_k = ang_k - ang_k_1;
+    float vel_k_1 = ang_k_1 - ang_k_2;
+
+    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.05)
+        return true;
+    else if (ang_k < -0.25)
+        return true;
+    else
+        return false;
 }
