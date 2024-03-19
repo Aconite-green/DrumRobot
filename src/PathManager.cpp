@@ -11,29 +11,23 @@ PathManager::PathManager(State &stateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer()
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
 {
     struct can_frame frame;
-
-    vector<double> Pi;
-    vector<double> Vi;
-
-    Pi = p.back();
-    Vi = v.back();
 
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Pi[motor_mapping[entry.first]];
-            float v_des = Vi[motor_mapping[entry.first]];
+            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            float v_des = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
             entry.second->sendBuffer.push(frame);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Pi[motor_mapping[entry.first]];
+            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
             MParser.getTargetPosition(*maxonMotor, &frame, p_des);
             entry.second->sendBuffer.push(frame);
         }
@@ -51,7 +45,6 @@ void PathManager::ApplyDir()
         shared_ptr<GenericMotor> motor = entry.second;
         standby[motor_mapping[entry.first]] *= motor->cwDir;
         backarr[motor_mapping[entry.first]] *= motor->cwDir;
-        motor_dir[motor_mapping[entry.first]] = motor->cwDir;
     }
 }
 
@@ -88,83 +81,583 @@ void PathManager::getMotorPos()
     }
 }
 
-double determinant(double mat[3][3])
-{ // 행렬의 determinant 계산 함수
-    return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
-           mat[0][1] * (mat[1][0] * mat[2][2] - mat[2][0] * mat[1][2]) +
-           mat[0][2] * (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]);
+string trimWhitespace(const std::string &str)
+{
+    size_t first = str.find_first_not_of(" \t");
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(" \t");
+    return str.substr(first, (last - first + 1));
 }
 
-void inverseMatrix(double mat[3][3], double inv[3][3])
-{ // 역행렬 계산 함수
-    double det = determinant(mat);
+MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b)
+{
+    int flag = 0;
 
-    if (det == 0)
+    VectorXd inst_c = VectorXd::Zero(18);
+
+    double t3;
+    MatrixXd t3_inst3;
+
+    // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
+    if ((round(inst2_a.segment(0, 9).norm()) == 1) && (round(inst2_b.segment(0, 9).norm()) == 1))
     {
-        std::cerr << "역행렬이 존재하지 않습니다." << std::endl;
-        return;
+        // 오른손
+        inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
+        t3 = 0.5 * (t2_b + t2_a);
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
+        flag = 1;
     }
 
-    double invDet = 1.0 / det;
+    if ((round(inst2_a.segment(9, 9).norm()) == 1) && (round(inst2_b.segment(9, 9).norm()) == 1))
+    {
+        // 왼손
+        inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
+        t3 = 0.5 * (t2_a + t2_b);
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
+        flag = 1;
+    }
 
-    inv[0][0] = (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) * invDet;
-    inv[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) * invDet;
-    inv[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * invDet;
+    // 2번 룰: 1번 룰에 의해 새로운 시점/악기가 정의되어 있고(flag = 1) inst2에 1이 있으면 inst3에 -1을 넣는다.
+    if ((round(inst2_a.segment(0, 9).norm()) == 0) && (round(inst2_b.segment(0, 9).norm()) == 1) && (flag == 1))
+    {
+        // 오른손
+        inst_c.segment(0, 9) = -inst2_b.segment(0, 9);
+        t3 = 0.5 * (t2_a + t2_b);
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
+    }
 
-    inv[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) * invDet;
-    inv[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * invDet;
-    inv[1][2] = (mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2]) * invDet;
+    if ((round(inst2_a.segment(9, 9).norm()) == 0) && (round(inst2_b.segment(9, 9).norm()) == 1) && (flag == 1))
+    {
+        // 왼손
+        inst_c.segment(9, 9) = -inst2_b.segment(9, 9);
+        t3 = 0.5 * (t2_a + t2_b);
+        t3_inst3.resize(19, 3);
+        t3_inst3.row(0) << t2_a, t3, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst_c;
+        t3_inst3.block(1, 2, 18, 1) = inst2_b;
+    }
 
-    inv[2][0] = (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]) * invDet;
-    inv[2][1] = (mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1]) * invDet;
-    inv[2][2] = (mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]) * invDet;
+    // 3번 룰: 1번 룰을 거치지 않았고 inst1이 0 이고 inst2에 1이 있으면, inst1에 -1을 넣는다.
+    if ((round(inst2_a.segment(0, 9).norm()) == 0) && (round(inst2_b.segment(0, 9).norm()) == 1) && (flag == 0))
+    {
+        inst2_a.segment(0, 9) = -inst2_b.segment(0, 9);
+        t3_inst3.resize(19, 2);
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
+    }
+
+    if ((round(inst2_a.segment(9, 9).norm()) == 0) && (round(inst2_b.segment(9, 9).norm()) == 1) && (flag == 0))
+    {
+        inst2_a.segment(9, 9) = -inst2_b.segment(9, 9);
+        t3_inst3.resize(19, 2);
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
+    }
+
+    // 악보 끝까지 연주하기 위해서 inst2_b에 0 행렬이 인위적으로 들어가는 경우, 그대로 내보냄
+    if (round((inst2_b.norm()) == 0) && (flag == 0))
+    {
+        t3_inst3.resize(19, 2);
+        t3_inst3.row(0) << t2_a, t2_b;
+        t3_inst3.block(1, 0, 18, 1) = inst2_a;
+        t3_inst3.block(1, 1, 18, 1) = inst2_b;
+    }
+
+    return t3_inst3;
 }
 
-void PathManager::iconnect(vector<double> &P0, vector<double> &P1, vector<double> &P2, vector<double> &V0, double t1, double t2, double t)
+void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
-    vector<double> V1;
-    vector<double> p_out;
-    vector<double> v_out;
-    for (size_t i = 0; i < P0.size(); ++i)
+    MatrixXd T(0, 0);
+
+    for (int k = 0; k < 4; ++k)
     {
-        if ((P1[i] - P0[i]) / (P2[i] - P1[i]) > 0)
-            V1.push_back((P2[i] - P0[i]) / t2);
-        else
-            V1.push_back(0);
+        VectorXd inst_0 = inst2.col(k);
+        VectorXd inst_1 = inst2.col(k + 1);
+        MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
 
-        double f = P0[i];
-        double d = 0;
-        double e = V0[i];
-
-        double M[3][3] = {
-            {20.0 * pow(t1, 2), 12.0 * t1, 6.0},
-            {5.0 * pow(t1, 4), 4.0 * pow(t1, 3), 3.0 * pow(t1, 2)},
-            {pow(t1, 5), pow(t1, 4), pow(t1, 3)}};
-        double ANS[3] = {0, V1[i] - V0[i], P1[i] - P0[i] - V0[i] * t1};
-
-        double invM[3][3];
-        inverseMatrix(M, invM);
-        // Multiply the inverse of T with ANS
-        double tem[3];
-        for (size_t j = 0; j < 3; ++j)
+        if (T.cols() == 0)
         {
-            tem[j] = 0;
-            for (size_t k = 0; k < 3; ++k)
-            {
-                tem[j] += invM[j][k] * ANS[k];
-            }
+            T.resize(inst3.rows(), inst3.cols());
+            T = inst3;
+        }
+        else
+        {
+            MatrixXd temp = T.leftCols(T.cols() - 1);
+            T.resize(T.rows(), T.cols() - 1 + inst3.cols());
+            T << temp, inst3;
+        }
+    }
+
+    cout << "\nT : \n"
+         << T;
+
+    /* 빈 자리에 -0.5 집어넣기:  */
+    int nn = T.cols();
+
+    for (int k = 1; k < nn; ++k)
+    {
+        if (round(T.block(1, k, 9, 1).sum()) == 0)
+        {
+            double norm_val = T.block(1, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(1, k - 1, 9, 1);
+            T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
 
-        double a = tem[0];
-        double b = tem[1];
-        double c = tem[2];
-
-        p_out.push_back(a * pow(t, 5) + b * pow(t, 4) + c * pow(t, 3) + d * pow(t, 2) + e * t + f);
-        v_out.push_back(5 * a * pow(t, 4) + 4 * b * pow(t, 3) + 3 * c * pow(t, 2) + 3 * d * t + e);
+        if (round(T.block(10, k, 9, 1).sum()) == 0)
+        {
+            double norm_val = T.block(10, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(10, k - 1, 9, 1);
+            T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+        }
     }
 
-    p.push_back(p_out);
-    v.push_back(v_out);
+    /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
+    int j = 0;
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T(0, k) <= t2[3])
+        {
+            j++;
+        }
+    }
+
+    MatrixXd t4_inst4 = MatrixXd::Zero(T.rows(), j);
+    j = 0; // j 초기화
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T(0, k) <= t2[3])
+        {
+            t4_inst4.col(j) = T.col(k);
+            j++;
+        }
+    }
+
+    /* hit31: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
+    int kk = 0;
+    for (int k = 0; k < j; ++k)
+    {
+        for (int i = 1; i <= 3; ++i)
+        {
+            if (t4_inst4(0, k) == t2[i])
+            {
+                if (kk == 0)
+                {
+                    A31.resize(t4_inst4.rows(), 1);
+                    A31 = t4_inst4.col(k);
+                    kk = 1;
+                }
+                else
+                {
+                    A31.conservativeResize(A31.rows(), A31.cols() + 1);
+                    A31.col(A31.cols() - 1) = t4_inst4.col(k);
+                }
+            }
+        }
+    }
+
+    /* state31: t2(2)에서 시작해서 3개의 연속된 t4_inst4를 골라냄 */
+    for (int k = 0; k < j; ++k)
+    {
+        if (t4_inst4(0, k) == t2[1])
+        {
+            AA41.resize(3, 4);
+            AA41 << t4_inst4(0, k), t4_inst4(0, k + 1), t4_inst4(0, k + 2), t4_inst4(0, k + 3),
+                t4_inst4.block(1, k, 9, 1).sum(), t4_inst4.block(1, k + 1, 9, 1).sum(), t4_inst4.block(1, k + 2, 9, 1).sum(), t4_inst4.block(1, k + 3, 9, 1).sum(),
+                t4_inst4.block(10, k, 9, 1).sum(), t4_inst4.block(10, k + 1, 9, 1).sum(), t4_inst4.block(10, k + 2, 9, 1).sum(), t4_inst4.block(10, k + 3, 9, 1).sum();
+            break;
+        }
+    }
+
+    kk = 0;
+    for (int k = 0; k < j; ++k)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            if (t4_inst4(0, k) == t2[i])
+            {
+                if (kk == 0)
+                {
+                    A30.resize(t4_inst4.rows(), 1);
+                    A30 = t4_inst4.col(k);
+                    kk = 1;
+                }
+                else
+                {
+                    A30.conservativeResize(A30.rows(), A30.cols() + 1);
+                    A30.col(A30.cols() - 1) = t4_inst4.col(k);
+                }
+            }
+        }
+    }
+
+    AA40.resize(3, 4);
+    AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
+        t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
+        t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
+
+    cout << "\nA30 :\n"
+         << A30 << "\nA31 :\n"
+         << A31 << "\nAA40 :\n"
+         << AA40 << "\nAA41 :\n"
+         << AA41;
+}
+
+void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
+{
+    MatrixXd T(0, 0);
+
+    for (int k = 0; k < 4; ++k)
+    {
+        VectorXd inst_0 = inst2.col(k);
+        VectorXd inst_1 = inst2.col(k + 1);
+        MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
+
+        cout << "\nk : " << k << "\n"
+             << inst3 << "\n";
+
+        if (T.cols() == 0)
+        {
+            T.resize(inst3.rows(), inst3.cols());
+            T = inst3;
+        }
+        else
+        {
+            MatrixXd temp = T.leftCols(T.cols() - 1);
+            T.resize(T.rows(), T.cols() - 1 + inst3.cols());
+            T << temp, inst3;
+        }
+    }
+
+    cout << "\nT : \n"
+         << T;
+
+    /* 빈 자리에 -0.5 집어넣기:  */
+    int nn = T.cols();
+
+    for (int k = 1; k < nn; ++k)
+    {
+        if (round(T.block(1, k, 9, 1).sum()) == 0)
+        {
+            double norm_val = T.block(1, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(1, k - 1, 9, 1);
+            T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+        }
+
+        if (round(T.block(10, k, 9, 1).sum()) == 0)
+        {
+            double norm_val = T.block(10, k - 1, 9, 1).norm();
+            MatrixXd block = T.block(10, k - 1, 9, 1);
+            T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+        }
+    }
+
+    /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
+    int j = 0;
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T(0, k) >= t2[1] && T(0, k) <= t2[4])
+        {
+            j++;
+        }
+    }
+
+    MatrixXd t4_inst4(T.rows(), j);
+    j = 0; // j 초기화
+    for (int k = 0; k < nn; ++k)
+    {
+        if (T(0, k) >= t2[1] && T(0, k) <= t2[4])
+        {
+            t4_inst4.col(j) = T.col(k);
+            j++;
+        }
+    }
+
+    /* B: t2(2)에서 t2(4)까지 중에서 타격을 포함하는 t4_inst4를 골라냄  */
+    int kk = 0;
+    for (int k = 0; k < j; ++k)
+    {
+        for (int i = 1; i <= 3; ++i)
+        {
+            if (t4_inst4(0, k) == t2[i])
+            {
+                if (kk == 0)
+                {
+                    B.resize(t4_inst4.rows(), 1);
+                    B = t4_inst4.col(k);
+                    kk = 1;
+                }
+                else
+                {
+                    B.conservativeResize(B.rows(), B.cols() + 1);
+                    B.col(B.cols() - 1) = t4_inst4.col(k);
+                }
+            }
+        }
+    }
+
+    /* state31: t2(2)에서 시작해서 3개의 연속된 t4_inst4를 골라냄 */
+    for (int k = 0; k < j; ++k)
+    {
+        if (t4_inst4(0, k) == t2[1])
+        {
+            BB.resize(3, 4);
+            BB << t4_inst4(0, k), t4_inst4(0, k + 1), t4_inst4(0, k + 2), t4_inst4(0, k + 3),
+                t4_inst4.block(1, k, 9, 1).sum(), t4_inst4.block(1, k + 1, 9, 1).sum(), t4_inst4.block(1, k + 2, 9, 1).sum(), t4_inst4.block(1, k + 3, 9, 1).sum(),
+                t4_inst4.block(10, k, 9, 1).sum(), t4_inst4.block(10, k + 1, 9, 1).sum(), t4_inst4.block(10, k + 2, 9, 1).sum(), t4_inst4.block(10, k + 3, 9, 1).sum();
+            break;
+        }
+    }
+
+    cout << "\nB :\n"
+         << B << "\nBB :\n"
+         << BB;
+}
+
+VectorXd PathManager::pos_madi_fun(VectorXd &A)
+{
+    double time = A(0);
+
+    VectorXd inst_right = A.segment(1, 9);
+    VectorXd inst_left = A.segment(10, 9);
+
+    VectorXd inst_right_01 = inst_right / inst_right.sum();
+    VectorXd inst_left_01 = inst_left / inst_left.sum();
+
+    double inst_right_state = inst_right.sum();
+    double inst_left_state = inst_left.sum();
+
+    VectorXd inst_p(18);
+    inst_p << inst_right_01,
+        inst_left_01;
+
+    MatrixXd combined(6, 18);
+    combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
+    MatrixXd p = combined * inst_p;
+
+    VectorXd output(9);
+    output << time,
+        p,
+        inst_right_state,
+        inst_left_state;
+
+    return output;
+}
+
+MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
+{
+    MatrixXd t_madi = AA.row(0);
+    MatrixXd sts_R = AA.row(1);
+    MatrixXd sts_L = AA.row(2);
+
+    MatrixXd theta_R = MatrixXd::Zero(1, 4);
+    MatrixXd theta_L = MatrixXd::Zero(1, 4);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (sts_R(0, i) == 1)
+            theta_R(0, i) = 0;
+        else if (sts_R(0, i) == -0.5)
+            theta_R(0, i) = 0.15 * v_wrist;
+
+        if (sts_L(0, i) == 1)
+            theta_L(0, i) = 0;
+        else if (sts_L(0, i) == -0.5)
+            theta_L(0, i) = 0.15 * v_wrist;
+    }
+
+    MatrixXd t_wrist_madi(3, 3);
+    for (int i = 0; i < 3; ++i)
+    {
+        if (sts_L(0, i) == -1)
+        {
+            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_L(0, i) = dt * v_wrist;
+            if (theta_L(0, i) > (M_PI / 2) * 0.8)
+                theta_L(0, i) = (M_PI / 2) * 0.8;
+        }
+
+        if (sts_R(0, i) == -1)
+        {
+            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_R(0, i) = dt * v_wrist;
+            if (theta_R(0, i) > (M_PI / 2) * 0.8)
+                theta_R(0, i) = (M_PI / 2) * 0.8;
+        }
+    }
+
+    t_wrist_madi << t_madi.block(0, 0, 1, 3),
+        theta_R.block(0, 0, 1, 3),
+        theta_L.block(0, 0, 1, 3);
+
+    return t_wrist_madi;
+}
+
+MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
+{
+    MatrixXd t_madi = AA.row(0);
+    MatrixXd sts_R = AA.row(1);
+    MatrixXd sts_L = AA.row(2);
+
+    MatrixXd theta_R = MatrixXd::Zero(1, 4);
+    MatrixXd theta_L = MatrixXd::Zero(1, 4);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (sts_R(0, i) == 1)
+            theta_R(0, i) = 0;
+        else if (sts_R(0, i) == -0.5)
+            theta_R(0, i) = 0.15 * v_elbow;
+
+        if (sts_L(0, i) == 1)
+            theta_L(0, i) = 0;
+        else if (sts_L(0, i) == -0.5)
+            theta_L(0, i) = 0.15 * v_elbow;
+    }
+
+    MatrixXd t_elbow_madi(3, 3);
+    for (int i = 0; i < 3; ++i)
+    {
+        if (sts_L(0, i) == -1)
+        {
+            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_L(0, i) = dt * v_elbow;
+            if (theta_L(0, i) > (M_PI / 2) * 0.8)
+                theta_L(0, i) = (M_PI / 2) * 0.8;
+        }
+
+        if (sts_R(0, i) == -1)
+        {
+            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_R(0, i) = dt * v_elbow;
+            if (theta_R(0, i) > (M_PI / 2) * 0.8)
+                theta_R(0, i) = (M_PI / 2) * 0.8;
+        }
+    }
+
+    t_elbow_madi << t_madi.block(0, 0, 1, 3),
+        theta_R.block(0, 0, 1, 3),
+        theta_L.block(0, 0, 1, 3);
+
+    return t_elbow_madi;
+}
+
+VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, double s, double z0)
+{
+    double direction = 0.0 * M_PI;
+
+    double X1 = pR(0), Y1 = pR(1), z1 = pR(2);
+    double X2 = pL(0), Y2 = pL(1), z2 = pL(2);
+    double r1 = part_length(0);
+    double r2 = part_length(1) + part_length(4);
+    double L1 = part_length(2);
+    double L2 = part_length(3) + part_length(5);
+
+    int j = 0;
+    double the3[1351];
+    double zeta = z0 - z2;
+    VectorXd Qf(7);
+    double the0_f = 0;
+
+    // the3 배열 초기화
+    for (int i = 0; i < 1351; ++i)
+        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
+
+    for (int i = 0; i < 1351; ++i)
+    {
+        double det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
+
+        if (det_the4 < 1 && det_the4 > -1)
+        {
+            double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
+            double the4 = the34 - the3[i];
+
+            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
+            {
+                double r = r1 * sin(the3[i]) + r2 * sin(the34);
+                double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
+
+                if (det_the1 < 1 && det_the1 > -1)
+                {
+                    double the1 = acos(det_the1);
+                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
+                    {
+                        double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
+                        double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
+
+                        if (det_the0 < 1 && det_the0 > -1)
+                        {
+                            double the0 = asin(det_the0) - alpha;
+                            if (the0 > -M_PI / 2 && the0 < M_PI / 2) // the0 범위 : -90deg ~ 90deg
+                            {
+                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+
+                                if (det_the2 < 1 && det_the2 > -1)
+                                {
+                                    double the2 = acos(det_the2) - the0;
+                                    if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
+                                    {
+                                        double Lp = sqrt(L * L + zeta * zeta);
+                                        double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+
+                                        if (det_the6 < 1 && det_the6 > -1)
+                                        {
+                                            double the6 = acos(det_the6);
+                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
+                                            {
+                                                double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                double det_the5 = L * L + zeta * zeta - T * T;
+
+                                                if (det_the5 > 0)
+                                                {
+                                                    double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    sol /= (L * L + zeta * zeta);
+                                                    double the5 = asin(sol);
+                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
+                                                    {
+                                                        if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
+                                                        {
+                                                            Qf << the0, the1, the2, the3[i], the4, the5, the6;
+                                                            the0_f = the0;
+                                                            j = 1;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (j == 0)
+        cout << "IKFUN is not solved!!\n";
+
+    return Qf;
 }
 
 vector<double> PathManager::fkfun()
@@ -180,7 +673,7 @@ vector<double> PathManager::fkfun()
             theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
         }
     }
-    double r1 = R[0], r2 = R[1], l1 = R[2], l2 = R[3];
+    double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
     double r, l;
     r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
     l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
@@ -195,271 +688,82 @@ vector<double> PathManager::fkfun()
     return P;
 }
 
-vector<double> PathManager::IKfun(vector<double> &P1, vector<double> &P2)
+double PathManager::con_fun(double t_a, double t_b, double th_a, double th_b, double t_now)
 {
-    // 드럼위치의 중점 각도
-    double direction = 0.0 * M_PI; //-M_PI / 3.0;
-
-    // 몸통과 팔이 부딧히지 않을 각도 => 36deg
-    double differ = M_PI / 5.0;
-
-    vector<double> Qf(7);
-
-    double X1 = P1[0], Y1 = P1[1], z1 = P1[2];
-    double X2 = P2[0], Y2 = P2[1], z2 = P2[2];
-    double r1 = R[0], r2 = R[1], r3 = R[2], r4 = R[3];
-
-    vector<double> the3(1801);
-    for (int i = 0; i < 1801; i++)
-    { // 오른팔 들어올리는 각도 범위 : -90deg ~ 90deg
-        the3[i] = -M_PI / 2 + (M_PI * i) / 1800;
-    }
-
-    double zeta = z0 - z2;
-
-    double det_the0, det_the1, det_the2, det_the4, det_the5, det_the6;
-    double the0_f, the0, the1, the2, the34, the4, the5, the6;
-    double r, L, Lp, T;
-    double sol;
-    double alpha;
-    bool first = true;
-
-    for (long unsigned int i = 0; i < the3.size(); i++)
-    {
-        det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
-
-        if (det_the4 < 1 && det_the4 > -1)
-        {
-            the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
-            the4 = the34 - the3[i];
-            if (the4 > 0 && the4 < M_PI * 0.75)
-            { // 오른팔꿈치 각도 범위 : 0 ~ 135deg
-                r = r1 * sin(the3[i]) + r2 * sin(the34);
-
-                det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4) / (s * r);
-                if (det_the1 < 1 && det_the1 > -1)
-                {
-                    the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < (M_PI - differ))
-                    { // 오른팔 돌리는 각도 범위 : 0 ~ 150deg
-                        alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
-                        det_the0 = (s / 4 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
-                        if (det_the0 < 1 && det_the0 > -1)
-                        {
-                            the0 = asin(det_the0) - alpha;
-
-                            L = sqrt(pow(X2 - 0.5 * s * cos(the0 + M_PI), 2) +
-                                     pow(Y2 - 0.5 * s * sin(the0 + M_PI), 2));
-                            det_the2 = (X2 + 0.5 * s * cos(the0)) / L;
-
-                            if (det_the2 < 1 && det_the2 > -1)
-                            {
-                                the2 = acos(det_the2) - the0;
-                                if (the2 > differ && the2 < M_PI)
-                                { // 왼팔 돌리는 각도 범위 : 30deg ~ 180deg
-                                    Lp = sqrt(L * L + zeta * zeta);
-                                    det_the6 = (Lp * Lp - r3 * r3 - r4 * r4) / (2 * r3 * r4);
-                                    if (det_the6 < 1 && det_the6 > -1)
-                                    {
-                                        the6 = acos(det_the6);
-                                        if (the6 > 0 && the6 < M_PI * 0.75)
-                                        { // 왼팔꿈치 각도 범위 : 0 ~ 135deg
-                                            T = (zeta * zeta + L * L + r3 * r3 - r4 * r4) / (r3 * 2);
-                                            det_the5 = L * L + zeta * zeta - T * T;
-
-                                            if (det_the5 > 0)
-                                            {
-                                                sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
-                                                sol /= (L * L + zeta * zeta);
-                                                the5 = asin(sol);
-                                                if (the5 > -M_PI / 4 && the5 < M_PI / 2)
-                                                { // 왼팔 들어올리는 각도 범위 : -45deg ~ 90deg
-
-                                                    if (first || abs(the0 - direction) < abs(the0_f - direction))
-                                                    {
-                                                        the0_f = the0;
-                                                        Qf[0] = the0;
-                                                        Qf[1] = the1;
-                                                        Qf[2] = the2;
-                                                        Qf[3] = the3[i];
-                                                        Qf[4] = the4;
-                                                        Qf[5] = the5;
-                                                        Qf[6] = the6;
-
-                                                        first = false;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (first)
-    {
-        std::cout << "IKfun Not Solved!!\n";
-        state.main = Main::Pause;
-    }
-
-    for (auto &entry : motors)
-    {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        {
-            Qf[motor_mapping[entry.first]] *= tMotor->cwDir;
-        }
-    }
-
-    return Qf;
+    return (th_b - th_a) * (t_now - t_a) / (t_b - t_a) + th_a;
 }
 
-string trimWhitespace(const std::string &str)
+pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t)
 {
-    size_t first = str.find_first_not_of(" \t");
-    if (std::string::npos == first)
+    double p_out, v_out /*, V1_out*/;
+
+    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
+    { // 방향 지속의 경우, 2차 함수
+        double c = qk1_06;
+        double b = qv_in;
+        double a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
+
+        p_out = a * t * t + b * t + c; // 위치
+        v_out = 2 * a * t + b;         // 속도
+        // V1_out = 2 * a * t1 + b; // t1 시점에서의 속도
+    }
+    else
+    { // 방향 전환의 경우, 3차 함수
+        double c = qv_in;
+        double d = qk1_06;
+
+        double T11 = t1 * t1 * t1;
+        double T12 = t1 * t1;
+        double T21 = 3 * t1 * t1;
+        double T22 = 2 * t1;
+
+        // 역행렬 계산을 위한 수식 처리
+        double det = T11 * T22 - T12 * T21;
+        double invT11 = T22 / det;
+        double invT12 = -T12 / det;
+        double invT21 = -T21 / det;
+        double invT22 = T11 / det;
+
+        double ANS1 = -c * t1 - d + qk2_06;
+        double ANS2 = -c;
+
+        // 행렬식을 이용한 계산
+        double a = invT11 * ANS1 + invT12 * ANS2;
+        double b = invT21 * ANS1 + invT22 * ANS2;
+
+        p_out = a * t * t * t + b * t * t + c * t + d; // 위치
+        v_out = 3 * a * t * t + 2 * b * t + c;         // 속도
+        // V1_out = 3 * a * t1 * t1 + 2 * b * t1 + c; // t1 시점에서의 속도
+    }
+
+    return std::make_pair(p_out, v_out);
+}
+
+pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
+{
+    double qR_t, qL_t;
+
+    VectorXd time_madi = t_madi.row(0);
+    VectorXd q7_madi = t_madi.row(1);
+    VectorXd q8_madi = t_madi.row(2);
+
+    if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
-        return str;
+        qR_t = con_fun(time_madi(0), time_madi(1), q7_madi(0), q7_madi(1), t_now);
+        qL_t = con_fun(time_madi(0), time_madi(1), q8_madi(0), q8_madi(1), t_now);
     }
-    size_t last = str.find_last_not_of(" \t");
-    return str.substr(first, (last - first + 1));
-}
-
-void PathManager::getDrummingPosAndAng()
-{
-    for (int j = 0; j < n_inst; ++j)
-    { // 악기에 맞는 오/왼 손목 위치 및 손목 각도
-        if (RA[line][j] != 0)
-        {
-            P1 = right_inst[j];
-            r_wrist = wrist[j];
-            c_R = 1;
-        }
-        if (LA[line][j] != 0)
-        {
-            P2 = left_inst[j];
-            l_wrist = wrist[j];
-            c_L = 1;
-        }
-    }
-}
-
-void PathManager::getQ1AndQ2()
-{
-    if (c_R == 0 && c_L == 0)
-    { // 왼손 & 오른손 안침
-        Q1 = c_MotorAngle;
-        if (p_R == 1)
-        {
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-        }
-        if (p_L == 1)
-        {
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-        }
-        Q2 = Q1;
+    else if (t_now >= time_madi(1) && t_now < time_madi(2))
+    {
+        qR_t = con_fun(time_madi(1), time_madi(2), q7_madi(1), q7_madi(2), t_now);
+        qL_t = con_fun(time_madi(1), time_madi(2), q8_madi(1), q8_madi(2), t_now);
     }
     else
     {
-        Q1 = IKfun(P1, P2);
-        Q1.push_back(r_wrist);
-        Q1.push_back(l_wrist);
-        Q2 = Q1;
-        if (c_R != 0 && c_L != 0)
-        { // 왼손 & 오른손 침
-            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
-        }
-        else if (c_L != 0)
-        { // 왼손만 침
-            Q1[4] = Q1[4] + ElbowAngle_ready * motor_dir[4];
-            Q2[4] = Q2[4] + ElbowAngle_ready * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_hit * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_ready * motor_dir[7];
-            Q2[7] = Q2[7] + WristAngle_ready * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_hit * motor_dir[8];
-        }
-        else if (c_R != 0)
-        { // 오른손만 침
-            Q1[4] = Q1[4] + ElbowAngle_hit * motor_dir[4];
-            Q1[6] = Q1[6] + ElbowAngle_ready * motor_dir[6];
-            Q2[6] = Q2[6] + ElbowAngle_ready * motor_dir[6];
-            Q1[7] = Q1[7] + WristAngle_hit * motor_dir[7];
-            Q1[8] = Q1[8] + WristAngle_ready * motor_dir[8];
-            Q2[8] = Q2[8] + WristAngle_ready * motor_dir[8];
-        }
-        // waist & Arm1 & Arm2는 Q1 ~ Q2 동안 계속 이동
-        Q1[0] = (Q2[0] + c_MotorAngle[0]) / 2.0;
-        Q1[1] = (Q2[1] + c_MotorAngle[1]) / 2.0;
-        Q1[2] = (Q2[2] + c_MotorAngle[2]) / 2.0;
-        Q1[3] = (Q2[3] + c_MotorAngle[3]) / 2.0;
-        Q1[5] = (Q2[5] + c_MotorAngle[5]) / 2.0;
+        qR_t = q7_madi(2);
+        qL_t = q8_madi(2);
     }
-}
 
-void PathManager::getQ3AndQ4()
-{
-    if (c_R == 0 && c_L == 0)
-    { // 왼손 & 오른손 안침
-        Q3 = Q2;
-        if (p_R == 1)
-        {
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
-        }
-        if (p_L == 1)
-        {
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
-        }
-        Q4 = Q3;
-    }
-    else
-    {
-        Q3 = IKfun(P1, P2);
-        Q3.push_back(r_wrist);
-        Q3.push_back(l_wrist);
-        Q4 = Q3;
-        if (c_R != 0 && c_L != 0)
-        { // 왼손 & 오른손 침
-            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
-        }
-        else if (c_L != 0)
-        { // 왼손만 침
-            Q3[4] = Q3[4] + ElbowAngle_ready * motor_dir[4];
-            Q4[4] = Q4[4] + ElbowAngle_ready * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_hit * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_ready * motor_dir[7];
-            Q4[7] = Q4[7] + WristAngle_ready * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_hit * motor_dir[8];
-        }
-        else if (c_R != 0)
-        { // 오른손만 침
-            Q3[4] = Q3[4] + ElbowAngle_hit * motor_dir[4];
-            Q3[6] = Q3[6] + ElbowAngle_ready * motor_dir[6];
-            Q4[6] = Q4[6] + ElbowAngle_ready * motor_dir[6];
-            Q3[7] = Q3[7] + WristAngle_hit * motor_dir[7];
-            Q3[8] = Q3[8] + WristAngle_ready * motor_dir[8];
-            Q4[8] = Q4[8] + WristAngle_ready * motor_dir[8];
-        }
-        // waist & Arm1 & Arm2는 Q3 ~ Q4 동안 계속 이동
-        Q3[0] = (Q4[0] + Q2[0]) / 2.0;
-        Q3[1] = (Q4[1] + Q2[1]) / 2.0;
-        Q3[2] = (Q4[2] + Q2[2]) / 2.0;
-        Q3[3] = (Q4[3] + Q2[3]) / 2.0;
-        Q3[5] = (Q4[5] + Q2[5]) / 2.0;
-    }
+    return std::make_pair(qR_t, qL_t);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -469,6 +773,8 @@ void PathManager::getQ3AndQ4()
 void PathManager::GetDrumPositoin()
 {
     getMotorPos();
+    part_length.resize(6);
+    part_length << 0.363, 0.393, 0.363, 0.393, 0.400, 0.400; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 
@@ -479,86 +785,94 @@ void PathManager::GetDrumPositoin()
     }
 
     // Read data into a 2D vector
-    vector<vector<double>> inst_xyz(6, vector<double>(8, 0));
+    MatrixXd inst_xyz(6, 8);
 
     for (int i = 0; i < 6; ++i)
     {
         for (int j = 0; j < 8; ++j)
         {
-            inputFile >> inst_xyz[i][j];
+            inputFile >> inst_xyz(i, j);
             if (i == 1 || i == 4)
-                inst_xyz[i][j] = inst_xyz[i][j] * 1.0;
+                inst_xyz(i, j) *= 1.0;
         }
     }
 
+    right_inst.resize(3, 9);
+    left_inst.resize(3, 9);
+
     // Extract the desired elements
-    vector<double> right_B = {0, 0, 0};
-    vector<double> right_S;
-    vector<double> right_FT;
-    vector<double> right_MT;
-    vector<double> right_HT;
-    vector<double> right_HH;
-    vector<double> right_R;
-    vector<double> right_RC;
-    vector<double> right_LC;
+    // Vector3d right_B = {0, 0, 0};
+    Vector3d right_S;
+    Vector3d right_FT;
+    Vector3d right_MT;
+    Vector3d right_HT;
+    Vector3d right_HH;
+    Vector3d right_R;
+    Vector3d right_RC;
+    Vector3d right_LC;
+
+    // Vector3d left_B = {0, 0, 0};
+    Vector3d left_S;
+    Vector3d left_FT;
+    Vector3d left_MT;
+    Vector3d left_HT;
+    Vector3d left_HH;
+    Vector3d left_R;
+    Vector3d left_RC;
+    Vector3d left_LC;
 
     for (int i = 0; i < 3; ++i)
     {
-        right_S.push_back(inst_xyz[i][0]);
-        right_FT.push_back(inst_xyz[i][1]);
-        right_MT.push_back(inst_xyz[i][2]);
-        right_HT.push_back(inst_xyz[i][3]);
-        right_HH.push_back(inst_xyz[i][4]);
-        right_R.push_back(inst_xyz[i][5]);
-        right_RC.push_back(inst_xyz[i][6]);
-        right_LC.push_back(inst_xyz[i][7]);
+        right_S(i) = inst_xyz(i, 0);
+        right_FT(i) = inst_xyz(i, 1);
+        right_MT(i) = inst_xyz(i, 2);
+        right_HT(i) = inst_xyz(i, 3);
+        right_HH(i) = inst_xyz(i, 4);
+        right_R(i) = inst_xyz(i, 5);
+        right_RC(i) = inst_xyz(i, 6);
+        right_LC(i) = inst_xyz(i, 7);
+
+        left_S(i) = inst_xyz(i + 3, 0);
+        left_FT(i) = inst_xyz(i + 3, 1);
+        left_MT(i) = inst_xyz(i + 3, 2);
+        left_HT(i) = inst_xyz(i + 3, 3);
+        left_HH(i) = inst_xyz(i + 3, 4);
+        left_R(i) = inst_xyz(i + 3, 5);
+        left_RC(i) = inst_xyz(i + 3, 6);
+        left_LC(i) = inst_xyz(i + 3, 7);
     }
 
-    vector<double> left_B = {0, 0, 0};
-    vector<double> left_S;
-    vector<double> left_FT;
-    vector<double> left_MT;
-    vector<double> left_HT;
-    vector<double> left_HH;
-    vector<double> left_R;
-    vector<double> left_RC;
-    vector<double> left_LC;
-
-    for (int i = 3; i < 6; ++i)
-    {
-        left_S.push_back(inst_xyz[i][0]);
-        left_FT.push_back(inst_xyz[i][1]);
-        left_MT.push_back(inst_xyz[i][2]);
-        left_HT.push_back(inst_xyz[i][3]);
-        left_HH.push_back(inst_xyz[i][4]);
-        left_R.push_back(inst_xyz[i][5]);
-        left_RC.push_back(inst_xyz[i][6]);
-        left_LC.push_back(inst_xyz[i][7]);
-    }
-
-    // Combine the elements into right_inst and left_inst
-    right_inst = {right_B, right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT};
-    left_inst = {left_B, left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT};
+    right_inst << right_RC, right_R, right_S, right_HH, right_HH, right_FT, right_MT, right_LC, right_HT;
+    left_inst << left_RC, left_R, left_S, left_HH, left_HH, left_FT, left_MT, left_LC, left_HT;
 }
 
 void PathManager::GetMusicSheet()
 {
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
-        {"0", 10}, {"1", 3}, {"2", 6}, {"3", 7}, {"4", 9}, {"5", 4}, {"6", 2}, {"7", 1}, {"8", 8}, {"11", 3}, {"51", 3}, {"61", 3}, {"71", 3}, {"81", 3}, {"91", 3}};
+        {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
 
-    string score_path = "../include/managers/codeConfession.txt";
+    default_right.resize(9);
+    default_left.resize(9);
+    default_right << 0, 0, 0, 0, 0, 0, 0, 1, 0;
+    default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;
+
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
         cerr << "Error opening file." << endl;
 
-    string line;
+    string row;
     int lineIndex = 0;
     double time = 0.0;
-    while (getline(file, line))
+    time_arr.push_back(time);
+    inst_arr.resize(18, 1);
+    inst_arr.block(0, 0, 9, 1) = default_right;
+    inst_arr.block(9, 0, 9, 1) = default_left;
+    while (getline(file, row))
     {
-        istringstream iss(line);
+        istringstream iss(row);
         string item;
         vector<string> columns;
         while (getline(iss, item, '\t'))
@@ -574,29 +888,21 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            vector<int> inst_arr_R(10, 0), inst_arr_L(10, 0);
-            time += stod(columns[1]) * 100 / bpm;
+            VectorXd inst_arr_R = VectorXd::Zero(9), inst_arr_L = VectorXd::Zero(9);
+            VectorXd inst_col = VectorXd::Zero(18);
 
             if (columns[2] == "0" && columns[3] == "0")
                 continue;
             if (columns[2] != "0")
-                inst_arr_R[instrument_mapping[columns[2]]] = 1;
+                inst_arr_R(instrument_mapping[columns[2]]) = 1.0;
             if (columns[3] != "0")
-                inst_arr_L[instrument_mapping[columns[3]]] = 1;
+                inst_arr_L(instrument_mapping[columns[3]]) = 1.0;
 
-            if (columns[2] != "0" || columns[3] != "0")
-            {
-                time_arr.push_back(time);
-                RA.push_back(inst_arr_R);
-                LA.push_back(inst_arr_L);
-            }
-
-            if (columns[2] != "0" || columns[3] != "0")
-            {
-                time_arr_F.push_back(time);
-                RF.push_back(stoi(columns[6]) == 1 ? 1 : 0);
-                LF.push_back(stoi(columns[7]) == 2 ? 1 : 0);
-            }
+            time += stod(columns[1]) * 100.0 / bpm;
+            time_arr.push_back(time);
+            inst_col << inst_arr_R, inst_arr_L;
+            inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
+            inst_arr.col(inst_arr.cols() - 1) = inst_col;
         }
 
         lineIndex++;
@@ -604,57 +910,165 @@ void PathManager::GetMusicSheet()
 
     file.close();
 
-    total = RF.size();
+    time_arr.push_back(time + 1);
+    time_arr.push_back(time + 2);
+    time_arr.push_back(time + 3);
+
+    VectorXd inst_col = VectorXd::Zero(18);
+    inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 3);
+    inst_arr.col(inst_arr.cols() - 1) = inst_col;
+    inst_arr.col(inst_arr.cols() - 2) = inst_col;
+    inst_arr.col(inst_arr.cols() - 3) = inst_col;
+
+    total = time_arr.size() - 3;
+
+    cout << time_arr.size() << ", " << inst_arr.cols() << "\n";
+}
+
+void PathManager::SetReadyAng()
+{
+    VectorXd inst_p(18);
+    inst_p << default_right,
+        default_left;
+
+    MatrixXd combined(6, 18);
+    combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
+    MatrixXd p = combined * inst_p;
+
+    VectorXd pR = VectorXd::Map(p.data(), 3, 1);
+    VectorXd pL = VectorXd::Map(p.data() + 3, 3, 1);
+    VectorXd qk = ikfun_final(pR, pL, part_length, s, z0);
+
+    for (int i = 0; i < qk.size(); ++i)
+    {
+        standby[i] = qk(i);
+    }
+
+    std::cout << "standby values:" << std::endl;
+    for (const auto& value : standby) {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
 }
 
 void PathManager::PathLoopTask()
 {
+    double v_wrist = M_PI;
+    double v_elbow = 0.5 * M_PI;
+    double t_now = time_arr[line];
+
+    VectorXd qt = VectorXd::Zero(9);
+    VectorXd qv_in = VectorXd::Zero(7);
+    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
+    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41; // 크기가 3x4인 2차원 벡터
+    MatrixXd B;    // 크기가 19x3인 2차원 벡터
+    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+
+    VectorXd p1(9), p2(9), p3(9);
+    MatrixXd t_wrist_madi(3, 3), t_elbow_madi(3, 3);
+
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
     {
-        c_R = 0;
-        c_L = 0;
+        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
-        getDrummingPosAndAng();
-        getQ1AndQ2();
+        VectorXd A1 = A30.col(0);
+        VectorXd A2 = A30.col(1);
+        VectorXd A3 = A30.col(2);
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
 
-        p_R = c_R;
-        p_L = c_L;
+        t_wrist_madi = sts2wrist_fun(AA40, v_wrist);
+        t_elbow_madi = sts2elbow_fun(AA40, v_elbow);
+    }
+    else if (line == 1)
+    {
+        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
-        line++;
+        VectorXd A1 = A31.col(0);
+        VectorXd A2 = A31.col(1);
+        VectorXd A3 = A31.col(2);
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
 
-        p.push_back(c_MotorAngle);
-        v.push_back({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        t_wrist_madi = sts2wrist_fun(AA41, v_wrist);
+        t_elbow_madi = sts2elbow_fun(AA41, v_elbow);
+    }
+    else if (line > 1)
+    {
+        std::vector<double> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
+        itms_fun(t2, inst2, B, BB);
+
+        VectorXd B1 = B.col(0);
+        VectorXd B2 = B.col(1);
+        VectorXd B3 = B.col(2);
+        p1 = pos_madi_fun(B1);
+        p2 = pos_madi_fun(B2);
+        p3 = pos_madi_fun(B3);
+
+        t_wrist_madi = sts2wrist_fun(BB, v_wrist);
+        t_elbow_madi = sts2elbow_fun(BB, v_elbow);
     }
 
-    c_R = 0;
-    c_L = 0;
+    cout << "\nt_wrist_madi :\n"
+         << t_wrist_madi << "\nt_elbow_madi :\n"
+         << t_elbow_madi;
 
-    getDrummingPosAndAng();
-    getQ3AndQ4();
+    // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
+    VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
+    VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
+    VectorXd qk1_06 = ikfun_final(pR1, pL1, part_length, s, z0);
 
-    p_R = c_R;
-    p_L = c_L;
+    VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
+    VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
+    VectorXd qk2_06 = ikfun_final(pR2, pL2, part_length, s, z0);
 
-    double t1 = time_arr[line - 1];
-    double t2 = time_arr[line];
-    double t = 0.005;
-    int n = round((t1 / 2) / t);
-    vector<double> V0 = v.back();
+    VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
+    VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
+    VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
+
+    cout << "\nqk1_06 : \n"
+         << qk1_06 << "\nqk2_06 :\n"
+         << qk2_06 << "\nqk3_06 :\n"
+         << qk3_06;
+
+    double t1 = p2(0) - p1(0);
+    double t2 = p3(0) - p1(0);
+    double dt = 0.005;
+    int n = t1 / dt;
+
     for (int i = 0; i < n; i++)
     {
-        iconnect(c_MotorAngle, Q1, Q2, V0, t1 / 2, t1, t * i);
-        Motors_sendBuffer();
+        for (int m = 0; m < 7; m++)
+        {
+            pair<double, double> p = iconf_fun(qk1_06(m), qk2_06(m), qk3_06(m), qv_in(m), t1, t2, t_now - p1(0) + dt * i);
+            qt(m) = p.first;
+            qv_in(m) = p.second;
+        }
+
+        pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
+        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
+
+        qt(4) += qElbow.first;
+        qt(6) += qElbow.second;
+        qt(7) = qWrist.first;
+        qt(8) = qWrist.second;
+
+        Motors_sendBuffer(qt, qv_in);
+        vector<double> qt_vector(qt.data(), qt.data() + qt.size());
+        p.push_back(qt_vector);
+        vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
+        v.push_back(qv_in_vector);
     }
-    V0 = v.back();
-    for (int i = 0; i < n; i++)
-    {
-        iconnect(Q1, Q2, Q3, V0, t1 / 2, (t1 + t2) / 2, t * i);
-        Motors_sendBuffer();
-    }
-    c_MotorAngle = p.back();
-    Q1 = Q3;
-    Q2 = Q4;
 }
 
 void PathManager::GetArr(vector<double> &arr)
