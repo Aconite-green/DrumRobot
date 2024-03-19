@@ -143,9 +143,9 @@ void Rx_Thread(int index)
 				//printf("SYNC packet received\n");
 				break;
 
-			case 0x81:
+			
 			case 0x11:
-			case 0x3:
+			case 0x3case 0x81::
 			case 0x1:
 				// Normal or error packet received
 				if ((byPkt[0] >= 0 && byPkt[0] <= 0x13)

@@ -35,8 +35,7 @@ enum class PerformSub {
     CheckBuf,
     GeneratePath,
     SafetyCheck,
-    SendCANFrame,
-    BufEmpty
+    SendCANFrame
 };
 
 enum class AddStanceSub {

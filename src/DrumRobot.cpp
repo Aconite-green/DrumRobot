@@ -99,7 +99,7 @@ void DrumRobot::sendLoopForThread()
             usleep(500000);
             break;
         case Main::Perform:
-            //SendLoop();
+            // SendLoop();
             SendPerformProcess(5000);
             break;
         case Main::AddStance:
@@ -179,8 +179,10 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     {
         for (const auto &motor_pair : motors)
         {
-            if (motor_pair.second->sendBuffer.size() < 10) state.perform = PerformSub::GeneratePath;
-            else state.perform = PerformSub::SafetyCheck;
+            if (motor_pair.second->sendBuffer.size() < 10)
+                state.perform = PerformSub::GeneratePath;
+            else
+                state.perform = PerformSub::SafetyCheck;
             break;
         }
         break;
@@ -194,30 +196,33 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             pathManager.line++;
             state.perform = PerformSub::CheckBuf;
         }
+        else
+        {
+            bool allBuffersEmpty = true;
+            for (const auto &motor_pair : motors)
+            {
+                if (!motor_pair.second->sendBuffer.empty())
+                {
+                    allBuffersEmpty = false;
+                    break;
+                }
+            }
+            if (allBuffersEmpty)
+            {
+                std::cout << "Performance is Over\n";
+                state.main = Main::Ready;
+                pathManager.line = 0;
+                isReady = false;
+            }
+            else
+                state.perform = PerformSub::SafetyCheck;
+        }
+
         break;
     }
     case PerformSub::SafetyCheck:
         state.perform = PerformSub::SendCANFrame;
         break;
-    case PerformSub::BufEmpty:
-    {
-        bool allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (!motor_pair.second->sendBuffer.empty())
-            {
-                allBuffersEmpty = false;
-                break;
-            }
-        }
-        if (allBuffersEmpty)
-        {
-            std::cout << "Performance is Over\n";
-            state.main = Main::Ready;
-            pathManager.line = 0;
-        }
-        break;
-    }
     case PerformSub::SendCANFrame:
     {
         for (auto &motor_pair : motors)
