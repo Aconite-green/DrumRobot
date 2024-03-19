@@ -928,6 +928,18 @@ void PathManager::GetMusicSheet()
 
 void PathManager::SetReadyAng()
 {
+    VectorXd inst_p(18);
+    inst_p << default_right,
+        default_left;
+
+    MatrixXd combined(6, 18);
+    combined << right_inst, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_inst;
+    MatrixXd p = combined * inst_p;
+
+    VectorXd pR = VectorXd::Map(p.data() + 1, 3, 1);
+    VectorXd pL = VectorXd::Map(p.data() + 4, 3, 1);
+    VectorXd qk = ikfun_final(pR, pL, part_length, s, z0);
+
     
 }
 
