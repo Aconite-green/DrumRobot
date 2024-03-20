@@ -166,8 +166,32 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         tmotorcmd.getZero(*tMotors[i], &frameToProcess);
         if (canManager.sendAndRecv(motors[i], frameToProcess))
             cout << "Set Zero.\n";
+
+
         if (canManager.checkConnection(motors[i]))
+        {
+            std::cout << motorNames[i] << " Position : " << motors[i]->currentPos;
+        }
+        else
+        {
+            std::cout << "Not checkt Motor\n";
+        }
+        if (canManager.checkConnection(motors[i]))
+        {
             cout << motorNames[i] << " Position : " << motors[i]->currentPos;
+        }
+        else
+        {
+            cout << "Not checkt Motor\n";
+        }
+        if (canManager.checkConnection(motors[i]))
+        {
+            cout << motorNames[i] << " Position : " << motors[i]->currentPos;
+        }
+        else
+        {
+            cout << "Not checkt Motor\n";
+        }
 
         degrees[i] = 0.0;
         directions[i] = motors[i]->cwDir;
@@ -429,7 +453,6 @@ void HomeManager::UpdateHomingStatus()
         state.home = HomeSub::Done;
         state.main = Main::Ideal;
     }
-
 }
 
 void HomeManager::MaxonEnable()

@@ -11,9 +11,7 @@ enum class Main
     Tune,       
     Perform,    
     Check,      
-    Shutdown,   
-    Ready,      
-    Back,       
+    Shutdown,       
     Pause,
     AddStance,
     Error  
@@ -40,12 +38,12 @@ enum class PerformSub {
 };
 
 enum class AddStanceSub {
-    Start,
+    TimeCheck,
+    CheckCommand,
     CheckBuf,
     FillBuf,
     SafetyCheck,
-    SendCANFrame,
-    Done,
+    SendCANFrame
 };
 
 enum class ReadSub{
@@ -88,7 +86,7 @@ struct State
     State() : main(Main::SystemInit),
               home(HomeSub::Start),
               perform(PerformSub::TimeCheck),
-              addstance(AddStanceSub::Start),
+              addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck)
     {
     }

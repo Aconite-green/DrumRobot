@@ -73,7 +73,9 @@ private:
     int kbhit();
 
     bool isReady = false; ///< 준비 상태 플래그.
+    bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
+    bool getBack = false;
 
     // System Initialize 메소드들
     void initializeMotors();
@@ -94,7 +96,7 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendHomeProcess();
-    void SendAddStanceProcess(int periodMicroSec);
+    void SendAddStanceProcess();
 
     can_frame frame;
 
