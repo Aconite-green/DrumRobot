@@ -19,14 +19,24 @@ using namespace std;
 class GenericMotor
 {
 public:
+    // For CAN communication
     uint32_t nodeId; 
-    std::string interFaceName; 
+    int socket; 
+    bool isConected;
+
+    // Motors Feature
+    float cwDir; 
+    float rMin, rMax;
+
+    // Values
     float desPos, desVel, desTor; 
     float currentPos, currentVel, currentTor; 
-    float cwDir; 
-    bool isHomed, isConected; 
-    float rMin, rMax; 
-    int socket; 
+    
+    //For Homing Session
+    bool atFirstSensor, atSecondSensor, atZeroPosition;
+    bool isHomed;
+    int homeOffset; 
+    
     int Kp; 
     double Kd; 
     std::queue<can_frame> sendBuffer; 

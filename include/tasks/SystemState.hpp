@@ -18,15 +18,15 @@ enum class Main
 };
 
 enum class HomeSub {
-    Start,
+    SelectMotor,
     MoveToSensor,
-    StopAtSensor,
     MoveToZeroPositionInit,
-    MoveToZeroPositionCheck,
-    StopAtZeroPosition,
     SetZero,
     Done,
-    SafetyCheck
+    SafetyCheck,
+    SendCANFrameForSensor,
+    SendCANFrameForZeroPos,
+    SendCANFrameForSetZero
 };
 
 enum class PerformSub {
@@ -84,7 +84,7 @@ struct State
     MaxonState rightMaxon;          
     
     State() : main(Main::SystemInit),
-              home(HomeSub::Start),
+              home(HomeSub::SelectMotor),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck)

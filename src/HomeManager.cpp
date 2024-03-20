@@ -167,7 +167,6 @@ void HomeManager::HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vect
         if (canManager.sendAndRecv(motors[i], frameToProcess))
             cout << "Set Zero.\n";
 
-
         if (canManager.checkConnection(motors[i]))
         {
             std::cout << motorNames[i] << " Position : " << motors[i]->currentPos;
@@ -645,3 +644,52 @@ void HomeManager::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
         }
     }
 }
+
+void HomeManager::SendHomeProcess()
+{
+    switch (state.home.load())
+    {
+    case HomeSub::SelectMotor:
+        //사용자에게 Homing 할 모터 입력을 받음
+        break;
+    case HomeSub::MoveToSensor:
+
+        //두개 혹은 한개의 모터에 대해 속도제어 명령을 파싱함(1)
+        //SendCANFrame State로 이동(2)
+        //여기서 SenSor에 도착했는지 감지하고 있음 + 감지에 대한 처리(3)
+        //감지할 경우 SenSor 멈춤을 위해 SendCANFrame State로이동
+        //둘다 멈추면 MoveToZeroPositionInit로 이동
+        break;
+    case HomeSub::SendCANFrameForSensor:
+        // 명령 보냄
+        // 전에 어떤 목적으로 프레임을 보냈느냐에 따라 해당 State로 이동
+        break;
+    case HomeSub::MoveToZeroPositionInit:
+        //모터의 명령 Buffer에 이동하기위한 경로를 쌍아둠
+        //MoveToZeroPositionCheck로 이동함
+        //버퍼에 다 쌓았다면 여기서 5ms 관리함
+        break;
+    case HomeSub::SafetyCheck:
+        break;
+    case HomeSub::SendCANFrameForZeroPos:
+        break;
+    case HomeSub::SetZero:
+        break;
+    case HomeSub::SendCANFrameForSetZero:
+        break;
+    case HomeSub::Done:
+        break;
+    }
+}
+
+/*enum class HomeSub {
+    Start,
+    MoveToSensor,
+    StopAtSensor,
+    MoveToZeroPositionInit,
+    MoveToZeroPositionCheck,
+    StopAtZeroPosition,
+    SetZero,
+    Done,
+    SafetyCheck
+};*/

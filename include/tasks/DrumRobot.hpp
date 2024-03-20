@@ -87,15 +87,13 @@ private:
     void MaxonDisable();
 
     // Send Thread Loop 메소드들
-    void SendLoop();
+   
     void save_to_txt_inputData(const string &csv_file_name);
-    void SendReadyLoop();
     int writeFailCount;
     int maxonMotorCount = 0;
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
-    void SendHomeProcess();
     void SendAddStanceProcess();
     void clearMotorsCommandBuffer();
 

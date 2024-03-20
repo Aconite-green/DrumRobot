@@ -33,7 +33,7 @@ using namespace std;
 /**
  * @class HomeManager
  * @brief 모터의 홈 위치 설정 및 관리를 담당하는 클래스입니다.
- * 
+ *
  * 이 클래스는 모터의 홈 위치를 설정하고, 모터와 관련된 다양한 작업을 관리합니다.
  */
 class HomeManager
@@ -53,6 +53,7 @@ public:
      * @brief 모터 홈 위치 설정의 메인 루프를 실행합니다.
      */
     void mainLoop();
+    void SendHomeProcess();
 
 private:
     State &state;
@@ -62,7 +63,7 @@ private:
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;
-    
+
     // 홈
     /**
      * @brief 모터의 홈 위치 설정 상태를 표시합니다.
