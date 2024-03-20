@@ -56,6 +56,8 @@ public:
     int sensorBit; 
     std::queue<TMotorData> commandBuffer;
 
+    void clearCommandBuffer();
+
 private:
 };
 
@@ -90,6 +92,9 @@ public:
    
 
     std::queue<MaxonData> commandBuffer;
+    void clearCommandBuffer();
+
+
 };
 
 #endif // MOTOR_H
