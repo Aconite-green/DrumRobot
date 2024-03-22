@@ -11,7 +11,7 @@ PathManager::PathManager(State &stateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, double> Si)
 {
     for (auto &entry : motors)
     {
@@ -26,7 +26,13 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
             MaxonData newData;
-            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir;
+            if (entry.first == "R_wrist")
+                newData.WristState = Si.first;
+            else if (entry.first == "L_wrist")
+                newData.WristState = Si.second;
+            else if (entry.first == "maxonForTest")
+                newData.WristState = Si.second;
 
             maxonMotor->commandBuffer.push(newData);
         }
@@ -746,6 +752,72 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
+pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
+{
+    double q7_isTorq = 0.0;
+    double q8_isTorq = 0.0;
+
+    VectorXd time_madi = State.row(0);
+    VectorXd q7_state = State.row(1);
+    VectorXd q8_state = State.row(2);
+
+    if (time_madi(0) == 0.0)
+    {
+        if (t_now >= time_madi(0) && t_now < time_madi(1))
+        {
+            q7_isTorq = -0.5;
+            q8_isTorq = -0.5;
+        }
+        else if (t_now >= time_madi(1) && t_now < time_madi(2))
+        {
+            q7_isTorq = time_madi(1);
+            q8_isTorq = time_madi(1);
+        }
+    }
+    else if (t_now >= time_madi(0) && t_now < time_madi(1))
+    {
+        q7_isTorq = time_madi(0);
+        q8_isTorq = time_madi(0);
+    }
+    else if (t_now >= time_madi(1) && t_now < time_madi(2))
+    {
+        q7_isTorq = time_madi(1);
+        q8_isTorq = time_madi(1);
+    }
+
+    return std::make_pair(q7_isTorq, q8_isTorq);
+}
+
+void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
+{
+    VectorXd q7_state = State.row(1);
+    VectorXd q8_state = State.row(2);
+    VectorXd q7_madi = t_madi.row(1);
+    VectorXd q8_madi = t_madi.row(2);
+
+    if (q7_state(0) == 1)
+    {
+        for (auto &entry : motors)
+        {
+            if(entry.first == "R_wrist"){
+                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
+                maxonMotor->targetPos = q7_madi(1);
+            }
+        }
+    }
+
+    if (q8_state(0) == 1)
+    {
+        for (auto &entry : motors)
+        {
+            if(entry.first == "L_wrist" || entry.first == "maxonForTest"){
+                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
+                maxonMotor->targetPos = q8_madi(1);
+            }
+        }
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  MAKE PATH                                 */
 ///////////////////////////////////////////////////////////////////////////////
@@ -1006,6 +1078,8 @@ void PathManager::PathLoopTask()
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
+    SetTargetPos(State, t_wrist_madi);  // 타격시 새로운 손목 targetPos값 전달
+
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
     double dt = 0.005;
@@ -1022,17 +1096,18 @@ void PathManager::PathLoopTask()
 
         pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
         pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
+        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i);
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
         qt(7) = qWrist.first;
         qt(8) = qWrist.second;
 
-        Motors_sendBuffer(qt, qv_in);
+        Motors_sendBuffer(qt, qv_in, wrist_state);
         vector<double> qt_vector(qt.data(), qt.data() + qt.size());
-        p.push_back(qt_vector);
+        pos.push_back(qt_vector);
         vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
-        v.push_back(qv_in_vector);
+        vel.push_back(qv_in_vector);
     }
 }
 
@@ -1067,7 +1142,7 @@ void PathManager::GetArr(vector<double> &arr)
 
                 MaxonData newData;
                 newData.position = Qi[motor_mapping[entry.first]];
-                newData.wristState = false;
+                newData.WristState = 0.5;
                 motor->commandBuffer.push(newData);
             }
         }

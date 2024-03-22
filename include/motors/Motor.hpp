@@ -13,6 +13,7 @@
 #include <queue>
 #include <linux/can/raw.h>
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 class GenericMotor
@@ -73,7 +74,7 @@ private:
 struct MaxonData
 {
     float position;
-    float wristState;
+    double WristState;
 };
 
 class MaxonMotor : public GenericMotor
@@ -93,10 +94,11 @@ public:
     bool hitting = false;
 
     bool atPosition = false;
-    bool positioning = false;
-    float targetPos = 0;
-
-    bool checked = false;
+    bool positioning =false;
+    float targetPos = M_PI / 2;
+    
+    bool checked=false;
+   
 
     std::queue<MaxonData> commandBuffer;
     void clearCommandBuffer();
