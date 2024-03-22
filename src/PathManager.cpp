@@ -1,9 +1,9 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
-PathManager::PathManager(SystemState &systemStateRef,
+PathManager::PathManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : systemState(systemStateRef), canManager(canManagerRef), motors(motorsRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
 }
 
@@ -11,25 +11,30 @@ PathManager::PathManager(SystemState &systemStateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, double> Si)
 {
-    struct can_frame frame;
-
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
-            float v_des = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
+            TMotorData newData;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
-            TParser.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, p_des, v_des, tMotor->Kp, tMotor->Kd, 0.0);
-            entry.second->sendBuffer.push(frame);
+            tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            float p_des = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
-            MParser.getTargetPosition(*maxonMotor, &frame, p_des);
-            entry.second->sendBuffer.push(frame);
+            MaxonData newData;
+            newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir;
+            if (entry.first == "R_wrist")
+                newData.WristState = Si.first;
+            else if (entry.first == "L_wrist")
+                newData.WristState = Si.second;
+            else if (entry.first == "maxonForTest")
+                newData.WristState = Si.second;
+
+            maxonMotor->commandBuffer.push(newData);
         }
     }
 }
@@ -207,9 +212,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         }
     }
 
-    cout << "\nT : \n"
-         << T;
-
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
@@ -313,12 +315,6 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     AA40 << t4_inst4(0, 0), t4_inst4(0, 1), t4_inst4(0, 2), t4_inst4(0, 3),
         t4_inst4.block(1, 0, 9, 1).sum(), t4_inst4.block(1, 1, 9, 1).sum(), t4_inst4.block(1, 2, 9, 1).sum(), t4_inst4.block(1, 3, 9, 1).sum(),
         t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
-
-    cout << "\nA30 :\n"
-         << A30 << "\nA31 :\n"
-         << A31 << "\nAA40 :\n"
-         << AA40 << "\nAA41 :\n"
-         << AA41;
 }
 
 void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
@@ -330,9 +326,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         VectorXd inst_0 = inst2.col(k);
         VectorXd inst_1 = inst2.col(k + 1);
         MatrixXd inst3 = tms_fun(t2[k], t2[k + 1], inst_0, inst_1);
-
-        cout << "\nk : " << k << "\n"
-             << inst3 << "\n";
 
         if (T.cols() == 0)
         {
@@ -346,9 +339,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             T << temp, inst3;
         }
     }
-
-    cout << "\nT : \n"
-         << T;
 
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
@@ -426,10 +416,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
             break;
         }
     }
-
-    cout << "\nB :\n"
-         << B << "\nBB :\n"
-         << BB;
 }
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
@@ -766,6 +752,72 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
+pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
+{
+    double q7_isTorq = 0.0;
+    double q8_isTorq = 0.0;
+
+    VectorXd time_madi = State.row(0);
+    VectorXd q7_state = State.row(1);
+    VectorXd q8_state = State.row(2);
+
+    if (time_madi(0) == 0.0)
+    {
+        if (t_now >= time_madi(0) && t_now < time_madi(1))
+        {
+            q7_isTorq = -0.5;
+            q8_isTorq = -0.5;
+        }
+        else if (t_now >= time_madi(1) && t_now < time_madi(2))
+        {
+            q7_isTorq = time_madi(1);
+            q8_isTorq = time_madi(1);
+        }
+    }
+    else if (t_now >= time_madi(0) && t_now < time_madi(1))
+    {
+        q7_isTorq = time_madi(0);
+        q8_isTorq = time_madi(0);
+    }
+    else if (t_now >= time_madi(1) && t_now < time_madi(2))
+    {
+        q7_isTorq = time_madi(1);
+        q8_isTorq = time_madi(1);
+    }
+
+    return std::make_pair(q7_isTorq, q8_isTorq);
+}
+
+void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
+{
+    VectorXd q7_state = State.row(1);
+    VectorXd q8_state = State.row(2);
+    VectorXd q7_madi = t_madi.row(1);
+    VectorXd q8_madi = t_madi.row(2);
+
+    if (q7_state(0) == 1)
+    {
+        for (auto &entry : motors)
+        {
+            if(entry.first == "R_wrist"){
+                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
+                maxonMotor->targetPos = q7_madi(1);
+            }
+        }
+    }
+
+    if (q8_state(0) == 1)
+    {
+        for (auto &entry : motors)
+        {
+            if(entry.first == "L_wrist" || entry.first == "maxonForTest"){
+                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
+                maxonMotor->targetPos = q8_madi(1);
+            }
+        }
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  MAKE PATH                                 */
 ///////////////////////////////////////////////////////////////////////////////
@@ -874,6 +926,7 @@ void PathManager::GetMusicSheet()
     {
         istringstream iss(row);
         string item;
+
         vector<string> columns;
         while (getline(iss, item, '\t'))
         {
@@ -921,8 +974,6 @@ void PathManager::GetMusicSheet()
     inst_arr.col(inst_arr.cols() - 3) = inst_col;
 
     total = time_arr.size() - 3;
-
-    cout << time_arr.size() << ", " << inst_arr.cols() << "\n";
 }
 
 void PathManager::SetReadyAng()
@@ -943,12 +994,6 @@ void PathManager::SetReadyAng()
     {
         standby[i] = qk(i);
     }
-
-    std::cout << "standby values:" << std::endl;
-    for (const auto& value : standby) {
-        std::cout << value << " ";
-    }
-    std::cout << std::endl;
 }
 
 void PathManager::PathLoopTask()
@@ -965,6 +1010,7 @@ void PathManager::PathLoopTask()
     MatrixXd AA41; // 크기가 3x4인 2차원 벡터
     MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+    MatrixXd State(3, 4);
 
     VectorXd p1(9), p2(9), p3(9);
     MatrixXd t_wrist_madi(3, 3), t_elbow_madi(3, 3);
@@ -983,8 +1029,7 @@ void PathManager::PathLoopTask()
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
 
-        t_wrist_madi = sts2wrist_fun(AA40, v_wrist);
-        t_elbow_madi = sts2elbow_fun(AA40, v_elbow);
+        State = AA40;
     }
     else if (line == 1)
     {
@@ -999,8 +1044,7 @@ void PathManager::PathLoopTask()
         p2 = pos_madi_fun(A2);
         p3 = pos_madi_fun(A3);
 
-        t_wrist_madi = sts2wrist_fun(AA41, v_wrist);
-        t_elbow_madi = sts2elbow_fun(AA41, v_elbow);
+        State = AA41;
     }
     else if (line > 1)
     {
@@ -1015,13 +1059,8 @@ void PathManager::PathLoopTask()
         p2 = pos_madi_fun(B2);
         p3 = pos_madi_fun(B3);
 
-        t_wrist_madi = sts2wrist_fun(BB, v_wrist);
-        t_elbow_madi = sts2elbow_fun(BB, v_elbow);
+        State = BB;
     }
-
-    cout << "\nt_wrist_madi :\n"
-         << t_wrist_madi << "\nt_elbow_madi :\n"
-         << t_elbow_madi;
 
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
@@ -1036,10 +1075,10 @@ void PathManager::PathLoopTask()
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
     VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
 
-    cout << "\nqk1_06 : \n"
-         << qk1_06 << "\nqk2_06 :\n"
-         << qk2_06 << "\nqk3_06 :\n"
-         << qk3_06;
+    t_wrist_madi = sts2wrist_fun(State, v_wrist);
+    t_elbow_madi = sts2elbow_fun(State, v_elbow);
+
+    SetTargetPos(State, t_wrist_madi);  // 타격시 새로운 손목 targetPos값 전달
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
@@ -1057,24 +1096,24 @@ void PathManager::PathLoopTask()
 
         pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
         pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
+        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i);
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
         qt(7) = qWrist.first;
         qt(8) = qWrist.second;
 
-        Motors_sendBuffer(qt, qv_in);
+        Motors_sendBuffer(qt, qv_in, wrist_state);
         vector<double> qt_vector(qt.data(), qt.data() + qt.size());
-        p.push_back(qt_vector);
+        pos.push_back(qt_vector);
         vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
-        v.push_back(qv_in_vector);
+        vel.push_back(qv_in_vector);
     }
 }
 
 void PathManager::GetArr(vector<double> &arr)
 {
     cout << "Get Array...\n";
-    struct can_frame frame;
 
     vector<double> Qi;
     vector<vector<double>> q_setting;
@@ -1093,15 +1132,18 @@ void PathManager::GetArr(vector<double> &arr)
         {
             if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
-                float p_des = Qi[motor_mapping[entry.first]];
-                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, motor->Kp, motor->Kd, 0.0);
-                entry.second->sendBuffer.push(frame);
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.velocity = 0.0;
+                motor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
-                float p_des = Qi[motor_mapping[entry.first]];
-                MParser.getTargetPosition(*motor, &frame, p_des);
-                entry.second->sendBuffer.push(frame);
+
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.WristState = 0.5;
+                motor->commandBuffer.push(newData);
             }
         }
     }

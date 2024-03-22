@@ -23,6 +23,7 @@ bool Sensor::OpenDeviceUntilSuccess()
 
     while (true)
     {
+        printf("Board id :%d, Device id : %d", BoardID, DeviceID);
         res = USBIO_OpenDevice(DeviceID, BoardID, &DevNum);
         if (res == 0)
         {

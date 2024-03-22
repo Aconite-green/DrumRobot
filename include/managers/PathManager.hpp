@@ -50,7 +50,7 @@ public:
      * @param canManagerRef CAN 통신 관리자에 대한 참조입니다.
      * @param motorsRef 모터 객체에 대한 참조를 매핑합니다.
      */
-    PathManager(SystemState &systemStateRef,
+    PathManager(State &stateRef,
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
@@ -78,8 +78,8 @@ public:
 
     /**
      * @brief 원하는 준비 동작에 따라 준비동작 각도를 추출합니다.
-    */
-   void SetReadyAng();
+     */
+    void SetReadyAng();
 
     /**
      * @brief 연주를 진행하고 있는 line에 대한 연주 경로를 생성합니다.
@@ -96,8 +96,8 @@ public:
     int line = 0;  ///< 연주를 진행하고 있는 줄.
 
     // 악보에 따른 position & velocity 값 저장 (5ms 단위)
-    vector<vector<double>> p; ///< 위치 경로 벡터
-    vector<vector<double>> v; ///< 속도 경로 벡터
+    vector<vector<double>> pos; ///< 위치 경로 벡터
+    vector<vector<double>> vel; ///< 속도 경로 벡터
 
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
@@ -111,7 +111,7 @@ private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
 
-    SystemState &systemState;                                     ///< 시스템의 현재 상태입니다.
+    State &state;                                                 ///< 시스템의 현재 상태입니다.
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
 
@@ -127,6 +127,7 @@ private:
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right;
     VectorXd default_left;
+
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
     /* 실측값 */
@@ -146,7 +147,8 @@ private:
         {"L_arm2", 5},
         {"L_arm3", 6},
         {"R_wrist", 7},
-        {"L_wrist", 8}};
+        {"L_wrist", 8},
+        {"maxonForTest", 8}};
 
     /**
      * @brief 두 위치를 (1-cos)함수로 연결합니다.
@@ -166,7 +168,7 @@ private:
     /**
      * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
      */
-    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi);
+    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, double> Si);
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**
@@ -182,4 +184,6 @@ private:
     double con_fun(double t_a, double t_b, double th_a, double th_b, double t_now);
     pair<double, double> iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t);
     pair<double, double> qRL_fun(MatrixXd &t_madi, double t_now);
+    pair<double, double> SetTorqFlag(MatrixXd &State, double t_now);
+    void SetTargetPos(MatrixXd &State, MatrixXd &t_madi);
 };
