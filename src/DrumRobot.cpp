@@ -1152,7 +1152,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
     // 2차원 벡터의 데이터를 CSV 파일로 쓰기
-    for (const auto &row : pathManager.p)
+    for (const auto &row : pathManager.pos)
     {
         for (const double cell : row)
         {

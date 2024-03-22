@@ -62,7 +62,7 @@ private:
 struct MaxonData
 {
     float position;
-    bool isTorqueMode;
+    double WristState;
 };
 
 class MaxonMotor : public GenericMotor
@@ -84,7 +84,7 @@ public:
     
     bool atPosition = false;
     bool positioning =false;
-    float targetPos = 0;
+    float targetPos = M_PI / 2;
     
     bool checked=false;
    
