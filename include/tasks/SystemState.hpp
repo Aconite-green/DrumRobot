@@ -11,24 +11,22 @@ enum class Main
     Tune,       
     Perform,    
     Check,      
-    Shutdown,   
-    Ready,      
-    Back,       
+    Shutdown,       
     Pause,
     AddStance,
     Error  
 };
 
 enum class HomeSub {
-    Start,
+    SelectMotor,
     MoveToSensor,
-    StopAtSensor,
     MoveToZeroPositionInit,
-    MoveToZeroPositionCheck,
-    StopAtZeroPosition,
     SetZero,
     Done,
-    SafetyCheck
+    SafetyCheck,
+    SendCANFrameForSensor,
+    SendCANFrameForZeroPos,
+    SendCANFrameForSetZero
 };
 
 enum class PerformSub {
@@ -40,12 +38,12 @@ enum class PerformSub {
 };
 
 enum class AddStanceSub {
-    Start,
+    TimeCheck,
+    CheckCommand,
     CheckBuf,
     FillBuf,
     SafetyCheck,
-    SendCANFrame,
-    Done,
+    SendCANFrame
 };
 
 enum class ReadSub{
@@ -86,9 +84,9 @@ struct State
     MaxonState rightMaxon;          
     
     State() : main(Main::SystemInit),
-              home(HomeSub::Start),
+              home(HomeSub::SelectMotor),
               perform(PerformSub::TimeCheck),
-              addstance(AddStanceSub::Start),
+              addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck)
     {
     }

@@ -34,10 +34,12 @@ TMotor::TMotor(uint32_t nodeId, const std::string &motorType)
 {
 }
 
-/*void TMotor::addTMotorData(float position, float velocity, float kp, float kd, float torqueOffset)
-{
-    sendBuffer.push(TMotorData(position, velocity, kp, kd, torqueOffset));
-}*/
+void TMotor::clearCommandBuffer(){
+    while (!commandBuffer.empty())
+    {
+        commandBuffer.pop();
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // maxonMotor
@@ -51,6 +53,9 @@ MaxonMotor::MaxonMotor(uint32_t nodeId)
     canReceiveId = 0x580 + nodeId;
 }
 
-/*void MaxonMotor::addMaxonMotorData(int position){
-    sendBuffer.push(MaxonMotorData(position));
-}*/
+void MaxonMotor::clearCommandBuffer(){
+    while (!commandBuffer.empty())
+    {
+        commandBuffer.pop();
+    }
+}

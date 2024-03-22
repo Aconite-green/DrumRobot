@@ -322,18 +322,24 @@ int CanManager::setSocketTimeout(int socket, int sec, int usec)
     return 0;
 }
 
-void CanManager::setSocketNonBlock(){
-    for(auto& socket : sockets) { // sockets는 std::map<std::string, int> 타입
+void CanManager::setSocketNonBlock()
+{
+    for (auto &socket : sockets)
+    {                                                 // sockets는 std::map<std::string, int> 타입
         int flags = fcntl(socket.second, F_GETFL, 0); // 현재 플래그를 가져옴
-        if(flags < 0) continue; // 에러 체크
+        if (flags < 0)
+            continue;                                      // 에러 체크
         fcntl(socket.second, F_SETFL, flags | O_NONBLOCK); // 논블록 플래그 추가
     }
 }
 
-void CanManager::setSocketBlock(){
-    for(auto& socket : sockets) {
+void CanManager::setSocketBlock()
+{
+    for (auto &socket : sockets)
+    {
         int flags = fcntl(socket.second, F_GETFL, 0);
-        if(flags < 0) continue;
+        if (flags < 0)
+            continue;
         fcntl(socket.second, F_SETFL, flags & ~O_NONBLOCK); // 논블록 플래그 제거
     }
 }
@@ -383,7 +389,9 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
     }
     return false;
 }
-bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> &motor){
+
+bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> &motor)
+{
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
@@ -487,18 +495,17 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    //int framescnt = 0;
+    
     for (const auto &socketPair : sockets)
     {
-
         int socket_fd = socketPair.second;
         while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
-            //framescnt++;
         }
     }
-    //std::cout << framescnt << endl;
+    
+    
 }
 
 void CanManager::distributeFramesToMotors()
@@ -532,7 +539,7 @@ void CanManager::distributeFramesToMotors()
                     std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     maxonMotor->currentPos = std::get<1>(parsedData);
                     maxonMotor->currentTor = std::get<2>(parsedData);
-                    maxonMotor->positionValues[maxonMotor->posIndex%4] = std::get<1>(parsedData);
+                    maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
                 }
@@ -545,12 +552,12 @@ void CanManager::distributeFramesToMotors()
 bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
-    setSocketsTimeout(0, 5000 /*5ms*/);
     clearReadBuffers();
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         tmotorcmd.getControlMode(*tMotor, &frame);
+        txFrame(motor, frame);
         if (sendAndRecv(motor, frame))
         {
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
@@ -592,6 +599,24 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
     return true;
 }
 
+bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
+{
+    struct can_frame frame;
+    clearReadBuffers();
+
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    {
+        tmotorcmd.getControlMode(*tMotor, &frame);
+        txFrame(motor, frame);
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getSync(&frame);
+        txFrame(motor, frame);
+    }
+    return true;
+}
+
 bool CanManager::checkAllMotors()
 {
     bool allMotorsChecked = true;
@@ -608,3 +633,15 @@ bool CanManager::checkAllMotors()
     return allMotorsChecked;
 }
 
+bool CanManager::checkAllMotors_test()
+{
+
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        sendForCheck(motor);
+    }
+    return true;
+}

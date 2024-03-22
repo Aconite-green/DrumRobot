@@ -1114,7 +1114,6 @@ void PathManager::PathLoopTask()
 void PathManager::GetArr(vector<double> &arr)
 {
     cout << "Get Array...\n";
-    struct can_frame frame;
 
     vector<double> Qi;
     vector<vector<double>> q_setting;
@@ -1133,15 +1132,18 @@ void PathManager::GetArr(vector<double> &arr)
         {
             if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
-                float p_des = Qi[motor_mapping[entry.first]];
-                TParser.parseSendCommand(*motor, &frame, motor->nodeId, 8, p_des, 0, motor->Kp, motor->Kd, 0.0);
-                entry.second->sendBuffer.push(frame);
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.velocity = 0.0;
+                motor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
-                float p_des = Qi[motor_mapping[entry.first]];
-                MParser.getTargetPosition(*motor, &frame, p_des);
-                entry.second->sendBuffer.push(frame);
+
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.isTorqueMode = false;
+                motor->commandBuffer.push(newData);
             }
         }
     }

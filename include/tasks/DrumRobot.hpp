@@ -73,7 +73,9 @@ private:
     int kbhit();
 
     bool isReady = false; ///< 준비 상태 플래그.
+    bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
+    bool getBack = false;
 
     // System Initialize 메소드들
     void initializeMotors();
@@ -85,18 +87,18 @@ private:
     void MaxonDisable();
 
     // Send Thread Loop 메소드들
-    void SendLoop();
+   
     void save_to_txt_inputData(const string &csv_file_name);
-    void SendReadyLoop();
     int writeFailCount;
     int maxonMotorCount = 0;
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
-    void SendHomeProcess();
-    void SendAddStanceProcess(int periodMicroSec);
+    void SendAddStanceProcess();
+    void clearMotorsCommandBuffer();
 
     can_frame frame;
+    int temp=0;
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;

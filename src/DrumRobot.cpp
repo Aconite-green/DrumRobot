@@ -62,25 +62,21 @@ void DrumRobot::stateMachine()
             MaxonDisable();
             break;
         case Main::Shutdown:
-            usleep(500000);
-            break;
-        case Main::Ready:
-            usleep(500000);
-            break;
-        case Main::Back:
-            usleep(500000);
             break;
         case Main::Pause:
             checkUserInput();
             break;
         case Main::AddStance:
-            checkUserInput();
+            // checkUserInput();
+            usleep(500000); // 500ms
             break;
         case Main::Error:
             sleep(2);
             break;
         }
     }
+    canManager.setSocketBlock();
+    DeactivateControlTask();
 }
 
 void DrumRobot::sendLoopForThread()
@@ -94,8 +90,8 @@ void DrumRobot::sendLoopForThread()
             usleep(500000);
             break;
         case Main::Ideal:
-            canManager.checkCanPortsStatus();
-            canManager.checkAllMotors();
+            // canManager.checkCanPortsStatus();
+            // canManager.checkAllMotors();
             usleep(500000);
             break;
         case Main::Homing:
@@ -106,8 +102,7 @@ void DrumRobot::sendLoopForThread()
             SendPerformProcess(5000);
             break;
         case Main::AddStance:
-            usleep(5000);
-            // SendAddStanceProcess(5000);
+            SendAddStanceProcess();
             break;
         case Main::Check:
             usleep(500000);
@@ -121,47 +116,143 @@ void DrumRobot::sendLoopForThread()
         case Main::Pause:
             usleep(5000);
             break;
-        case Main::Ready:
-            // 이 State는 삭제예정
-            if (!isReady)
-            {
-                if (canManager.checkAllMotors())
-                {
-                    MaxonEnable();
-                    setMaxonMode("CSP");
-                    std::cout << "Get Ready...\n";
-                    clearMotorsSendBuffer();
-                    pathManager.GetArr(pathManager.standby);
-                    SendReadyLoop();
-                    isReady = true;
-                }
-            }
-            else
-                idealStateRoutine();
+        case Main::Error:
+            sleep(2);
             break;
-        case Main::Back:
-            // 이 State는 삭제예정
-            if (!isBack)
-            {
-                if (canManager.checkAllMotors())
-                {
-                    std::cout << "Get Back...\n";
-                    clearMotorsSendBuffer();
-                    pathManager.GetArr(pathManager.backarr);
-                    SendReadyLoop();
-                    isBack = true;
-                }
-            }
-            else
-            {
-                state.main = Main::Shutdown;
-                DeactivateControlTask();
-            }
+        }
+    }
+}
+
+void DrumRobot::recvLoopForThread()
+{
+
+    while (state.main != Main::Shutdown)
+    {
+        switch (state.main.load())
+        {
+        case Main::SystemInit:
+            usleep(500000);
+            break;
+        case Main::Ideal:
+            usleep(500000);
+            // ReadProcess(500000); /*500ms*/
+            break;
+        case Main::Homing:
+            usleep(500000);
+            // ReadProcess(5000); /*5ms*/
+            break;
+        case Main::Perform:
+            ReadProcess(5000);
+            break;
+        case Main::AddStance:
+            ReadProcess(5000);
+            break;
+        case Main::Check:
+            usleep(500000);
+            break;
+        case Main::Tune:
+            usleep(500000);
+            break;
+        case Main::Shutdown:
+            parse_and_save_to_csv("../../READ/DrumData_out.txt");
+            break;
+        case Main::Pause:
+            ReadProcess(5000); /*5ms*/
             break;
         case Main::Error:
             sleep(2);
             break;
         }
+    }
+}
+
+void DrumRobot::ReadProcess(int periodMicroSec)
+{
+    auto currentTime = chrono::system_clock::now();
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
+
+    switch (state.read.load())
+    {
+    case ReadSub::TimeCheck:
+        if (elapsed_time.count() >= periodMicroSec)
+        {
+
+            state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
+            ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
+        }
+        break;
+    case ReadSub::ReadCANFrame:
+        canManager.readFramesFromAllSockets(); // CAN frame 읽기
+        state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+        break;
+    case ReadSub::UpdateMotorInfo:
+        canManager.distributeFramesToMotors();
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                maxonMotor->checked = false;
+            }
+        }
+        state.read = ReadSub::CheckMaxonControl;
+        break;
+    case ReadSub::CheckMaxonControl:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->hitting && !maxonMotor->checked)
+                {
+                    state.read = ReadSub::CheckDrumHit;
+                    break;
+                }
+                else if (maxonMotor->positioning && !maxonMotor->checked)
+                {
+                    state.read = ReadSub::CheckReachedPosition;
+                    break;
+                }
+            }
+        }
+        state.read = ReadSub::TimeCheck;
+        break;
+    case ReadSub::CheckDrumHit:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->hitting)
+                {
+                    if (dct_fun(maxonMotor->positionValues, 0))
+                    {
+                        maxonMotor->hitDrum = true; // 여기서 pathManager 에서 접근
+                    }
+                    maxonMotor->checked = true;
+                }
+            }
+        }
+        state.read = ReadSub::CheckMaxonControl;
+        break;
+    case ReadSub::CheckReachedPosition:
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                if (maxonMotor->positioning)
+                {
+                    if (maxonMotor->targetPos < maxonMotor->currentPos)
+                    {
+                        maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
+                    }
+                    maxonMotor->checked = true;
+                }
+            }
+        }
+        state.read = ReadSub::CheckMaxonControl;
+        break;
     }
 }
 
@@ -217,9 +308,12 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             if (allBuffersEmpty)
             {
                 std::cout << "Performance is Over\n";
-                state.main = Main::Ready;
-                pathManager.line = 0;
+                state.main = Main::AddStance;
                 isReady = false;
+                getReady = false;
+                getBack = true;
+                isBack = false;
+                pathManager.line = 0;
             }
             else
                 state.perform = PerformSub::SafetyCheck;
@@ -284,153 +378,165 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
 }
 
-void DrumRobot::SendAddStanceProcess(int periodMicroSec)
+void DrumRobot::SendAddStanceProcess()
 {
-    
-}
-
-void DrumRobot::recvLoopForThread()
-{
-    while (state.main != Main::Shutdown)
+    switch (state.addstance.load())
     {
-        switch (state.main.load())
+    case AddStanceSub::CheckCommand:
+    {
+        if (getReady)
         {
-        case Main::SystemInit:
-            usleep(500000);
-            break;
-        case Main::Ideal:
-            usleep(500000);
-            // ReadProcess(500000); /*500ms*/
-            break;
-        case Main::Homing:
-            usleep(500000);
-            // ReadProcess(5000); /*5ms*/
-            break;
-        case Main::Perform:
-            ReadProcess(5000);
-            break;
-        case Main::AddStance:
-            usleep(5000);
-            // ReadProcess(5000);
-            break;
-        case Main::Check:
-            usleep(500000);
-            break;
-        case Main::Tune:
-            usleep(500000);
-            break;
-        case Main::Shutdown:
-            parse_and_save_to_csv("../../READ/DrumData_out.txt");
-            break;
-        case Main::Pause:
-            ReadProcess(5000); /*5ms*/
-            break;
-        case Main::Ready:
-            ReadProcess(5000);
-            // 이 State는 삭제예정
-            break;
-        case Main::Back:
-            ReadProcess(5000);
-            // 이 State는 삭제예정
-            break;
-        case Main::Error:
-            sleep(2);
-            break;
+            MaxonEnable();
+            setMaxonMode("CSP");
+            std::cout << "Get Ready...\n";
+            clearMotorsCommandBuffer();
+            state.addstance = AddStanceSub::FillBuf;
         }
+        else if (getBack)
+        {
+            std::cout << "Get Back...\n";
+            clearMotorsCommandBuffer();
+            state.addstance = AddStanceSub::FillBuf;
+        }
+        else
+        {
+            state.main = Main::Ideal;
+        }
+        break;
     }
-}
-
-void DrumRobot::ReadProcess(int periodMicroSec)
-{
-    auto currentTime = chrono::system_clock::now();
-    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
-
-    switch (state.read.load())
+    case AddStanceSub::FillBuf:
     {
-    case ReadSub::TimeCheck:
-        if (elapsed_time.count() >= periodMicroSec)
+        if (canManager.checkAllMotors_test())
         {
-            state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
-            ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
-        }
-        break;
-    case ReadSub::ReadCANFrame:
-        canManager.readFramesFromAllSockets(); // CAN frame 읽기
-        state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
-        break;
-    case ReadSub::UpdateMotorInfo:
-        canManager.distributeFramesToMotors();
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            if (getReady)
             {
-                maxonMotor->checked = false;
+                pathManager.GetArr(pathManager.standby);
+            }
+            else if (getBack)
+            {
+                pathManager.GetArr(pathManager.backarr);
             }
         }
-         
+        state.addstance = AddStanceSub::TimeCheck;
         break;
-    case ReadSub::CheckMaxonControl:
-        for (auto &motor_pair : motors)
+    }
+    case AddStanceSub::TimeCheck:
+    {
+        usleep(5000);
+        state.addstance = AddStanceSub::CheckBuf;
+        break;
+    }
+    case AddStanceSub::CheckBuf:
+    {
+        bool allBuffersEmpty = true;
+
+        for (const auto &motor_pair : motors)
         {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
-                if (maxonMotor->hitting && !maxonMotor->checked)
+                if (!maxonMotor->commandBuffer.empty())
                 {
-                    state.read = ReadSub::CheckDrumHit;
+                    allBuffersEmpty = false;
                     break;
                 }
-                else if (maxonMotor->positioning && !maxonMotor->checked)
+            }
+            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                if (!tMotor->commandBuffer.empty())
                 {
-                    state.read = ReadSub::CheckReachedPosition;
+                    allBuffersEmpty = false;
                     break;
+                }
+            }
+        }
+
+        if (!allBuffersEmpty)
+        {
+            state.addstance = AddStanceSub::SafetyCheck;
+        }
+        else
+        {
+            state.addstance = AddStanceSub::CheckCommand;
+            canManager.clearReadBuffers();
+            if (getReady)
+            {
+                isReady = true;
+                getReady = false;
+                isBack = false;
+                getBack = false;
+            }
+            else if (getBack)
+            {
+                isBack = true;
+                getBack = false;
+                isReady = false;
+                getReady = false;
+            }
+        }
+        break;
+    }
+    case AddStanceSub::SafetyCheck:
+    {
+        bool isSafe = true;
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                MaxonData mData = maxonMotor->commandBuffer.front();
+                maxonMotor->commandBuffer.pop();
+
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                {
+                    isSafe = false;
                 }
                 else
                 {
-                    state.read = ReadSub::TimeCheck;
+                    maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
                 }
-                
             }
-        }
-    case ReadSub::CheckDrumHit:
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                if (maxonMotor->hitting)
+
+                TMotorData tData = tMotor->commandBuffer.front();
+                tMotor->commandBuffer.pop();
+                if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    if (dct_fun(maxonMotor->positionValues, 0))
-                    {
-                        maxonMotor->hitDrum = true; // 여기서 pathManager 에서 접근
-                    }
-                    maxonMotor->checked = true;
+                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    isSafe = false;
+                }
+                else
+                {
+                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
                 }
             }
         }
-        state.read = ReadSub::CheckMaxonControl;
-        break;
-     case ReadSub::CheckReachedPosition:
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                if (maxonMotor->positioning)
-                {
-                    if (maxonMotor->targetPos < maxonMotor->currentPos )
-                    {
-                        maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
-                    }
-                    maxonMotor->checked = true;
-                }
-            }
-        }
-        state.read = ReadSub::CheckMaxonControl;
+        if (isSafe)
+            state.addstance = AddStanceSub::SendCANFrame;
+        else
+            state.main = Main::Error;
+
         break;
     }
+    case AddStanceSub::SendCANFrame:
+    {
+
+        for (auto &motor_pair : motors)
+        {
+            shared_ptr<GenericMotor> motor = motor_pair.second;
+            canManager.sendMotorFrame(motor);
+        }
+
+        if (maxonMotorCount != 0)
+        {
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(virtualMaxonMotor, frame);
+        }
+        state.addstance = AddStanceSub::TimeCheck;
+        break;
+    }
+    }
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
@@ -449,14 +555,17 @@ void DrumRobot::displayAvailableCommands() const
         }
         else
         {
-            std::cout << "- r : Move to Ready Position\n";
-            std::cout << "- t : Start tuning\n";
+            if (!isReady)
+            {
+                std::cout << "- r : Move to Ready Position\n";
+                std::cout << "- t : Start tuning\n";
+            }
+            else
+            {
+                std::cout << "- p : Start Perform\n";
+                std::cout << "- t : Start tuning\n";
+            }
         }
-    }
-    else if (state.main == Main::Ready)
-    {
-        std::cout << "- p : Start Perform\n";
-        std::cout << "- t : Start tuning\n";
     }
     std::cout << "- s : Shut down the system\n";
     std::cout << "- c : Check Motors position\n";
@@ -478,7 +587,11 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "r" && state.home == HomeSub::Done)
         {
-            state.main = Main::Ready;
+            state.main = Main::AddStance;
+            getReady = true;
+            isReady = false;
+            getBack = false;
+            isBack = false;
             return true;
         }
         else if (input == "x" && !(state.home == HomeSub::Done))
@@ -495,7 +608,18 @@ bool DrumRobot::processInput(const std::string &input)
         {
             if (state.home == HomeSub::Done)
             {
-                state.main = Main::Back;
+                if (isReady)
+                {
+                    state.main = Main::AddStance;
+                    getBack = true;
+                    isBack = false;
+                    isReady = false;
+                    getReady = false;
+                }
+                else if (isBack)
+                {
+                    state.main = Main::Shutdown;
+                }
             }
             else
             {
@@ -503,27 +627,14 @@ bool DrumRobot::processInput(const std::string &input)
             }
             return true;
         }
-    }
-    else if (state.main == Main::Ready)
-    {
-        if (input == "p")
+        else if (input == "p" && isReady)
         {
             state.main = Main::Perform;
-            return true;
-        }
-        else if (input == "s")
-        {
-            state.main = Main::Back;
             return true;
         }
         else if (input == "t")
         {
             state.main = Main::Tune;
-            return true;
-        }
-        else if (input == "c")
-        {
-            state.main = Main::Check;
             return true;
         }
     }
@@ -551,20 +662,44 @@ void DrumRobot::idealStateRoutine()
 
 void DrumRobot::checkUserInput()
 {
-    if (kbhit())
+    if (state.main == Main::Perform || state.main == Main::Pause)
+    {
+        if (kbhit())
+        {
+            char input = getchar();
+            if (input == 'q')
+                state.main = Main::Pause;
+            else if (input == 'e')
+            {
+                isReady = false;
+                getReady = false;
+                getBack = true;
+                isBack = false;
+                state.main = Main::AddStance;
+                pathManager.line = 0;
+            }
+            else if (input == 'r')
+                state.main = Main::Perform;
+            else if (input == 's')
+                state.main = Main::Shutdown;
+        }
+    }
+    else
     {
         char input = getchar();
-        if (input == 'q')
-            state.main = Main::Pause;
-        else if (input == 'e')
+        if (input == 'e')
         {
             isReady = false;
-            state.main = Main::Ready;
+            getReady = false;
+            getBack = true;
+            isBack = false;
+            state.main = Main::AddStance;
             pathManager.line = 0;
         }
-        else if (input == 'r')
-            state.main = Main::Perform;
+        else if (input == 's')
+            state.main = Main::Shutdown;
     }
+
     usleep(500000);
 }
 
@@ -1058,88 +1193,6 @@ void DrumRobot::MaxonDisable()
 /*                                 Send Thread Loop                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrumRobot::SendLoop()
-{
-    struct can_frame frameToProcess;
-
-    chrono::system_clock::time_point external = std::chrono::system_clock::now();
-
-    while (state.main == Main::Perform || state.main == Main::Pause)
-    {
-
-        if (state.main == Main::Pause)
-            continue;
-
-        bool isAnyBufferLessThanTen = false;
-        for (const auto &motor_pair : motors)
-        {
-            if (motor_pair.second->sendBuffer.size() < 10)
-            {
-                isAnyBufferLessThanTen = true;
-                break;
-            }
-        }
-        if (isAnyBufferLessThanTen)
-        {
-            if (pathManager.line < pathManager.total)
-            {
-                std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
-                pathManager.PathLoopTask();
-                pathManager.line++;
-            }
-            else if (pathManager.line == pathManager.total)
-            {
-                std::cout << "Perform Done\n";
-                state.main = Main::Ready;
-                pathManager.line = 0;
-            }
-        }
-
-        bool allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (!motor_pair.second->sendBuffer.empty())
-            {
-                allBuffersEmpty = false;
-                break;
-            }
-        }
-
-        // 모든 모터의 sendBuffer가 비었을 때 성능 종료 로직 실행
-        if (allBuffersEmpty)
-        {
-            std::cout << "Performance is Over\n";
-            state.main = Main::Ideal;
-        }
-
-        chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-        chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-
-        if (elapsed_time.count() >= 5000) // 5ms
-        {
-            external = std::chrono::system_clock::now();
-
-            for (auto &motor_pair : motors)
-            {
-                shared_ptr<GenericMotor> motor = motor_pair.second;
-                canManager.sendFromBuff(motor);
-            }
-
-            if (maxonMotorCount != 0)
-            {
-                maxoncmd.getSync(&frameToProcess);
-                canManager.txFrame(virtualMaxonMotor, frameToProcess);
-            }
-        }
-    }
-
-    // CSV 파일명 설정
-    std::string csvFileName = "../../READ/DrumData_in.txt";
-
-    // input 파일 저장
-    save_to_txt_inputData(csvFileName);
-}
-
 void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
 {
     // CSV 파일 열기
@@ -1171,65 +1224,6 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     std::cout << "SendLoop terminated\n";
 }
 
-void DrumRobot::SendReadyLoop()
-{
-    std::cout << "Settig...\n";
-    struct can_frame frameToProcess;
-    std::string maxonCanInterface;
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
-
-    int maxonMotorCount = 0;
-    for (const auto &motor_pair : motors)
-    {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonMotorCount++;
-            maxonCanInterface = maxonMotor->interFaceName;
-            virtualMaxonMotor = motor_pair.second;
-        }
-    }
-    chrono::system_clock::time_point external = std::chrono::system_clock::now();
-
-    bool allBuffersEmpty;
-    do
-    {
-        allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (!motor_pair.second->sendBuffer.empty())
-            {
-                allBuffersEmpty = false;
-                break;
-            }
-        }
-
-        if (!allBuffersEmpty)
-        {
-            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-
-            if (elapsed_time.count() >= 5000) // 5ms
-            {
-                external = std::chrono::system_clock::now();
-
-                for (auto &motor_pair : motors)
-                {
-                    shared_ptr<GenericMotor> motor = motor_pair.second;
-                    canManager.sendFromBuff(motor);
-                }
-
-                if (maxonMotorCount != 0)
-                {
-                    maxoncmd.getSync(&frameToProcess);
-                    canManager.txFrame(virtualMaxonMotor, frameToProcess);
-                }
-            }
-        }
-    } while (!allBuffersEmpty);
-    canManager.clearReadBuffers();
-}
-
 void DrumRobot::initializePathManager()
 {
     pathManager.GetDrumPositoin();
@@ -1242,6 +1236,23 @@ void DrumRobot::clearMotorsSendBuffer()
 {
     for (auto motor_pair : motors)
         motor_pair.second->clearSendBuffer();
+}
+
+void DrumRobot::clearMotorsCommandBuffer()
+{
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        {
+            maxonMotor->clearCommandBuffer();
+        }
+        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+        {
+            tmotor->clearCommandBuffer();
+        }
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
