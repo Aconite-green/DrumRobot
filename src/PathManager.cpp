@@ -1067,7 +1067,7 @@ void PathManager::GetArr(vector<double> &arr)
 
                 MaxonData newData;
                 newData.position = Qi[motor_mapping[entry.first]];
-                newData.isTorqueMode = false;
+                newData.wristState = false;
                 motor->commandBuffer.push(newData);
             }
         }

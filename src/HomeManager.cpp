@@ -649,32 +649,232 @@ void HomeManager::SendHomeProcess()
 {
     switch (state.home.load())
     {
-    case HomeSub::SelectMotor:
-        //사용자에게 Homing 할 모터 입력을 받음
+    case HomeSub::SelectMotorByUser:
+    {
+        displayHomingStatus();
+
+        std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
+        std::cin >> motorName;
+        state.home = HomeSub::MakeHomingOrderBuf;
+        break;
+    }
+    case HomeSub::MakeHomingOrderBuf:
+    {
+        if (motorName == "all") // 차례행로 동시실행
+        {
+            for (auto &PmotorNames : Priority)
+            {
+                vector<shared_ptr<GenericMotor>> temp;
+                for (const auto &pmotorName : PmotorNames)
+                {
+                    if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
+                    {
+                        temp.push_back(motors[pmotorName]);
+                    }
+                }
+                HomingMotorsArr.push_back(temp);
+            }
+        }
+        else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
+        {
+            vector<shared_ptr<GenericMotor>> temp;
+            temp.push_back(motors[motorName]);
+            HomingMotorsArr.push_back(temp);
+        }
+        else
+        {
+            std::cout << "Motor not found or already homed: " << motorName << std::endl;
+        }
+        state.home = HomeSub::GetSelectedMotor;
+        break;
+    }
+    case HomeSub::GetSelectedMotor:
+        if (!HomingMotorsArr.empty())
+        {                                                                             // HomingMotorsArr가 비어 있지 않은지 확인
+            vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front(); // 첫 번째 요소를 currentMotors에 할당
+            for (const auto &motor : currentMotors)
+            {
+                if (motor->myName == "L_arm1" || motor->myName == "R_arm1" || motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
+                {
+                    state.home = HomeSub::MoveToSensor;
+                    // HomingMotorsArr.erase(HomingMotorsArr.begin()); // 첫 번째 요소 제거
+                    break; // 내부 for 루프 탈출
+                }
+                else if (motor->myName == "L_wrist" || motor->myName == "R_wrist")
+                {
+                    state.home = HomeSub::MaxonMovetoBump;
+                    // 다른 조건에 대한 처리
+                    break; // 내부 for 루프 탈출
+                }
+            }
+        }
         break;
     case HomeSub::MoveToSensor:
+        if (sensor.OpenDeviceUntilSuccess())
+        {
+            struct can_frame frameToProcess;
 
-        //두개 혹은 한개의 모터에 대해 속도제어 명령을 파싱함(1)
-        //SendCANFrame State로 이동(2)
-        //여기서 SenSor에 도착했는지 감지하고 있음 + 감지에 대한 처리(3)
-        //감지할 경우 SenSor 멈춤을 위해 SendCANFrame State로이동
-        //둘다 멈추면 MoveToZeroPositionInit로 이동
+            vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
+
+            // 속도 제어 - 센서 방향으로 이동
+            for (long unsigned int i = 0; i < currentMotors.size(); i++)
+            {
+                cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
+                tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
+
+                double initialDirection;
+                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
+                    initialDirection = (-0.2) * tMotors[i]->cwDir;
+                else
+                    initialDirection = 0.2 * tMotors[i]->cwDir;
+
+                double additionalTorque = 0.0;
+                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
+                    additionalTorque = currentMotors[i]->cwDir * (-3.0);
+                else if (tMotors[i]->myName == "L_arm3" || tMotors[i]->myName == "R_arm3")
+                    additionalTorque = tMotors[i]->cwDir * (2.1);
+
+                sensorsBit.push_back(tMotors[i]->sensorBit);
+                firstPosition.push_back(0.0f);
+                secondPosition.push_back(0.0f);
+                firstSensorTriggered.push_back(false);
+                TriggeredDone.push_back(false);
+
+                cout << "Moving " << tMotors[i]->myName << " to sensor location.\n";
+
+                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
+                canManager.sendMotorFrame(tMotors[i]);
+            }
+        }
+        state.home = HomeSub::SensorCheck;
         break;
-    case HomeSub::SendCANFrameForSensor:
-        // 명령 보냄
-        // 전에 어떤 목적으로 프레임을 보냈느냐에 따라 해당 State로 이동
+    case HomeSub::SensorCheck:
+    {
+        bool doneSensing = true;
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            if (!TriggeredDone[i])
+                doneSensing = false;
+        }
+
+        if (doneSensing)
+        {
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
+                cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
+            }
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
+                {
+                    degrees.push_back(-30.0);
+                    midpoints[i] = midpoints[i] * (-1);
+                }
+                else
+                {
+                    degrees.push_back(90.0);
+                }
+                directions.push_back(-tMotors[i]->cwDir);
+            }
+
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
+                tMotors[i]->clearCommandBuffer();
+            }
+            state.home = HomeSub::FillBuf;
+            sensor.closeDevice();
+            break;
+        }
+
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            if (!TriggeredDone[i])
+            {
+                bool sensorTriggered = ((sensor.ReadVal() >> sensorsBit[i]) & 1) != 0;
+
+                if (!firstSensorTriggered[i] && sensorTriggered)
+                {
+                    // 첫 번째 센서 인식
+                    firstSensorTriggered[i] = true;
+                    firstPosition[i] = tMotors[i]->currentPos;
+                    std::cout << tMotors[i]->myName << " first sensor position: " << firstPosition[i] << endl;
+                }
+                else if (firstSensorTriggered[i] && !sensorTriggered)
+                {
+                    // 센서 인식 해제
+                    secondPosition[i] = tMotors[i]->currentPos;
+                    std::cout << tMotors[i] << " second sensor position: " << secondPosition[i] << endl;
+                    TriggeredDone[i] = true;
+                }
+                else
+                {
+                    usleep(1000);
+                    canManager.checkAllMotors_test();
+                }
+            }
+            else
+            {
+                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, secondPosition[i], 0, tMotors[i]->Kp, 2.5, 0);
+                canManager.sendMotorFrame(tMotors[i]);
+            }
+        }
         break;
-    case HomeSub::MoveToZeroPositionInit:
-        //모터의 명령 Buffer에 이동하기위한 경로를 쌍아둠
-        //MoveToZeroPositionCheck로 이동함
-        //버퍼에 다 쌓았다면 여기서 5ms 관리함
+    }
+    case HomeSub::FillBuf:
+    {
+        int totalSteps = 4000 / 5;
+        for (int step = 1; step <= totalSteps; ++step)
+        {
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                double targetPosition = targetRadians[i] * (static_cast<double>(step) / totalSteps) + tMotors[i]->currentPos;
+                TMotorData newData;
+                newData.position = targetPosition;
+                newData.velocity = 0;
+
+                tMotors[i]->commandBuffer.push(newData);
+            }
+        }
+        state.home = HomeSub::CheckBuf;
         break;
+    }
+     case HomeSub::CheckBuf:
+    {
+        break;
+    }
     case HomeSub::SafetyCheck:
+    {
+        bool isSafe = true;
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            TMotorData tData = tMotors[i]->commandBuffer.front();
+            tMotors[i]->commandBuffer.pop();
+            if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
+            {
+                std::cout << "Error Druing Homing (Pos Diff)\n";
+                isSafe = false;
+            }
+            else
+            {
+                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, tData.position, tData.velocity, tMotors[i]->Kp, tMotors[i]->Kd, 0.0);
+            }
+        }
+        if (isSafe)
+            state.home = HomeSub::SendCANFrameForZeroPos;
+        else
+            state.main = Main::Error;
         break;
+    }
     case HomeSub::SendCANFrameForZeroPos:
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            canManager.sendMotorFrame(tMotors[i]);
+        }
+        usleep(5000);
         break;
-    case HomeSub::SetZero:
-        break;
+   
     case HomeSub::SendCANFrameForSetZero:
         break;
     case HomeSub::Done:

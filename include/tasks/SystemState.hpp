@@ -3,6 +3,7 @@
 #include <atomic>
 
 
+
 enum class Main
 {
     SystemInit, 
@@ -18,15 +19,22 @@ enum class Main
 };
 
 enum class HomeSub {
-    SelectMotor,
+    SelectMotorByUser,
+    MakeHomingOrderBuf,
+    GetSelectedMotor,
     MoveToSensor,
-    MoveToZeroPositionInit,
+    SensorCheck,
+    FillBuf,
+    CheckBuf,
+    TimeCheck,
+    SafetyCheck,
+    SendCANFrameForZeroPos,
+    MoveToZeroPosition,
     SetZero,
     Done,
-    SafetyCheck,
     SendCANFrameForSensor,
-    SendCANFrameForZeroPos,
-    SendCANFrameForSetZero
+    SendCANFrameForSetZero,
+    MaxonMovetoBump
 };
 
 enum class PerformSub {
@@ -84,7 +92,7 @@ struct State
     MaxonState rightMaxon;          
     
     State() : main(Main::SystemInit),
-              home(HomeSub::SelectMotor),
+              home(HomeSub::SelectMotorByUser),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck)

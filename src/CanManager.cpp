@@ -379,18 +379,8 @@ bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_fr
     return true;
 }
 
-bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
-{
-    if (!motor->sendBuffer.empty())
-    {
-        struct can_frame frame = motor->sendBuffer.front();
-        motor->sendBuffer.pop();
-        return txFrame(motor, frame);
-    }
-    return false;
-}
 
-bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> &motor)
+bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))

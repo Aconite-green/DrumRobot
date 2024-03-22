@@ -56,7 +56,7 @@ public:
 
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
 
-    bool sendMotorFrame(std::shared_ptr<GenericMotor> &motor);
+    bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
     
     bool checkAllMotors_test();
     
