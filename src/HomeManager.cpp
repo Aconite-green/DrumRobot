@@ -74,14 +74,6 @@ void HomeManager::mainLoop()
     }
 }
 
-bool HomeManager::PromptUserForHoming(const std::string &motorName)
-{
-    char userResponse;
-    std::cout << "Would you like to start homing mode for motor [" << motorName << "]? (y/n): ";
-    std::cin >> userResponse;
-    return userResponse == 'y';
-}
-
 void HomeManager::SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames)
 {
     sensor.OpenDeviceUntilSuccess();
@@ -660,7 +652,7 @@ void HomeManager::SendHomeProcess()
     }
     case HomeSub::MakeHomingOrderBuf:
     {
-        if (motorName == "all") // 차례행로 동시실행
+        if (motorName == "all")
         {
             for (auto &PmotorNames : Priority)
             {
@@ -670,9 +662,9 @@ void HomeManager::SendHomeProcess()
                     if (motors.find(pmotorName) != motors.end() && !motors[pmotorName]->isHomed)
                     {
                         temp.push_back(motors[pmotorName]);
+                        HomingMotorsArr.push_back(temp);
                     }
                 }
-                HomingMotorsArr.push_back(temp);
             }
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
@@ -685,34 +677,74 @@ void HomeManager::SendHomeProcess()
         {
             std::cout << "Motor not found or already homed: " << motorName << std::endl;
         }
+
         state.home = HomeSub::GetSelectedMotor;
         break;
     }
     case HomeSub::GetSelectedMotor:
+    {
+        cout << "Now Im in GetSelectedMotor state\n";
         if (!HomingMotorsArr.empty())
-        {                                                                             // HomingMotorsArr가 비어 있지 않은지 확인
-            vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front(); // 첫 번째 요소를 currentMotors에 할당
+        { // HomingMotorsArr가 비어 있지 않은지 확인
+
+            vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
+            // 첫 번째 요소를 currentMotors에 할당
             for (const auto &motor : currentMotors)
             {
+
                 if (motor->myName == "L_arm1" || motor->myName == "R_arm1" || motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
                 {
-                    state.home = HomeSub::MoveToSensor;
-                    // HomingMotorsArr.erase(HomingMotorsArr.begin()); // 첫 번째 요소 제거
+                    state.home = HomeSub::HomeTmotor;
                     break; // 내부 for 루프 탈출
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist")
                 {
-                    state.home = HomeSub::MaxonMovetoBump;
-                    // 다른 조건에 대한 처리
+                    state.home = HomeSub::HomeMaxon;
                     break; // 내부 for 루프 탈출
                 }
             }
         }
+        else
+        {
+            cout << "Homing Motor arr is Empty\n";
+            state.home = HomeSub::Done;
+        }
+        // 이 부분에 호밍 작업이 모드 끝났을경우에 대한 처리를 할 것
         break;
-    case HomeSub::MoveToSensor:
+    }
+    case HomeSub::HomeTmotor:
+        HomeTmotor_test();
+        break;
+    case HomeSub::HomeMaxon:
+
+        break;
+    case HomeSub::Done:
+        state.main = Main::Ideal;
+        cout << "Press Enter\n";
+        getchar();
+        break;
+    }
+}
+
+void HomeManager::HomeTmotor_test()
+{
+    switch (state.homeTmotor.load())
+    {
+    case HomeTmotor::MoveToSensor:
+    {
+        sensorsBit.clear();
+        firstPosition.clear();
+        secondPosition.clear();
+        positionDifference.clear();
+        firstSensorTriggered.clear();
+        TriggeredDone.clear();
+        targetRadians.clear();
+        midpoints.clear();
+        directions.clear();
+        degrees.clear();
+
         if (sensor.OpenDeviceUntilSuccess())
         {
-            struct can_frame frameToProcess;
 
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
 
@@ -746,9 +778,10 @@ void HomeManager::SendHomeProcess()
                 canManager.sendMotorFrame(tMotors[i]);
             }
         }
-        state.home = HomeSub::SensorCheck;
+        state.homeTmotor = HomeTmotor::SensorCheck;
         break;
-    case HomeSub::SensorCheck:
+    }
+    case HomeTmotor::SensorCheck:
     {
         bool doneSensing = true;
         for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -758,6 +791,63 @@ void HomeManager::SendHomeProcess()
         }
 
         if (doneSensing)
+        {
+
+            state.homeTmotor = HomeTmotor::FillBuf;
+            sensor.closeDevice();
+            break;
+        }
+        else
+        {
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                if (!TriggeredDone[i])
+                {
+                    bool sensorTriggered = ((sensor.ReadVal() >> sensorsBit[i]) & 1) != 0;
+
+                    if (!firstSensorTriggered[i] && sensorTriggered)
+                    {
+                        // 첫 번째 센서 인식
+                        firstSensorTriggered[i] = true;
+                        firstPosition[i] = tMotors[i]->currentPos;
+                        std::cout << tMotors[i]->myName << " first sensor position: " << firstPosition[i] << endl;
+                    }
+                    else if (firstSensorTriggered[i] && !sensorTriggered)
+                    {
+                        // 센서 인식 해제
+                        secondPosition[i] = tMotors[i]->currentPos;
+                        std::cout << tMotors[i] << " second sensor position: " << secondPosition[i] << endl;
+                        TriggeredDone[i] = true;
+                    }
+                    else
+                    {
+                        usleep(5000);
+                        canManager.sendMotorFrame(tMotors[i]);
+                    }
+                }
+                else
+                {
+                    tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, secondPosition[i], 0, tMotors[i]->Kp, 2.5, 0);
+                    canManager.sendMotorFrame(tMotors[i]);
+                }
+            }
+        }
+        break;
+    }
+    case HomeTmotor::FillBuf:
+    {
+
+        bool isForZero = true;
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            if ((tMotors[i]->homeOffset != 0.0 && tMotors[i]->isHomed))
+            {
+                isForZero = false;
+                break;
+            }
+        }
+
+        if (isForZero)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
@@ -783,47 +873,45 @@ void HomeManager::SendHomeProcess()
                 targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
                 tMotors[i]->clearCommandBuffer();
             }
-            state.home = HomeSub::FillBuf;
-            sensor.closeDevice();
-            break;
         }
-
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        else
         {
-            if (!TriggeredDone[i])
-            {
-                bool sensorTriggered = ((sensor.ReadVal() >> sensorsBit[i]) & 1) != 0;
+            cout << "Turning For offset\n";
+            degrees.clear();
+            midpoints.clear();
+            directions.clear();
+            targetRadians.clear();
 
-                if (!firstSensorTriggered[i] && sensorTriggered)
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                degrees[i] = 0.0;
+                directions[i] = tMotors[i]->cwDir;
+                midpoints[i] = 0.0;
+            }
+
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                if (tMotors[i]->myName == "L_arm1" || tMotors[i]->myName == "R_arm1")
                 {
-                    // 첫 번째 센서 인식
-                    firstSensorTriggered[i] = true;
-                    firstPosition[i] = tMotors[i]->currentPos;
-                    std::cout << tMotors[i]->myName << " first sensor position: " << firstPosition[i] << endl;
+                    degrees[i] = tMotors[i]->homeOffset;
                 }
-                else if (firstSensorTriggered[i] && !sensorTriggered)
+                /*if (motorNames[i] == "L_arm2" || motorNames[i] == "R_arm2"){
+                    degrees[i] = -30.0;
+                }*/
+                if (tMotors[i]->myName == "L_arm3" || tMotors[i]->myName == "R_arm3")
                 {
-                    // 센서 인식 해제
-                    secondPosition[i] = tMotors[i]->currentPos;
-                    std::cout << tMotors[i] << " second sensor position: " << secondPosition[i] << endl;
-                    TriggeredDone[i] = true;
-                }
-                else
-                {
-                    usleep(1000);
-                    canManager.checkAllMotors_test();
+                    degrees[i] = tMotors[i]->homeOffset;
                 }
             }
-            else
+
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
-                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, secondPosition[i], 0, tMotors[i]->Kp, 2.5, 0);
-                canManager.sendMotorFrame(tMotors[i]);
+                targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
+                tMotors[i]->clearCommandBuffer();
+                tMotors[i]->homeOffset = 0.0;
             }
         }
-        break;
-    }
-    case HomeSub::FillBuf:
-    {
+
         int totalSteps = 4000 / 5;
         for (int step = 1; step <= totalSteps; ++step)
         {
@@ -837,14 +925,58 @@ void HomeManager::SendHomeProcess()
                 tMotors[i]->commandBuffer.push(newData);
             }
         }
-        state.home = HomeSub::CheckBuf;
+
+        totalSteps = 500 / 5;
+        for (int step = 1; step <= totalSteps; ++step)
+        {
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                double targetPosition = targetRadians[i] + tMotors[i]->currentPos;
+                TMotorData newData;
+                newData.position = targetPosition;
+                newData.velocity = 0;
+
+                tMotors[i]->commandBuffer.push(newData);
+            }
+        }
+        state.homeTmotor = HomeTmotor::CheckBuf;
         break;
     }
-     case HomeSub::CheckBuf:
+
+    case HomeTmotor::CheckBuf:
     {
+        bool isEmpty = true;
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        {
+            if (!tMotors[i]->commandBuffer.empty())
+            {
+                isEmpty = false;
+                break;
+            }
+        }
+
+        if (isEmpty)
+        {
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                if (tMotors[i]->isHomed)
+                {
+                    cout << "Buf for offset is Empty and now im going to done state\n";
+                    state.homeTmotor = HomeTmotor::Done;
+                }
+                else
+                {
+                    state.homeTmotor = HomeTmotor::SetZero;
+                }
+            }
+        }
+        else
+        {
+            state.homeTmotor = HomeTmotor::SafetyCheck;
+        }
         break;
     }
-    case HomeSub::SafetyCheck:
+    case HomeTmotor::SafetyCheck:
     {
         bool isSafe = true;
         for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -855,41 +987,121 @@ void HomeManager::SendHomeProcess()
             {
                 std::cout << "Error Druing Homing (Pos Diff)\n";
                 isSafe = false;
+                isSafe = false;
+                isSafe = false;
+                isSafe = false;
+                break;
             }
             else
             {
                 tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, tData.position, tData.velocity, tMotors[i]->Kp, tMotors[i]->Kd, 0.0);
             }
         }
-        if (isSafe)
-            state.home = HomeSub::SendCANFrameForZeroPos;
+
+        if (isSafe && isSafe && isSafe)
+        {
+            state.homeTmotor = HomeTmotor::SendCANFrameForZeroPos;
+        }
         else
+        {
+            std::cout << "Go to Error State\n";
             state.main = Main::Error;
+        }
         break;
     }
-    case HomeSub::SendCANFrameForZeroPos:
+    case HomeTmotor::SendCANFrameForZeroPos:
+    {
+        usleep(5000);
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
             canManager.sendMotorFrame(tMotors[i]);
         }
-        usleep(5000);
+
+        state.homeTmotor = HomeTmotor::CheckBuf;
         break;
-   
-    case HomeSub::SendCANFrameForSetZero:
+    }
+    case HomeTmotor::SetZero:
+    {
+        for (long unsigned int i = 0; i < motors.size(); i++)
+        {
+            tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, 0, 0, 0, 5, 0);
+            if (canManager.sendMotorFrame(tMotors[i]))
+            {
+                cout << "Set " << tMotors[i]->myName << " speed Zero.\n";
+            }
+
+            tmotorcmd.getZero(*tMotors[i], &tMotors[i]->sendFrame);
+            if (canManager.sendMotorFrame(tMotors[i]))
+            {
+                cout << "Set Zero.\n";
+            }
+        }
+        cout << "Sleeping For 5 sec\n";
+        sleep(5);
+        for (long unsigned int i = 0; i < motors.size(); i++)
+        {
+            if (canManager.checkAllMotors_test())
+            {
+                usleep(5000);
+                cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
+                tMotors[i]->isHomed = true;
+            };
+        }
+        for (long unsigned int i = 0; i < motors.size(); i++)
+        {
+            if (canManager.checkAllMotors_test())
+            {
+                usleep(5000);
+                cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
+                tMotors[i]->isHomed = true;
+            };
+        }
+        for (long unsigned int i = 0; i < motors.size(); i++)
+        {
+            if (canManager.checkAllMotors_test())
+            {
+                usleep(5000);
+                cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
+                tMotors[i]->isHomed = true;
+            };
+        }
+
+        bool noHomeOffset = true;
+        for (long unsigned int i = 0; i < motors.size(); i++)
+        {
+            if (tMotors[i]->homeOffset != 0.0)
+            {
+                noHomeOffset = false;
+                break;
+            }
+        }
+
+        if (noHomeOffset)
+        {
+            state.homeTmotor = HomeTmotor::Done;
+        }
+        else
+        {
+            state.homeTmotor = HomeTmotor::FillBuf;
+        }
         break;
-    case HomeSub::Done:
+    }
+    case HomeTmotor::Done:
+    {
+        cout << "Now Im in Done state\n";
+        HomingMotorsArr.erase(HomingMotorsArr.begin());
+        state.home = HomeSub::GetSelectedMotor;
         break;
+    }
     }
 }
 
-/*enum class HomeSub {
-    Start,
-    MoveToSensor,
-    StopAtSensor,
-    MoveToZeroPositionInit,
-    MoveToZeroPositionCheck,
-    StopAtZeroPosition,
-    SetZero,
-    Done,
-    SafetyCheck
-};*/
+void HomeManager::HomeMaxon_test()
+{
+    switch (state.homeTmotor.load())
+    {
+    case HomeTmotor::MoveToSensor:
+    {
+    }
+    }
+}

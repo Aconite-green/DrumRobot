@@ -379,7 +379,11 @@ bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_fr
     return true;
 }
 
-
+bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
+{
+    std::cout << "Erase this function\n";
+    return true;
+}
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
@@ -485,7 +489,7 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    
+
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
@@ -494,8 +498,6 @@ void CanManager::readFramesFromAllSockets()
             tempFrames[socket_fd].push_back(frame);
         }
     }
-    
-    
 }
 
 void CanManager::distributeFramesToMotors()

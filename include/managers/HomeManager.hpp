@@ -74,7 +74,6 @@ private:
     void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
     vector<float> MoveTMotorToSensorLocation(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<int> &sensorsBit);
     void RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<double> &directions, vector<double> &degrees, vector<float> &midpoints);
-    bool PromptUserForHoming(const std::string &motorName);
 
     /* Maxon */
 
@@ -83,4 +82,8 @@ private:
     void MaxonEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
     void MaxonDisable();
+    void HomeTmotor_test();
+    void HomeMaxon_test();
+
+    
 };

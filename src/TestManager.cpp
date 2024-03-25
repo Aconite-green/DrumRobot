@@ -176,7 +176,6 @@ void TestManager::SendLoop()
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotorCount++;
-            maxonCanInterface = maxonMotor->interFaceName;
             virtualMaxonMotor = motor_pair.second;
         }
     }

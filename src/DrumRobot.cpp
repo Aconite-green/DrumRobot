@@ -42,9 +42,14 @@ void DrumRobot::stateMachine()
             idealStateRoutine();
             break;
         case Main::Homing:
-            canManager.setSocketBlock();
-            homeManager.mainLoop();
-            canManager.setSocketNonBlock();
+            if (state.home == HomeSub::SelectMotorByUser)
+            {
+                usleep(50000);
+            }
+            else
+            {
+                checkUserInput();
+            }
             break;
         case Main::Perform:
             checkUserInput();
@@ -67,8 +72,7 @@ void DrumRobot::stateMachine()
             checkUserInput();
             break;
         case Main::AddStance:
-            // checkUserInput();
-            usleep(500000); // 500ms
+            checkUserInput();
             break;
         case Main::Error:
             sleep(2);
@@ -95,7 +99,7 @@ void DrumRobot::sendLoopForThread()
             usleep(500000);
             break;
         case Main::Homing:
-            usleep(500000);
+            homeManager.SendHomeProcess();
             break;
         case Main::Perform:
             // SendLoop();
@@ -138,9 +142,9 @@ void DrumRobot::recvLoopForThread()
             // ReadProcess(500000); /*500ms*/
             break;
         case Main::Homing:
-            if (state.home == HomeSub::SensorCheck)
+            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon)
             {
-                ReadProcess(1000);
+                ReadProcess(5000);
             }
             else
             {
@@ -235,7 +239,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                     {
                         maxonMotor->positioning = true;
                         maxonMotor->hitting = false;
-
                     }
                     maxonMotor->checked = true;
                 }
@@ -628,6 +631,10 @@ bool DrumRobot::processInput(const std::string &input)
                 {
                     state.main = Main::Shutdown;
                 }
+                else if (!isReady && !isBack)
+                {
+                    state.main = Main::Shutdown;
+                }
             }
             else
             {
@@ -670,11 +677,11 @@ void DrumRobot::idealStateRoutine()
 
 void DrumRobot::checkUserInput()
 {
-    if (state.main == Main::Perform || state.main == Main::Pause)
+    if (kbhit())
     {
-        if (kbhit())
+        char input = getchar();
+        if (state.main == Main::Perform || state.main == Main::Pause)
         {
-            char input = getchar();
             if (input == 'q')
                 state.main = Main::Pause;
             else if (input == 'e')
@@ -691,21 +698,20 @@ void DrumRobot::checkUserInput()
             else if (input == 's')
                 state.main = Main::Shutdown;
         }
-    }
-    else
-    {
-        char input = getchar();
-        if (input == 'e')
+        else
         {
-            isReady = false;
-            getReady = false;
-            getBack = true;
-            isBack = false;
-            state.main = Main::AddStance;
-            pathManager.line = 0;
+            if (input == 'e')
+            {
+                isReady = false;
+                getReady = false;
+                getBack = true;
+                isBack = false;
+                state.main = Main::AddStance;
+                pathManager.line = 0;
+            }
+            else if (input == 's')
+                state.main = Main::Shutdown;
         }
-        else if (input == 's')
-            state.main = Main::Shutdown;
     }
 
     usleep(500000);
@@ -783,6 +789,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
+                tMotor->homeOffset = 90.0;
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -794,6 +801,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
+                tMotor->homeOffset = 90.0;
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -816,6 +824,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
+                tMotor->homeOffset = 90.0;
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -838,6 +847,7 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
+                tMotor->homeOffset = 90.0;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

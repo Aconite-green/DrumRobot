@@ -28,6 +28,7 @@ public:
     float cwDir;
     float rMin, rMax;
     std::string myName;
+    std::string interFaceName;
     // Values
     float desPos, desVel, desTor;
     float currentPos, currentVel, currentTor;
@@ -40,7 +41,7 @@ public:
     int Kp;
     double Kd;
     std::queue<can_frame> recieveBuffer;
-
+    std::queue<can_frame> sendBuffer;
     struct can_frame sendFrame;
 
     GenericMotor(uint32_t nodeId);
@@ -63,7 +64,7 @@ public:
     std::string motorType;
 
     int sensorBit;
-    double homeOffset;
+    double homeOffset = 0;
     std::queue<TMotorData> commandBuffer;
 
     void clearCommandBuffer();
@@ -94,11 +95,10 @@ public:
     bool hitting = false;
 
     bool atPosition = false;
-    bool positioning =false;
+    bool positioning = false;
     float targetPos = M_PI / 2;
-    
-    bool checked=false;
-   
+
+    bool checked = false;
 
     std::queue<MaxonData> commandBuffer;
     void clearCommandBuffer();
