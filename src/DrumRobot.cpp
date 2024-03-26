@@ -373,6 +373,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
                     isSafe = false;
+                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
+                    usleep(5000);
                     tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
                     canManager.sendMotorFrame(tMotor);
                 }
@@ -537,6 +540,9 @@ void DrumRobot::SendAddStanceProcess()
                 {
                     std::cout << "Error Druing Addstance (Pos Diff)\n";
                     isSafe = false;
+                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
+                    usleep(5000);
                     tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
                     canManager.sendMotorFrame(tMotor);
                 }
@@ -1116,13 +1122,14 @@ void DrumRobot::motorSettingCmd()
         }
         else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
-            if (name == "waist")
-            {
-                tmotorcmd.getZero(*tmotor, &frame);
-                canManager.sendAndRecv(motor, frame);
-            }
-            usleep(5000);
+            tmotorcmd.getQuickStop(*tmotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
             tmotorcmd.getControlMode(*tmotor, &frame);
+            canManager.sendAndRecv(motor, frame);
+
+            usleep(5000);
+            tmotorcmd.getZero(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
         }
     }

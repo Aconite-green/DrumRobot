@@ -583,6 +583,9 @@ void HomeManager::HomeTmotor_test()
             {
                 std::cout << "Error Druing Homing (Pos Diff)\n";
                 isSafe = false;
+                tmotorcmd.getQuickStop(*tMotors[i], &tMotors[i]->sendFrame);
+                canManager.sendMotorFrame(tMotors[i]);
+                usleep(5000);
                 tmotorcmd.getExit(*tMotors[i], &tMotors[i]->sendFrame);
                 canManager.sendMotorFrame(tMotors[i]);
                 break;
@@ -624,7 +627,7 @@ void HomeManager::HomeTmotor_test()
             {
                 cout << "Set " << tMotors[i]->myName << " speed Zero.\n";
             }
-
+            usleep(50000);
             tmotorcmd.getZero(*tMotors[i], &tMotors[i]->sendFrame);
             if (canManager.sendMotorFrame(tMotors[i]))
             {
