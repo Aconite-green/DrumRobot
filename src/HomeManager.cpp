@@ -697,8 +697,12 @@ void HomeManager::SendHomeProcess()
                     state.home = HomeSub::HomeTmotor;
                     break; // 내부 for 루프 탈출
                 }
-                else if (motor->myName == "L_wrist" || motor->myName == "R_wrist")
+                else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
                 {
+                    canManager.setSocketBlock();
+                    setMaxonMode("HMM");
+                    MaxonEnable();
+                    canManager.setSocketNonBlock();
                     state.home = HomeSub::HomeMaxon;
                     break; // 내부 for 루프 탈출
                 }
@@ -716,7 +720,7 @@ void HomeManager::SendHomeProcess()
         HomeTmotor_test();
         break;
     case HomeSub::HomeMaxon:
-
+        HomeMaxon_test();
         break;
     case HomeSub::Done:
         state.main = Main::Ideal;
@@ -1098,10 +1102,68 @@ void HomeManager::HomeTmotor_test()
 
 void HomeManager::HomeMaxon_test()
 {
-    switch (state.homeTmotor.load())
+    switch (state.homeMaxon.load())
     {
-    case HomeTmotor::MoveToSensor:
+    case HomeMaxon::StartHoming:
     {
+        vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
+
+        for (long unsigned int i = 0; i < currentMotors.size(); i++)
+        {
+            cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
+            maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(currentMotors[i]));
+
+            maxoncmd.getStartHoming(*maxonMotors[i], &maxonMotors[i]->sendFrame);
+            canManager.sendMotorFrame(maxonMotors[i]);
+            usleep(50000);
+        }
+
+        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
+        canManager.sendMotorFrame(maxonMotors[0]);
+        cout << "\nMaxon Homing Start!!\n";
+        state.homeMaxon = HomeMaxon::CheckHomeStatus;
+        break;
+    }
+    case HomeMaxon::CheckHomeStatus:
+    {
+        bool done = true;
+        for (long unsigned int i = 0; i < maxonMotors.size(); i++)
+        {
+            if (!maxonMotors[i]->isHomed)
+            {
+                done = false;
+                break;
+            }
+        }
+
+        if (!done)
+        {
+            usleep(50000); // 50ms
+            maxoncmd.getSync(&maxonMotors[0]->sendFrame);
+            canManager.sendMotorFrame(maxonMotors[0]);
+            for (long unsigned int i = 0; i < maxonMotors.size(); i++)
+            {
+                if (maxonMotors[i]->statusBit & 0x80)
+                {
+                    maxonMotors[i]->isHomed = true;
+                }
+            }
+        }
+        else
+        {
+            state.homeMaxon = HomeMaxon::Done;
+        }
+        break;
+    }
+    case HomeMaxon::Done:
+    {
+        state.home = HomeSub::GetSelectedMotor;
+        canManager.setSocketBlock();
+        setMaxonMode("CSP");
+        MaxonDisable();
+        canManager.setSocketNonBlock();
+        HomingMotorsArr.erase(HomingMotorsArr.begin());
+        break;
     }
     }
 }

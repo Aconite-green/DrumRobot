@@ -40,7 +40,9 @@ enum class HomeTmotor
 
 enum class HomeMaxon
 {
-
+    StartHoming,
+    CheckHomeStatus,
+    Done
 };
 
 enum class PerformSub
@@ -92,6 +94,7 @@ struct State
     std::atomic<Main> main;
     std::atomic<HomeSub> home;
     std::atomic<HomeTmotor> homeTmotor;
+    std::atomic<HomeMaxon> homeMaxon;
     std::atomic<PerformSub> perform;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
@@ -101,6 +104,7 @@ struct State
     State() : main(Main::SystemInit),
               home(HomeSub::SelectMotorByUser),
               homeTmotor(HomeTmotor::MoveToSensor),
+              homeMaxon(HomeMaxon::StartHoming),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck)

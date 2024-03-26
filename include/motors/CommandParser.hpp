@@ -76,7 +76,7 @@ class MaxonCommandParser
 {
 public:
     // Maxon 모터로부터 수신된 명령을 파싱하는 메서드입니다. 반환된 튜플은 명령 코드, 위치, 속도를 포함합니다.
-    std::tuple<int, float, float> parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame);
+    std::tuple<int, float, float, unsigned char> parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame);
 
     // 이하 메서드들은 Maxon 모터의 특정 상태 또는 모드를 요청하는 명령을 구성합니다.
     // 각 메서드에 대한 자세한 설명은 생략하나, 실제 코드에는 해당 명령의 목적과 사용 방법에 대해 설명을 추가해야 합니다.

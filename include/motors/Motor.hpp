@@ -100,6 +100,8 @@ public:
 
     bool checked = false;
 
+    unsigned char statusBit;
+
     std::queue<MaxonData> commandBuffer;
     void clearCommandBuffer();
 };

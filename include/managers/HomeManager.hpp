@@ -57,6 +57,7 @@ private:
 
     vector<vector<shared_ptr<GenericMotor>>> HomingMotorsArr;
     vector<shared_ptr<TMotor>> tMotors;
+    vector<shared_ptr<MaxonMotor>> maxonMotors;
 
     vector<int> sensorsBit;
     vector<float> firstPosition, secondPosition, positionDifference;
@@ -85,5 +86,5 @@ private:
     void HomeTmotor_test();
     void HomeMaxon_test();
 
-    
+
 };

@@ -526,11 +526,12 @@ void CanManager::distributeFramesToMotors()
             // MaxonMotor 처리
             for (auto &frame : tempFrames[motor->socket])
             {
-                if (frame.can_id == maxonMotor->txPdoIds[0])
+                if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    std::tuple<int, float, float, unsigned char> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     maxonMotor->currentPos = std::get<1>(parsedData);
                     maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->statusBit = std::get<3>(parsedData);
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
@@ -575,10 +576,11 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
                 frame = motor->recieveBuffer.front();
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    motor->currentPos = std::get<1>(parsedData);
-                    motor->currentTor = std::get<2>(parsedData);
-                    motor->isConected = true;
+                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    maxonMotor->currentPos = std::get<1>(parsedData);
+                    maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->statusBit = std::get<3>(parsedData);
+                    maxonMotor->isConected = true;
                 }
                 motor->recieveBuffer.pop();
             }

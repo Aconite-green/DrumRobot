@@ -55,12 +55,21 @@ void DrumRobot::stateMachine()
             checkUserInput();
             break;
         case Main::Check:
-            canManager.setSocketBlock();
-            canManager.checkAllMotors();
+        {
+            canManager.checkAllMotors_test();
             printCurrentPositions();
-            state.main = Main::Ideal;
-            canManager.setSocketNonBlock();
-            break;
+            std::cout << "Put any keyboard input\n";
+            if (kbhit())
+            {
+                state.main = Main::Ideal;
+            }
+            usleep(200000);
+
+            int ret = system("clear");
+            if (ret == -1)
+                std::cout << "system clear error" << endl;
+        }
+        break;
         case Main::Tune:
             MaxonEnable();
             testManager.mainLoop();
@@ -158,7 +167,7 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(5000);
             break;
         case Main::Check:
-            usleep(500000);
+            ReadProcess(200000); // 200ms
             break;
         case Main::Tune:
             usleep(500000);
@@ -967,8 +976,6 @@ void DrumRobot::printCurrentPositions()
 
     std::cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
     std::cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
-    printf("Print Enter to Go Home\n");
-    getchar();
 }
 
 void DrumRobot::setMaxonMode(std::string targetMode)
@@ -1324,7 +1331,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
             {
-                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
                 speed = 0.0;
