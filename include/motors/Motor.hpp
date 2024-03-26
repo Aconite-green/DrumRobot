@@ -65,6 +65,9 @@ public:
 
     int sensorBit;
     double homeOffset = 0;
+    double sensorLocation;
+
+
     std::queue<TMotorData> commandBuffer;
 
     void clearCommandBuffer();

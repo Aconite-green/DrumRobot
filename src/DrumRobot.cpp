@@ -354,6 +354,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
                     isSafe = false;
+                    maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                    canManager.sendMotorFrame(maxonMotor);
+                    usleep(5000);
+                    maxoncmd.getSync(&maxonMotor->sendFrame);
+                    canManager.sendMotorFrame(maxonMotor);
                 }
                 else
                 {
@@ -368,6 +373,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
                     isSafe = false;
+                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
                 }
                 else
                 {
@@ -508,7 +515,13 @@ void DrumRobot::SendAddStanceProcess()
 
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
+                    std::cout << "Error Druing Addstance (Pos Diff)\n";
                     isSafe = false;
+                    maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                    canManager.sendMotorFrame(maxonMotor);
+                    usleep(5000);
+                    maxoncmd.getSync(&maxonMotor->sendFrame);
+                    canManager.sendMotorFrame(maxonMotor);
                 }
                 else
                 {
@@ -522,8 +535,10 @@ void DrumRobot::SendAddStanceProcess()
                 tMotor->commandBuffer.pop();
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    std::cout << "Error Druing Addstance (Pos Diff)\n";
                     isSafe = false;
+                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
                 }
                 else
                 {

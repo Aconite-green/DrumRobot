@@ -70,15 +70,6 @@ private:
     void displayHomingStatus();
     void UpdateHomingStatus();
 
-    /* Tmotor */
-    void SetTmotorHome(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
-    void HomeTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames);
-    vector<float> MoveTMotorToSensorLocation(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<int> &sensorsBit);
-    void RotateTMotor(vector<std::shared_ptr<GenericMotor>> &motors, vector<std::string> &motorNames, vector<double> &directions, vector<double> &degrees, vector<float> &midpoints);
-
-    /* Maxon */
-
-    void SetMaxonHome(vector<std::shared_ptr<GenericMotor>> &motors);
     void setMaxonMode(std::string targetMode);
     void MaxonEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
