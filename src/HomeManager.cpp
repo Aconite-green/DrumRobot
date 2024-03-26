@@ -645,24 +645,6 @@ void HomeManager::HomeTmotor_test()
                 tMotors[i]->isHomed = true;
             };
         }
-        for (long unsigned int i = 0; i < motors.size(); i++)
-        {
-            if (canManager.checkAllMotors_test())
-            {
-                usleep(5000);
-                cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
-                tMotors[i]->isHomed = true;
-            };
-        }
-        for (long unsigned int i = 0; i < motors.size(); i++)
-        {
-            if (canManager.checkAllMotors_test())
-            {
-                usleep(5000);
-                cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
-                tMotors[i]->isHomed = true;
-            };
-        }
 
         bool noHomeOffset = true;
         for (long unsigned int i = 0; i < motors.size(); i++)

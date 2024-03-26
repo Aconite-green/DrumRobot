@@ -549,7 +549,7 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getControlMode(*tMotor, &frame);
+        tmotorcmd.getQuickStop(*tMotor, &frame);
         txFrame(motor, frame);
         if (sendAndRecv(motor, frame))
         {
@@ -600,7 +600,7 @@ bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getControlMode(*tMotor, &frame);
+        tmotorcmd.getQuickStop(*tMotor, &frame);
         txFrame(motor, frame);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

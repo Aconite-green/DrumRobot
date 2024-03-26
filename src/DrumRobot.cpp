@@ -1128,9 +1128,16 @@ void DrumRobot::motorSettingCmd()
             tmotorcmd.getControlMode(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
-            usleep(5000);
-            tmotorcmd.getZero(*tmotor, &frame);
-            canManager.sendAndRecv(motor, frame);
+            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
+            if (abs(std::get<1>(parsedData)) > 1.5)
+            {
+                usleep(5000);
+                tmotorcmd.getZero(*tmotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+                
+                tmotorcmd.getQuickStop(*tmotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
         }
     }
 }
