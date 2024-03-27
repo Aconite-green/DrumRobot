@@ -35,7 +35,7 @@ public:
 
     // For Homing Session
     bool atFirstSensor, atSecondSensor, atZeroPosition;
-    bool isHomed;
+    bool isHomed, giveOffset;
     int homeOffset;
 
     int Kp;
