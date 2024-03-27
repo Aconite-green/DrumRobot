@@ -1661,7 +1661,6 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
         if (elapsed_time.count() >= 5000)
         {
-
             maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
             canManager.txFrame(motors[selectedMotor], frame);
 
