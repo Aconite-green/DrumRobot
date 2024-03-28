@@ -32,7 +32,8 @@ public:
     // Values
     float desPos, desVel, desTor;
     float currentPos, currentVel, currentTor;
-
+    int Kp;
+    double Kd;
     // For Homing Session
 
     bool isHomed;
@@ -59,9 +60,6 @@ class TMotor : public GenericMotor
 public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
-
-    int Kp;
-    double Kd;
 
     int sensorBit;
     double homeOffset = 0.0;

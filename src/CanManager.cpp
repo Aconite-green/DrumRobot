@@ -477,13 +477,6 @@ void CanManager::setMotorsSocket()
         }
     }
 
-    for (auto &motor_pair : motors)
-    {
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonCnt++;
-        }
-    }
 }
 
 void CanManager::readFramesFromAllSockets()

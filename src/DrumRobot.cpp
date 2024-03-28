@@ -103,9 +103,8 @@ void DrumRobot::sendLoopForThread()
             usleep(500000);
             break;
         case Main::Ideal:
-            // canManager.checkCanPortsStatus();
-            // canManager.checkAllMotors();
-            usleep(500000);
+            canManager.checkAllMotors_test();
+            usleep(200000);
             break;
         case Main::Homing:
             homeManager.SendHomeProcess();
@@ -147,8 +146,8 @@ void DrumRobot::recvLoopForThread()
             usleep(500000);
             break;
         case Main::Ideal:
-            usleep(500000);
-            // ReadProcess(500000); /*500ms*/
+            
+            ReadProcess(200000); /*500ms*/
             break;
         case Main::Homing:
             if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon)
@@ -1142,21 +1141,6 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (name == "L_arm1" || name == "R_arm1")
-            {
-            }
-            else if (name == "L_arm2" || name == "R_arm2")
-            {
-            }
-            else if (name == "L_arm3" || name == "R_arm3")
-            {
-            }
-            else if (name == "L_wrist" || name == "R_wrist")
-            {
-            }
-            else if(name == "waist"){
-
-            }
 
             if (initPosition > 1.5)
             {
@@ -1176,7 +1160,6 @@ void DrumRobot::MaxonEnable()
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
 
-    int maxonMotorCount = 0;
     for (const auto &motor_pair : motors)
     {
         // 각 요소가 MaxonMotor 타입인지 확인
