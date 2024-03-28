@@ -53,7 +53,7 @@ void HomeManager::MaxonEnable()
             canManager.txFrame(motor, frame);
 
 
-            sleep(1);
+            sleep(2);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -61,7 +61,7 @@ void HomeManager::MaxonEnable()
             canManager.txFrame(motor, frame);
             std::cout << "Maxon Enabled(1) \n";
             
-            sleep(1);
+            sleep(2);
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -69,7 +69,7 @@ void HomeManager::MaxonEnable()
             canManager.txFrame(motor, frame);
 
            
-            sleep(1);
+            sleep(2);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -500,7 +500,7 @@ void HomeManager::HomeTmotor_test()
         {
             TMotorData tData = tMotors[i]->commandBuffer.front();
             tMotors[i]->commandBuffer.pop();
-            if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
+            if (abs(tMotors[i]->currentPos - tData.position) > 0.1)
             {
                 std::cout << "Error Druing Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
                 isSafe = false;

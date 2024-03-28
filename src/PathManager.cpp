@@ -681,10 +681,10 @@ vector<double> PathManager::fkfun()
 
     P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
-    P.push_back(z0 - r1 * cos(theta[3]) - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]) - stick * cos(theta[3] + theta[4] + theta[7]));
-    P.push_back(-0.5 * s * cos(theta[0]) + l1*sin(theta[5])*cos(theta[0]+theta[2])+ l2*sin(theta[5]+theta[6])*cos(theta[0]+theta[2]) + stick*sin(theta[5]+theta[6]+theta[8])*cos(theta[0]+theta[2]));
-    P.push_back(-0.5 * s * sin(theta[0]) + l1*sin(theta[5])*sin(theta[0]+theta[2])+ l2*sin(theta[5]+theta[6])*sin(theta[0]+theta[2]) + stick*sin(theta[5]+theta[6]+theta[8])*sin(theta[0]+theta[2]));
-    P.push_back(z0 - l1 * cos(theta[5]) -l1*cos(theta[5]) - l2*cos(theta[5]+theta[6]) - stick*cos(theta[5]+theta[6]+theta[8]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]) - stick * cos(theta[3] + theta[4] + theta[7]));
+    P.push_back(-0.5 * s * cos(theta[0]) + l1 * sin(theta[5]) * cos(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * cos(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * cos(theta[0] + theta[2]));
+    P.push_back(-0.5 * s * sin(theta[0]) + l1 * sin(theta[5]) * sin(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * sin(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]) - stick * cos(theta[5] + theta[6] + theta[8]));
 
     return P;
 }
@@ -843,7 +843,7 @@ void PathManager::GetDrumPositoin()
 {
     getMotorPos();
     part_length.resize(6);
-    part_length << 0.363, 0.393, 0.363, 0.393, 0.400, 0.400; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
+    part_length << 0.363, 0.3835, 0.363, 0.3835, 0.417, 0.417; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 
