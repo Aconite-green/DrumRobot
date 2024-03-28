@@ -651,7 +651,7 @@ vector<double> PathManager::fkfun()
     getMotorPos();
 
     vector<double> P;
-    vector<double> theta(7);
+    vector<double> theta(9);
     for (auto &motorPair : motors)
     {
         auto &name = motorPair.first;
@@ -661,18 +661,30 @@ vector<double> PathManager::fkfun()
             theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
             cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        {
+            theta[motor_mapping[name]] = maxonMotor->currentPos * maxonMotor->cwDir;
+            cout << name << " : " << theta[motor_mapping[name]] << "\n";
+        }
     }
-    double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
-    double r, l;
-    r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
-    l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
+    double r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
+    // double r, l;
+    // r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
+    // l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
 
-    P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
+    /*P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r * sin(theta[0] + theta[1]));
     P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]));
     P.push_back(0.5 * s * cos(theta[0] + M_PI) + l * cos(theta[0] + theta[2]));
     P.push_back(0.5 * s * sin(theta[0] + M_PI) + l * sin(theta[0] + theta[2]));
-    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));*/
+
+    P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]) - stick * cos(theta[3] + theta[4] + theta[7]));
+    P.push_back(-0.5 * s * cos(theta[0]) + l1*sin(theta[5])*cos(theta[0]+theta[2])+ l2*sin(theta[5]+theta[6])*cos(theta[0]+theta[2]) + stick*sin(theta[5]+theta[6]+theta[8])*cos(theta[0]+theta[2]));
+    P.push_back(-0.5 * s * sin(theta[0]) + l1*sin(theta[5])*sin(theta[0]+theta[2])+ l2*sin(theta[5]+theta[6])*sin(theta[0]+theta[2]) + stick*sin(theta[5]+theta[6]+theta[8])*sin(theta[0]+theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) -l1*cos(theta[5]) - l2*cos(theta[5]+theta[6]) - stick*cos(theta[5]+theta[6]+theta[8]));
 
     return P;
 }
@@ -1125,7 +1137,7 @@ void PathManager::GetArr(vector<double> &arr)
 
     getMotorPos();
 
-    int n = 800;    // 4초동안 실행
+    int n = 800; // 4초동안 실행
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
