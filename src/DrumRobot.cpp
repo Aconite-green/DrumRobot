@@ -819,8 +819,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                
-                
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -832,8 +830,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-               
-                
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -845,8 +841,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-               
-                
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -858,8 +852,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                
-                
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -871,8 +863,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-               
-                
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -884,8 +874,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                
-                
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -1141,18 +1129,28 @@ void DrumRobot::motorSettingCmd()
 
             if (name == "L_arm1" || name == "R_arm1")
             {
+                tmotor->rMax = initPosition;
+                tmotor->rMin = initPosition;
             }
             else if (name == "L_arm2" || name == "R_arm2")
             {
+                tmotor->rMax = initPosition;
+                tmotor->rMin = initPosition;
             }
             else if (name == "L_arm3" || name == "R_arm3")
             {
+                tmotor->rMax = initPosition;
+                tmotor->rMin = initPosition;
             }
             else if (name == "L_wrist" || name == "R_wrist")
             {
+                tmotor->rMax = initPosition;
+                tmotor->rMin = initPosition;
             }
-            else if(name == "waist"){
-
+            else if (name == "waist")
+            {
+                tmotor->rMax = initPosition;
+                tmotor->rMin = initPosition;
             }
 
             if (initPosition > 1.5)
