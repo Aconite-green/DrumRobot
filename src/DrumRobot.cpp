@@ -350,8 +350,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                if(mData.WristState == -1){
-
+                if (mData.WristState == -1)
+                {
                 }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
@@ -640,6 +640,11 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "x" && !(state.home == HomeSub::Done))
         {
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                    tMotor->sensorLocation = tMotor->currentPos;
+            }
             state.home = HomeSub::Done;
             return true;
         }
