@@ -659,6 +659,7 @@ vector<double> PathManager::fkfun()
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
             theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+            cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
     }
     double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
