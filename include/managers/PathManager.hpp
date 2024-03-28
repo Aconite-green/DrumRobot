@@ -62,11 +62,6 @@ public:
     vector<double> fkfun();
 
     /**
-     * @brief 각 모터의 회전방향에 따라 경로 방향을 적용시킵니다.
-     */
-    void ApplyDir();
-
-    /**
      * @brief rT.txtㅇ에 저장되어 있는 드럼의 위치정보를 불러옵니다.
      */
     void GetDrumPositoin();

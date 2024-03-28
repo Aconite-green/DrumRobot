@@ -350,6 +350,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
+                if(mData.WristState == -1){
+
+                }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
@@ -1317,7 +1320,6 @@ void DrumRobot::initializePathManager()
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
     pathManager.SetReadyAng();
-    pathManager.ApplyDir();
 }
 
 void DrumRobot::clearMotorsSendBuffer()

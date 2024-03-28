@@ -64,7 +64,7 @@ public:
     double Kd;
 
     int sensorBit;
-    double homeOffset = 0;
+    double homeOffset = 0.0;
     double sensorLocation;
 
     // For Homing Session
