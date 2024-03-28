@@ -346,6 +346,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 maxonMotor->commandBuffer.pop();
                 if (mData.WristState == -1)
                 {
+                    maxonMotor->hitting = true;
                 }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
