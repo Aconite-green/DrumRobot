@@ -32,8 +32,15 @@ public:
     // Values
     float desPos, desVel, desTor;
     float currentPos, currentVel, currentTor;
+<<<<<<< HEAD
     int Kp;
     double Kd;
+=======
+
+    int Kp;
+    double Kd;
+
+>>>>>>> 8fc234d4f032bc8e7616285ddea40b247c4498de
     // For Homing Session
 
     bool isHomed;
@@ -63,7 +70,7 @@ public:
 
     int sensorBit;
     double homeOffset = 0.0;
-    double sensorLocation;
+    double sensorLocation = 0.0;
 
     // For Homing Session
     bool atFirstSensor, atSecondSensor, atZeroPosition;

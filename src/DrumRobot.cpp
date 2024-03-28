@@ -349,8 +349,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                if(mData.WristState == -1){
-
+                if (mData.WristState == -1)
+                {
                 }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
@@ -639,6 +639,11 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "x" && !(state.home == HomeSub::Done))
         {
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                    tMotor->sensorLocation = tMotor->currentPos;
+            }
             state.home = HomeSub::Done;
             return true;
         }
@@ -821,8 +826,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                
-                
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -834,8 +837,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-               
-                
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -847,8 +848,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-               
-                
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -860,8 +859,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                
-                
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -873,8 +870,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-               
-                
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -886,8 +881,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                
-                
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
