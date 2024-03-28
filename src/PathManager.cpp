@@ -74,11 +74,11 @@ void PathManager::getMotorPos()
         {
             if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
             {
-                tMotor->homeOffset = 90 * tMotor->cwDir - tMotor->sensorLocation;
+                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
             }
             else if (entry.first == "R_arm2" || entry.first == "L_arm2")
             {
-                tMotor->homeOffset = -30 * tMotor->cwDir - tMotor->sensorLocation;
+                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
             }
 
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
@@ -1124,7 +1124,7 @@ void PathManager::GetArr(vector<double> &arr)
 
     getMotorPos();
 
-    int n = 800;
+    int n = 800;    // 4초동안 실행
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
