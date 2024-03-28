@@ -885,7 +885,7 @@ void DrumRobot::initializeMotors()
             // 각 모터 이름에 따른 멤버 변수 설정
             if (motor_pair.first == "L_wrist")
             {
-                maxonMotor->cwDir = -1.0f;
+                maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -M_PI * 0.75f; // -120deg
                 maxonMotor->rMax = M_PI / 2.0f;   // 90deg
                 maxonMotor->isHomed = false;
