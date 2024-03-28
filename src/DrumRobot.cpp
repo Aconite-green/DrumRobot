@@ -149,7 +149,7 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); /*500ms*/
             break;
         case Main::Homing:
-            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon)
+            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
                 ReadProcess(5000);
             else
                 usleep(5000);
@@ -348,7 +348,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     maxonMotor->hitting = true;
                 }
-                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
                     isSafe = false;
@@ -514,7 +514,7 @@ void DrumRobot::SendAddStanceProcess()
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
 
-                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
                     std::cout << "Error Druing Addstance (Pos Diff) at " << motor_pair.first << "\n";
                     isSafe = false;
@@ -1131,7 +1131,7 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (initPosition > 1.5)
+            if (tmotor->myName == "waist" || initPosition > 1.5)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
