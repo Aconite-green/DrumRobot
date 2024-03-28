@@ -708,7 +708,6 @@ void DrumRobot::idealStateRoutine()
     usleep(2000);
 }
 
-
 void DrumRobot::checkUserInput()
 {
     if (kbhit())
@@ -823,7 +822,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                tMotor->giveOffset = true;
+                
+                
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -835,7 +835,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-                tMotor->giveOffset = true;
+               
+                
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -847,7 +848,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-                tMotor->giveOffset = true;
+               
+                
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -859,7 +861,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                tMotor->giveOffset = true;
+                
+                
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -871,7 +874,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-                tMotor->giveOffset = true;
+               
+                
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -883,7 +887,8 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                tMotor->giveOffset = true;
+                
+                
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -1135,12 +1140,30 @@ void DrumRobot::motorSettingCmd()
             canManager.sendAndRecv(motor, frame);
 
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
-            if (abs(std::get<1>(parsedData)) > 1.5)
+            float initPosition = abs(std::get<1>(parsedData));
+
+            if (name == "L_arm1" || name == "R_arm1")
+            {
+            }
+            else if (name == "L_arm2" || name == "R_arm2")
+            {
+            }
+            else if (name == "L_arm3" || name == "R_arm3")
+            {
+            }
+            else if (name == "L_wrist" || name == "R_wrist")
+            {
+            }
+            else if(name == "waist"){
+
+            }
+
+            if (initPosition > 1.5)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
-                
+
                 tmotorcmd.getQuickStop(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }

@@ -355,7 +355,7 @@ void HomeManager::HomeTmotor_test()
         targetRadians.clear();
         midpoints.clear();
         directions.clear();
-        degrees.clear();
+
         tMotors.clear();
 
         if (sensor.OpenDeviceUntilSuccess())
@@ -453,69 +453,30 @@ void HomeManager::HomeTmotor_test()
     case HomeTmotor::FillBuf:
     {
 
-        bool isForZero = true;
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            if ((tMotors[i]->giveOffset == true && tMotors[i]->isHomed))
-            {
-                isForZero = false;
-                break;
-            }
+            midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
+            tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
+            cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
+            cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
         }
-
-        if (isForZero)
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
             {
-                midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
-                tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
-                cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
-                cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
-            }
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
-                {
-                    degrees.push_back(-30.0);
-                    midpoints[i] = midpoints[i] * (-1);
-                }
-                else
-                {
-                    degrees.push_back(10.0);
-                }
-                directions.push_back(-tMotors[i]->cwDir);
+                midpoints[i] = midpoints[i] * (-1);
             }
 
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
-                targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
-                tMotors[i]->clearCommandBuffer();
-            }
+            directions.push_back(-tMotors[i]->cwDir);
         }
-        else
+
+        for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            cout << "Turning For offset\n";
-            degrees.clear();
-            midpoints.clear();
-            directions.clear();
-            targetRadians.clear();
-
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
-                degrees[i] = 0.0;
-                directions[i] = tMotors[i]->cwDir;
-                midpoints[i] = 0.0;
-            }
-
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
-                targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
-                tMotors[i]->clearCommandBuffer();
-                tMotors[i]->giveOffset = false;
-            }
+            targetRadians.push_back((midpoints[i]) * directions[i]);
+            tMotors[i]->clearCommandBuffer();
         }
 
-        int totalSteps = 4000 / 5;
+        int totalSteps = 1000 / 5;
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -529,7 +490,7 @@ void HomeManager::HomeTmotor_test()
             }
         }
 
-        totalSteps = 500 / 5;
+        totalSteps = 100 / 5;
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -562,16 +523,10 @@ void HomeManager::HomeTmotor_test()
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
-                if (tMotors[i]->isHomed)
-                {
-                    cout << "Buf for offset is Empty and now im going to done state\n";
-                    state.homeTmotor = HomeTmotor::Done;
-                }
-                else
-                {
-                    state.homeTmotor = HomeTmotor::SetZero;
-                }
+                tMotors[i]->isHomed = true;
             }
+
+            state.homeTmotor = HomeTmotor::Done;
         }
         else
         {
@@ -623,50 +578,6 @@ void HomeManager::HomeTmotor_test()
         }
 
         state.homeTmotor = HomeTmotor::CheckBuf;
-        break;
-    }
-    case HomeTmotor::SetZero:
-    {
-        // for (long unsigned int i = 0; i < tMotors.size(); i++)
-        //{
-        //     tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, 0, 0, 0, 5, 0);
-        //     if (canManager.sendMotorFrame(tMotors[i]))
-        //     {
-        //         cout << "Set " << tMotors[i]->myName << " speed Zero.\n";
-        //     }
-        //     usleep(50000);
-        //     tmotorcmd.getZero(*tMotors[i], &tMotors[i]->sendFrame);
-        //     if (canManager.sendMotorFrame(tMotors[i]))
-        //     {
-        //         cout << "Set Zero.\n";
-        //     }
-        // }
-        // cout << "Sleeping For 5 sec\n";
-        // sleep(5);
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
-            cout << tMotors[i]->myName << " Position : " << tMotors[i]->currentPos << "\n";
-            tMotors[i]->isHomed = true;
-        }
-
-        bool noHomeOffset = true;
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
-            if (tMotors[i]->giveOffset == true)
-            {
-                noHomeOffset = false;
-                break;
-            }
-        }
-
-        if (noHomeOffset)
-        {
-            state.homeTmotor = HomeTmotor::Done;
-        }
-        else
-        {
-            state.homeTmotor = HomeTmotor::FillBuf;
-        }
         break;
     }
     case HomeTmotor::Done:

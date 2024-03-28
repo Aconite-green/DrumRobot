@@ -34,7 +34,6 @@ enum class HomeTmotor
     CheckBuf,
     SafetyCheck,
     SendCANFrameForZeroPos,
-    SetZero,
     Done
 };
 

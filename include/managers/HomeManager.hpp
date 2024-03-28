@@ -64,7 +64,7 @@ private:
     vector<bool> firstSensorTriggered, TriggeredDone;
     vector<double> targetRadians;
     vector<float> midpoints;
-    vector<double> directions, degrees;
+    vector<double> directions;
     bool doneSensing;
 
     void displayHomingStatus();

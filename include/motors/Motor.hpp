@@ -34,12 +34,9 @@ public:
     float currentPos, currentVel, currentTor;
 
     // For Homing Session
-    bool atFirstSensor, atSecondSensor, atZeroPosition;
-    bool isHomed, giveOffset;
-    int homeOffset;
 
-    int Kp;
-    double Kd;
+    bool isHomed;
+
     std::queue<can_frame> recieveBuffer;
     std::queue<can_frame> sendBuffer;
     struct can_frame sendFrame;
@@ -63,10 +60,15 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
+    int Kp;
+    double Kd;
+
     int sensorBit;
     double homeOffset = 0.0;
     double sensorLocation;
 
+    // For Homing Session
+    bool atFirstSensor, atSecondSensor, atZeroPosition;
 
     std::queue<TMotorData> commandBuffer;
 
