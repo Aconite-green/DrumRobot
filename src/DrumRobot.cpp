@@ -149,7 +149,7 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); /*500ms*/
             break;
         case Main::Homing:
-            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon)
+            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
                 ReadProcess(5000);
             else
                 usleep(5000);
@@ -1130,7 +1130,7 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (initPosition > 1.5)
+            if (tmotor->myName == "waist" || initPosition > 1.5)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
