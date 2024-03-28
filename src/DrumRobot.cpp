@@ -350,6 +350,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
+                if(mData.WristState == -1){
+
+                }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error Druing Performance (Pos Diff)\n";
@@ -820,7 +823,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                tMotor->homeOffset = 10.0;
                 tMotor->giveOffset = true;
             }
             else if (motor_pair.first == "L_arm1")
@@ -833,7 +835,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-                tMotor->homeOffset = 10.0;
                 tMotor->giveOffset = true;
             }
             else if (motor_pair.first == "R_arm2")
@@ -846,7 +847,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-                tMotor->homeOffset = 0.0;
                 tMotor->giveOffset = true;
             }
             else if (motor_pair.first == "R_arm3")
@@ -859,7 +859,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                tMotor->homeOffset = 10.0;
                 tMotor->giveOffset = true;
             }
             else if (motor_pair.first == "L_arm2")
@@ -872,7 +871,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-                tMotor->homeOffset = 0.0;
                 tMotor->giveOffset = true;
             }
             else if (motor_pair.first == "L_arm3")
@@ -885,7 +883,6 @@ void DrumRobot::initializeMotors()
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                tMotor->homeOffset = 10.0;
                 tMotor->giveOffset = true;
             }
         }
@@ -1302,7 +1299,6 @@ void DrumRobot::initializePathManager()
     pathManager.GetDrumPositoin();
     pathManager.GetMusicSheet();
     pathManager.SetReadyAng();
-    pathManager.ApplyDir();
 }
 
 void DrumRobot::clearMotorsSendBuffer()

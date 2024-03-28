@@ -509,11 +509,6 @@ void HomeManager::HomeTmotor_test()
 
             for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
-                degrees[i] = tMotors[i]->homeOffset;
-            }
-
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
                 targetRadians.push_back((degrees[i] * M_PI / 180.0 + midpoints[i]) * directions[i]);
                 tMotors[i]->clearCommandBuffer();
                 tMotors[i]->giveOffset = false;

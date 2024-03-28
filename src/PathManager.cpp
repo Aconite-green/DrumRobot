@@ -18,7 +18,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            newData.position = (Qi[motor_mapping[entry.first]] + tMotor->homeOffset) * tMotor->cwDir;
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
@@ -42,16 +42,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
-
-void PathManager::ApplyDir()
-{ // CW / CCW에 따른 방향 적용
-    for (auto &entry : motors)
-    {
-        shared_ptr<GenericMotor> motor = entry.second;
-        standby[motor_mapping[entry.first]] *= motor->cwDir;
-        backarr[motor_mapping[entry.first]] *= motor->cwDir;
-    }
-}
 
 vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int k, int n)
 {
@@ -80,9 +70,19 @@ void PathManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
-        c_MotorAngle[motor_mapping[entry.first]] = entry.second->currentPos;
-        // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << entry.second->currentPos << "\n";
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
+            {
+                tMotor->homeOffset = 90 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+            else if (entry.first == "R_arm2" || entry.first == "L_arm2")
+            {
+                tMotor->homeOffset = -30 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+
+            c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+        }
     }
 }
 
@@ -648,6 +648,8 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
 
 vector<double> PathManager::fkfun()
 {
+    getMotorPos();
+
     vector<double> P;
     vector<double> theta(7);
     for (auto &motorPair : motors)
@@ -656,7 +658,7 @@ vector<double> PathManager::fkfun()
         auto &motor = motorPair.second;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
+            theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
     }
     double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
@@ -799,7 +801,8 @@ void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
     {
         for (auto &entry : motors)
         {
-            if(entry.first == "R_wrist"){
+            if (entry.first == "R_wrist")
+            {
                 std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
                 maxonMotor->targetPos = q7_madi(1);
             }
@@ -810,7 +813,8 @@ void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
     {
         for (auto &entry : motors)
         {
-            if(entry.first == "L_wrist" || entry.first == "maxonForTest"){
+            if (entry.first == "L_wrist" || entry.first == "maxonForTest")
+            {
                 std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
                 maxonMotor->targetPos = q8_madi(1);
             }
@@ -1078,7 +1082,7 @@ void PathManager::PathLoopTask()
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
-    SetTargetPos(State, t_wrist_madi);  // 타격시 새로운 손목 targetPos값 전달
+    SetTargetPos(State, t_wrist_madi); // 타격시 새로운 손목 targetPos값 전달
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
@@ -1096,7 +1100,7 @@ void PathManager::PathLoopTask()
 
         pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
         pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
-        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i);
+        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
@@ -1130,23 +1134,21 @@ void PathManager::GetArr(vector<double> &arr)
         // Send to Buffer
         for (auto &entry : motors)
         {
-            if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
-                newData.velocity = 0.0;
-                motor->commandBuffer.push(newData);
+                newData.position = (Qi[motor_mapping[entry.first]] + tmotor->homeOffset) * tmotor->cwDir;
+                newData.velocity = 0.5;
+                tmotor->commandBuffer.push(newData);
             }
-            else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
 
                 MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
-                motor->commandBuffer.push(newData);
+                maxonMotor->commandBuffer.push(newData);
             }
         }
     }
-
-    c_MotorAngle = Qi;
 }
