@@ -641,6 +641,8 @@ bool DrumRobot::processInput(const std::string &input)
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                     tMotor->sensorLocation = tMotor->currentPos;
             }
+
+            MaxonEnable();
             state.home = HomeSub::Done;
             return true;
         }

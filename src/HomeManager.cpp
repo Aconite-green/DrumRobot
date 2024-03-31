@@ -293,6 +293,7 @@ void HomeManager::SendHomeProcess()
         break;
     case HomeSub::Done:
         state.main = Main::Ideal;
+        MaxonEnable();        
         cout << "Press Enter\n";
         getchar();
         break;
