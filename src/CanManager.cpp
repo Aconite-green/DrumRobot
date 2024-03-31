@@ -384,6 +384,7 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
     std::cout << "Erase this function\n";
     return true;
 }
+
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
@@ -604,6 +605,24 @@ bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
     return true;
 }
 
+bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
+{
+    struct can_frame frame;
+    clearReadBuffers();
+
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    {
+        tmotorcmd.getControlMode(*tMotor, &frame);
+        txFrame(motor, frame);
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getSync(&frame);
+        txFrame(motor, frame);
+    }
+    return true;
+}
+
 bool CanManager::checkAllMotors()
 {
     bool allMotorsChecked = true;
@@ -629,6 +648,19 @@ bool CanManager::checkAllMotors_test()
         auto &motor = motorPair.second;
 
         sendForCheck(motor);
+    }
+    return true;
+}
+
+bool CanManager::checkAllMotors_Fixed()
+{
+
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        sendForCheck_Fixed(motor);
     }
     return true;
 }

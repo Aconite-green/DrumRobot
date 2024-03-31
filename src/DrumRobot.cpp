@@ -38,9 +38,11 @@ void DrumRobot::stateMachine()
             getchar();
             state.main = Main::Ideal;
             break;
+
         case Main::Ideal:
             idealStateRoutine();
             break;
+
         case Main::Homing:
             if (state.home == HomeSub::SelectMotorByUser)
             {
@@ -51,9 +53,11 @@ void DrumRobot::stateMachine()
                 checkUserInput();
             }
             break;
+
         case Main::Perform:
             checkUserInput();
             break;
+
         case Main::Check:
         {
             canManager.checkAllMotors_test();
@@ -70,19 +74,24 @@ void DrumRobot::stateMachine()
                 std::cout << "system clear error" << endl;
         }
         break;
+
         case Main::Tune:
             MaxonEnable();
             testManager.mainLoop();
             MaxonDisable();
             break;
+
         case Main::Shutdown:
             break;
+
         case Main::Pause:
             checkUserInput();
             break;
+
         case Main::AddStance:
             checkUserInput();
             break;
+
         case Main::Error:
             sleep(2);
             break;
@@ -102,32 +111,41 @@ void DrumRobot::sendLoopForThread()
         case Main::SystemInit:
             usleep(500000);
             break;
+
         case Main::Ideal:
-            canManager.checkAllMotors_test();
+            canManager.checkAllMotors_Fixed();
             usleep(200000);
             break;
+
         case Main::Homing:
             homeManager.SendHomeProcess();
             break;
+
         case Main::Perform:
             // SendLoop();
             SendPerformProcess(5000);
             break;
+
         case Main::AddStance:
             SendAddStanceProcess();
             break;
+
         case Main::Check:
             usleep(500000);
             break;
+
         case Main::Tune:
             usleep(500000);
             break;
+
         case Main::Shutdown:
             save_to_txt_inputData("../../READ/DrumData_in.txt");
             break;
+
         case Main::Pause:
             usleep(5000);
             break;
+
         case Main::Error:
             sleep(2);
             break;
@@ -145,33 +163,42 @@ void DrumRobot::recvLoopForThread()
         case Main::SystemInit:
             usleep(500000);
             break;
+
         case Main::Ideal:
             ReadProcess(200000); /*500ms*/
             break;
+
         case Main::Homing:
             if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
                 ReadProcess(5000);
             else
                 usleep(5000);
             break;
+
         case Main::Perform:
             ReadProcess(5000);
             break;
+
         case Main::AddStance:
             ReadProcess(5000);
             break;
+
         case Main::Check:
             ReadProcess(200000); // 200ms
             break;
+
         case Main::Tune:
             usleep(500000);
             break;
+
         case Main::Shutdown:
             parse_and_save_to_csv("../../READ/DrumData_out.txt");
             break;
+
         case Main::Pause:
             ReadProcess(5000); /*5ms*/
             break;
+
         case Main::Error:
             sleep(2);
             break;
@@ -435,7 +462,7 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::FillBuf:
     {
-        if (canManager.checkAllMotors_test())
+        if (canManager.checkAllMotors_Fixed())
         {
             if (getReady)
             {

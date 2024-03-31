@@ -199,6 +199,7 @@ void HomeManager::SendHomeProcess()
         state.home = HomeSub::MakeHomingOrderBuf;
         break;
     }
+    
     case HomeSub::MakeHomingOrderBuf:
     {
         if (motorName == "all")
@@ -231,6 +232,7 @@ void HomeManager::SendHomeProcess()
         state.home = HomeSub::GetSelectedMotor;
         break;
     }
+
     case HomeSub::GetSelectedMotor:
     {
         cout << "Now Im in GetSelectedMotor state\n";
@@ -283,18 +285,17 @@ void HomeManager::SendHomeProcess()
         // 이 부분에 호밍 작업이 모드 끝났을경우에 대한 처리를 할 것
         break;
     }
-    case HomeSub::HomeTmotor:
 
+    case HomeSub::HomeTmotor:
         HomeTmotor_test();
         break;
-    case HomeSub::HomeMaxon:
 
+    case HomeSub::HomeMaxon:
         HomeMaxon_test();
         break;
+
     case HomeSub::Done:
         state.main = Main::Ideal;
-        cout << "Press Enter\n";
-        getchar();
         break;
     }
 }
