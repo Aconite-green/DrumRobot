@@ -36,6 +36,89 @@ void HomeManager::UpdateHomingStatus()
     }
 }
 
+void HomeManager::saveHomingInfoToFile() {
+    // 실행 파일 위치인 bin 디렉토리로부터 상대 경로 설정
+    const std::string directory = "../include/managers/"; // bin의 상위 디렉토리에서 include/managers 접근
+    // 디렉토리 생성 시도 (이미 존재하면 무시)
+    mkdir(directory.c_str(), 0777); // 리눅스/유닉스 전용, 권한 설정 주의
+
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream fileName;
+    fileName << directory << "Homing_" << std::put_time(&tm, "%Y-%m-%d") << ".csv";
+
+    // 기존 파일이 존재하는지 확인 후 삭제
+    std::string filePath = fileName.str();
+    std::ifstream ifile(filePath);
+    if (ifile) {
+        std::remove(filePath.c_str());
+    }
+
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
+        std::cout << "Failed to open file for writing: " << filePath << std::endl;
+        return;
+    }
+
+    for (const auto& motor : motors) {
+        auto tMotor = std::dynamic_pointer_cast<TMotor>(motor.second);
+        if (tMotor) {
+            file << motor.first << ", " << tMotor->sensorLocation << std::endl;
+        }
+    }
+
+    file.close();
+}
+
+
+void HomeManager::loadHomingInfoFromFile() {
+    const std::string directory = "../include/managers/";
+    std::string command = "find " + directory + " -name 'Homing_*.csv' | sort -r | head -n 1";
+
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+
+    std::ifstream file(result); // 개행 문자가 포함될 수 있으니 제거 후 파일 열기
+    if (!file.is_open()) {
+        std::cout << "Failed to open the latest homing info file: " + result << std::endl;
+        return;
+    }
+
+    std::string line, motorName;
+    double sensorLocation;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        if (iss >> motorName >> sensorLocation) {
+            if (motors.find(motorName) != motors.end()) {
+                auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
+                if (tMotor) {
+                    tMotor->sensorLocation = sensorLocation;
+                }
+            }
+        }
+    }
+
+    file.close();
+}
+
+
+
+
+
+
+
+
+
+
+
 void HomeManager::MaxonEnable()
 {
     struct can_frame frame;
@@ -52,7 +135,6 @@ void HomeManager::MaxonEnable()
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
-
             sleep(2);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
@@ -60,7 +142,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
             std::cout << "Maxon Enabled(1) \n";
-            
+
             sleep(2);
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
@@ -68,7 +150,6 @@ void HomeManager::MaxonEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-           
             sleep(2);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
@@ -250,7 +331,7 @@ void HomeManager::SendHomeProcess()
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
                 {
-                    
+
                     setMaxonMode("HMM");
                     sleep(1);
                     MaxonEnable();
@@ -285,21 +366,19 @@ void HomeManager::SendHomeProcess()
     }
     case HomeSub::HomeTmotor:
 
-        HomeTmotor_test();
+        HomeTmotor();
         break;
     case HomeSub::HomeMaxon:
 
-        HomeMaxon_test();
+        HomeMaxon();
         break;
     case HomeSub::Done:
         state.main = Main::Ideal;
-        cout << "Press Enter\n";
-        getchar();
         break;
     }
 }
 
-void HomeManager::HomeTmotor_test()
+void HomeManager::HomeTmotor()
 {
     switch (state.homeTmotor.load())
     {
@@ -549,7 +628,7 @@ void HomeManager::HomeTmotor_test()
     }
 }
 
-void HomeManager::HomeMaxon_test()
+void HomeManager::HomeMaxon()
 {
     switch (state.homeMaxon.load())
     {

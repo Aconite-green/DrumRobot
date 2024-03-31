@@ -115,7 +115,6 @@ void DrumRobot::sendLoopForThread()
             homeManager.SendHomeProcess();
             break;
         case Main::Perform:
-            // SendLoop();
             SendPerformProcess(5000);
             break;
         case Main::AddStance:
