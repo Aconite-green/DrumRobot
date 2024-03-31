@@ -17,23 +17,109 @@ TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<st
 
 void TestManager::SendTestProcess()
 {
+    int method = 0;
 
     // 선택에 따라 testMode 설정
     switch (state.test.load())
     {
     case TestSub::SelectParamByUser:
-        // Get User Input 
+    {
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+
+        cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
+        cin >> method;
+
+        int userInput = 0;
+        if (method == 1)
+        {
+            cout << "[ Current Q Values ]\n";
+            for (int i = 0; i < 9; i++)
+            {
+                cout << "q[" << i << "] : " << q[i] << "\n";
+            }
+
+            cout << "\nSelect Motor to Change Value (0~8) or Start Test (9) : ";
+            cin >> userInput;
+
+            for (int i = 0; i < 9; i++)
+            {
+                if (userInput == i)
+                {
+                    cout << "Enter "
+                         << "q[" << i << "] value : ";
+                    cin >> q[i];
+                }
+            }
+
+            if (userInput == 9)
+            {
+                state.test = TestSub::FillBuf;
+            }
+        }
+        else if (method == 2)
+        {
+            cout << "[ Current x, y, z ]\n";
+            cout << "Right : ";
+            for (int i = 0; i < 3; i++)
+            {
+                cout << R_xyz[i] << ", ";
+            }
+            cout << "\nLeft : ";
+            for (int i = 0; i < 3; i++)
+            {
+                cout << L_xyz[i] << ", ";
+            }
+
+            cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) or Start Test (3) : ";
+            cin >> userInput;
+
+            if (userInput == 1)
+            {
+                cout << "Enter x, y, z Values : ";
+                cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
+            }
+            else if (userInput == 2)
+            {
+                cout << "Enter x, y, z Values : ";
+                cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
+            }
+            else if (userInput == 3)
+            {
+                state.test = TestSub::FillBuf;
+            }
+        }
+        else if (method == 4)
+        {
+            state.main = Main::Ideal;
+        }
+        // Get User Input
         /* method 1 : q[0]~q[8] 까지 값을 설정 후에 4초에 걸쳐서 해당 위치로 이동 (frame 800개)
            method 2 : Left, Right 에 대한 xyz 설정
            method 3 : 연속 동작?
            +Testing 환경에서 나갈지도 입력으로 받아야 함
         */
-        state.test = TestSub::FillBuf;
         break;
+    }
     case TestSub::FillBuf:
+    {
         // Fill motors command Buffer
+        if (method == 1)
+        {
+            GetArr(q);
+        }
+        else if (method == 2)
+        {
+            vector<double> Qf;
+            Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
+            Qf.push_back(0.0);                                  // 오른쪽 손목 각도
+            Qf.push_back(0.0);                                  // 왼쪽 손목 각도
+            GetArr(q);
+        }
         state.test = TestSub::CheckBuf;
         break;
+    }
     case TestSub::CheckBuf:
     {
         bool allBuffersEmpty = true;
@@ -145,6 +231,198 @@ void TestManager::SendTestProcess()
         state.test = TestSub::SelectParamByUser;
         break;
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Values Test Mode                           */
+///////////////////////////////////////////////////////////////////////////////
+
+void TestManager::getMotorPos(double c_MotorAngle[])
+{
+    // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
+            {
+                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+            else if (entry.first == "R_arm2" || entry.first == "L_arm2")
+            {
+                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+
+            c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+        }
+    }
+}
+
+vector<double> TestManager::connect(double Q1[], double Q2[], int k, int n)
+{
+    vector<double> Qi;
+    std::vector<double> A, B;
+
+    // Compute A and Bk
+    for (long unsigned int i = 0; i < 9; ++i)
+    {
+        A.push_back(0.5 * (Q1[i] - Q2[i]));
+        B.push_back(0.5 * (Q1[i] + Q2[i]));
+    }
+
+    // Compute Qi using the provided formula
+    for (long unsigned int i = 0; i < 9; ++i)
+    {
+        double val = A[i] * cos(M_PI * k / n) + B[i];
+        Qi.push_back(val);
+    }
+
+    return Qi;
+}
+
+void TestManager::GetArr(double arr[])
+{
+    cout << "Get Array...\n";
+
+    vector<double> Qi;
+    vector<vector<double>> q_setting;
+    double c_MotorAngle[9];
+
+    getMotorPos(c_MotorAngle);
+
+    int n = 800; // 4초동안 실행
+    for (int k = 0; k < n; ++k)
+    {
+        // Make GetBack Array
+        Qi = connect(c_MotorAngle, arr, k, n);
+        q_setting.push_back(Qi);
+
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = 0.5;
+                tmotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.WristState = 0.5;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+}
+
+vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
+{
+    double direction = 0.0 * M_PI;
+
+    double X1 = pR[0], Y1 = pR[1], z1 = pR[2];
+    double X2 = pL[0], Y2 = pL[1], z2 = pL[2];
+    double r1 = part_length[0];
+    double r2 = part_length[1] + part_length[4];
+    double L1 = part_length[2];
+    double L2 = part_length[3] + part_length[5];
+
+    int j = 0;
+    double the3[1351];
+    double zeta = z0 - z2;
+    vector<double> Qf;
+    double the0_f = 0;
+
+    // the3 배열 초기화
+    for (int i = 0; i < 1351; ++i)
+        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
+
+    for (int i = 0; i < 1351; ++i)
+    {
+        double det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
+
+        if (det_the4 < 1 && det_the4 > -1)
+        {
+            double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
+            double the4 = the34 - the3[i];
+
+            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
+            {
+                double r = r1 * sin(the3[i]) + r2 * sin(the34);
+                double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
+
+                if (det_the1 < 1 && det_the1 > -1)
+                {
+                    double the1 = acos(det_the1);
+                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
+                    {
+                        double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
+                        double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
+
+                        if (det_the0 < 1 && det_the0 > -1)
+                        {
+                            double the0 = asin(det_the0) - alpha;
+                            if (the0 > -M_PI / 2 && the0 < M_PI / 2) // the0 범위 : -90deg ~ 90deg
+                            {
+                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+
+                                if (det_the2 < 1 && det_the2 > -1)
+                                {
+                                    double the2 = acos(det_the2) - the0;
+                                    if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
+                                    {
+                                        double Lp = sqrt(L * L + zeta * zeta);
+                                        double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+
+                                        if (det_the6 < 1 && det_the6 > -1)
+                                        {
+                                            double the6 = acos(det_the6);
+                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
+                                            {
+                                                double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                double det_the5 = L * L + zeta * zeta - T * T;
+
+                                                if (det_the5 > 0)
+                                                {
+                                                    double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    sol /= (L * L + zeta * zeta);
+                                                    double the5 = asin(sol);
+                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
+                                                    {
+                                                        if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
+                                                        {
+                                                            Qf.push_back(the0);
+                                                            Qf.push_back(the1);
+                                                            Qf.push_back(the2);
+                                                            Qf.push_back(the3[i]);
+                                                            Qf.push_back(the4);
+                                                            Qf.push_back(the5);
+                                                            Qf.push_back(the6);
+
+                                                            the0_f = the0;
+                                                            j = 1;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (j == 0)
+        cout << "IKFUN is not solved!!\n";
+
+    return Qf;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
