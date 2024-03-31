@@ -7,6 +7,7 @@ HomeManager::HomeManager(State &stateRef,
 {
 }
 
+// Utility Function
 void HomeManager::displayHomingStatus()
 {
     std::cout << "Homing Status of Motors:\n";
@@ -36,7 +37,8 @@ void HomeManager::UpdateHomingStatus()
     }
 }
 
-void HomeManager::saveHomingInfoToFile() {
+void HomeManager::saveHomingInfoToFile()
+{
     // 실행 파일 위치인 bin 디렉토리로부터 상대 경로 설정
     const std::string directory = "../include/managers/"; // bin의 상위 디렉토리에서 include/managers 접근
     // 디렉토리 생성 시도 (이미 존재하면 무시)
@@ -50,19 +52,23 @@ void HomeManager::saveHomingInfoToFile() {
     // 기존 파일이 존재하는지 확인 후 삭제
     std::string filePath = fileName.str();
     std::ifstream ifile(filePath);
-    if (ifile) {
+    if (ifile)
+    {
         std::remove(filePath.c_str());
     }
 
     std::ofstream file(filePath);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cout << "Failed to open file for writing: " << filePath << std::endl;
         return;
     }
 
-    for (const auto& motor : motors) {
+    for (const auto &motor : motors)
+    {
         auto tMotor = std::dynamic_pointer_cast<TMotor>(motor.second);
-        if (tMotor) {
+        if (tMotor)
+        {
             file << motor.first << ", " << tMotor->sensorLocation << std::endl;
         }
     }
@@ -70,24 +76,27 @@ void HomeManager::saveHomingInfoToFile() {
     file.close();
 }
 
-
-void HomeManager::loadHomingInfoFromFile() {
+void HomeManager::loadHomingInfoFromFile()
+{
     const std::string directory = "../include/managers/";
     std::string command = "find " + directory + " -name 'Homing_*.csv' | sort -r | head -n 1";
 
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
-    if (!pipe) {
+    if (!pipe)
+    {
         throw std::runtime_error("popen() failed!");
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+    {
         result += buffer.data();
     }
     result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
 
     std::ifstream file(result); // 개행 문자가 포함될 수 있으니 제거 후 파일 열기
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cout << "Failed to open the latest homing info file: " + result << std::endl;
         return;
     }
@@ -95,30 +104,42 @@ void HomeManager::loadHomingInfoFromFile() {
     std::string line, motorName;
     double sensorLocation;
     while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        if (iss >> motorName >> sensorLocation) {
-            if (motors.find(motorName) != motors.end()) {
-                auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
-                if (tMotor) {
-                    tMotor->sensorLocation = sensorLocation;
-                }
+    std::cout << "Reading line: " << line << std::endl;
+    std::istringstream iss(line);
+    std::getline(iss, motorName, ','); // 쉼표까지 읽고 멈춤
+    iss >> std::ws; // 다음 입력에서 공백을 무시
+
+    if (iss >> sensorLocation) {
+        std::cout << "Parsed: " << motorName << " - " << sensorLocation << std::endl; // 파싱된 데이터 확인
+
+        if (motors.find(motorName) != motors.end()) {
+            auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
+            if (tMotor) {
+                tMotor->sensorLocation = sensorLocation;
             }
         }
     }
+}
+
+    for (auto &motor_pair : motors)
+    {
+        auto &motor = motor_pair.second;
+
+        // 타입에 따라 적절한 캐스팅과 초기화 수행
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        {
+            tMotor->isHomed = true;
+            std::cout << tMotor->myName << " : " << tMotor->sensorLocation << "\n";
+        }
+    }
+
+
+    
 
     file.close();
 }
 
-
-
-
-
-
-
-
-
-
-
+// Homing Process Function
 void HomeManager::MaxonEnable()
 {
     struct can_frame frame;
@@ -273,13 +294,15 @@ void HomeManager::SendHomeProcess()
     {
     case HomeSub::SelectMotorByUser:
     {
+
         displayHomingStatus();
 
-        std::cout << "Enter the name of the motor to home, or 'all' to home all motors: ";
+        std::cout << "Enter a 'motor name', 'all', 'load' for loading home file : ";
         std::cin >> motorName;
         state.home = HomeSub::MakeHomingOrderBuf;
         break;
     }
+
     case HomeSub::MakeHomingOrderBuf:
     {
         if (motorName == "all")
@@ -297,21 +320,29 @@ void HomeManager::SendHomeProcess()
 
                 HomingMotorsArr.push_back(temp);
             }
+            state.home = HomeSub::GetSelectedMotor;
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
         {
             vector<shared_ptr<GenericMotor>> temp;
             temp.push_back(motors[motorName]);
             HomingMotorsArr.push_back(temp);
+            state.home = HomeSub::GetSelectedMotor;
+        }
+        else if (motorName == "load")
+        {
+            loadHomingInfoFromFile();
+            state.home = HomeSub::Done;
+            state.main = Main::Ideal;
         }
         else
         {
-            std::cout << "Motor not found or already homed: " << motorName << std::endl;
+            std::cout << "Invalid Home command: " << motorName << std::endl;
+            state.home = HomeSub::SelectMotorByUser;
         }
-
-        state.home = HomeSub::GetSelectedMotor;
         break;
     }
+
     case HomeSub::GetSelectedMotor:
     {
         cout << "Now Im in GetSelectedMotor state\n";
@@ -364,16 +395,20 @@ void HomeManager::SendHomeProcess()
         // 이 부분에 호밍 작업이 모드 끝났을경우에 대한 처리를 할 것
         break;
     }
+
     case HomeSub::HomeTmotor:
 
         HomeTmotor();
         break;
+
     case HomeSub::HomeMaxon:
 
         HomeMaxon();
         break;
+
     case HomeSub::Done:
         state.main = Main::Ideal;
+        saveHomingInfoToFile();
         break;
     }
 }

@@ -59,8 +59,12 @@ public:
     bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
     
     bool checkAllMotors_test();
+
+    bool checkAllMotors_Fixed();
     
     bool sendForCheck(std::shared_ptr<GenericMotor> motor);
+
+    bool sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor);
     
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
