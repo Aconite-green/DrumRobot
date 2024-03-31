@@ -57,7 +57,6 @@ void DrumRobot::stateMachine()
         case Main::Perform:
             checkUserInput();
             break;
-
         case Main::Check:
         {
             canManager.checkAllMotors_test();
@@ -117,7 +116,6 @@ void DrumRobot::sendLoopForThread()
             break;
 
         case Main::Ideal:
-            canManager.checkAllMotors_Fixed();
             usleep(200000);
             break;
 
@@ -468,6 +466,7 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (canManager.checkAllMotors_Fixed())
         {
+            usleep(10000);
             if (getReady)
             {
                 pathManager.GetArr(pathManager.standby);
@@ -479,6 +478,12 @@ void DrumRobot::SendAddStanceProcess()
         }
         state.addstance = AddStanceSub::TimeCheck;
         break;
+
+
+
+
+
+        
     }
     case AddStanceSub::TimeCheck:
     {
@@ -825,7 +830,7 @@ void DrumRobot::initializeMotors()
     motors["L_wrist"] = make_shared<MaxonMotor>(0x009);
     motors["R_wrist"] = make_shared<MaxonMotor>(0x008);
     motors["maxonForTest"] = make_shared<MaxonMotor>(0x00A);
-
+    
     for (auto &motor_pair : motors)
     {
         auto &motor = motor_pair.second;
