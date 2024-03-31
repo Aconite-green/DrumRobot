@@ -59,7 +59,7 @@ void DrumRobot::stateMachine()
             break;
         case Main::Check:
         {
-            canManager.checkAllMotors_test();
+            canManager.checkAllMotors_Fixed();
             printCurrentPositions();
             std::cout << "Put any keyboard input\n";
             if (kbhit())
@@ -379,7 +379,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
-                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    std::cout << "Error Druing Perfom For" << maxonMotor->myName << " (Pos Diff)\n";
                     isSafe = false;
                     maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                     canManager.sendMotorFrame(maxonMotor);
@@ -398,7 +398,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 tMotor->commandBuffer.pop();
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing Performance (Pos Diff)\n";
+                    std::cout << "Error Druing Perfom For" << tMotor->myName << " (Pos Diff)\n";
                     isSafe = false;
                     tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
                     canManager.sendMotorFrame(tMotor);
@@ -546,7 +546,8 @@ void DrumRobot::SendAddStanceProcess()
 
                 if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
-                    std::cout << "Error Druing Addstance (Pos Diff) at " << motor_pair.first << "\n";
+                    std::cout << "Error Druing Addstance For" << maxonMotor->myName << " (Pos Diff)\n";
+
                     isSafe = false;
                     maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                     canManager.sendMotorFrame(maxonMotor);
@@ -567,7 +568,7 @@ void DrumRobot::SendAddStanceProcess()
 
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing Addstance (Pos Diff) at " << motor_pair.first << "\n";
+                    std::cout << "Error Druing Addstance For" << tMotor->myName << " (Pos Diff)\n";
                     isSafe = false;
                     tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
                     canManager.sendMotorFrame(tMotor);
@@ -824,7 +825,7 @@ void DrumRobot::initializeMotors()
     motors["L_wrist"] = make_shared<MaxonMotor>(0x009);
     motors["R_wrist"] = make_shared<MaxonMotor>(0x008);
     motors["maxonForTest"] = make_shared<MaxonMotor>(0x00A);
-    
+
     for (auto &motor_pair : motors)
     {
         auto &motor = motor_pair.second;
