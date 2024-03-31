@@ -17,8 +17,6 @@ TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<st
 
 void TestManager::SendTestProcess()
 {
-    int method = 0;
-
     // 선택에 따라 testMode 설정
     switch (state.test.load())
     {
@@ -40,20 +38,18 @@ void TestManager::SendTestProcess()
                 cout << "q[" << i << "] : " << q[i] << "\n";
             }
 
-            cout << "\nSelect Motor to Change Value (0~8) or Start Test (9) : ";
+            cout << "\nSelect Motor to Change Value (1) or Start Test (2) : ";
             cin >> userInput;
 
-            for (int i = 0; i < 9; i++)
+            if (userInput == 2)
             {
-                if (userInput == i)
+                cout << "Enter Q Values (Degree) : ";
+                for (int i = 0; i < 9; i++)
                 {
-                    cout << "Enter "
-                         << "q[" << i << "] value : ";
                     cin >> q[i];
                 }
             }
-
-            if (userInput == 9)
+            if (userInput == 1)
             {
                 state.test = TestSub::FillBuf;
             }
@@ -107,6 +103,10 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
+            for (int i = 0; i < 9; i++)
+            {
+                q[i] = q[i] / 180 * M_PI;
+            }
             GetArr(q);
         }
         else if (method == 2)

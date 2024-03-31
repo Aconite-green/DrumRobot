@@ -48,6 +48,7 @@ private:
     vector<string> InputData;
 
     /*For SendTestProcess*/
+    int method = 0;
     double q[9] = {0.0};
     double R_xyz[3] = {0.0};
     double L_xyz[3] = {0.0};

@@ -1011,6 +1011,8 @@ void PathManager::SetReadyAng()
     {
         standby[i] = qk(i);
     }
+    standby[7] = 0.0;
+    standby[8] = 0.0;
 }
 
 void PathManager::PathLoopTask()
