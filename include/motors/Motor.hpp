@@ -13,57 +13,100 @@
 #include <queue>
 #include <linux/can/raw.h>
 #include <iostream>
+#include <cmath>
 using namespace std;
-
 
 class GenericMotor
 {
 public:
-    uint32_t nodeId; 
-    std::string interFaceName; 
-    float desPos, desVel, desTor; 
-    float currentPos, currentVel, currentTor; 
-    float cwDir; 
-    bool isHomed, isConected; 
-    float rMin, rMax; 
-    int socket; 
-    int Kp; 
-    double Kd; 
-    std::queue<can_frame> sendBuffer; 
-    std::queue<can_frame> recieveBuffer; 
+    // For CAN communication
+    uint32_t nodeId;
+    int socket;
+    bool isConected;
+
+    // Motors Feature
+    float cwDir;
+    float rMin, rMax;
+    std::string myName;
+    std::string interFaceName;
+    // Values
+    float desPos, desVel, desTor;
+    float currentPos, currentVel, currentTor;
+    int Kp;
+    double Kd;
+    // For Homing Session
+
+    bool isHomed;
+
+    std::queue<can_frame> recieveBuffer;
+    std::queue<can_frame> sendBuffer;
+    struct can_frame sendFrame;
 
     GenericMotor(uint32_t nodeId);
     virtual ~GenericMotor() = default;
 
-    void clearSendBuffer(); 
-    void clearReceiveBuffer(); 
+    void clearSendBuffer();
+    void clearReceiveBuffer();
 };
 
+struct TMotorData
+{
+    float position;
+    float velocity;
+};
 
 class TMotor : public GenericMotor
 {
 public:
     TMotor(uint32_t nodeId, const std::string &motorType);
-    std::string motorType; 
+    std::string motorType;
 
-    int sensorBit; 
+    int sensorBit;
+    double homeOffset = 0.0;
+    double sensorLocation = 0.0;
+
+    // For Homing Session
+    bool atFirstSensor, atSecondSensor, atZeroPosition;
+
+    std::queue<TMotorData> commandBuffer;
+
+    void clearCommandBuffer();
 
 private:
 };
 
-
-
+struct MaxonData
+{
+    float position;
+    double WristState;
+};
 
 class MaxonMotor : public GenericMotor
 {
 public:
     MaxonMotor(uint32_t nodeId);
 
-    uint32_t canSendId; 
-    uint32_t canReceiveId; 
+    uint32_t canSendId;
+    uint32_t canReceiveId;
 
-    uint32_t txPdoIds[4]; 
-    uint32_t rxPdoIds[4]; 
+    uint32_t txPdoIds[4];
+    uint32_t rxPdoIds[4];
+
+    float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
+    int posIndex = 0;
+
+    bool hitting = false;
+
+    bool atPosition = false;
+    bool positioning = false;
+    float targetPos = M_PI / 2;
+
+    bool checked = false;
+
+    unsigned char statusBit;
+
+    std::queue<MaxonData> commandBuffer;
+    void clearCommandBuffer();
 };
 
 #endif // MOTOR_H

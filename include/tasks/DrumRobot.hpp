@@ -37,7 +37,6 @@ using namespace std;
 class DrumRobot
 {
 public:
-
     DrumRobot(State &StateRef,
               CanManager &canManagerRef,
               PathManager &pathManagerRef,
@@ -45,58 +44,65 @@ public:
               TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void stateMachine(); 
-    void sendLoopForThread(); 
-    void recvLoopForThread(); 
+    void stateMachine();
+    void sendLoopForThread();
+    void recvLoopForThread();
 
 private:
-    State &state; 
-    CanManager &canManager; 
-    PathManager &pathManager; 
-    HomeManager &homeManager; 
-    TestManager &testManager; 
-    std::map<std::string, std::shared_ptr<GenericMotor>> &motors; 
+    State &state;
+    CanManager &canManager;
+    PathManager &pathManager;
+    HomeManager &homeManager;
+    TestManager &testManager;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
-    TMotorCommandParser tmotorcmd; 
-    MaxonCommandParser maxoncmd; 
-    Sensor sensor; 
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
+    Sensor sensor;
 
-    chrono::system_clock::time_point StandardTime;
+    chrono::system_clock::time_point ReadStandard;
+    chrono::system_clock::time_point SendStandard;
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
 
     // State Utility 메소드들
-    void displayAvailableCommands() const; 
-    bool processInput(const std::string &input); 
-    void idealStateRoutine(); 
-    void checkUserInput(); 
-    void printCurrentPositions(); 
-    int kbhit(); 
+    void displayAvailableCommands() const;
+    bool processInput(const std::string &input);
+    void idealStateRoutine();
+    void checkUserInput();
+    void printCurrentPositions();
+    int kbhit();
 
-    bool isReady=false; 
-    bool isBack=false;
-    bool nonBlockSocket = false;
+    bool isReady = false; ///< 준비 상태 플래그.
+    bool getReady = false;
+    bool isBack = false; ///< 되돌아가기 플래그.
+    bool getBack = false;
 
     // System Initialize 메소드들
-    void initializeMotors(); 
-    void initializecanManager(); 
-    void DeactivateControlTask(); 
-    void motorSettingCmd(); 
-    void setMaxonMode(std::string targetMode); 
-    void MaxonEnable(); 
-    void MaxonDisable(); 
+    void initializeMotors();
+    void initializecanManager();
+    void DeactivateControlTask();
+    void motorSettingCmd();
+    void setMaxonMode(std::string targetMode);
+    void MaxonEnable();
+    void MaxonDisable();
 
     // Send Thread Loop 메소드들
-    void SendLoop(); 
-    void save_to_txt_inputData(const string &csv_file_name); 
-    void SendReadyLoop(); 
-    int writeFailCount; 
-    void initializePathManager(); 
-    void clearMotorsSendBuffer(); 
+   
+    void save_to_txt_inputData(const string &csv_file_name);
+    int writeFailCount;
+    int maxonMotorCount = 0;
+    void initializePathManager();
+    void clearMotorsSendBuffer();
+    void SendPerformProcess(int periodMicroSec);
+    void SendAddStanceProcess();
+    void clearMotorsCommandBuffer();
+
+    can_frame frame;
+    int temp=0;
 
     // Receive Thread Loop 메소드들
-    const int TIME_THRESHOLD_MS = 5; 
-    void RecieveLoop(); 
+    const int TIME_THRESHOLD_MS = 5;
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void ReadProcess(int periodMicroSec);
-
-    
+    bool dct_fun(float positions[], float vel_th);
 };

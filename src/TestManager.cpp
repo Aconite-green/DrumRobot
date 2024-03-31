@@ -176,7 +176,6 @@ void TestManager::SendLoop()
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotorCount++;
-            maxonCanInterface = maxonMotor->interFaceName;
             virtualMaxonMotor = motor_pair.second;
         }
     }
@@ -608,7 +607,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
             {
-                std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                std::tuple<int, float, float,int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                 position = std::get<1>(parsedData);
                 torque = std::get<2>(parsedData);
                 speed = 0.0;
@@ -874,7 +873,7 @@ void TestManager::TuningMaxonCSP(float sine_t, const std::string selectedMotor, 
                             frame = motors[selectedMotor]->recieveBuffer.front();
                             if (frame.can_id == maxonMotor->rxPdoIds[0])
                             {
-                                std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                                std::tuple<int, float, float, int8_t> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
 
                                 p_act = std::get<1>(result);
                                 tff_act = std::get<2>(result);
@@ -1285,7 +1284,7 @@ void TestManager::TuningMaxonCSV(const std::string selectedMotor, int des_vel, i
             else
             {
 
-                std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                std::tuple<int, float, float,int8_t> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
 
                 p_act = std::get<1>(result);
                 tff_act = std::get<2>(result);
@@ -1388,7 +1387,7 @@ void TestManager::TuningMaxonCST(const std::string selectedMotor, int des_tff, i
                     frame = motors[selectedMotor]->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
                     {
-                        std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                        std::tuple<int, float, float, int8_t> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
 
                         p_act = std::get<1>(result);
                         tff_act = std::get<2>(result);
@@ -1600,7 +1599,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
 
     canManager.setSocketsTimeout(0, 50000);
     std::string FileName1 = "../../READ/" + selectedMotor + "_cst_in.txt";
-
+    
     std::ofstream csvFileIn(FileName1);
 
     if (!csvFileIn.is_open())
@@ -1675,7 +1674,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                     frame = motors[selectedMotor]->recieveBuffer.front();
                     if (frame.can_id == maxonMotor->rxPdoIds[0])
                     {
-                        std::tuple<int, float, float> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                        std::tuple<int, float, float,int8_t> result = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
 
                         p_act = std::get<1>(result);
                         tff_act = std::get<2>(result);

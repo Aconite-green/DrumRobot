@@ -56,6 +56,12 @@ public:
 
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
 
+    bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
+    
+    bool checkAllMotors_test();
+    
+    bool sendForCheck(std::shared_ptr<GenericMotor> motor);
+    
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
@@ -70,9 +76,9 @@ public:
 
     void setSocketNonBlock();
     void setSocketBlock();
-    std::map<std::string, int> sockets; ///< 모터와 통신하는 소켓의 맵.
+    std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
     std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
-    int maxonCnt=0; ///< 연결된 Maxon 모터의 수.
+    int maxonCnt = 0;                        ///< 연결된 Maxon 모터의 수.
     std::map<int, int> motorsPerSocket;
 
 private:
