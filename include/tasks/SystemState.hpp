@@ -81,7 +81,8 @@ enum class TestSub
     TimeCheck,
     SafetyCheck,
     SendCANFrame,
-    Done
+    Done,
+    Check
 };
 
 struct State

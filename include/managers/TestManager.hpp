@@ -77,6 +77,7 @@ private:
     vector<double> connect(double Q1[], double Q2[], int k, int n);
     vector<double> ikfun_final(double pR[], double pL[], double part_length[], double s, double z0);
     void GetArr(double arr[]);
+   
      
 
     /*Hayeon Test Code*/
