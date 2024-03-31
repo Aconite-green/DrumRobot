@@ -70,10 +70,15 @@ void DrumRobot::stateMachine()
                 std::cout << "system clear error" << endl;
         }
         break;
-        case Main::Tune:
-            MaxonEnable();
-            testManager.mainLoop();
-            MaxonDisable();
+        case Main::Test:
+            if (state.test == TestSub::SelectParamByUser)
+            {
+                usleep(50000);
+            }
+            else
+            {
+                checkUserInput();
+            }
             break;
         case Main::Shutdown:
             break;
@@ -119,8 +124,8 @@ void DrumRobot::sendLoopForThread()
         case Main::Check:
             usleep(500000);
             break;
-        case Main::Tune:
-            usleep(500000);
+        case Main::Test:
+            testManager.SendTestProcess();
             break;
         case Main::Shutdown:
             save_to_txt_inputData("../../READ/DrumData_in.txt");
@@ -163,8 +168,11 @@ void DrumRobot::recvLoopForThread()
         case Main::Check:
             ReadProcess(200000); // 200ms
             break;
-        case Main::Tune:
-            usleep(500000);
+        case Main::Test:
+            if (!(state.test == TestSub::SelectParamByUser))
+                ReadProcess(5000);
+            else
+                usleep(5000);
             break;
         case Main::Shutdown:
             parse_and_save_to_csv("../../READ/DrumData_out.txt");
@@ -622,7 +630,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "t" && state.home == HomeSub::Done)
         {
-            state.main = Main::Tune;
+            state.main = Main::Test;
             return true;
         }
         else if (input == "r" && state.home == HomeSub::Done)
@@ -683,7 +691,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "t")
         {
-            state.main = Main::Tune;
+            state.main = Main::Test;
             return true;
         }
     }
