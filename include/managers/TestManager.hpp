@@ -29,79 +29,42 @@
 
 using namespace std;
 
-
 class TestManager
 {
 public:
-
     TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-   
-    void mainLoop();
-
-  
-    void multiTestLoop();
-
-   
-    void TestArr(double t, int cycles, int type, int LnR, double amp[]);
+    void SendTestProcess();
 
 private:
-    State &state; 
-    CanManager &canManager; 
-    std::map<std::string, std::shared_ptr<GenericMotor>> &motors; 
+    State &state;
+    CanManager &canManager;
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
-    TMotorCommandParser tmotorcmd; 
-    MaxonCommandParser maxoncmd; 
+    TMotorCommandParser tmotorcmd;
+    MaxonCommandParser maxoncmd;
 
-    vector<string> InputData; 
+    vector<string> InputData;
 
-   
-    
+    /*For SendTestProcess*/
+    double q[9] = {0.0};
+    double L_xyz[3] = {0.0};
+    double R_xyz[3] = {0.0};
 
+    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+    int maxonMotorCount = 0;
+     struct can_frame frame;
+     
 
+    /*Hayeon Test Code*/
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
-
-   
     void SendLoop();
-
-   
     void parse_and_save_to_csv(const std::string &csv_file_name);
+    void multiTestLoop();
+    void TestArr(double t, int cycles, int type, int LnR, double amp[]);
 
-  
-    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
-
-   
-    void TuningTmotor(float kp, float kd, float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-
-   
-    void TuningLoopTask();
-
-   
-    void InitializeParameters(const std::string selectedMotor, float &kp, float &kd, float &peakAngle, int &pathType, int &controlType, int &des_vel, int &des_tff, int &direction);
-
-   
-    void TuningMaxonCSP(float sine_t, const std::string selectedMotor, int cycles, float peakAngle, int pathType);
-
-    
-    void TuningMaxonCSV(const std::string selectedMotor, int des_vel, int direction);
-
-   
-    void TuningMaxonCST(const std::string selectedMotor, int des_tff, int direction);
-
-    
-  
-    void setMaxonMode(std::string targetMode);
-
-   
-    int kbhit();
-
-    
+    /*Stick Test Code*/
     void TestStickLoop();
-
-    
     void TestStick(const std::string selectedMotor, int des_tff, float tffThreshold, float posThreshold, int backTorqueUnit);
-
-    
     bool dct_fun(float positions[], float vel_th);
-
 };

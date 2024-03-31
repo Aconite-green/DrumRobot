@@ -27,6 +27,9 @@
 #include <cmath>
 #include <chrono>
 #include <set>
+#include <cstdio> // std::remove를 사용하기 위해 필요
+#include <sys/stat.h> // mkdir을 사용하기 위해 필요
+#include <cstdlib>
 
 using namespace std;
 
@@ -67,6 +70,8 @@ private:
     vector<double> directions;
     bool doneSensing;
 
+    void loadHomingInfoFromFile();
+    void saveHomingInfoToFile();
     void displayHomingStatus();
     void UpdateHomingStatus();
 
@@ -74,8 +79,6 @@ private:
     void MaxonEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
     void MaxonDisable();
-    void HomeTmotor_test();
-    void HomeMaxon_test();
-
-
+    void HomeTmotor();
+    void HomeMaxon();
 };
