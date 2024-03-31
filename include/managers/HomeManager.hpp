@@ -27,7 +27,7 @@
 #include <cmath>
 #include <chrono>
 #include <set>
-#include <cstdio> // std::remove를 사용하기 위해 필요
+#include <cstdio>     // std::remove를 사용하기 위해 필요
 #include <sys/stat.h> // mkdir을 사용하기 위해 필요
 #include <cstdlib>
 
@@ -40,8 +40,10 @@ public:
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    void mainLoop();
     void SendHomeProcess();
+    void setMaxonMode(std::string targetMode);
+    void MaxonEnable();
+    void MaxonDisable();
 
 private:
     State &state;
@@ -75,10 +77,8 @@ private:
     void displayHomingStatus();
     void UpdateHomingStatus();
 
-    void setMaxonMode(std::string targetMode);
-    void MaxonEnable();
     void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
-    void MaxonDisable();
+
     void HomeTmotor();
     void HomeMaxon();
 };

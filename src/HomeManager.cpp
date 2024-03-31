@@ -103,23 +103,27 @@ void HomeManager::loadHomingInfoFromFile()
 
     std::string line, motorName;
     double sensorLocation;
-    while (std::getline(file, line)) {
-    std::cout << "Reading line: " << line << std::endl;
-    std::istringstream iss(line);
-    std::getline(iss, motorName, ','); // 쉼표까지 읽고 멈춤
-    iss >> std::ws; // 다음 입력에서 공백을 무시
+    while (std::getline(file, line))
+    {
+        std::cout << "Reading line: " << line << std::endl;
+        std::istringstream iss(line);
+        std::getline(iss, motorName, ','); // 쉼표까지 읽고 멈춤
+        iss >> std::ws;                    // 다음 입력에서 공백을 무시
 
-    if (iss >> sensorLocation) {
-        std::cout << "Parsed: " << motorName << " - " << sensorLocation << std::endl; // 파싱된 데이터 확인
+        if (iss >> sensorLocation)
+        {
+            std::cout << "Parsed: " << motorName << " - " << sensorLocation << std::endl; // 파싱된 데이터 확인
 
-        if (motors.find(motorName) != motors.end()) {
-            auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
-            if (tMotor) {
-                tMotor->sensorLocation = sensorLocation;
+            if (motors.find(motorName) != motors.end())
+            {
+                auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
+                if (tMotor)
+                {
+                    tMotor->sensorLocation = sensorLocation;
+                }
             }
         }
     }
-}
 
     for (auto &motor_pair : motors)
     {
@@ -132,9 +136,6 @@ void HomeManager::loadHomingInfoFromFile()
             std::cout << tMotor->myName << " : " << tMotor->sensorLocation << "\n";
         }
     }
-
-
-    
 
     file.close();
 }
@@ -334,6 +335,11 @@ void HomeManager::SendHomeProcess()
             loadHomingInfoFromFile();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
+
+            canManager.setSocketBlock();
+            setMaxonMode("CSP");
+            MaxonDisable();
+            canManager.setSocketNonBlock();
         }
         else
         {

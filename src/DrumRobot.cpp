@@ -427,8 +427,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         }
         if (maxonMotorCount != 0)
         {
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(virtualMaxonMotor, frame);
+            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+            canManager.sendMotorFrame(virtualMaxonMotor);
         }
         state.perform = PerformSub::TimeCheck;
         break;
@@ -444,8 +444,8 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (getReady)
         {
-            MaxonEnable();
-            setMaxonMode("CSP");
+            homeManager.MaxonEnable();
+            homeManager.setMaxonMode("CSP");
             std::cout << "Get Ready...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -478,12 +478,6 @@ void DrumRobot::SendAddStanceProcess()
         }
         state.addstance = AddStanceSub::TimeCheck;
         break;
-
-
-
-
-
-        
     }
     case AddStanceSub::TimeCheck:
     {
@@ -605,8 +599,8 @@ void DrumRobot::SendAddStanceProcess()
 
         if (maxonMotorCount != 0)
         {
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(virtualMaxonMotor, frame);
+            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+            canManager.sendMotorFrame(virtualMaxonMotor);
         }
         state.addstance = AddStanceSub::TimeCheck;
         break;
@@ -1079,6 +1073,7 @@ void DrumRobot::motorSettingCmd()
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotorCount++;
+            virtualMaxonMotor = maxonMotor;
         }
     }
 

@@ -62,7 +62,7 @@ private:
 
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+    std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
     // State Utility 메소드들
     void displayAvailableCommands() const;
