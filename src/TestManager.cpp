@@ -41,7 +41,7 @@ void TestManager::SendTestProcess()
             cout << "\nSelect Motor to Change Value (1) or Start Test (2) : ";
             cin >> userInput;
 
-            if (userInput == 2)
+            if (userInput == 1)
             {
                 cout << "Enter Q Values (Degree) : ";
                 for (int i = 0; i < 9; i++)
@@ -49,7 +49,7 @@ void TestManager::SendTestProcess()
                     cin >> q[i];
                 }
             }
-            if (userInput == 1)
+            if (userInput == 2)
             {
                 state.test = TestSub::FillBuf;
             }
@@ -173,7 +173,7 @@ void TestManager::SendTestProcess()
                 }
                 if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
-                    std::cout << "Error Druing Test (Pos Diff)\n";
+                    std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
                     isSafe = false;
                     maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                     canManager.sendMotorFrame(maxonMotor);
@@ -192,7 +192,7 @@ void TestManager::SendTestProcess()
                 tMotor->commandBuffer.pop();
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing Test (Pos Diff)\n";
+                    std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
                     isSafe = false;
                     tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
                     canManager.sendMotorFrame(tMotor);
