@@ -83,6 +83,10 @@ void PathManager::getMotorPos()
 
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir;
+        }
     }
 }
 
@@ -1165,12 +1169,4 @@ void PathManager::GetArr(vector<double> &arr)
             }
         }
     }
-
-
-
-
-
-
-
-    
 }
