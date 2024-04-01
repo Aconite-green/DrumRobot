@@ -424,12 +424,19 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SendCANFrame:
     {
+        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                virtualMaxonMotor = maxonMotor;
+                needSync = true;
+            }
         }
-        if (maxonMotorCount != 0)
+
+        if (needSync)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
             canManager.sendMotorFrame(virtualMaxonMotor);
@@ -596,13 +603,19 @@ void DrumRobot::SendAddStanceProcess()
     case AddStanceSub::SendCANFrame:
     {
 
+         bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                virtualMaxonMotor = maxonMotor;
+                needSync = true;
+            }
         }
 
-        if (maxonMotorCount != 0)
+        if (needSync)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
             canManager.sendMotorFrame(virtualMaxonMotor);
