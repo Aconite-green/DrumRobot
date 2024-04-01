@@ -153,7 +153,7 @@ void TestManager::SendTestProcess()
     }
     case TestSub::CheckBuf:
     {
-        cout << "Check Buffer\n";
+
         bool allBuffersEmpty = true;
 
         for (const auto &motor_pair : motors)

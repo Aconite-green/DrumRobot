@@ -763,6 +763,11 @@ void DrumRobot::checkUserInput()
             else if (input == 's')
                 state.main = Main::Shutdown;
         }
+        else if (state.main == Main::Error)
+        {
+            if (input == 's')
+                state.main = Main::Shutdown;
+        }
         else
         {
             if (input == 'e')
