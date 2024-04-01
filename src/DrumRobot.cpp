@@ -96,7 +96,7 @@ void DrumRobot::stateMachine()
             break;
 
         case Main::Error:
-            sleep(2);
+            checkUserInput();
             break;
         }
     }
@@ -543,7 +543,9 @@ void DrumRobot::SendAddStanceProcess()
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-
+                cout << (maxonMotor->currentPos - mData.position) << "\n";
+                cout << "Current Pos : " << maxonMotor->currentPos << "\n";
+                cout << "Desired Pos : " << mData.position << "\n";
                 if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
                     std::cout << "Error Druing Addstance For" << maxonMotor->myName << " (Pos Diff)\n";

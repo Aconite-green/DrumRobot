@@ -202,10 +202,9 @@ void TestManager::SendTestProcess()
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                if (mData.WristState == -1)
-                {
-                    maxonMotor->hitting = true;
-                }
+                cout << (maxonMotor->currentPos - mData.position) << "\n";
+                cout << "Current Pos : " << maxonMotor->currentPos << "\n";
+                cout << "Desired Pos : " << mData.position << "\n";
                 if (abs(maxonMotor->currentPos - mData.position) > 0.1)
                 {
                     std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
@@ -370,7 +369,7 @@ void TestManager::GetArr(double arr[])
 
 
 
-    
+
 }
 
 vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
@@ -474,8 +473,10 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
         }
     }
 
-    if (j == 0)
+    if (j == 0){
         cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
+    }
 
     return Qf;
 }

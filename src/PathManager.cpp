@@ -645,7 +645,10 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     }
 
     if (j == 0)
+    {
         cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
+    }
 
     return Qf;
 }
