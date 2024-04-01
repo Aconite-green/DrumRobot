@@ -76,6 +76,8 @@ enum class ReadSub
 enum class TestSub
 {
     SelectParamByUser,
+    SetQValue,
+    SetXYZ,
     FillBuf,
     CheckBuf,
     TimeCheck,

@@ -22,6 +22,7 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
+        cnt = 0;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -29,62 +30,13 @@ void TestManager::SendTestProcess()
         cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
         cin >> method;
 
-        int userInput = 0;
         if (method == 1)
         {
-            cout << "[ Current Q Values ]\n";
-            for (int i = 0; i < 9; i++)
-            {
-                cout << "q[" << i << "] : " << q[i] << "\n";
-            }
-
-            cout << "\nSelect Motor to Change Value (1) or Start Test (2) : ";
-            cin >> userInput;
-
-            if (userInput == 1)
-            {
-                cout << "Enter Q Values (Degree) : ";
-                for (int i = 0; i < 9; i++)
-                {
-                    cin >> q[i];
-                }
-            }
-            if (userInput == 2)
-            {
-                state.test = TestSub::FillBuf;
-            }
+            state.test = TestSub::SetQValue;
         }
         else if (method == 2)
         {
-            cout << "[ Current x, y, z ]\n";
-            cout << "Right : ";
-            for (int i = 0; i < 3; i++)
-            {
-                cout << R_xyz[i] << ", ";
-            }
-            cout << "\nLeft : ";
-            for (int i = 0; i < 3; i++)
-            {
-                cout << L_xyz[i] << ", ";
-            }
-
-            cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) or Start Test (3) : ";
-            cin >> userInput;
-
-            if (userInput == 1)
-            {
-                cout << "Enter x, y, z Values : ";
-                cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
-            }
-            else if (userInput == 2)
-            {
-                cout << "Enter x, y, z Values : ";
-                cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
-            }
-            else if (userInput == 3)
-            {
-                state.test = TestSub::FillBuf;
-            }
+            state.test = TestSub::SetXYZ;
         }
         else if (method == 4)
         {
@@ -98,6 +50,70 @@ void TestManager::SendTestProcess()
         */
         break;
     }
+    case TestSub::SetQValue:
+    {
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+        cout << "[ Current Q Values ]\n";
+        for (int i = 0; i < 9; i++)
+        {
+            cout << "q[" << i << "] : " << q[i] << "\n";
+        }
+
+        cout << "\nSelect Motor to Change Value (1) or Start Test (2) : ";
+        cin >> userInput;
+
+        if (userInput == 1)
+        {
+            cout << "Enter Q Values (Degree) : ";
+            for (int i = 0; i < 9; i++)
+            {
+                cin >> q[i];
+            }
+        }
+        if (userInput == 2)
+        {
+            state.test = TestSub::FillBuf;
+        }
+        break;
+    }
+    case TestSub::SetXYZ:
+    {
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+        cout << "[ Current x, y, z ]\n";
+        cout << "Right : ";
+        for (int i = 0; i < 3; i++)
+        {
+            cout << R_xyz[i] << ", ";
+        }
+        cout << "\nLeft : ";
+        for (int i = 0; i < 3; i++)
+        {
+            cout << L_xyz[i] << ", ";
+        }
+
+        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) or Start Test (3) : ";
+        cin >> userInput;
+
+        if (userInput == 1)
+        {
+            cout << "Enter x, y, z Values : ";
+            cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
+        }
+        else if (userInput == 2)
+        {
+            cout << "Enter x, y, z Values : ";
+            cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
+        }
+        else if (userInput == 3)
+        {
+            state.test = TestSub::FillBuf;
+        }
+        break;
+    }
     case TestSub::FillBuf:
     {
         // Fill motors command Buffer
@@ -105,9 +121,13 @@ void TestManager::SendTestProcess()
         {
             for (int i = 0; i < 9; i++)
             {
-                q[i] = q[i] / 180 * M_PI;
+                q[i] = q[i] / 180 * M_PI; // Degree to Ladian
             }
             GetArr(q);
+            for (int i = 0; i < 9; i++)
+            {
+                q[i] = q[i] / M_PI * 180; // Ladian to Degree
+            }
         }
         else if (method == 2)
         {
@@ -115,13 +135,25 @@ void TestManager::SendTestProcess()
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
             Qf.push_back(0.0);                                  // 오른쪽 손목 각도
             Qf.push_back(0.0);                                  // 왼쪽 손목 각도
+            for (int i = 0; i < 9; i++)
+            {
+                q[i] = Qf[i];
+                cout << Qf[i] << " ";
+            }
+            cout << "\n";
+            sleep(1);
             GetArr(q);
+            for (int i = 0; i < 9; i++)
+            {
+                q[i] = q[i] / M_PI * 180; // Ladian to Degree
+            }
         }
         state.test = TestSub::CheckBuf;
         break;
     }
     case TestSub::CheckBuf:
     {
+        cout << "Check Buffer\n";
         bool allBuffersEmpty = true;
 
         for (const auto &motor_pair : motors)
@@ -155,9 +187,11 @@ void TestManager::SendTestProcess()
         break;
     }
     case TestSub::TimeCheck:
+    {
         usleep(5000);
         state.test = TestSub::SafetyCheck;
         break;
+    }
     case TestSub::SafetyCheck:
     {
         bool isSafe = true;
@@ -224,15 +258,17 @@ void TestManager::SendTestProcess()
             maxoncmd.getSync(&frame);
             canManager.txFrame(virtualMaxonMotor, frame);
         }
-        state.test = TestSub::TimeCheck;
+        state.test = TestSub::CheckBuf;
         break;
     }
     case TestSub::Done:
+    {
+        usleep(5000);
         state.test = TestSub::SelectParamByUser;
         break;
     }
+    }
 }
-
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Values Test Mode                           */
