@@ -626,7 +626,13 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
-                                                            Qf << the0, the1, the2, the3[i], the4, the5, the6;
+                                                            Qf(0) = the0;
+                                                            Qf(1) = the1;
+                                                            Qf(2) = the2;
+                                                            Qf(3) = the3[i];
+                                                            Qf(4) = the4;
+                                                            Qf(5) = the5;
+                                                            Qf(6) = the6;
                                                             the0_f = the0;
                                                             j = 1;
                                                         }
