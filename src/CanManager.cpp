@@ -511,6 +511,7 @@ void CanManager::distributeFramesToMotors()
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
+                    //하연아 계산 좀
                     tMotor->recieveBuffer.push(frame);
                 }
             }

@@ -187,10 +187,14 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); // 200ms
             break;
         case Main::Test:
-            if (!(state.test == TestSub::SelectParamByUser))
-                ReadProcess(5000);
-            else
+            if (state.test == TestSub::SelectParamByUser)
+            {
                 usleep(5000);
+            }
+            else
+            {
+                ReadProcess(5000);
+            }
             break;
 
         case Main::Shutdown:

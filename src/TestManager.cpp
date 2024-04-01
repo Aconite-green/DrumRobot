@@ -5,14 +5,7 @@ using namespace std;
 TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
-    for (const auto &motor_pair : motors)
-    {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonMotorCount++;
-        }
-    }
+    
 }
 
 void TestManager::SendTestProcess()
@@ -255,11 +248,10 @@ void TestManager::SendTestProcess()
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
         }
-        if (maxonMotorCount != 0)
-        {
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(virtualMaxonMotor, frame);
-        }
+
+        maxoncmd.getSync(&frame);
+        canManager.txFrame(virtualMaxonMotor, frame);
+
         state.test = TestSub::CheckBuf;
         break;
     }
@@ -361,16 +353,6 @@ void TestManager::GetArr(double arr[])
     }
 
     cout << "\n";
-
-
-
-
-
-
-
-
-
-    
 }
 
 vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
