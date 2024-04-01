@@ -195,6 +195,7 @@ void TestManager::SendTestProcess()
     case TestSub::SafetyCheck:
     {
         bool isSafe = true;
+        cout << cnt++ << ".\n";
         for (auto &motor_pair : motors)
         {
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -240,11 +241,6 @@ void TestManager::SendTestProcess()
                 }
             }
         }
-
-
-
-
-
 
         if (isSafe)
             state.test = TestSub::SendCANFrame;
@@ -363,6 +359,18 @@ void TestManager::GetArr(double arr[])
             }
         }
     }
+
+    cout << "\n";
+
+
+
+
+
+
+
+
+
+    
 }
 
 vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
