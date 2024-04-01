@@ -124,10 +124,12 @@ void TestManager::SendTestProcess()
         }
         else if (method == 2)
         {
-            vector<double> Qf;
+            vector<double> Qf(7);
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
+            cout << "Qf Size : " << Qf.size() << "\n";
             Qf.push_back(0.0);                                  // 오른쪽 손목 각도
             Qf.push_back(0.0);                                  // 왼쪽 손목 각도
+            cout << "Qf Size : " << Qf.size() << "\n";
             for (int i = 0; i < 9; i++)
             {
                 q[i] = Qf[i];
@@ -242,7 +244,7 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SendCANFrame:
     {
-         bool needSync = false;
+        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
@@ -386,7 +388,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
     int j = 0;
     double the3[1351];
     double zeta = z0 - z2;
-    vector<double> Qf;
+    vector<double> Qf(7);
     double the0_f = 0;
 
     // the3 배열 초기화
@@ -448,13 +450,13 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
-                                                            Qf.push_back(the0);
-                                                            Qf.push_back(the1);
-                                                            Qf.push_back(the2);
-                                                            Qf.push_back(the3[i]);
-                                                            Qf.push_back(the4);
-                                                            Qf.push_back(the5);
-                                                            Qf.push_back(the6);
+                                                            Qf[0] = the0;
+                                                            Qf[1] = the1;
+                                                            Qf[2] = the2;
+                                                            Qf[3] = the3[i];
+                                                            Qf[4] = the4;
+                                                            Qf[5] = the5;
+                                                            Qf[6] = the6;
 
                                                             the0_f = the0;
                                                             j = 1;
