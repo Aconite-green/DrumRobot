@@ -187,7 +187,7 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); // 200ms
             break;
         case Main::Test:
-            if (state.test == TestSub::SelectParamByUser)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ)
             {
                 usleep(5000);
             }
