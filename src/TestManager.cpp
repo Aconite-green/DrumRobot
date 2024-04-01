@@ -240,6 +240,12 @@ void TestManager::SendTestProcess()
                 }
             }
         }
+
+
+
+
+
+        
         if (isSafe)
             state.test = TestSub::SendCANFrame;
         else
