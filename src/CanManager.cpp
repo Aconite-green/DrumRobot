@@ -613,7 +613,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getControlMode(*tMotor, &frame);
+        tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tMotor->currentPos, 0, tMotor->Kp, tMotor->Kd, 0);
         txFrame(motor, frame);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
