@@ -70,7 +70,7 @@ private:
         {"L_wrist", 8},
         {"maxonForTest", 8}};
 
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+    std::shared_ptr<MaxonMotor> virtualMaxonMotor;
     int maxonMotorCount = 0;
      struct can_frame frame;
 

@@ -32,6 +32,7 @@ public:
     // Values
     float desPos, desVel, desTor;
     float currentPos, currentVel, currentTor;
+    float coordinatePos;
     int Kp;
     double Kd;
     // For Homing Session

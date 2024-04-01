@@ -5,18 +5,11 @@ using namespace std;
 TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : state(stateRef), canManager(canManagerRef), motors(motorsRef)
 {
-    for (const auto &motor_pair : motors)
-    {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonMotorCount++;
-        }
-    }
 }
 
 void TestManager::SendTestProcess()
 {
+
     // 선택에 따라 testMode 설정
     switch (state.test.load())
     {
@@ -249,15 +242,22 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SendCANFrame:
     {
+         bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                virtualMaxonMotor = maxonMotor;
+                needSync = true;
+            }
         }
-        if (maxonMotorCount != 0)
+
+        if (needSync)
         {
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(virtualMaxonMotor, frame);
+            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+            canManager.sendMotorFrame(virtualMaxonMotor);
         }
         state.test = TestSub::CheckBuf;
         break;
