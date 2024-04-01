@@ -477,7 +477,6 @@ void CanManager::setMotorsSocket()
             it = motors.erase(it);
         }
     }
-
 }
 
 void CanManager::readFramesFromAllSockets()
@@ -511,7 +510,7 @@ void CanManager::distributeFramesToMotors()
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
-                    //하연아 계산 좀
+                    // 하연아 계산 좀
                     tMotor->recieveBuffer.push(frame);
                 }
             }
@@ -613,7 +612,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tMotor->currentPos, 0, tMotor->Kp, tMotor->Kd, 0);
+        tmotorcmd.getControlMode(*tMotor, &tMotor->sendFrame);
         sendMotorFrame(tMotor);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

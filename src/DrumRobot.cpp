@@ -59,7 +59,12 @@ void DrumRobot::stateMachine()
             break;
         case Main::Check:
         {
-            canManager.checkAllMotors_Fixed();
+            bool sendCheckFrame =false;
+            if(!sendCheckFrame){
+                canManager.checkAllMotors_Fixed();
+                sendCheckFrame = true;
+            }
+            
             printCurrentPositions();
             std::cout << "Put any keyboard input\n";
             if (kbhit())
