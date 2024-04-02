@@ -380,7 +380,6 @@ void HomeManager::SendHomeProcess()
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
                 {
-
                     setMaxonMode("HMM");
                     sleep(1);
                     MaxonEnable();

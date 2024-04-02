@@ -391,10 +391,20 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 if (mData.WristState == -1) // Get to Torque Mode
                 {
                     maxonMotor->hitting = true;
+                    maxonMotor->atPosition = false;
                     maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
                     maxonMotor->isPositionMode = false;
                 }
-                else if (mData.WristState == 0) // Running on Torque Mode
+                else if (mData.WristState == -0.5) // In Position Mode
+                {
+                    maxonMotor->atPosition = false;
+                    if (!maxonMotor->isPositionMode)
+                    {
+                        maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+                        maxonMotor->isPositionMode = true;
+                    }
+                }
+                else
                 {
                     if (maxonMotor->hitting)
                     {
@@ -404,20 +414,15 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     {
                         maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 800 * maxonMotor->cwDir);
                     }
-                }
-                else if (mData.WristState == -0.5) // In Position Mode
-                {
-                    if (!maxonMotor->isPositionMode)
+                    else if (maxonMotor->atPosition)
                     {
                         maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                         maxonMotor->isPositionMode = true;
-                    }
-                    else if (maxonMotor->isPositionMode && maxonMotor->atPosition)
-                    {
+
                         float coordinationPos = (maxonMotor->targetPos) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - maxonMotor->targetPos) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                         {
-                            if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                            if (abs(maxonMotor->currentPos - maxonMotor->targetPos) > 0.2)
                             {
                                 std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Pos Diff)\n";
                             }
@@ -442,7 +447,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->targetPos);
                         }
                     }
-                    else if (maxonMotor->isPositionMode && !maxonMotor->atPosition)
+                    else    // !hitting, !positioning, !atPosition
                     {
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
@@ -931,8 +936,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 3;
-                tMotor->rMin = 0.0f;           // 0deg
-                tMotor->rMax = M_PI * 0.8;     // 144deg
+                tMotor->rMin = 0.0f;       // 0deg
+                tMotor->rMax = M_PI * 0.8; // 144deg
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
@@ -1225,10 +1230,10 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 20);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
             }
 
