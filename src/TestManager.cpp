@@ -9,12 +9,17 @@ TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<st
 
 void TestManager::SendTestProcess()
 {
-
     // 선택에 따라 testMode 설정
     switch (state.test.load())
     {
     case TestSub::SelectParamByUser:
     {
+        if(!isMaxonEnable){
+            MaxonEnable();
+            setMaxonMode("CSP");
+            isMaxonEnable = true;
+        }
+
         cnt = 0;
         int ret = system("clear");
         if (ret == -1)
@@ -200,7 +205,7 @@ void TestManager::SendTestProcess()
                 cout << (maxonMotor->currentPos - mData.position) << "\n";
                 cout << "Current Pos : " << maxonMotor->currentPos << "\n";
                 cout << "Desired Pos : " << mData.position << "\n";
-                if (abs(maxonMotor->currentPos - mData.position) > 0.1)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
                     isSafe = false;
@@ -273,6 +278,83 @@ void TestManager::SendTestProcess()
     }
 }
 
+void TestManager::MaxonEnable()
+{
+    struct can_frame frame;
+    canManager.setSocketsTimeout(2, 0);
+
+    // 제어 모드 설정
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        {
+
+            maxoncmd.getOperational(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            sleep(2);
+            maxoncmd.getEnable(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+            std::cout << "Maxon Enabled(1) \n";
+
+            sleep(2);
+            maxoncmd.getQuickStop(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            sleep(2);
+            maxoncmd.getEnable(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            std::cout << "Maxon Enabled(2) \n";
+        }
+    }
+};
+
+void TestManager::setMaxonMode(std::string targetMode)
+{
+    struct can_frame frame;
+    canManager.setSocketsTimeout(0, 10000);
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        {
+            if (targetMode == "CSV")
+            {
+                maxoncmd.getCSVMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CST")
+            {
+                maxoncmd.getCSTMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "HMM")
+            {
+                maxoncmd.getHomeMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CSP")
+            {
+                maxoncmd.getCSPMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+        }
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Values Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,15 +366,6 @@ void TestManager::getMotorPos(double c_MotorAngle[])
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
-            {
-                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-            else if (entry.first == "R_arm2" || entry.first == "L_arm2")
-            {
-                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

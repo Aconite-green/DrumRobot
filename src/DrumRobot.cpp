@@ -30,6 +30,7 @@ void DrumRobot::stateMachine()
         switch (state.main.load())
         {
         case Main::SystemInit:
+        {
             initializeMotors();
             initializecanManager();
             motorSettingCmd();
@@ -38,12 +39,15 @@ void DrumRobot::stateMachine()
             getchar();
             state.main = Main::Ideal;
             break;
-
+        }
         case Main::Ideal:
+        {
             idealStateRoutine();
+            sendCheckFrame = false;
             break;
-
+        }
         case Main::Homing:
+        {
             if (state.home == HomeSub::SelectMotorByUser)
             {
                 usleep(50000);
@@ -53,18 +57,20 @@ void DrumRobot::stateMachine()
                 checkUserInput();
             }
             break;
-
+        }
         case Main::Perform:
+        {
             checkUserInput();
             break;
+        }
         case Main::Check:
         {
-            bool sendCheckFrame =false;
-            if(!sendCheckFrame){
-                canManager.checkAllMotors_Fixed();
+            if (!sendCheckFrame)
+            {
+                canManager.checkAllMotors_test();
                 sendCheckFrame = true;
             }
-            
+
             printCurrentPositions();
             std::cout << "Put any keyboard input\n";
             if (kbhit())
@@ -76,9 +82,10 @@ void DrumRobot::stateMachine()
             int ret = system("clear");
             if (ret == -1)
                 std::cout << "system clear error" << endl;
+            break;
         }
-        break;
         case Main::Test:
+        {
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ)
             {
                 usleep(50000);
@@ -88,21 +95,26 @@ void DrumRobot::stateMachine()
                 checkUserInput();
             }
             break;
-
+        }
         case Main::Shutdown:
+        {
             break;
-
+        }
         case Main::Pause:
+        {
             checkUserInput();
             break;
-
+        }
         case Main::AddStance:
+        {
             checkUserInput();
             break;
-
+        }
         case Main::Error:
+        {
             checkUserInput();
             break;
+        }
         }
     }
     canManager.setSocketBlock();
@@ -191,15 +203,9 @@ void DrumRobot::recvLoopForThread()
         case Main::Check:
             ReadProcess(200000); // 200ms
             break;
+            
         case Main::Test:
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ)
-            {
-                usleep(5000);
-            }
-            else
-            {
-                ReadProcess(5000);
-            }
+            ReadProcess(5000);
             break;
 
         case Main::Shutdown:
@@ -386,7 +392,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     maxonMotor->hitting = true;
                 }
-                if (abs(maxonMotor->currentPos - mData.position) > 0.1)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error Druing Perfom For" << maxonMotor->myName << " (Pos Diff)\n";
                     isSafe = false;
@@ -460,8 +466,13 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (getReady)
         {
-            homeManager.MaxonEnable();
-            homeManager.setMaxonMode("CSP");
+            if (!testManager.isMaxonEnable)
+            {
+                homeManager.MaxonEnable();
+                homeManager.setMaxonMode("CSP");
+                testManager.isMaxonEnable = true;
+            }
+
             std::cout << "Get Ready...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -610,7 +621,7 @@ void DrumRobot::SendAddStanceProcess()
     case AddStanceSub::SendCANFrame:
     {
 
-         bool needSync = false;
+        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
@@ -694,7 +705,7 @@ bool DrumRobot::processInput(const std::string &input)
             for (auto &entry : motors)
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                    tMotor->sensorLocation = tMotor->currentPos;
+                    tMotor->homeOffset = 0.0;
             }
             state.home = HomeSub::Done;
             return true;
@@ -844,6 +855,7 @@ int DrumRobot::kbhit()
 
 void DrumRobot::initializeMotors()
 {
+
     motors["waist"] = make_shared<TMotor>(0x007, "AK10_9");
     motors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10");
@@ -1315,6 +1327,7 @@ void DrumRobot::MaxonDisable()
         }
     }
 }
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Send Thread Loop                           */
 ///////////////////////////////////////////////////////////////////////////////

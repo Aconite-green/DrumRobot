@@ -607,7 +607,6 @@ bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
 
 bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 {
-    struct can_frame frame;
     clearReadBuffers();
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))

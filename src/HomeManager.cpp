@@ -69,7 +69,16 @@ void HomeManager::saveHomingInfoToFile()
         auto tMotor = std::dynamic_pointer_cast<TMotor>(motor.second);
         if (tMotor)
         {
-            file << motor.first << ", " << tMotor->sensorLocation << std::endl;
+            if (motor.first == "R_arm1" || motor.first == "L_arm1" || motor.first == "R_arm3" || motor.first == "L_arm3")
+            {
+                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+            else if (motor.first == "R_arm2" || motor.first == "L_arm2")
+            {
+                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
+            }
+
+            file << motor.first << ", " << tMotor->homeOffset << std::endl;
         }
     }
 
@@ -102,7 +111,7 @@ void HomeManager::loadHomingInfoFromFile()
     }
 
     std::string line, motorName;
-    double sensorLocation;
+    double Offset;
     while (std::getline(file, line))
     {
         std::cout << "Reading line: " << line << std::endl;
@@ -110,16 +119,16 @@ void HomeManager::loadHomingInfoFromFile()
         std::getline(iss, motorName, ','); // 쉼표까지 읽고 멈춤
         iss >> std::ws;                    // 다음 입력에서 공백을 무시
 
-        if (iss >> sensorLocation)
+        if (iss >> Offset)
         {
-            std::cout << "Parsed: " << motorName << " - " << sensorLocation << std::endl; // 파싱된 데이터 확인
+            std::cout << "Parsed: " << motorName << " - " << Offset << std::endl; // 파싱된 데이터 확인
 
             if (motors.find(motorName) != motors.end())
             {
                 auto tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]);
                 if (tMotor)
                 {
-                    tMotor->sensorLocation = sensorLocation;
+                    tMotor->homeOffset = Offset;
                 }
             }
         }
@@ -133,7 +142,7 @@ void HomeManager::loadHomingInfoFromFile()
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
             tMotor->isHomed = true;
-            std::cout << tMotor->myName << " : " << tMotor->sensorLocation << "\n";
+            std::cout << tMotor->myName << " : " << tMotor->homeOffset << "\n";
         }
     }
 

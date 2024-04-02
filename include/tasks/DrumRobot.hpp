@@ -76,7 +76,7 @@ private:
     bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
-
+    bool sendCheckFrame = false;
     // System Initialize 메소드들
     void initializeMotors();
     void initializecanManager();
@@ -87,7 +87,7 @@ private:
     void MaxonDisable();
 
     // Send Thread Loop 메소드들
-   
+
     void save_to_txt_inputData(const string &csv_file_name);
     int writeFailCount;
     int maxonMotorCount = 0;
@@ -98,7 +98,7 @@ private:
     void clearMotorsCommandBuffer();
 
     can_frame frame;
-    int temp=0;
+    int temp = 0;
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;

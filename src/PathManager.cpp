@@ -72,15 +72,6 @@ void PathManager::getMotorPos()
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
-            {
-                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-            else if (entry.first == "R_arm2" || entry.first == "L_arm2")
-            {
-                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

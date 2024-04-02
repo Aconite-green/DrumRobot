@@ -36,6 +36,10 @@ public:
     TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     void SendTestProcess();
+    void MaxonEnable();
+    void setMaxonMode(std::string targetMode);
+
+    bool isMaxonEnable = false;
 
 private:
     State &state;
