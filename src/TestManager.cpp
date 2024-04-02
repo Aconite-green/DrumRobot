@@ -31,6 +31,10 @@ void TestManager::SendTestProcess()
         {
             state.test = TestSub::SetXYZ;
         }
+        else if (method == 3)
+        {
+            
+        }
         else if (method == 4)
         {
             state.main = Main::Ideal;
@@ -200,7 +204,7 @@ void TestManager::SendTestProcess()
                 cout << (maxonMotor->currentPos - mData.position) << "\n";
                 cout << "Current Pos : " << maxonMotor->currentPos << "\n";
                 cout << "Desired Pos : " << mData.position << "\n";
-                if (abs(maxonMotor->currentPos - mData.position) > 0.1)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
                     isSafe = false;
@@ -292,6 +296,7 @@ void TestManager::getMotorPos(double c_MotorAngle[])
             {
                 tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
             }
+            
 
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
@@ -490,7 +495,6 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
 void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp)
 {
     struct can_frame frame;
-
     int Kp_fixed = 450;
     double Kd_fixed = 4.5;
     map<string, bool> TestMotor;

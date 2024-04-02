@@ -85,6 +85,10 @@ public:
     int maxonCnt = 0;                        ///< 연결된 Maxon 모터의 수.
     std::map<int, int> motorsPerSocket;
 
+    // Functions for Thread Case  
+    bool safetyCheck(const std::string& errorMessagePart);
+
+
 private:
     std::vector<std::string> ifnames;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
