@@ -78,7 +78,7 @@ void HomeManager::saveHomingInfoToFile()
                 tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
             }
 
-            if(motor.first == "L_arm2")     // 센서 위치 이상한거 보정
+            if (motor.first == "L_arm2") // 센서 위치 이상한거 보정
                 tMotor->homeOffset += 6.0 / 180 * M_PI;
 
             file << motor.first << ", " << tMotor->homeOffset << std::endl;
@@ -169,7 +169,7 @@ void HomeManager::MaxonEnable()
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
-            sleep(2);
+            usleep(100000);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -177,14 +177,15 @@ void HomeManager::MaxonEnable()
             canManager.txFrame(motor, frame);
             std::cout << "Maxon Enabled(1) \n";
 
-            sleep(2);
+            usleep(100000);
+
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            sleep(2);
+            usleep(100000);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -382,7 +383,7 @@ void HomeManager::SendHomeProcess()
                 {
 
                     setMaxonMode("HMM");
-                    sleep(1);
+                    usleep(50000);
                     MaxonEnable();
                     state.homeMaxon = HomeMaxon::StartHoming;
                     state.home = HomeSub::HomeMaxon;

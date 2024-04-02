@@ -83,8 +83,6 @@ private:
     void DeactivateControlTask();
     void motorSettingCmd();
     void setMaxonMode(std::string targetMode);
-    void MaxonEnable();
-    void MaxonDisable();
 
     // Send Thread Loop 메소드들
 

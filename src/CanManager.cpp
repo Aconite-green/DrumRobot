@@ -683,15 +683,15 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             {
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
-                    std::cout << "Error Druing" << errorMessagePart << " For" << maxonMotor->myName << " (Pos Diff)\n";
+                    std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
                 }
                 else if (maxonMotor->rMin > coordinationPos)
                 {
-                    std::cout << "Error Druing " << errorMessagePart << " For" << maxonMotor->myName << " (Out of Range : Min)\n";
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
                 }
                 else
                 {
-                    std::cout << "Error Druing " << errorMessagePart << " For" << maxonMotor->myName << " (Out of Range : Max)\n";
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
                 }
 
                 isSafe = false;
@@ -715,15 +715,15 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             {
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing" << errorMessagePart << "For" << tMotor->myName << " (Pos Diff)\n";
+                    std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
                 }
                 else if (tMotor->rMin > coordinationPos)
                 {
-                    std::cout << "Error Druing " << errorMessagePart << "For" << tMotor->myName << " (Out of Range : Min)\n";
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
                 }
                 else
                 {
-                    std::cout << "Error Druing " << errorMessagePart << "For" << tMotor->myName << " (Out of Range : Max)\n";
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
                 }
 
                 isSafe = false;
