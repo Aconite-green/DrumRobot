@@ -14,7 +14,8 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
-        if(!isMaxonEnable){
+        if (!isMaxonEnable)
+        {
             MaxonEnable();
             setMaxonMode("CSP");
             isMaxonEnable = true;
@@ -38,7 +39,6 @@ void TestManager::SendTestProcess()
         }
         else if (method == 3)
         {
-            
         }
         else if (method == 4)
         {
@@ -136,8 +136,8 @@ void TestManager::SendTestProcess()
             vector<double> Qf(7);
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
             cout << "Qf Size : " << Qf.size() << "\n";
-            Qf.push_back(0.0);                                  // 오른쪽 손목 각도
-            Qf.push_back(0.0);                                  // 왼쪽 손목 각도
+            Qf.push_back(0.0); // 오른쪽 손목 각도
+            Qf.push_back(0.0); // 왼쪽 손목 각도
             cout << "Qf Size : " << Qf.size() << "\n";
             for (int i = 0; i < 9; i++)
             {
@@ -198,52 +198,7 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SafetyCheck:
     {
-        bool isSafe = true;
-        cout << cnt++ << ".\n";
-        for (auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                MaxonData mData = maxonMotor->commandBuffer.front();
-                maxonMotor->commandBuffer.pop();
-                cout << (maxonMotor->currentPos - mData.position) << "\n";
-                cout << "Current Pos : " << maxonMotor->currentPos << "\n";
-                cout << "Desired Pos : " << mData.position << "\n";
-                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
-                {
-                    std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
-                    isSafe = false;
-                    maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
-                    canManager.sendMotorFrame(maxonMotor);
-                    usleep(5000);
-                    maxoncmd.getSync(&maxonMotor->sendFrame);
-                    canManager.sendMotorFrame(maxonMotor);
-                }
-                else
-                {
-                    maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
-                }
-            }
-            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                TMotorData tData = tMotor->commandBuffer.front();
-                tMotor->commandBuffer.pop();
-                if (abs(tMotor->currentPos - tData.position) > 0.2)
-                {
-                    std::cout << "Error Druing Test (Pos Diff) at " << motor_pair.first << "\n";
-                    isSafe = false;
-                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
-                    canManager.sendMotorFrame(tMotor);
-                    usleep(5000);
-                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
-                    canManager.sendMotorFrame(tMotor);
-                }
-                else
-                {
-                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
-                }
-            }
-        }
+        bool isSafe = canManager.safetyCheck("Test");
 
         if (isSafe)
             state.test = TestSub::SendCANFrame;
@@ -439,16 +394,6 @@ void TestManager::GetArr(double arr[])
     }
 
     cout << "\n";
-
-
-
-
-
-
-
-
-
-
 }
 
 vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
@@ -552,7 +497,8 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
         }
     }
 
-    if (j == 0){
+    if (j == 0)
+    {
         cout << "IKFUN is not solved!!\n";
         state.main = Main::Error;
     }
