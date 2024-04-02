@@ -630,20 +630,10 @@ void HomeManager::HomeTmotor()
             TMotorData tData = tMotors[i]->commandBuffer.front();
             tMotors[i]->commandBuffer.pop();
             float coordinationPos = (tData.position + tMotors[i]->homeOffset) * tMotors[i]->cwDir;
-            if (abs(tMotors[i]->currentPos - tData.position) > 0.2|| tMotors[i]->rMin > coordinationPos || tMotors[i]->rMax < coordinationPos)
+            if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
             {
-                if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
-                {
-                    std::cout << "Error During Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
-                }
-                else if (tMotors[i]->rMin > coordinationPos)
-                {
-                    std::cout << "Error During Homing For" << tMotors[i]->myName << " (Out of Range : Min)\n";
-                }
-                else
-                {
-                    std::cout<< "Error During Homing For" << tMotors[i]->myName << " (Out of Range : Max)\n";
-                }
+
+                std::cout << "Error During Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
 
                 isSafe = false;
                 tmotorcmd.getQuickStop(*tMotors[i], &tMotors[i]->sendFrame);
