@@ -36,6 +36,10 @@ void TestManager::SendTestProcess()
         {
             state.test = TestSub::SetXYZ;
         }
+        else if (method == 3)
+        {
+            
+        }
         else if (method == 4)
         {
             state.main = Main::Ideal;
@@ -563,7 +567,6 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
 void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp)
 {
     struct can_frame frame;
-
     int Kp_fixed = 450;
     double Kd_fixed = 4.5;
     map<string, bool> TestMotor;
