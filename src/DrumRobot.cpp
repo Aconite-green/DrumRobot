@@ -381,7 +381,131 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SafetyCheck:
     {
-        bool isSafe = canManager.safetyCheck("Perform");
+        bool isSafe = true;
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                MaxonData mData = maxonMotor->commandBuffer.front();
+                maxonMotor->commandBuffer.pop();
+                if (mData.WristState == -1) // Get to Torque Mode
+                {
+                    maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
+                    maxonMotor->isPositionMode = false;
+                }
+                else if (mData.WristState == 0) // Running on Torque Mode
+                {
+                    if (maxonMotor->hitting)
+                    {
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 800 * maxonMotor->cwDir * (-1));
+                    }
+                    else if (maxonMotor->positioning)
+                    {
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 800 * maxonMotor->cwDir);
+                    }
+                }
+                else if (mData.WristState == -0.5) // In Position Mode
+                {
+                    if (!maxonMotor->isPositionMode)
+                    {
+                        maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+                        maxonMotor->isPositionMode = true;
+                    }
+                    else if (maxonMotor->isPositionMode && maxonMotor->atPosition)
+                    {
+                        float coordinationPos = (maxonMotor->targetPos) * maxonMotor->cwDir;
+                        if (abs(maxonMotor->currentPos - maxonMotor->targetPos) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+                        {
+                            if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                            {
+                                std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Pos Diff)\n";
+                            }
+                            else if (maxonMotor->rMin > coordinationPos)
+                            {
+                                std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                            }
+                            else
+                            {
+                                std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                            }
+
+                            isSafe = false;
+                            maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                            canManager.sendMotorFrame(maxonMotor);
+                            usleep(5000);
+                            maxoncmd.getSync(&maxonMotor->sendFrame);
+                            canManager.sendMotorFrame(maxonMotor);
+                        }
+                        else
+                        {
+                            maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->targetPos);
+                        }
+                    }
+                    else if (maxonMotor->isPositionMode && !maxonMotor->atPosition)
+                    {
+                        float coordinationPos = (mData.position) * maxonMotor->cwDir;
+                        if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+                        {
+                            if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                            {
+                                std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Pos Diff)\n";
+                            }
+                            else if (maxonMotor->rMin > coordinationPos)
+                            {
+                                std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                            }
+                            else
+                            {
+                                std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                            }
+                            isSafe = false;
+                            maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                            canManager.sendMotorFrame(maxonMotor);
+                            usleep(5000);
+                            maxoncmd.getSync(&maxonMotor->sendFrame);
+                            canManager.sendMotorFrame(maxonMotor);
+                        }
+                        else
+                        {
+                            maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+                        }
+                    }
+                }
+            }
+            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                TMotorData tData = tMotor->commandBuffer.front();
+                tMotor->commandBuffer.pop();
+                float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+                if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+                {
+                    if (abs(tMotor->currentPos - tData.position) > 0.2)
+                    {
+                        std::cout << "Error Druing Perform For " << tMotor->myName << " (Pos Diff)\n";
+                    }
+                    else if (tMotor->rMin > coordinationPos)
+                    {
+                        std::cout << "Error Druing Perform For " << tMotor->myName << " (Out of Range : Min)\n";
+                    }
+                    else
+                    {
+                        std::cout << "Error Druing Perform For " << tMotor->myName << " (Out of Range : Max)\n";
+                    }
+
+                    isSafe = false;
+                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
+                    usleep(5000);
+                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                    canManager.sendMotorFrame(tMotor);
+                }
+                else
+                {
+                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                }
+            }
+        }
+
         if (isSafe)
             state.perform = PerformSub::SendCANFrame;
         else
@@ -616,7 +740,7 @@ bool DrumRobot::processInput(const std::string &input)
                 {
 
                     tMotor->homeOffset = 0.0;
-                    tMotor->coordinatePos = (tMotor->currentPos*tMotor->homeOffset)*tMotor->cwDir;
+                    tMotor->coordinatePos = (tMotor->currentPos * tMotor->homeOffset) * tMotor->cwDir;
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
                 {
@@ -838,8 +962,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 5;
-                tMotor->rMin = -M_PI / 6.0f;    // -30deg
-                tMotor->rMax = M_PI * 0.75f;    // 135deg
+                tMotor->rMin = -M_PI / 6.0f; // -30deg
+                tMotor->rMax = M_PI * 0.75f; // 135deg
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
@@ -860,8 +984,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 2;
-                tMotor->rMin = -M_PI / 6.0f;    // -30deg
-                tMotor->rMax = M_PI * 0.75f;    // 135deg
+                tMotor->rMin = -M_PI / 6.0f; // -30deg
+                tMotor->rMax = M_PI * 0.75f; // 135deg
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
@@ -886,7 +1010,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_wrist")
             {
-                maxonMotor->cwDir = -M_PI * 0.5f;
+                maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = 0.0f;         // -90deg
                 maxonMotor->rMax = M_PI / 0.75f; // 120deg
                 maxonMotor->isHomed = false;

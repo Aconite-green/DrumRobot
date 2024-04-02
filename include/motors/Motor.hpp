@@ -97,7 +97,7 @@ public:
     int posIndex = 0;
 
     bool hitting = false;
-
+    bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
     float targetPos = M_PI / 2;

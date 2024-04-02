@@ -49,6 +49,7 @@ enum class PerformSub
     TimeCheck,
     CheckBuf,
     GeneratePath,
+    CheckMaxonState,
     SafetyCheck,
     SendCANFrame
 };
