@@ -203,7 +203,7 @@ void DrumRobot::recvLoopForThread()
         case Main::Check:
             ReadProcess(200000); // 200ms
             break;
-            
+
         case Main::Test:
             ReadProcess(5000);
             break;
@@ -867,7 +867,7 @@ void DrumRobot::initializeMotors()
             {
                 maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -M_PI * 0.5f; // -90deg
-                maxonMotor->rMax = M_PI / 0.75f;   // 120deg
+                maxonMotor->rMax = M_PI / 0.75f; // 120deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x209; // Controlword
                 maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
@@ -879,7 +879,7 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = -M_PI * 0.5f;
-                maxonMotor->rMin = 0.0f; // -90deg 
+                maxonMotor->rMin = 0.0f;         // -90deg
                 maxonMotor->rMax = M_PI / 0.75f; // 120deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword
@@ -1105,7 +1105,11 @@ void DrumRobot::motorSettingCmd()
         {
             tmotorcmd.getQuickStop(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
+            usleep(5000);
+            tmotorcmd.getControlMode(*tmotor, &frame);
+            canManager.sendAndRecv(motor, frame);
 
+            usleep(5000);
             tmotorcmd.getControlMode(*tmotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
@@ -1117,7 +1121,7 @@ void DrumRobot::motorSettingCmd()
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
-
+                usleep(5000);
                 tmotorcmd.getQuickStop(*tmotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
