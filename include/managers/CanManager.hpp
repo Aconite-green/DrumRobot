@@ -57,15 +57,15 @@ public:
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
 
     bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
-    
+
     bool checkAllMotors_test();
 
     bool checkAllMotors_Fixed();
-    
+
     bool sendForCheck(std::shared_ptr<GenericMotor> motor);
 
     bool sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor);
-    
+
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
@@ -85,9 +85,9 @@ public:
     int maxonCnt = 0;                        ///< 연결된 Maxon 모터의 수.
     std::map<int, int> motorsPerSocket;
 
-    // Functions for Thread Case  
-    bool safetyCheck(const std::string errorMessagePart);
+    // Functions for Thread Case
 
+    bool safetyCheck(std::string errorMessagePart);
 
 private:
     std::vector<std::string> ifnames;
