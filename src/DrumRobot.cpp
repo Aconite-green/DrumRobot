@@ -564,6 +564,13 @@ void DrumRobot::SendAddStanceProcess()
         }
         else if (getBack)
         {
+            if (!testManager.isMaxonEnable)
+            {
+                homeManager.MaxonEnable();
+                homeManager.setMaxonMode("CSP");
+                testManager.isMaxonEnable = true;
+            }
+            
             std::cout << "Get Back...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -648,7 +655,7 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::SafetyCheck:
     {
-        bool isSafe = canManager.safetyCheck("AddStance");
+        bool isSafe = canManager.safetyCheck("Add Stance");
         if (isSafe)
             state.addstance = AddStanceSub::SendCANFrame;
         else
@@ -1082,21 +1089,7 @@ void DrumRobot::DeactivateControlTask()
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
-            {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                    {
-                        std::cout << "Exiting for motor [" << name << "]" << std::endl;
-                        break;
-                    }
-                    motor->recieveBuffer.pop();
-                }
-            }
-            else
-                std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
+            std::cout << "Exiting for motor [" << name << "]" << std::endl;
         }
     }
 }
@@ -1268,116 +1261,8 @@ void DrumRobot::motorSettingCmd()
     }
 }
 
-void DrumRobot::MaxonEnable()
-{
-    struct can_frame frame;
-    canManager.setSocketsTimeout(2, 0);
 
-    for (const auto &motor_pair : motors)
-    {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            maxonMotorCount++;
-    }
 
-    // 제어 모드 설정
-    for (const auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        std::shared_ptr<GenericMotor> motor = motorPair.second;
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-        {
-
-            maxoncmd.getOperational(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getEnable(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
-            {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                        std::cout << "Maxon Enabled \n";
-                    motor->recieveBuffer.pop();
-                }
-            }
-
-            maxoncmd.getQuickStop(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
-            {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                        std::cout << "Maxon Quick Stopped\n";
-                    motor->recieveBuffer.pop();
-                }
-            }
-
-            maxoncmd.getEnable(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
-            {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                        std::cout << "Maxon Enabled \n";
-                    motor->recieveBuffer.pop();
-                }
-            }
-        }
-    }
-};
-
-void DrumRobot::MaxonDisable()
-{
-    struct can_frame frame;
-
-    canManager.setSocketsTimeout(0, 50000);
-
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-        {
-            maxoncmd.getQuickStop(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
-
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
-            if (canManager.recvToBuff(motor, canManager.maxonCnt))
-            {
-                while (!motor->recieveBuffer.empty())
-                {
-                    frame = motor->recieveBuffer.front();
-                    if (frame.can_id == maxonMotor->rxPdoIds[0])
-                        break;
-                    motor->recieveBuffer.pop();
-                }
-            }
-            else
-                std::cerr << "Failed to exit for motor [" << name << "]." << std::endl;
-        }
-    }
-}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Send Thread Loop                           */
