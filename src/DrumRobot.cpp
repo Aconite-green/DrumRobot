@@ -390,6 +390,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 maxonMotor->commandBuffer.pop();
                 if (mData.WristState == -1) // Get to Torque Mode
                 {
+                    maxonMotor->hitting = true;
                     maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
                     maxonMotor->isPositionMode = false;
                 }
