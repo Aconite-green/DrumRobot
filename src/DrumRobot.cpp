@@ -797,8 +797,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 3;
-                tMotor->rMin = -M_PI; // -180deg
-                tMotor->rMax = 0.0f;  // 0deg
+                tMotor->rMin = 0.0f;           // 0deg
+                tMotor->rMax = M_PI * (4 / 5); // 144deg
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
@@ -808,8 +808,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 0;
-                tMotor->rMin = 0.0f; // 0deg
-                tMotor->rMax = M_PI; // 180deg
+                tMotor->rMin = M_PI / 5; // 36deg
+                tMotor->rMax = M_PI;     // 180deg
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
@@ -830,8 +830,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 5;
-                tMotor->rMin = -M_PI * 0.75f; // -135deg
-                tMotor->rMax = 0.0f;          // 0deg
+                tMotor->rMin = -M_PI / 6.0f;    // -30deg
+                tMotor->rMax = M_PI * 0.75f;    // 135deg
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
@@ -841,8 +841,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 1;
-                tMotor->rMin = -M_PI / 2.0f; // -90deg
-                tMotor->rMax = M_PI / 4.0f;  // 45deg
+                tMotor->rMin = -M_PI / 4.0f; // -45deg
+                tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->Kp = 350;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
@@ -852,8 +852,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 2;
-                tMotor->rMin = -M_PI * 0.75f; // -135deg
-                tMotor->rMax = 0.0f;          // 0deg
+                tMotor->rMin = -M_PI / 6.0f;    // -30deg
+                tMotor->rMax = M_PI * 0.75f;    // 135deg
                 tMotor->Kp = 250;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = false;

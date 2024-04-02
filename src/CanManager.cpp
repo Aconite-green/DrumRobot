@@ -669,7 +669,7 @@ bool CanManager::checkAllMotors_Fixed()
 /*                                Functions for Thread Case                                      */
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CanManager::safetyCheck(const std::string &errorMessagePart)
+bool CanManager::safetyCheck(std::string errorMessagePart)
 {
     bool isSafe = true;
     for (auto &motor_pair : motors)
@@ -715,15 +715,15 @@ bool CanManager::safetyCheck(const std::string &errorMessagePart)
             {
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
-                    std::cout << "Error Druing" << errorMessagePart << "For" << maxonMotor->myName << " (Pos Diff)\n";
+                    std::cout << "Error Druing" << errorMessagePart << "For" << tMotor->myName << " (Pos Diff)\n";
                 }
                 else if (tMotor->rMin > coordinationPos)
                 {
-                    std::cout << "Error Druing " << errorMessagePart << "For" << maxonMotor->myName << " (Out of Range : Min)\n";
+                    std::cout << "Error Druing " << errorMessagePart << "For" << tMotor->myName << " (Out of Range : Min)\n";
                 }
                 else
                 {
-                    std::cout << "Error Druing " << errorMessagePart << "For" << maxonMotor->myName << " (Out of Range : Max)\n";
+                    std::cout << "Error Druing " << errorMessagePart << "For" << tMotor->myName << " (Out of Range : Max)\n";
                 }
 
                 isSafe = false;
