@@ -629,7 +629,6 @@ void HomeManager::HomeTmotor()
         {
             TMotorData tData = tMotors[i]->commandBuffer.front();
             tMotors[i]->commandBuffer.pop();
-            float coordinationPos = (tData.position + tMotors[i]->homeOffset) * tMotors[i]->cwDir;
             if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
             {
 

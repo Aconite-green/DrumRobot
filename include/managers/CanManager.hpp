@@ -86,7 +86,7 @@ public:
     std::map<int, int> motorsPerSocket;
 
     // Functions for Thread Case  
-    bool safetyCheck(const std::string& errorMessagePart);
+    bool safetyCheck(const std::string errorMessagePart);
 
 
 private:
