@@ -782,28 +782,37 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
 
     if (time_madi(0) == 0.0)
     {
-        if (t_now >= time_madi(0) && t_now < time_madi(1))
+        if (abs(t_now - time_madi(0)) < 0.001)
         {
             q7_isTorq = -0.5;
             q8_isTorq = -0.5;
         }
-        else if (t_now >= time_madi(1) && t_now < time_madi(2))
+        else if (abs(t_now - time_madi(1) < 0.001))
         {
-            q7_isTorq = time_madi(1);
-            q8_isTorq = time_madi(1);
+            q7_isTorq = q7_state(1);
+            q8_isTorq = q8_state(1);
+        }
+        else{
+            q7_isTorq = 0.0;
+            q8_isTorq = 0.0;
         }
     }
-    else if (t_now >= time_madi(0) && t_now < time_madi(1))
-    {
-        q7_isTorq = time_madi(0);
-        q8_isTorq = time_madi(0);
+    else{
+        if (abs(t_now - time_madi(0)) < 0.001)
+        {
+            q7_isTorq = q7_state(0);
+            q8_isTorq = q8_state(0);
+        }
+        else if (abs(t_now - time_madi(1) < 0.001))
+        {
+            q7_isTorq = q7_state(1);
+            q8_isTorq = q8_state(1);
+        }
+        else{
+            q7_isTorq = 0.0;
+            q8_isTorq = 0.0;
+        }
     }
-    else if (t_now >= time_madi(1) && t_now < time_madi(2))
-    {
-        q7_isTorq = time_madi(1);
-        q8_isTorq = time_madi(1);
-    }
-
     return std::make_pair(q7_isTorq, q8_isTorq);
 }
 

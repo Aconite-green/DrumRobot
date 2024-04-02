@@ -759,7 +759,7 @@ bool DrumRobot::processInput(const std::string &input)
         {
             if (state.home == HomeSub::Done)
             {
-                if (isReady)
+                if (!isBack)
                 {
                     state.main = Main::AddStance;
                     getBack = true;
@@ -785,6 +785,7 @@ bool DrumRobot::processInput(const std::string &input)
         else if (input == "p" && isReady)
         {
             state.main = Main::Perform;
+            isReady = false;
             return true;
         }
         else if (input == "t")
@@ -930,7 +931,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 3;
                 tMotor->rMin = 0.0f;           // 0deg
-                tMotor->rMax = M_PI * (4 / 5); // 144deg
+                tMotor->rMax = M_PI * 0.8;     // 144deg
                 tMotor->Kp = 200;
                 tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
@@ -1011,7 +1012,7 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = 0.0f;         // -90deg
+                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
                 maxonMotor->rMax = M_PI / 0.75f; // 120deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword

@@ -78,6 +78,9 @@ void HomeManager::saveHomingInfoToFile()
                 tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
             }
 
+            if(motor.first == "L_arm2")     // 센서 위치 이상한거 보정
+                tMotor->homeOffset += 6.0 / 180 * M_PI;
+
             file << motor.first << ", " << tMotor->homeOffset << std::endl;
         }
     }
@@ -631,7 +634,6 @@ void HomeManager::HomeTmotor()
             tMotors[i]->commandBuffer.pop();
             if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
             {
-
                 std::cout << "Error During Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
 
                 isSafe = false;
