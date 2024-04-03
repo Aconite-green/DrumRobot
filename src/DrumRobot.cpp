@@ -284,12 +284,12 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                 {
                     if (dct_fun(maxonMotor->positionValues, 0))
                     {
-                        cout << "Htting True!\n";
+                        cout << "Htting True!!!!!!!!!!!!!!!!!\n";
                         maxonMotor->positioning = true;
                         maxonMotor->hitting = false;
                     }
                     else
-                        cout << "False..\n";
+                        cout << "Htting..\n";
                     maxonMotor->checked = true;
                 }
             }
@@ -306,12 +306,12 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                 {
                     if (maxonMotor->targetPos < maxonMotor->currentPos)
                     {
-                        cout << "Positioning True!\n";
+                        cout << "Positioning True!!!!!!!!!!!!!!!!!!!11\n";
                         maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
                         maxonMotor->positioning = false;
                     }
                     else
-                        cout << "False..\n";
+                        cout << "Positioning..\n";
                     maxonMotor->checked = true;
                 }
             }
@@ -423,7 +423,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 200 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 150 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
