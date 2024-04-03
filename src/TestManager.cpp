@@ -253,7 +253,7 @@ void TestManager::MaxonEnable()
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
-            sleep(2);
+            usleep(100000);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -261,14 +261,15 @@ void TestManager::MaxonEnable()
             canManager.txFrame(motor, frame);
             std::cout << "Maxon Enabled(1) \n";
 
-            sleep(2);
+            usleep(100000);
+
             maxoncmd.getQuickStop(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
 
-            sleep(2);
+            usleep(100000);
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 

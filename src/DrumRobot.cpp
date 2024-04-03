@@ -203,15 +203,12 @@ void DrumRobot::recvLoopForThread()
         case Main::Check:
             ReadProcess(200000); // 200ms
             break;
-
         case Main::Test:
             ReadProcess(5000);
             break;
-
         case Main::Shutdown:
             parse_and_save_to_csv("../../READ/DrumData_out.txt");
             break;
-
         case Main::Pause:
             ReadProcess(5000); /*5ms*/
             break;
@@ -270,9 +267,13 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                     state.read = ReadSub::CheckReachedPosition;
                     break;
                 }
+                else
+                {
+                    state.read = ReadSub::TimeCheck;
+                }
             }
         }
-        state.read = ReadSub::TimeCheck;
+
         break;
     case ReadSub::CheckDrumHit:
         for (auto &motor_pair : motors)
@@ -447,7 +448,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->targetPos);
                         }
                     }
-                    else    // !hitting, !positioning, !atPosition
+                    else // !hitting, !positioning, !atPosition
                     {
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
@@ -570,7 +571,7 @@ void DrumRobot::SendAddStanceProcess()
                 homeManager.setMaxonMode("CSP");
                 testManager.isMaxonEnable = true;
             }
-            
+
             std::cout << "Get Back...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -1206,6 +1207,9 @@ void DrumRobot::motorSettingCmd()
 
                 maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
             }
             else if (name == "R_wrist")
             {
@@ -1216,6 +1220,9 @@ void DrumRobot::motorSettingCmd()
                 canManager.sendAndRecv(motor, frame);
 
                 maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
+                canManager.sendAndRecv(motor, frame);
+
+                maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
             else if (name == "maxonForTest")
@@ -1228,10 +1235,10 @@ void DrumRobot::motorSettingCmd()
 
                 maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
-            }
 
-            maxoncmd.getCurrentThreshold(*maxonMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
+                maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
         }
         else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
@@ -1260,9 +1267,6 @@ void DrumRobot::motorSettingCmd()
         }
     }
 }
-
-
-
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                 Send Thread Loop                           */

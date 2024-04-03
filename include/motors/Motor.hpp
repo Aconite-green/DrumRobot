@@ -105,6 +105,8 @@ public:
     bool checked = false;
 
     unsigned char statusBit;
+    double homeOffset = 0.0;
+    double bumperLocation = 0.0;
 
     std::queue<MaxonData> commandBuffer;
     void clearCommandBuffer();
