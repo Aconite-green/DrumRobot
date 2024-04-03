@@ -116,7 +116,7 @@ private:
     MatrixXd left_inst;                                        ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
     int n_inst = 10; ///< 총 악기의 수.
-    double bpm = 10; /// 악보의 BPM 정보.
+    double bpm = 100; /// 악보의 BPM 정보.
 
     vector<double> time_arr; ///< 악보의 시간간격 정보.
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.

@@ -780,30 +780,30 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
     VectorXd q7_state = State.row(1);
     VectorXd q8_state = State.row(2);
 
-    if (time_madi(0) == 0.0)
+    if (time_madi(0) == 0.0)    // 연주 시작 시
     {
-        if (abs(t_now - time_madi(0)) < 0.001)
+        if (t_now == time_madi(0))
         {
             q7_isTorq = -0.5;
             q8_isTorq = -0.5;
         }
-        else if (abs(t_now - time_madi(1) < 0.001))
+        else if (t_now == time_madi(1))
         {
             q7_isTorq = q7_state(1);
             q8_isTorq = q8_state(1);
         }
         else{
-            q7_isTorq = 0.0;
-            q8_isTorq = 0.0;
+            q7_isTorq = 0;
+            q8_isTorq = 0;
         }
     }
     else{
-        if (abs(t_now - time_madi(0)) < 0.001)
+        if (t_now == time_madi(0))
         {
             q7_isTorq = q7_state(0);
             q8_isTorq = q8_state(0);
         }
-        else if (abs(t_now - time_madi(1) < 0.001))
+        else if (t_now == time_madi(1))
         {
             q7_isTorq = q7_state(1);
             q8_isTorq = q8_state(1);
@@ -1109,6 +1109,8 @@ void PathManager::PathLoopTask()
 
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
+
+    cout << "State :\n" << State << "\nt_wrist_madi :\n" << t_wrist_madi << "\n";
 
     SetTargetPos(State, t_wrist_madi); // 타격시 새로운 손목 targetPos값 전달
 

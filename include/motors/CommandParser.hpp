@@ -100,6 +100,7 @@ public:
     void getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree);
     void getHomingMethodL(MaxonMotor &motor, struct can_frame *frame);
     void getHomingMethodR(MaxonMotor &motor, struct can_frame *frame);
+    void getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame);
     void getStartHoming(MaxonMotor &motor, struct can_frame *frame);
     void getCurrentThreshold(MaxonMotor &motor, struct can_frame *frame);
 

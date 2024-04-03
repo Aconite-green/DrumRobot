@@ -498,6 +498,20 @@ void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0xFF;
 }
 
+void MaxonCommandParser::getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame)
+{
+    frame->can_id = motor.canSendId;
+    frame->can_dlc = 8;
+    frame->data[0] = 0x22;
+    frame->data[1] = 0x98;
+    frame->data[2] = 0x60;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0xFC;
+    frame->data[5] = 0xFF;
+    frame->data[6] = 0xFF;
+    frame->data[7] = 0xFF;
+}
+
 void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *frame)
 {
     frame->can_id = motor.txPdoIds[0];
