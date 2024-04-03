@@ -831,6 +831,7 @@ void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
             {
                 std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
                 maxonMotor->targetPos = q7_madi(1);
+                cout << entry.first << " targetPos : " << maxonMotor->targetPos << "\n";
             }
         }
     }
@@ -843,6 +844,7 @@ void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
             {
                 std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
                 maxonMotor->targetPos = q8_madi(1);
+                cout << entry.first << " targetPos : " << maxonMotor->targetPos << "\n";
             }
         }
     }
@@ -939,7 +941,7 @@ void PathManager::GetMusicSheet()
     default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
     default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
+    string score_path = "../include/managers/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())

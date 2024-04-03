@@ -85,9 +85,9 @@ void HomeManager::saveHomingInfoToFile()
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor.second))
         {
-            if (motor.first == "R_wrist" || motor.first == "L_wrist" )
+            if (motor.first == "R_wrist" || motor.first == "L_wrist")
             {
-                maxonMotor->homeOffset = M_PI *(0.528)/*95 degree*/ * maxonMotor->cwDir - maxonMotor->bumperLocation;
+                maxonMotor->homeOffset = M_PI * (0.528) /*95 degree*/ * maxonMotor->cwDir - maxonMotor->bumperLocation;
             }
 
             file << motor.first << ", " << maxonMotor->homeOffset << std::endl;
@@ -136,12 +136,13 @@ void HomeManager::loadHomingInfoFromFile()
 
             if (motors.find(motorName) != motors.end())
             {
-                
+
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorName]))
                 {
                     tMotor->homeOffset = Offset;
                 }
-                else if(std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorName])){
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorName]))
+                {
                     maxonMotor->homeOffset = Offset;
                 }
             }
@@ -392,7 +393,7 @@ void HomeManager::SendHomeProcess()
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
                 {
-                    setMaxonMode("HMM");
+                    //setMaxonMode("HMM");
                     usleep(50000);
                     MaxonEnable();
                     state.homeMaxon = HomeMaxon::StartHoming;
@@ -432,7 +433,7 @@ void HomeManager::SendHomeProcess()
 
     case HomeSub::HomeMaxon:
 
-        HomeMaxon();
+        HomeMaxon_test();
         break;
 
     case HomeSub::Done:
@@ -777,7 +778,7 @@ void HomeManager::HomeMaxon_test()
             cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
             maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(currentMotors[i]));
 
-            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 0 /*정하기*/);
+            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50*maxonMotors[i]->cwDir);
             canManager.sendMotorFrame(maxonMotors[i]);
             usleep(50000);
         }
@@ -807,11 +808,12 @@ void HomeManager::HomeMaxon_test()
             canManager.sendMotorFrame(maxonMotors[0]);
             for (long unsigned int i = 0; i < maxonMotors.size(); i++)
             {
-                if (maxonMotors[i]->currentTor > 0 && (abs(maxonMotors[i]->positionValues[3] - maxonMotors[i]->positionValues[2]) < 0))
+                cout <<"currentTorque : " <<maxonMotors[i]->currentTor << "\n";
+                if (maxonMotors[i]->currentTor > 500)
                 {
                     maxonMotors[i]->isHomed = true;
                     maxonMotors[i]->bumperLocation = maxonMotors[i]->currentTor;
-                    maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 0 /*정하기*/);
+                    maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 0);
                 }
             }
         }
