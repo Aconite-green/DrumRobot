@@ -423,7 +423,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 200 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 100 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
