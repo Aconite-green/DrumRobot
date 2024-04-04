@@ -1222,6 +1222,11 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;              // 현재 포지션 값 인덱스
 
+    chrono::system_clock::time_point start, drumHitTime, drumReachedTime;
+    bool drumHit = false;     // 드럼을 친 시점을 기록하기 위한 변수
+    bool drumReached = false; // 기준 위치에 도달한 시점을 기록하기 위한 변수
+
+    start = std::chrono::system_clock::now();
     while (1)
     {
 
@@ -1267,6 +1272,8 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                         {
                             des_tff = backTorqueUnit;
                             reachedDrum = true;
+                            drumHitTime = std::chrono::system_clock::now(); // 드럼을 친 시점의 시간 기록
+                            drumHit = true;
                         }
 
                         // 특정 각도에 도달했는지 확인하는 조건
@@ -1284,9 +1291,14 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                                 while (!motors[selectedMotor]->recieveBuffer.empty())
                                 {
                                     frame = motors[selectedMotor]->recieveBuffer.front();
-                                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                                    if (frame.can_id == maxonMotor->rxPdoIds[0] && !motorFixed)
                                     {
                                         motorFixed = true;
+                                        if (!drumReached)
+                                        {
+                                            drumReachedTime = std::chrono::system_clock::now(); // 기준 위치에 도달한 시점의 시간 기록
+                                            drumReached = true;
+                                        }
                                     }
                                     motors[selectedMotor]->recieveBuffer.pop();
                                 }
@@ -1302,8 +1314,23 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
         }
     }
 
+    if (drumHit)
+    {
+        auto drumHitDuration = chrono::duration_cast<chrono::milliseconds>(drumHitTime - start).count();
+        std::cout << "드럼을 치기 시작한 시점부터 드럼을 친 시간까지의 시간: " << drumHitDuration << "ms" << std::endl;
+    }
+
+    // 드럼을 친 시점부터 기준 위치까지 올라온 시간을 계산 및 출력
+    if (drumReached)
+    {
+        auto drumReachedDuration = chrono::duration_cast<chrono::milliseconds>(drumReachedTime - drumHitTime).count();
+        std::cout << "드럼을 친 시점부터 기준 위치까지 올라온 시간: " << drumReachedDuration << "ms" << std::endl;
+    }
+
     csvFileIn.close();
     csvFileOut.close();
+
+    getchar();
 }
 
 bool TestManager::dct_fun(float positions[], float vel_th)
