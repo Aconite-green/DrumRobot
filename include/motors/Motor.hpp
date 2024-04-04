@@ -19,30 +19,28 @@ using namespace std;
 class GenericMotor
 {
 public:
-    std::string interFaceName;
     // For CAN communication
-    uint32_t nodeId;
-    int socket;
+    uint32_t nodeId; 
+    int socket; 
     bool isConected;
 
     // Motors Feature
-    float cwDir;
+    float cwDir; 
     float rMin, rMax;
-
+    std::string myName;
+    std::string interFaceName;
     // Values
     float desPos, desVel, desTor;
     float currentPos, currentVel, currentTor;
-
-    // For Homing Session
-    bool atFirstSensor, atSecondSensor, atZeroPosition;
-    bool isHomed;
-    int homeOffset;
-
+    float coordinatePos;
     int Kp;
     double Kd;
-    std::queue<can_frame> sendBuffer;
-    std::queue<can_frame> recieveBuffer;
+    // For Homing Session
 
+    bool isHomed;
+
+    std::queue<can_frame> recieveBuffer;
+    std::queue<can_frame> sendBuffer;
     struct can_frame sendFrame;
 
     GenericMotor(uint32_t nodeId);
@@ -65,6 +63,12 @@ public:
     std::string motorType;
 
     int sensorBit;
+    double homeOffset = 0.0;
+    double sensorLocation = 0.0;
+
+    // For Homing Session
+    bool atFirstSensor, atSecondSensor, atZeroPosition;
+
     std::queue<TMotorData> commandBuffer;
 
     void clearCommandBuffer();
@@ -92,14 +96,17 @@ public:
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;
 
-    bool hitDrum = false;
     bool hitting = false;
-
+    bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
-    float targetPos = M_PI / 2;
+    //float targetPos = M_PI / 18.0;
 
     bool checked = false;
+
+    unsigned char statusBit;
+    double homeOffset = 0.0;
+    double bumperLocation = 0.0;
 
     std::queue<MaxonData> commandBuffer;
     void clearCommandBuffer();

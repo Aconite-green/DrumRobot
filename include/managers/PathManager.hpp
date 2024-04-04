@@ -62,11 +62,6 @@ public:
     vector<double> fkfun();
 
     /**
-     * @brief 각 모터의 회전방향에 따라 경로 방향을 적용시킵니다.
-     */
-    void ApplyDir();
-
-    /**
      * @brief rT.txtㅇ에 저장되어 있는 드럼의 위치정보를 불러옵니다.
      */
     void GetDrumPositoin();
@@ -107,6 +102,10 @@ public:
     //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60 }      [deg]
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
+    float wrist_targetPos = M_PI / 18.0;
+    double wrist_hit_time = 0.1;
+
+
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
@@ -121,12 +120,13 @@ private:
     MatrixXd left_inst;                                        ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
     int n_inst = 10; ///< 총 악기의 수.
-    double bpm = 10; /// 악보의 BPM 정보.
+    double bpm = 100; /// 악보의 BPM 정보.
 
     vector<double> time_arr; ///< 악보의 시간간격 정보.
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right;
     VectorXd default_left;
+    
 
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 

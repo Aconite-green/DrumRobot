@@ -381,16 +381,11 @@ bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_fr
 
 bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 {
-    if (!motor->sendBuffer.empty())
-    {
-        struct can_frame frame = motor->sendBuffer.front();
-        motor->sendBuffer.pop();
-        return txFrame(motor, frame);
-    }
-    return false;
+    std::cout << "Erase this function\n";
+    return true;
 }
 
-bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> &motor)
+bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
@@ -422,7 +417,7 @@ void CanManager::setMotorsSocket()
 {
     struct can_frame frame;
     setSocketsTimeout(0, 10000);
-
+    clearReadBuffers();
     std::map<int, int> localMotorsPerSocket;
 
     // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
@@ -433,34 +428,59 @@ void CanManager::setMotorsSocket()
         for (auto &motor_pair : motors)
         {
             auto &motor = motor_pair.second;
-            clearReadBuffers();
 
-            // TMotor 및 MaxonMotor에 대해 적절한 명령 설정
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            if (!motor->isConected)
             {
-                tmotorcmd.getCheck(*tMotor, &frame);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                maxoncmd.getCheck(*maxonMotor, &frame);
-            }
-            usleep(10000);
-            // 모터의 현재 소켓을 임시 소켓으로 설정
-            int original_socket = motor->socket;
-            motor->socket = socket_fd;
-            usleep(10000);
-            // 소켓에 CAN 프레임 보내고 응답 확인
-            if (sendAndRecv(motor, frame))
-            {
-                motor->isConected = true;
-                motorsConnectedToSocket++;
-            }
-            else
-            {
-                motor->socket = original_socket;
+
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+                {
+                    tmotorcmd.getCheck(*tMotor, &frame);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    maxoncmd.getCheck(*maxonMotor, &frame);
+                }
+                motor->socket = socket_fd;
+                
+
+                txFrame(motor, frame);
+                usleep(50000);
             }
         }
 
+        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        {
+            tempFrames[socket_fd].push_back(frame);
+        }
+
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                for (auto &frame : tempFrames[motor->socket])
+                {
+                    if (frame.data[0] == tMotor->nodeId)
+                    {
+                        motor->isConected = true;
+                        motorsConnectedToSocket++;
+                    }
+                }
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                for (auto &frame : tempFrames[motor->socket])
+                {
+                    if (frame.can_id == maxonMotor->canReceiveId)
+                    {
+                        motor->isConected = true;
+                        motorsConnectedToSocket++;
+                    }
+                }
+            }
+        }
+
+        tempFrames.clear();
         localMotorsPerSocket[socket_fd] = motorsConnectedToSocket;
     }
 
@@ -482,20 +502,12 @@ void CanManager::setMotorsSocket()
             it = motors.erase(it);
         }
     }
-
-    for (auto &motor_pair : motors)
-    {
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonCnt++;
-        }
-    }
 }
 
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    
+
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
@@ -504,8 +516,6 @@ void CanManager::readFramesFromAllSockets()
             tempFrames[socket_fd].push_back(frame);
         }
     }
-    
-    
 }
 
 void CanManager::distributeFramesToMotors()
@@ -525,6 +535,7 @@ void CanManager::distributeFramesToMotors()
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
+                    tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
                     tMotor->recieveBuffer.push(frame);
                 }
             }
@@ -534,14 +545,16 @@ void CanManager::distributeFramesToMotors()
             // MaxonMotor 처리
             for (auto &frame : tempFrames[motor->socket])
             {
-                if (frame.can_id == maxonMotor->txPdoIds[0])
+                if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    std::tuple<int, float, float, unsigned char> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
                     maxonMotor->currentPos = std::get<1>(parsedData);
                     maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->statusBit = std::get<3>(parsedData);
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
+                    maxonMotor->coordinatePos = maxonMotor->currentPos * maxonMotor->cwDir;
                 }
             }
         }
@@ -556,7 +569,7 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getControlMode(*tMotor, &frame);
+        tmotorcmd.getQuickStop(*tMotor, &frame);
         txFrame(motor, frame);
         if (sendAndRecv(motor, frame))
         {
@@ -583,10 +596,11 @@ bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
                 frame = motor->recieveBuffer.front();
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
-                    std::tuple<int, float, float> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    motor->currentPos = std::get<1>(parsedData);
-                    motor->currentTor = std::get<2>(parsedData);
-                    motor->isConected = true;
+                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    maxonMotor->currentPos = std::get<1>(parsedData);
+                    maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->statusBit = std::get<3>(parsedData);
+                    maxonMotor->isConected = true;
                 }
                 motor->recieveBuffer.pop();
             }
@@ -606,13 +620,30 @@ bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getControlMode(*tMotor, &frame);
+        tmotorcmd.getQuickStop(*tMotor, &frame);
         txFrame(motor, frame);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
         maxoncmd.getSync(&frame);
         txFrame(motor, frame);
+    }
+    return true;
+}
+
+bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
+{
+    clearReadBuffers();
+
+    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    {
+        tmotorcmd.getControlMode(*tMotor, &tMotor->sendFrame);
+        sendMotorFrame(tMotor);
+    }
+    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+    {
+        maxoncmd.getSync(&maxonMotor->sendFrame);
+        sendMotorFrame(maxonMotor);
     }
     return true;
 }
@@ -644,4 +675,95 @@ bool CanManager::checkAllMotors_test()
         sendForCheck(motor);
     }
     return true;
+}
+
+bool CanManager::checkAllMotors_Fixed()
+{
+
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        sendForCheck_Fixed(motor);
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                Functions for Thread Case                                      */
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CanManager::safetyCheck(std::string errorMessagePart)
+{
+    bool isSafe = true;
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            MaxonData mData = maxonMotor->commandBuffer.front();
+            maxonMotor->commandBuffer.pop();
+            float coordinationPos = (mData.position) * maxonMotor->cwDir;
+            if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            {
+                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
+                }
+                else if (maxonMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                }
+
+                isSafe = false;
+                maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+                usleep(5000);
+                maxoncmd.getSync(&maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+            }
+            else
+            {
+                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+            }
+        }
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        {
+            TMotorData tData = tMotor->commandBuffer.front();
+            tMotor->commandBuffer.pop();
+            float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+            if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+            {
+                if (abs(tMotor->currentPos - tData.position) > 0.2)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
+                }
+                else if (tMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
+                }
+
+                isSafe = false;
+                tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+                usleep(5000);
+                tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+            }
+            else
+            {
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+            }
+        }
+    }
+
+    return isSafe;
 }

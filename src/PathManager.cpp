@@ -18,7 +18,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir;
+            newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
@@ -42,16 +42,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
-
-void PathManager::ApplyDir()
-{ // CW / CCW에 따른 방향 적용
-    for (auto &entry : motors)
-    {
-        shared_ptr<GenericMotor> motor = entry.second;
-        standby[motor_mapping[entry.first]] *= motor->cwDir;
-        backarr[motor_mapping[entry.first]] *= motor->cwDir;
-    }
-}
 
 vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int k, int n)
 {
@@ -80,9 +70,14 @@ void PathManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
-        c_MotorAngle[motor_mapping[entry.first]] = entry.second->currentPos;
-        // 각 모터의 현재 위치 출력
-        cout << "Motor " << entry.first << " current position: " << entry.second->currentPos << "\n";
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+        }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir;
+        }
     }
 }
 
@@ -622,7 +617,13 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
-                                                            Qf << the0, the1, the2, the3[i], the4, the5, the6;
+                                                            Qf(0) = the0;
+                                                            Qf(1) = the1;
+                                                            Qf(2) = the2;
+                                                            Qf(3) = the3[i];
+                                                            Qf(4) = the4;
+                                                            Qf(5) = the5;
+                                                            Qf(6) = the6;
                                                             the0_f = the0;
                                                             j = 1;
                                                         }
@@ -641,35 +642,53 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     }
 
     if (j == 0)
+    {
         cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
+    }
 
     return Qf;
 }
 
 vector<double> PathManager::fkfun()
 {
+    getMotorPos();
+
     vector<double> P;
-    vector<double> theta(7);
+    vector<double> theta(9);
     for (auto &motorPair : motors)
     {
         auto &name = motorPair.first;
         auto &motor = motorPair.second;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir;
+            theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+            cout << name << " : " << tMotor->coordinatePos << "\n";
+        }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        {
+            theta[motor_mapping[name]] = maxonMotor->currentPos * maxonMotor->cwDir;
+            cout << name << " : " << maxonMotor->coordinatePos << "\n";
         }
     }
-    double r1 = part_length(0), r2 = part_length(1) + part_length(4), l1 = part_length(2), l2 = part_length(3) + part_length(5);
-    double r, l;
-    r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
-    l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
+    double r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
+    // double r, l;
+    // r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
+    // l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
 
-    P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
+    /*P.push_back(0.5 * s * cos(theta[0]) + r * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r * sin(theta[0] + theta[1]));
     P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]));
     P.push_back(0.5 * s * cos(theta[0] + M_PI) + l * cos(theta[0] + theta[2]));
     P.push_back(0.5 * s * sin(theta[0] + M_PI) + l * sin(theta[0] + theta[2]));
-    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]));*/
+
+    P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]) - stick * cos(theta[3] + theta[4] + theta[7]));
+    P.push_back(-0.5 * s * cos(theta[0]) + l1 * sin(theta[5]) * cos(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * cos(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * cos(theta[0] + theta[2]));
+    P.push_back(-0.5 * s * sin(theta[0]) + l1 * sin(theta[5]) * sin(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * sin(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]) - stick * cos(theta[5] + theta[6] + theta[8]));
 
     return P;
 }
@@ -761,61 +780,80 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
     VectorXd q7_state = State.row(1);
     VectorXd q8_state = State.row(2);
 
-    if (time_madi(0) == 0.0)
+    if (time_madi(0) == 0.0) // 연주 시작 시
     {
-        if (t_now >= time_madi(0) && t_now < time_madi(1))
+        if (t_now == time_madi(0))
         {
             q7_isTorq = -0.5;
             q8_isTorq = -0.5;
         }
-        else if (t_now >= time_madi(1) && t_now < time_madi(2))
+
+        if (q7_state(1) == -1)
         {
-            q7_isTorq = time_madi(1);
-            q8_isTorq = time_madi(1);
+            if (t_now == time_madi(2) - wrist_hit_time)
+                q7_isTorq = q7_state(1);
+            else
+                q7_isTorq = 0;
+        }
+        else
+        {
+            if (t_now == time_madi(1))
+                q7_isTorq = q7_state(1);
+            else
+                q7_isTorq = 0;
+        }
+
+        if (q8_state(1) == -1)
+        {
+            if (t_now == time_madi(2) - wrist_hit_time)
+                q8_isTorq = q8_state(1);
+            else
+                q8_isTorq = 0;
+        }
+        else
+        {
+            if (t_now == time_madi(1))
+                q8_isTorq = q8_state(1);
+            else
+                q8_isTorq = 0;
         }
     }
-    else if (t_now >= time_madi(0) && t_now < time_madi(1))
+    else
     {
-        q7_isTorq = time_madi(0);
-        q8_isTorq = time_madi(0);
-    }
-    else if (t_now >= time_madi(1) && t_now < time_madi(2))
-    {
-        q7_isTorq = time_madi(1);
-        q8_isTorq = time_madi(1);
-    }
+        for (int i = 0; i < 2; i++)
+        {
+            if (q7_state(i) == -1)
+            {
+                if (t_now == time_madi(i+1) - wrist_hit_time)
+                    q7_isTorq = q7_state(i);
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (t_now == time_madi(i))
+                    q7_isTorq = q7_state(i);
+                else
+                    q7_isTorq = 0;
+            }
 
+            if (q8_state(i) == -1)
+            {
+                if (t_now == time_madi(i+1) - wrist_hit_time)
+                    q8_isTorq = q8_state(i);
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (t_now == time_madi(i))
+                    q8_isTorq = q8_state(i);
+                else
+                    q8_isTorq = 0;
+            }
+        }
+    }
     return std::make_pair(q7_isTorq, q8_isTorq);
-}
-
-void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
-{
-    VectorXd q7_state = State.row(1);
-    VectorXd q8_state = State.row(2);
-    VectorXd q7_madi = t_madi.row(1);
-    VectorXd q8_madi = t_madi.row(2);
-
-    if (q7_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if(entry.first == "R_wrist"){
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q7_madi(1);
-            }
-        }
-    }
-
-    if (q8_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if(entry.first == "L_wrist" || entry.first == "maxonForTest"){
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q8_madi(1);
-            }
-        }
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -826,7 +864,7 @@ void PathManager::GetDrumPositoin()
 {
     getMotorPos();
     part_length.resize(6);
-    part_length << 0.363, 0.393, 0.363, 0.393, 0.400, 0.400; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
+    part_length << 0.363, 0.3835, 0.363, 0.3835, 0.417, 0.417; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 
@@ -906,10 +944,10 @@ void PathManager::GetMusicSheet()
 
     default_right.resize(9);
     default_left.resize(9);
-    default_right << 0, 0, 0, 0, 0, 0, 0, 1, 0;
-    default_left << 0, 0, 0, 0, 0, 0, 0, 1, 0;
+    default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
+    default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
+    string score_path = "../include/managers/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
@@ -994,6 +1032,8 @@ void PathManager::SetReadyAng()
     {
         standby[i] = qk(i);
     }
+    standby[7] = 0.0;
+    standby[8] = 0.0;
 }
 
 void PathManager::PathLoopTask()
@@ -1078,7 +1118,9 @@ void PathManager::PathLoopTask()
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
-    SetTargetPos(State, t_wrist_madi);  // 타격시 새로운 손목 targetPos값 전달
+    cout << "State :\n"
+         << State << "\nt_wrist_madi :\n"
+         << t_wrist_madi << "\n";
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
@@ -1096,7 +1138,7 @@ void PathManager::PathLoopTask()
 
         pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
         pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
-        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i);
+        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
@@ -1120,7 +1162,7 @@ void PathManager::GetArr(vector<double> &arr)
 
     getMotorPos();
 
-    int n = 800;
+    int n = 800; // 4초동안 실행
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
@@ -1130,23 +1172,20 @@ void PathManager::GetArr(vector<double> &arr)
         // Send to Buffer
         for (auto &entry : motors)
         {
-            if (std::shared_ptr<TMotor> motor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
-                newData.velocity = 0.0;
-                motor->commandBuffer.push(newData);
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = 0.5;
+                tmotor->commandBuffer.push(newData);
             }
-            else if (std::shared_ptr<MaxonMotor> motor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
-
                 MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
-                motor->commandBuffer.push(newData);
+                maxonMotor->commandBuffer.push(newData);
             }
         }
     }
-
-    c_MotorAngle = Qi;
 }

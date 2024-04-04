@@ -114,10 +114,6 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     speed = uintToFloat(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
     torque = uintToFloat(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
 
-    motor.currentPos = position;
-    motor.currentVel = speed;
-    motor.currentTor = torque;
-
     return std::make_tuple(id, position, speed, torque);
 }
 
@@ -227,9 +223,12 @@ void TMotorCommandParser::getQuickStop(TMotor &motor, struct can_frame *frame)
 /*                                                      Maxon Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
+std::tuple<int, float, float, unsigned char> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
 {
     int id = frame->can_id;
+
+
+    unsigned char statusBit = frame->data[1];
 
     int32_t currentPosition = 0;
     currentPosition |= static_cast<uint8_t>(frame->data[2]);
@@ -251,10 +250,7 @@ std::tuple<int, float, float> MaxonCommandParser::parseRecieveCommand(MaxonMotor
     float currentPositionDegrees = (static_cast<float>(currentPosition) / (35.0f * 4096.0f)) * 360.0f;
     float currentPositionRadians = currentPositionDegrees * (M_PI / 180.0f);
 
-    motor.currentPos = currentPositionRadians;
-    motor.currentTor = currentTorqueNm;
-
-    return std::make_tuple(id, currentPositionRadians, currentTorqueNm);
+    return std::make_tuple(id, currentPositionRadians, currentTorqueNm, statusBit);
 }
 
 // System
@@ -502,6 +498,20 @@ void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0xFF;
 }
 
+void MaxonCommandParser::getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame)
+{
+    frame->can_id = motor.canSendId;
+    frame->can_dlc = 8;
+    frame->data[0] = 0x22;
+    frame->data[1] = 0x98;
+    frame->data[2] = 0x60;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0xFC;
+    frame->data[5] = 0xFF;
+    frame->data[6] = 0xFF;
+    frame->data[7] = 0xFF;
+}
+
 void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *frame)
 {
     frame->can_id = motor.txPdoIds[0];
@@ -516,7 +526,7 @@ void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *fra
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getCurrentThreshold(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getCurrentThresholdR(MaxonMotor &motor, struct can_frame *frame)
 {
     // 1000 = 3E8
     // 500 = 01F4
@@ -528,6 +538,22 @@ void MaxonCommandParser::getCurrentThreshold(MaxonMotor &motor, struct can_frame
     frame->data[3] = 0x00;
     frame->data[4] = 0xF4;
     frame->data[5] = 0x01;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
+}
+
+void MaxonCommandParser::getCurrentThresholdL(MaxonMotor &motor, struct can_frame *frame)
+{
+    // 1000 =03E8
+    // 500 = 01F4
+    frame->can_id = motor.canSendId;
+    frame->can_dlc = 8;
+    frame->data[0] = 0x23;
+    frame->data[1] = 0xB2;
+    frame->data[2] = 0x30;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0xE8;
+    frame->data[5] = 0x03;
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
 }

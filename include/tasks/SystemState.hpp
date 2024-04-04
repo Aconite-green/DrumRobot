@@ -2,34 +2,50 @@
 
 #include <atomic>
 
-
 enum class Main
 {
-    SystemInit, 
-    Ideal,      
-    Homing,     
-    Tune,       
-    Perform,    
-    Check,      
-    Shutdown,       
+    SystemInit,
+    Ideal,
+    Homing,
+    Test,
+    Perform,
+    Check,
+    Shutdown,
     Pause,
     AddStance,
-    Error  
+    Error
 };
 
-enum class HomeSub {
-    SelectMotor,
+enum class HomeSub
+{
+    SelectMotorByUser,
+    MakeHomingOrderBuf,
+    GetSelectedMotor,
+    HomeTmotor,
+    HomeMaxon,
+    Done
+};
+
+enum class HomeTmotor
+{
     MoveToSensor,
-    MoveToZeroPositionInit,
-    SetZero,
-    Done,
+    SensorCheck,
+    FillBuf,
+    CheckBuf,
     SafetyCheck,
-    SendCANFrameForSensor,
     SendCANFrameForZeroPos,
-    SendCANFrameForSetZero
+    Done
 };
 
-enum class PerformSub {
+enum class HomeMaxon
+{
+    StartHoming,
+    CheckHomeStatus,
+    Done
+};
+
+enum class PerformSub
+{
     TimeCheck,
     CheckBuf,
     GeneratePath,
@@ -37,7 +53,8 @@ enum class PerformSub {
     SendCANFrame
 };
 
-enum class AddStanceSub {
+enum class AddStanceSub
+{
     TimeCheck,
     CheckCommand,
     CheckBuf,
@@ -46,7 +63,8 @@ enum class AddStanceSub {
     SendCANFrame
 };
 
-enum class ReadSub{
+enum class ReadSub
+{
     TimeCheck,
     ReadCANFrame,
     UpdateMotorInfo,
@@ -55,39 +73,38 @@ enum class ReadSub{
     CheckReachedPosition
 };
 
-
-enum class Maxon
+enum class TestSub
 {
-    Position,     
-    Torque_Move,  
-    Torque_Touch, 
-    Torque_Back,  
-    Torque_InPos  
+    SelectParamByUser,
+    SetQValue,
+    SetXYZ,
+    FillBuf,
+    CheckBuf,
+    TimeCheck,
+    SafetyCheck,
+    SendCANFrame,
+    Done
 };
-
-
-struct MaxonState
-{
-    std::atomic<Maxon> state; 
-    MaxonState() : state(Maxon::Position) {}
-};
-
 
 struct State
 {
-    std::atomic<Main> main;         
+    std::atomic<Main> main;
     std::atomic<HomeSub> home;
+    std::atomic<HomeTmotor> homeTmotor;
+    std::atomic<HomeMaxon> homeMaxon;
     std::atomic<PerformSub> perform;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
-    MaxonState leftMaxon;           
-    MaxonState rightMaxon;          
-    
+    std::atomic<TestSub> test;
+
     State() : main(Main::SystemInit),
-              home(HomeSub::SelectMotor),
+              home(HomeSub::SelectMotorByUser),
+              homeTmotor(HomeTmotor::MoveToSensor),
+              homeMaxon(HomeMaxon::StartHoming),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
-              read(ReadSub::TimeCheck)
+              read(ReadSub::TimeCheck),
+              test(TestSub::SelectParamByUser)
     {
     }
 };

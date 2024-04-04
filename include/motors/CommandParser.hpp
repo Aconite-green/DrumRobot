@@ -19,12 +19,12 @@ using namespace std;
 class TMotorCommandParser
 {
 public:
-    float GLOBAL_P_MIN = -12.5; ///< 최소 위치 제한.
-    float GLOBAL_P_MAX = 12.5; ///< 최대 위치 제한.
-    float GLOBAL_KP_MIN = 0; ///< 최소 비례 게인 제한.
-    float GLOBAL_KP_MAX = 500; ///< 최대 비례 게인 제한.
-    float GLOBAL_KD_MIN = 0; ///< 최소 미분 게인 제한.
-    float GLOBAL_KD_MAX = 5; ///< 최대 미분 게인 제한.
+    float GLOBAL_P_MIN = -12.5;                                   ///< 최소 위치 제한.
+    float GLOBAL_P_MAX = 12.5;                                    ///< 최대 위치 제한.
+    float GLOBAL_KP_MIN = 0;                                      ///< 최소 비례 게인 제한.
+    float GLOBAL_KP_MAX = 500;                                    ///< 최대 비례 게인 제한.
+    float GLOBAL_KD_MIN = 0;                                      ///< 최소 미분 게인 제한.
+    float GLOBAL_KD_MAX = 5;                                      ///< 최대 미분 게인 제한.
     float GLOBAL_V_MIN, GLOBAL_V_MAX, GLOBAL_T_MIN, GLOBAL_T_MAX; ///< 속도 및 토크 제한.
 
     /**
@@ -76,7 +76,7 @@ class MaxonCommandParser
 {
 public:
     // Maxon 모터로부터 수신된 명령을 파싱하는 메서드입니다. 반환된 튜플은 명령 코드, 위치, 속도를 포함합니다.
-    std::tuple<int, float, float> parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame);
+    std::tuple<int, float, float, unsigned char> parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame);
 
     // 이하 메서드들은 Maxon 모터의 특정 상태 또는 모드를 요청하는 명령을 구성합니다.
     // 각 메서드에 대한 자세한 설명은 생략하나, 실제 코드에는 해당 명령의 목적과 사용 방법에 대해 설명을 추가해야 합니다.
@@ -100,8 +100,10 @@ public:
     void getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree);
     void getHomingMethodL(MaxonMotor &motor, struct can_frame *frame);
     void getHomingMethodR(MaxonMotor &motor, struct can_frame *frame);
+    void getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame);
     void getStartHoming(MaxonMotor &motor, struct can_frame *frame);
-    void getCurrentThreshold(MaxonMotor &motor, struct can_frame *frame);
+    void getCurrentThresholdR(MaxonMotor &motor, struct can_frame *frame);
+    void getCurrentThresholdL(MaxonMotor &motor, struct can_frame *frame);
 
     // CSV 모드 관련 명령 구성 메서드.
     void getCSVMode(MaxonMotor &motor, struct can_frame *frame);
@@ -110,7 +112,7 @@ public:
 
     // CST 모드 관련 명령 구성 메서드.
     void getCSTMode(MaxonMotor &motor, struct can_frame *frame);
-    void getTargetTorque(MaxonMotor &motor, struct can_frame *frame,int targetTorque);
+    void getTargetTorque(MaxonMotor &motor, struct can_frame *frame, int targetTorque);
 };
 
 #endif // COMMANDPARSER_H
