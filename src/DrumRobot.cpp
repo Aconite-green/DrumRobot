@@ -86,7 +86,7 @@ void DrumRobot::stateMachine()
         }
         case Main::Test:
         {
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
                 usleep(50000);
             }
@@ -204,7 +204,14 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); // 200ms
             break;
         case Main::Test:
-            ReadProcess(5000);
+            if (state.test == TestSub::StickTest)
+            {
+                usleep(500000);
+            }
+            else
+            {
+                ReadProcess(5000);
+            }
             break;
         case Main::Shutdown:
             parse_and_save_to_csv("../../READ/DrumData_out.txt");
@@ -423,7 +430,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 150 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 30 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
@@ -1253,13 +1260,13 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodTest(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 20);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
+                maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
         }

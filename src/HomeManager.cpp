@@ -433,7 +433,7 @@ void HomeManager::SendHomeProcess()
 
     case HomeSub::HomeMaxon:
 
-        HomeMaxon_test();
+        HomeMaxon();
         break;
 
     case HomeSub::Done:

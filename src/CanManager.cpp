@@ -475,6 +475,7 @@ void CanManager::setMotorsSocket()
                     {
                         motor->isConected = true;
                         motorsConnectedToSocket++;
+                        maxonCnt++;
                     }
                 }
             }

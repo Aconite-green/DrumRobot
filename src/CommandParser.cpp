@@ -506,7 +506,7 @@ void MaxonCommandParser::getHomingMethodTest(MaxonMotor &motor, struct can_frame
     frame->data[1] = 0x98;
     frame->data[2] = 0x60;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xFC;
+    frame->data[4] = 0xFD;
     frame->data[5] = 0xFF;
     frame->data[6] = 0xFF;
     frame->data[7] = 0xFF;

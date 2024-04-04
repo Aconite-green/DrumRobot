@@ -43,6 +43,8 @@ void TestManager::SendTestProcess()
         else if (method == 4)
         {
             state.main = Main::Ideal;
+        }else if(method == 5){
+            state.test = TestSub::StickTest;
         }
         // Get User Input
         /* method 1 : q[0]~q[8] 까지 값을 설정 후에 4초에 걸쳐서 해당 위치로 이동 (frame 800개)
@@ -50,6 +52,12 @@ void TestManager::SendTestProcess()
            method 3 : 연속 동작?
            +Testing 환경에서 나갈지도 입력으로 받아야 함
         */
+        break;
+    }
+    case TestSub::StickTest:{
+        canManager.setSocketBlock();
+        TestStickLoop();
+        canManager.setSocketNonBlock();
         break;
     }
     case TestSub::SetQValue:
