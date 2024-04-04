@@ -393,7 +393,7 @@ void HomeManager::SendHomeProcess()
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
                 {
-                    //setMaxonMode("HMM");
+                    setMaxonMode("HMM");
                     usleep(50000);
                     MaxonEnable();
                     state.homeMaxon = HomeMaxon::StartHoming;
@@ -433,7 +433,7 @@ void HomeManager::SendHomeProcess()
 
     case HomeSub::HomeMaxon:
 
-        HomeMaxon_test();
+        HomeMaxon();
         break;
 
     case HomeSub::Done:
@@ -771,17 +771,30 @@ void HomeManager::HomeMaxon_test()
     {
         maxonMotors.clear();
         vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
-        setMaxonMode("CSV");
 
         for (long unsigned int i = 0; i < currentMotors.size(); i++)
         {
             cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
             maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(currentMotors[i]));
 
-            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50*maxonMotors[i]->cwDir);
+            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
+            canManager.sendMotorFrame(maxonMotors[i]);
+            usleep(50000);
+
+            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
+            canManager.sendMotorFrame(maxonMotors[i]);
+            usleep(50000);
+
+            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
             canManager.sendMotorFrame(maxonMotors[i]);
             usleep(50000);
         }
+
+        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
+        canManager.sendMotorFrame(maxonMotors[0]);
+
+        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
+        canManager.sendMotorFrame(maxonMotors[0]);
 
         maxoncmd.getSync(&maxonMotors[0]->sendFrame);
         canManager.sendMotorFrame(maxonMotors[0]);
@@ -808,7 +821,7 @@ void HomeManager::HomeMaxon_test()
             canManager.sendMotorFrame(maxonMotors[0]);
             for (long unsigned int i = 0; i < maxonMotors.size(); i++)
             {
-                cout <<"currentTorque : " <<maxonMotors[i]->currentTor << "\n";
+                cout << "currentTorque : " << maxonMotors[i]->currentTor << "\n";
                 if (maxonMotors[i]->currentTor > 500)
                 {
                     maxonMotors[i]->isHomed = true;
