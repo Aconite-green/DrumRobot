@@ -96,6 +96,7 @@ public:
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;
 
+    bool stay = false;
     bool hitting = false;
     bool isPositionMode = false;
     bool atPosition = false;

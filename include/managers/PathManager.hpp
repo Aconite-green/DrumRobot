@@ -102,7 +102,7 @@ public:
     //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60 }      [deg]
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
-    float wrist_targetPos = M_PI / 18.0;
+    float wrist_targetPos = M_PI / 6.0;
     double wrist_hit_time = 0.1;
 
 

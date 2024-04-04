@@ -458,13 +458,13 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
             theta_R(0, i) = wrist_targetPos;
-            //theta_R(0, i) = 0.15 * v_wrist;
+        // theta_R(0, i) = 0.15 * v_wrist;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
             theta_L(0, i) = wrist_targetPos;
-            //theta_L(0, i) = 0.15 * v_wrist;
+        // theta_L(0, i) = 0.15 * v_wrist;
     }
 
     MatrixXd t_wrist_madi(3, 3);
@@ -777,86 +777,140 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
 
 pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
 {
-    double q7_isTorq = 0.0;
-    double q8_isTorq = 0.0;
+    double q7_isTorq = 10.0;
+    double q8_isTorq = 10.0;
 
     VectorXd time_madi = State.row(0);
     VectorXd q7_state = State.row(1);
     VectorXd q8_state = State.row(2);
 
-    if (time_madi(0) == 0.0) // 연주 시작 시
+    if (time_madi(0) == 0) // 연주 시작 시
     {
-        if (t_now == time_madi(0))
+        if (t_now < time_madi(1))
         {
-            q7_isTorq = -0.5;
-            q8_isTorq = -0.5;
+            if (abs(t_now - time_madi(0)) < 0.001)
+            {
+                q7_isTorq = -0.5;
+                q8_isTorq = -0.5;
+            }
+            else{
+                q7_isTorq = -0.5;
+                q8_isTorq = -0.5;
+            }
         }
+        else if (t_now < time_madi(2))
+        {
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
 
-        if (q7_state(1) == -1)
-        {
-            if (t_now == time_madi(2) - wrist_hit_time)
-                q7_isTorq = q7_state(1);
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
             else
-                q7_isTorq = 0;
-        }
-        else
-        {
-            if (t_now == time_madi(1))
-                q7_isTorq = q7_state(1);
-            else
-                q7_isTorq = 0;
-        }
-
-        if (q8_state(1) == -1)
-        {
-            if (t_now == time_madi(2) - wrist_hit_time)
-                q8_isTorq = q8_state(1);
-            else
-                q8_isTorq = 0;
-        }
-        else
-        {
-            if (t_now == time_madi(1))
-                q8_isTorq = q8_state(1);
-            else
-                q8_isTorq = 0;
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
+                else
+                    q8_isTorq = 0;
+            }
         }
     }
     else
     {
-        for (int i = 0; i < 2; i++)
+        if (t_now < time_madi(1))
         {
-            if (q7_state(i) == -1)
+            if (q7_state(0) == -1)
             {
-                if (t_now == time_madi(i+1) - wrist_hit_time)
-                    q7_isTorq = q7_state(i);
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
                 else
                     q7_isTorq = 0;
             }
             else
             {
-                if (t_now == time_madi(i))
-                    q7_isTorq = q7_state(i);
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q7_isTorq = q7_state(0);
                 else
                     q7_isTorq = 0;
             }
 
-            if (q8_state(i) == -1)
+            if (q8_state(0) == -1)
             {
-                if (t_now == time_madi(i+1) - wrist_hit_time)
-                    q8_isTorq = q8_state(i);
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
                 else
                     q8_isTorq = 0;
             }
             else
             {
-                if (t_now == time_madi(i))
-                    q8_isTorq = q8_state(i);
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q8_isTorq = q8_state(0);
+                else
+                    q8_isTorq = 0;
+            }
+        }
+        else if (t_now < time_madi(2))
+        {
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
                 else
                     q8_isTorq = 0;
             }
         }
     }
+
     return std::make_pair(q7_isTorq, q8_isTorq);
 }
 
@@ -951,7 +1005,7 @@ void PathManager::GetMusicSheet()
     default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
     default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession.txt";
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
