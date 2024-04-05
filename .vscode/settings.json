@@ -84,5 +84,6 @@
             "binaryPath": "/home/shy//DrumRobot/bin/main.out",
             "binaryArgs": []
         }
-    ]
+    ],
+    "cmake.configureOnOpen": false
 }
