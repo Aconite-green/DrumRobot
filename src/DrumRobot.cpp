@@ -635,7 +635,6 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (canManager.checkAllMotors_Fixed())
         {
-            usleep(10000);
             if (getReady)
             {
                 pathManager.GetArr(pathManager.standby);
