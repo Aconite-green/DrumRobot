@@ -1225,10 +1225,10 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 95);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
                 canManager.sendAndRecv(motor, frame);
 
                 maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
@@ -1239,10 +1239,10 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodR(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 95);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
                 canManager.sendAndRecv(motor, frame);
 
                 maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
@@ -1278,7 +1278,7 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (tmotor->myName == "waist" || initPosition > 1.5)
+            if (tmotor->myName == "waist" || initPosition > 2)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
