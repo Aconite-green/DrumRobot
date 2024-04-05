@@ -20,12 +20,12 @@ class GenericMotor
 {
 public:
     // For CAN communication
-    uint32_t nodeId;
-    int socket;
+    uint32_t nodeId; 
+    int socket; 
     bool isConected;
 
     // Motors Feature
-    float cwDir;
+    float cwDir; 
     float rMin, rMax;
     std::string myName;
     std::string interFaceName;
@@ -96,11 +96,12 @@ public:
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;
 
+    bool stay = false;
     bool hitting = false;
     bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
-    float targetPos = M_PI / 2;
+    //float targetPos = M_PI / 18.0;
 
     bool checked = false;
 

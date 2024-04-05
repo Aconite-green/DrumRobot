@@ -355,6 +355,8 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
+    cout << "T :\n" << T << "\n";
+
     /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
     for (int k = 0; k < nn; ++k)
@@ -457,12 +459,14 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
         if (sts_R(0, i) == 1)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
-            theta_R(0, i) = 0.15 * v_wrist;
+            theta_R(0, i) = wrist_targetPos;
+        // theta_R(0, i) = 0.15 * v_wrist;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
-            theta_L(0, i) = 0.15 * v_wrist;
+            theta_L(0, i) = wrist_targetPos;
+        // theta_L(0, i) = 0.15 * v_wrist;
     }
 
     MatrixXd t_wrist_madi(3, 3);
@@ -470,18 +474,20 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     {
         if (sts_L(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_L(0, i) = wrist_targetPos;
+            /*double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_wrist;
             if (theta_L(0, i) > (M_PI / 2) * 0.8)
-                theta_L(0, i) = (M_PI / 2) * 0.8;
+                theta_L(0, i) = (M_PI / 2) * 0.8;*/
         }
 
         if (sts_R(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_R(0, i) = wrist_targetPos;
+            /*double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_wrist;
             if (theta_R(0, i) > (M_PI / 2) * 0.8)
-                theta_R(0, i) = (M_PI / 2) * 0.8;
+                theta_R(0, i) = (M_PI / 2) * 0.8;*/
         }
     }
 
@@ -773,81 +779,141 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
 
 pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
 {
-    double q7_isTorq = 0.0;
-    double q8_isTorq = 0.0;
+    double q7_isTorq = 10.0;
+    double q8_isTorq = 10.0;
 
     VectorXd time_madi = State.row(0);
     VectorXd q7_state = State.row(1);
     VectorXd q8_state = State.row(2);
 
-    if (time_madi(0) == 0.0)    // 연주 시작 시
+    if (time_madi(0) == 0) // 연주 시작 시
     {
-        if (t_now == time_madi(0))
+        if (t_now < time_madi(1))
         {
-            q7_isTorq = -0.5;
-            q8_isTorq = -0.5;
+            if (abs(t_now - time_madi(0)) < 0.001)
+            {
+                q7_isTorq = -0.5;
+                q8_isTorq = -0.5;
+            }
+            else{
+                q7_isTorq = 0;
+                q8_isTorq = 0;
+            }
         }
-        else if (t_now == time_madi(1))
+        else if (t_now < time_madi(2))
         {
-            q7_isTorq = q7_state(1);
-            q8_isTorq = q8_state(1);
-        }
-        else{
-            q7_isTorq = 0;
-            q8_isTorq = 0;
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
+                else
+                    q8_isTorq = 0;
+            }
         }
     }
-    else{
-        if (t_now == time_madi(0))
+    else
+    {
+        if (t_now < time_madi(1))
         {
-            q7_isTorq = q7_state(0);
-            q8_isTorq = q8_state(0);
+            if (q7_state(0) == -1)
+            {
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q7_isTorq = q7_state(0);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(0) == -1)
+            {
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q8_isTorq = q8_state(0);
+                else
+                    q8_isTorq = 0;
+            }
         }
-        else if (t_now == time_madi(1))
+        else if (t_now < time_madi(2))
         {
-            q7_isTorq = q7_state(1);
-            q8_isTorq = q8_state(1);
-        }
-        else{
-            q7_isTorq = 0.0;
-            q8_isTorq = 0.0;
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
+                else
+                    q8_isTorq = 0;
+            }
         }
     }
+
     return std::make_pair(q7_isTorq, q8_isTorq);
-}
-
-void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
-{
-    VectorXd q7_state = State.row(1);
-    VectorXd q8_state = State.row(2);
-    VectorXd q7_madi = t_madi.row(1);
-    VectorXd q8_madi = t_madi.row(2);
-
-    if (q7_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if (entry.first == "R_wrist")
-            {
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q7_madi(1);
-                cout << entry.first << " targetPos : " << maxonMotor->targetPos << "\n";
-            }
-        }
-    }
-
-    if (q8_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if (entry.first == "L_wrist" || entry.first == "maxonForTest")
-            {
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q8_madi(1);
-                cout << entry.first << " targetPos : " << maxonMotor->targetPos << "\n";
-            }
-        }
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1112,9 +1178,9 @@ void PathManager::PathLoopTask()
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
-    cout << "State :\n" << State << "\nt_wrist_madi :\n" << t_wrist_madi << "\n";
-
-    SetTargetPos(State, t_wrist_madi); // 타격시 새로운 손목 targetPos값 전달
+    cout << "State :\n"
+         << State << "\nt_wrist_madi :\n"
+         << t_wrist_madi << "\n";
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);

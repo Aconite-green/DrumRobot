@@ -405,6 +405,29 @@ void TestManager::GetArr(double arr[])
         }
     }
 
+    n = 100;
+    for (int k = 0; k < n; ++k)
+    {
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = 0;
+                tmotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.WristState = 0;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+
     cout << "\n";
 }
 
@@ -1258,7 +1281,6 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
         if (elapsed_time.count() >= 5000)
         {
-
             maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
             canManager.txFrame(motors[selectedMotor], frame);
 
@@ -1341,6 +1363,8 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
 
     csvFileIn.close();
     csvFileOut.close();
+
+    getchar();
 }
 
 bool TestManager::dct_fun(float positions[], float vel_th)
