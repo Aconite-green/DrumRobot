@@ -205,7 +205,7 @@ void DrumRobot::recvLoopForThread()
             break;
 
         case Main::Check:
-            ReadProcess(200000); // 200ms
+            ReadProcess(5000); // 200ms
             break;
         case Main::Test:
             if (state.test == TestSub::StickTest)
