@@ -186,7 +186,7 @@ void DrumRobot::recvLoopForThread()
             break;
 
         case Main::Ideal:
-            ReadProcess(200000); /*500ms*/
+            ReadProcess(200000); /*200ms*/
             break;
 
         case Main::Homing:
