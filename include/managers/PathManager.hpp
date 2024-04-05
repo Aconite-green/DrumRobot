@@ -102,6 +102,10 @@ public:
     //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60 }      [deg]
     vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
 
+    float wrist_targetPos = M_PI / 6.0;
+    double wrist_hit_time = 0.1;
+
+
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
@@ -122,6 +126,7 @@ private:
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right;
     VectorXd default_left;
+    
 
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 

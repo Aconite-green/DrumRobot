@@ -44,12 +44,23 @@ void TestManager::SendTestProcess()
         {
             state.main = Main::Ideal;
         }
+        else if (method == 5)
+        {
+            state.test = TestSub::StickTest;
+        }
         // Get User Input
         /* method 1 : q[0]~q[8] 까지 값을 설정 후에 4초에 걸쳐서 해당 위치로 이동 (frame 800개)
            method 2 : Left, Right 에 대한 xyz 설정
            method 3 : 연속 동작?
            +Testing 환경에서 나갈지도 입력으로 받아야 함
         */
+        break;
+    }
+    case TestSub::StickTest:
+    {
+        canManager.setSocketBlock();
+        TestStickLoop();
+        canManager.setSocketNonBlock();
         break;
     }
     case TestSub::SetQValue:
@@ -389,6 +400,29 @@ void TestManager::GetArr(double arr[])
                 MaxonData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+
+    n = 100;
+    for (int k = 0; k < n; ++k)
+    {
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = 0;
+                tmotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.WristState = 0;
                 maxonMotor->commandBuffer.push(newData);
             }
         }
@@ -1130,9 +1164,10 @@ void TestManager::TestStickLoop()
         std::cout << "Torque Threshold: " << tffThreshold << " [mNm]\n"; // 현재 토크 임계값 출력
         std::cout << "Position Threshold: " << posThreshold << " [rad]\n";
         std::cout << "Back Torque: " << backTorqueUnit * 31.052 / 1000 << " [mNm]\n";
+        std::cout << "drumHitDuration: " << drumHitDuration << " [ms]\n";
+        std::cout << "drumReachedDuration: " << drumReachedDuration << " [ms]\n";
         std::cout << "\nCommands:\n";
         std::cout << "[a]: des_tff | [b]: Direction | [c]: Back Torque\n";
-        std::cout << "[d]: Set Torque Threshold [e]: Set Position Threshold \n";
         std::cout << "[f]: Run | [g]: Exit\n";
         std::cout << "=============================================\n";
         std::cout << "Enter Command: ";
@@ -1222,6 +1257,12 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;              // 현재 포지션 값 인덱스
 
+    chrono::system_clock::time_point start, drumHitTime, drumReachedTime;
+    bool drumHit = false;     // 드럼을 친 시점을 기록하기 위한 변수
+    bool drumReached = false; // 기준 위치에 도달한 시점을 기록하기 위한 변수
+
+    start = std::chrono::system_clock::now();
+
     while (1)
     {
 
@@ -1240,7 +1281,6 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
         chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
         if (elapsed_time.count() >= 5000)
         {
-
             maxoncmd.getTargetTorque(*maxonMotor, &frame, des_tff);
             canManager.txFrame(motors[selectedMotor], frame);
 
@@ -1268,6 +1308,8 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                         {
                             des_tff = backTorqueUnit;
                             reachedDrum = true;
+                            drumHitTime = std::chrono::system_clock::now(); // 드럼을 친 시점의 시간 기록
+                            drumHit = true;
                         }
 
                         // 특정 각도에 도달했는지 확인하는 조건
@@ -1285,9 +1327,14 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
                                 while (!motors[selectedMotor]->recieveBuffer.empty())
                                 {
                                     frame = motors[selectedMotor]->recieveBuffer.front();
-                                    if (frame.can_id == maxonMotor->rxPdoIds[0])
+                                    if (frame.can_id == maxonMotor->rxPdoIds[0] && !motorFixed)
                                     {
                                         motorFixed = true;
+                                        if (!drumReached)
+                                        {
+                                            drumReachedTime = std::chrono::system_clock::now(); // 기준 위치에 도달한 시점의 시간 기록
+                                            drumReached = true;
+                                        }
                                     }
                                     motors[selectedMotor]->recieveBuffer.pop();
                                 }
@@ -1303,8 +1350,21 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
         }
     }
 
+    if (drumHit)
+    {
+        drumHitDuration = chrono::duration_cast<chrono::milliseconds>(drumHitTime - start).count(); 
+    }
+
+    // 드럼을 친 시점부터 기준 위치까지 올라온 시간을 계산 및 출력
+    if (drumReached)
+    {
+        drumReachedDuration = chrono::duration_cast<chrono::milliseconds>(drumReachedTime - drumHitTime).count();
+    }
+
     csvFileIn.close();
     csvFileOut.close();
+
+    getchar();
 }
 
 bool TestManager::dct_fun(float positions[], float vel_th)

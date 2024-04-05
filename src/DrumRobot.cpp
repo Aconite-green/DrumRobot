@@ -86,7 +86,7 @@ void DrumRobot::stateMachine()
         }
         case Main::Test:
         {
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
                 usleep(50000);
             }
@@ -204,7 +204,14 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(200000); // 200ms
             break;
         case Main::Test:
-            ReadProcess(5000);
+            if (state.test == TestSub::StickTest)
+            {
+                usleep(500000);
+            }
+            else
+            {
+                ReadProcess(5000);
+            }
             break;
         case Main::Shutdown:
             parse_and_save_to_csv("../../READ/DrumData_out.txt");
@@ -304,7 +311,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             {
                 if (maxonMotor->positioning)
                 {
-                    if (maxonMotor->targetPos < maxonMotor->currentPos)
+                    if (pathManager.wrist_targetPos < maxonMotor->currentPos)
                     {
                         cout << "Positioning True!!!!!!!!!!!!!!!!!!!11\n";
                         maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
@@ -396,9 +403,22 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                cout << "Position : " << mData.position << ",   State : " << mData.WristState << "\n";
-                if (mData.WristState == -1) // Get to Torque Mode
+                cout << maxonMotor->myName << "\nPosition : " << mData.position << ",   State : " << mData.WristState << "\n";
+                if (mData.WristState == 2)
+                { // Stay Before Torque Mode
+                    maxonMotor->stay = true;
+                    maxonMotor->hitting = false;
+                    maxonMotor->positioning = false;
+                    maxonMotor->atPosition = false;
+                    if (!maxonMotor->isPositionMode)
+                    {
+                        maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+                        maxonMotor->isPositionMode = true;
+                    }
+                }
+                else if (mData.WristState == -1) // Get to Torque Mode
                 {
+                    maxonMotor->stay = false;
                     maxonMotor->hitting = true;
                     maxonMotor->positioning = false;
                     maxonMotor->atPosition = false;
@@ -410,6 +430,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 }
                 else if (mData.WristState == -0.5) // In Position Mode
                 {
+                    maxonMotor->stay = false;
                     maxonMotor->hitting = false;
                     maxonMotor->positioning = false;
                     maxonMotor->atPosition = false;
@@ -423,13 +444,13 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 150 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 30 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 200 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 300 * maxonMotor->cwDir);
                     }
-                    else if (maxonMotor->atPosition)
+                    else if (maxonMotor->atPosition || maxonMotor->stay)
                     {
                         if (!maxonMotor->isPositionMode)
                         {
@@ -438,14 +459,14 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         }
                         else
                         {
-                            float coordinationPos = (maxonMotor->targetPos) * maxonMotor->cwDir;
-                            if (abs(maxonMotor->currentPos - maxonMotor->targetPos) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+                            float coordinationPos = (pathManager.wrist_targetPos) * maxonMotor->cwDir;
+                            if (abs(maxonMotor->currentPos - pathManager.wrist_targetPos) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                             {
-                                if (abs(maxonMotor->currentPos - maxonMotor->targetPos) > 0.2)
+                                if (abs(maxonMotor->currentPos - pathManager.wrist_targetPos) > 0.2)
                                 {
                                     std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Pos Diff)\n";
-                                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << maxonMotor->targetPos << "\n";
-                                    cout << "Diff : " << abs(maxonMotor->currentPos - maxonMotor->targetPos) / M_PI * 180 << "deg\n";
+                                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << pathManager.wrist_targetPos << "\n";
+                                    cout << "Diff : " << abs(maxonMotor->currentPos - pathManager.wrist_targetPos) / M_PI * 180 << "deg\n";
                                 }
                                 else if (maxonMotor->rMin > coordinationPos)
                                 {
@@ -467,11 +488,12 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             }
                             else
                             {
-                                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->targetPos);
+                                cout << "Stay Hold!!\n";
+                                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, pathManager.wrist_targetPos);
                             }
                         }
                     }
-                    else // !hitting, !positioning, !atPosition
+                    else // !hitting, !positioning, !atPosition, !stay
                     {
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
@@ -1253,13 +1275,13 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomingMethodTest(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
+                maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
+                maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
         }
