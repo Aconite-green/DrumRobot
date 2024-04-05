@@ -134,6 +134,10 @@ void DrumRobot::sendLoopForThread()
 
         case Main::Ideal:
             usleep(200000);
+            if (!isReady || isBack)
+            {
+                canManager.checkAllMotors_test();
+            }
             break;
 
         case Main::Homing:

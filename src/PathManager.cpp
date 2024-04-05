@@ -492,8 +492,8 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     }
 
     t_wrist_madi << t_madi.block(0, 0, 1, 3),
-        theta_R.block(0, 0, 1, 3),
-        theta_L.block(0, 0, 1, 3);
+    theta_R.block(0, 0, 1, 3),
+    theta_L.block(0, 0, 1, 3);
 
     return t_wrist_madi;
 }
