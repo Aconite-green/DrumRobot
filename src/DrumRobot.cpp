@@ -182,7 +182,7 @@ void DrumRobot::recvLoopForThread()
             break;
 
         case Main::Ideal:
-            ReadProcess(200000); /*500ms*/
+            ReadProcess(200000); /*200ms*/
             break;
 
         case Main::Homing:
@@ -631,7 +631,6 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (canManager.checkAllMotors_Fixed())
         {
-            usleep(10000);
             if (getReady)
             {
                 pathManager.GetArr(pathManager.standby);
