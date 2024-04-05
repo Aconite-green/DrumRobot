@@ -396,7 +396,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                cout << "Position : " << mData.position << ",   State : " << mData.WristState << "\n";
+                cout << maxonMotor->myName << "\nPosition : " << mData.position << ",   State : " << mData.WristState << "\n";
                 if (mData.WristState == 2)
                 { // Stay Before Torque Mode
                     maxonMotor->stay = true;
@@ -437,11 +437,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 800 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 300 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 800 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 300 * maxonMotor->cwDir);
                     }
                     else if (maxonMotor->atPosition || maxonMotor->stay)
                     {
@@ -452,7 +452,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         }
                         else
                         {
-                            cout << "Stay Hold!!\n";
                             float coordinationPos = (pathManager.wrist_targetPos) * maxonMotor->cwDir;
                             if (abs(maxonMotor->currentPos - pathManager.wrist_targetPos) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                             {
@@ -482,6 +481,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             }
                             else
                             {
+                                cout << "Stay Hold!!\n";
                                 maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, pathManager.wrist_targetPos);
                             }
                         }

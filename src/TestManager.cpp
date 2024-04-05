@@ -394,6 +394,29 @@ void TestManager::GetArr(double arr[])
         }
     }
 
+    n = 100;
+    for (int k = 0; k < n; ++k)
+    {
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = 0;
+                tmotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.WristState = 0;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+
     cout << "\n";
 }
 

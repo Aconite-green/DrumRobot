@@ -355,6 +355,8 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
+    cout << "T :\n" << T << "\n";
+
     /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
     for (int k = 0; k < nn; ++k)
@@ -794,8 +796,8 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
                 q8_isTorq = -0.5;
             }
             else{
-                q7_isTorq = -0.5;
-                q8_isTorq = -0.5;
+                q7_isTorq = 0;
+                q8_isTorq = 0;
             }
         }
         else if (t_now < time_madi(2))
@@ -1005,7 +1007,7 @@ void PathManager::GetMusicSheet()
     default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
     default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
+    string score_path = "../include/managers/codeConfession.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
