@@ -99,8 +99,8 @@ public:
     vector<double> standby = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, M_PI / 6, M_PI / 6};
 
     //     Back Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 60      , 60 }      [deg]
-    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 3, M_PI / 3};
+    //                      { 0    , 90    , 90    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
+    vector<double> backarr = {0, M_PI / 2, M_PI / 2, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
     float wrist_targetPos = M_PI / 6.0;
     double wrist_hit_time = 0.1;

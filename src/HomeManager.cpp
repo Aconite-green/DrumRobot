@@ -755,7 +755,7 @@ void HomeManager::HomeMaxon()
         state.home = HomeSub::GetSelectedMotor;
         canManager.setSocketBlock();
         setMaxonMode("CSP");
-        MaxonDisable();
+        //MaxonDisable();
         canManager.setSocketNonBlock();
         HomingMotorsArr.erase(HomingMotorsArr.begin());
         break;

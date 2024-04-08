@@ -134,7 +134,7 @@ void DrumRobot::sendLoopForThread()
 
         case Main::Ideal:
             usleep(200000);
-            if (!isReady || isBack)
+            if (state.home != HomeSub::Done)
             {
                 canManager.checkAllMotors_test();
             }
@@ -603,8 +603,8 @@ void DrumRobot::SendAddStanceProcess()
         {
             if (!testManager.isMaxonEnable)
             {
-                homeManager.MaxonEnable();
-                homeManager.setMaxonMode("CSP");
+                //homeManager.MaxonEnable();
+                //homeManager.setMaxonMode("CSP");
                 testManager.isMaxonEnable = true;
             }
 

@@ -1003,8 +1003,8 @@ void PathManager::GetMusicSheet()
 
     default_right.resize(9);
     default_left.resize(9);
-    default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
-    default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
+    default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
+    default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
 
     string score_path = "../include/managers/codeConfession copy.txt";
 

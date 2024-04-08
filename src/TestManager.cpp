@@ -14,19 +14,10 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
-        if (!isMaxonEnable)
-        {
-            MaxonEnable();
-            setMaxonMode("CSP");
-            isMaxonEnable = true;
-        }
-
         cnt = 0;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
-
-
 
         cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
         cin >> method;
@@ -140,8 +131,8 @@ void TestManager::SendTestProcess()
         {
             vector<double> Qf(7);
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
-            Qf.push_back(0.0); // 오른쪽 손목 각도
-            Qf.push_back(0.0); // 왼쪽 손목 각도
+            Qf.push_back(0.0);                                  // 오른쪽 손목 각도
+            Qf.push_back(0.0);                                  // 왼쪽 손목 각도
             for (int i = 0; i < 9; i++)
             {
                 q[i] = Qf[i];
@@ -1340,7 +1331,7 @@ void TestManager::TestStick(const std::string selectedMotor, int des_tff, float 
 
     if (drumHit)
     {
-        drumHitDuration = chrono::duration_cast<chrono::milliseconds>(drumHitTime - start).count(); 
+        drumHitDuration = chrono::duration_cast<chrono::milliseconds>(drumHitTime - start).count();
     }
 
     // 드럼을 친 시점부터 기준 위치까지 올라온 시간을 계산 및 출력

@@ -55,10 +55,10 @@ private:
     Sensor sensor;
 
     std::string motorName;
-    vector<vector<string>> Priority = {{"L_arm1", "R_arm1"},
+    vector<vector<string>> Priority = {{"L_wrist", "R_wrist", "maxonForTest"},
+                                       {"L_arm1", "R_arm1"},
                                        {"L_arm2", "R_arm2"},
-                                       {"L_arm3", "R_arm3"},
-                                       {"L_wrist", "R_wrist", "maxonForTest"}};
+                                       {"L_arm3", "R_arm3"}};
 
     vector<vector<shared_ptr<GenericMotor>>> HomingMotorsArr;
     vector<shared_ptr<TMotor>> tMotors;
