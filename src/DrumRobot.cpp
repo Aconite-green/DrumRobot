@@ -813,6 +813,8 @@ bool DrumRobot::processInput(const std::string &input)
                     maxonMotor->coordinatePos = (maxonMotor->currentPos) * maxonMotor->cwDir;
                 }
             }
+            homeManager.MaxonEnable();
+            homeManager.setMaxonMode("CSP");
             state.home = HomeSub::Done;
             return true;
         }
