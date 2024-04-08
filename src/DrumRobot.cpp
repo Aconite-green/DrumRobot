@@ -67,7 +67,7 @@ void DrumRobot::stateMachine()
         {
             if (!sendCheckFrame)
             {
-                canManager.checkAllMotors_test();
+                canManager.checkAllMotors_Fixed();
                 sendCheckFrame = true;
             }
 
