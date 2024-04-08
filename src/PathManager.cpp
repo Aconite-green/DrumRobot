@@ -1006,7 +1006,7 @@ void PathManager::GetMusicSheet()
     default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
     default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeTest_01.txt";
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     ifstream file(score_path);
     if (!file.is_open())

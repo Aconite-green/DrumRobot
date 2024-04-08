@@ -416,6 +416,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     maxonMotor->atPosition = false;
                     if (!maxonMotor->isPositionMode)
                     {
+                        cout << "Change to Position Mode!!!!!!!!\n";
                         maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                         maxonMotor->isPositionMode = true;
                     }
@@ -428,6 +429,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     maxonMotor->atPosition = false;
                     if (maxonMotor->isPositionMode)
                     {
+                        cout << "Change to Torque Mode!!!!!!!!\n";
                         maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
                         maxonMotor->isPositionMode = false;
                     }
@@ -440,6 +442,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     maxonMotor->atPosition = false;
                     if (!maxonMotor->isPositionMode)
                     {
+                        cout << "Change to Position Mode!!!!!!!!\n";
                         maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                         maxonMotor->isPositionMode = true;
                     }
@@ -448,7 +451,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     if (maxonMotor->hitting)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 30 * maxonMotor->cwDir * (-1));
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 300 * maxonMotor->cwDir * (-1));
                     }
                     else if (maxonMotor->positioning)
                     {
@@ -458,6 +461,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     {
                         if (!maxonMotor->isPositionMode)
                         {
+                            cout << "Change to Position Mode!!!!!!!!\n";
                             maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                             maxonMotor->isPositionMode = true;
                         }
