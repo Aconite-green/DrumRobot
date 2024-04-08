@@ -806,11 +806,6 @@ bool DrumRobot::processInput(const std::string &input)
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
                     tMotor->homeOffset = 0.0;
-                    tMotor->coordinatePos = (tMotor->currentPos * tMotor->homeOffset) * tMotor->cwDir;
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-                {
-                    maxonMotor->coordinatePos = (maxonMotor->currentPos) * maxonMotor->cwDir;
                 }
             }
             homeManager.MaxonEnable();

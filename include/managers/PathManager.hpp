@@ -99,8 +99,8 @@ public:
     vector<double> readyarr = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, M_PI / 6, M_PI / 6};
 
     //     Back Standby      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      { 0    , 90    , 90    , -45    , 90     , -45     , 90     , 90      , 90 }      [deg]
-    vector<double> standby = {0, M_PI / 2, M_PI / 2, -M_PI / 4, M_PI / 2, -M_PI / 4, M_PI / 2, M_PI / 2, M_PI / 2};
+    //                      { 0    , 120    , 60    , -45    , 90     , -45     , 90     , 90      , 90 }      [deg]
+    vector<double> standby = {0, M_PI / 3 * 2, M_PI / 3, -M_PI / 4, M_PI / 2, -M_PI / 4, M_PI / 2, M_PI / 2, M_PI / 2};
     //     Back Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 80    , 80    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<double> backarr = {0, M_PI * 0.4, M_PI * 0.4, 0, 0, 0, 0, M_PI / 2, M_PI / 2};

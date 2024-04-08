@@ -669,11 +669,12 @@ vector<double> PathManager::fkfun()
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
             theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+            cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
             theta[motor_mapping[name]] = maxonMotor->currentPos * maxonMotor->cwDir;
-            cout << name << " : " << maxonMotor->coordinatePos << "\n";
+            cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
     }
     double r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
@@ -1088,10 +1089,10 @@ void PathManager::SetReadyAng()
 
     for (int i = 0; i < qk.size(); ++i)
     {
-        standby[i] = qk(i);
+        readyarr[i] = qk(i);
     }
-    standby[7] = 0.0;
-    standby[8] = 0.0;
+    readyarr[7] = 0.0;
+    readyarr[8] = 0.0;
 }
 
 void PathManager::PathLoopTask()
