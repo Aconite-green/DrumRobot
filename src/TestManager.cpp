@@ -26,6 +26,8 @@ void TestManager::SendTestProcess()
         if (ret == -1)
             std::cout << "system clear error" << endl;
 
+
+
         cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
         cin >> method;
 
@@ -132,24 +134,14 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
-            for (int i = 0; i < 9; i++)
-            {
-                q[i] = q[i] / 180 * M_PI; // Degree to Ladian
-            }
             GetArr(q);
-            for (int i = 0; i < 9; i++)
-            {
-                q[i] = q[i] / M_PI * 180; // Ladian to Degree
-            }
         }
         else if (method == 2)
         {
             vector<double> Qf(7);
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
-            cout << "Qf Size : " << Qf.size() << "\n";
             Qf.push_back(0.0); // 오른쪽 손목 각도
             Qf.push_back(0.0); // 왼쪽 손목 각도
-            cout << "Qf Size : " << Qf.size() << "\n";
             for (int i = 0; i < 9; i++)
             {
                 q[i] = Qf[i];
@@ -158,10 +150,6 @@ void TestManager::SendTestProcess()
             cout << "\n";
             sleep(1);
             GetArr(q);
-            for (int i = 0; i < 9; i++)
-            {
-                q[i] = q[i] / M_PI * 180; // Ladian to Degree
-            }
         }
         state.test = TestSub::CheckBuf;
         break;

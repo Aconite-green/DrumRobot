@@ -552,8 +552,8 @@ void MaxonCommandParser::getCurrentThresholdL(MaxonMotor &motor, struct can_fram
     frame->data[1] = 0xB2;
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xE8;
-    frame->data[5] = 0x03;
+    frame->data[4] = 0xF4;
+    frame->data[5] = 0x01;
     frame->data[6] = 0x00;
     frame->data[7] = 0x00;
 }
