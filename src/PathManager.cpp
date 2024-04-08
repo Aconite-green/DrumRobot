@@ -921,7 +921,6 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
 
 void PathManager::GetDrumPositoin()
 {
-    getMotorPos();
     part_length.resize(6);
     part_length << 0.363, 0.3835, 0.363, 0.3835, 0.417, 0.417; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 

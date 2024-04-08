@@ -67,7 +67,7 @@ void DrumRobot::stateMachine()
         {
             if (!sendCheckFrame)
             {
-                canManager.checkAllMotors_test();
+                canManager.checkAllMotors_Fixed();
                 sendCheckFrame = true;
             }
 
@@ -205,7 +205,7 @@ void DrumRobot::recvLoopForThread()
             break;
 
         case Main::Check:
-            ReadProcess(200000); // 200ms
+            ReadProcess(5000); // 200ms
             break;
         case Main::Test:
             if (state.test == TestSub::StickTest)

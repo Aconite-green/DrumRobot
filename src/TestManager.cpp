@@ -19,6 +19,8 @@ void TestManager::SendTestProcess()
         if (ret == -1)
             std::cout << "system clear error" << endl;
 
+        fkfun(q);   // 현재 q값에 대한 fkfun 진행
+
         cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
         cin >> method;
 
@@ -61,24 +63,21 @@ void TestManager::SendTestProcess()
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values ]\n";
+        cout << "[ Current Q Values (Ladian) ]\n";
         for (int i = 0; i < 9; i++)
         {
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
 
-        cout << "\nSelect Motor to Change Value (1) or Start Test (2) : ";
+        cout << "\nSelect Motor to Change Value (0-8) or Start Test (9) : ";
         cin >> userInput;
 
-        if (userInput == 1)
+        if (userInput < 9)
         {
-            cout << "Enter Q Values (Degree) : ";
-            for (int i = 0; i < 9; i++)
-            {
-                cin >> q[i];
-            }
+            cout << "Enter q[" << userInput << "] Values (Ladian) : ";
+            cin >> q[userInput];
         }
-        if (userInput == 2)
+        if (userInput == 9)
         {
             state.test = TestSub::FillBuf;
         }
@@ -89,7 +88,7 @@ void TestManager::SendTestProcess()
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current x, y, z ]\n";
+        cout << "[ Current x, y, z (meter) ]\n";
         cout << "Right : ";
         for (int i = 0; i < 3; i++)
         {
@@ -106,12 +105,12 @@ void TestManager::SendTestProcess()
 
         if (userInput == 1)
         {
-            cout << "Enter x, y, z Values : ";
+            cout << "Enter x, y, z Values (meter) : ";
             cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
         }
         else if (userInput == 2)
         {
-            cout << "Enter x, y, z Values : ";
+            cout << "Enter x, y, z Values (meter) : ";
             cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
         }
         else if (userInput == 3)
@@ -303,6 +302,26 @@ void TestManager::setMaxonMode(std::string targetMode)
             }
         }
     }
+}
+
+void TestManager::fkfun(double arr[])
+{
+
+    vector<double> P;
+    vector<double> theta(9);
+
+    double r1 = part_length[0], r2 = part_length[1], l1 = part_length[2], l2 = part_length[3], stick = part_length[4];
+
+    P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
+    P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
+    P.push_back(z0 - r1 * cos(theta[3]) - r2 * cos(theta[3] + theta[4]) - stick * cos(theta[3] + theta[4] + theta[7]));
+    P.push_back(-0.5 * s * cos(theta[0]) + l1 * sin(theta[5]) * cos(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * cos(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * cos(theta[0] + theta[2]));
+    P.push_back(-0.5 * s * sin(theta[0]) + l1 * sin(theta[5]) * sin(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * sin(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * sin(theta[0] + theta[2]));
+    P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]) - stick * cos(theta[5] + theta[6] + theta[8]));
+
+
+    std::cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
+    std::cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
 }
 
 /////////////////////////////////////////////////////////////////////////////////
