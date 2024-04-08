@@ -358,13 +358,10 @@ void HomeManager::SendHomeProcess()
         else if (motorName == "load")
         {
             loadHomingInfoFromFile();
+            setMaxonMode("CSP");
+            MaxonEnable();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
-
-            canManager.setSocketBlock();
-            setMaxonMode("CSP");
-            MaxonDisable();
-            canManager.setSocketNonBlock();
         }
         else
         {
@@ -755,93 +752,6 @@ void HomeManager::HomeMaxon()
         state.home = HomeSub::GetSelectedMotor;
         canManager.setSocketBlock();
         setMaxonMode("CSP");
-        //MaxonDisable();
-        canManager.setSocketNonBlock();
-        HomingMotorsArr.erase(HomingMotorsArr.begin());
-        break;
-    }
-    }
-}
-
-void HomeManager::HomeMaxon_test()
-{
-    switch (state.homeMaxon.load())
-    {
-    case HomeMaxon::StartHoming:
-    {
-        maxonMotors.clear();
-        vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
-
-        for (long unsigned int i = 0; i < currentMotors.size(); i++)
-        {
-            cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
-            maxonMotors.push_back(dynamic_pointer_cast<MaxonMotor>(currentMotors[i]));
-
-            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
-            canManager.sendMotorFrame(maxonMotors[i]);
-            usleep(50000);
-
-            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
-            canManager.sendMotorFrame(maxonMotors[i]);
-            usleep(50000);
-
-            maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 50 * maxonMotors[i]->cwDir);
-            canManager.sendMotorFrame(maxonMotors[i]);
-            usleep(50000);
-        }
-
-        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
-        canManager.sendMotorFrame(maxonMotors[0]);
-
-        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
-        canManager.sendMotorFrame(maxonMotors[0]);
-
-        maxoncmd.getSync(&maxonMotors[0]->sendFrame);
-        canManager.sendMotorFrame(maxonMotors[0]);
-        cout << "\nMaxon Homing Start!!\n";
-        state.homeMaxon = HomeMaxon::CheckHomeStatus;
-        break;
-    }
-    case HomeMaxon::CheckHomeStatus:
-    {
-        bool done = true;
-        for (long unsigned int i = 0; i < maxonMotors.size(); i++)
-        {
-            if (!maxonMotors[i]->isHomed)
-            {
-                done = false;
-                break;
-            }
-        }
-
-        if (!done)
-        {
-            usleep(50000); // 50ms
-            maxoncmd.getSync(&maxonMotors[0]->sendFrame);
-            canManager.sendMotorFrame(maxonMotors[0]);
-            for (long unsigned int i = 0; i < maxonMotors.size(); i++)
-            {
-                cout << "currentTorque : " << maxonMotors[i]->currentTor << "\n";
-                if (maxonMotors[i]->currentTor > 500)
-                {
-                    maxonMotors[i]->isHomed = true;
-                    maxonMotors[i]->bumperLocation = maxonMotors[i]->currentTor;
-                    maxoncmd.getTargetVelocity(*maxonMotors[i], &maxonMotors[i]->sendFrame, 0);
-                }
-            }
-        }
-        else
-        {
-            state.homeMaxon = HomeMaxon::Done;
-        }
-        break;
-    }
-    case HomeMaxon::Done:
-    {
-        state.home = HomeSub::GetSelectedMotor;
-        canManager.setSocketBlock();
-        setMaxonMode("CSP");
-        MaxonDisable();
         canManager.setSocketNonBlock();
         HomingMotorsArr.erase(HomingMotorsArr.begin());
         break;

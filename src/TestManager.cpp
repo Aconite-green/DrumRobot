@@ -19,9 +19,17 @@ void TestManager::SendTestProcess()
         if (ret == -1)
             std::cout << "system clear error" << endl;
 
-        fkfun(q);   // 현재 q값에 대한 fkfun 진행
+        double c_MotorAngle[9];
+        getMotorPos(c_MotorAngle);
 
-        cout << "Select Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
+        cout << "[ Current Q Values (Ladian) ]\n";
+        for (int i = 0; i < 9; i++)
+        {
+            cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
+        }
+        fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
+
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
         cin >> method;
 
         if (method == 1)
@@ -63,7 +71,7 @@ void TestManager::SendTestProcess()
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values (Ladian) ]\n";
+        cout << "[ Current Q Values (Radian) ]\n";
         for (int i = 0; i < 9; i++)
         {
             cout << "q[" << i << "] : " << q[i] << "\n";
@@ -74,7 +82,7 @@ void TestManager::SendTestProcess()
 
         if (userInput < 9)
         {
-            cout << "Enter q[" << userInput << "] Values (Ladian) : ";
+            cout << "Enter q[" << userInput << "] Values (Radian) : ";
             cin >> q[userInput];
         }
         if (userInput == 9)
@@ -304,11 +312,10 @@ void TestManager::setMaxonMode(std::string targetMode)
     }
 }
 
-void TestManager::fkfun(double arr[])
+void TestManager::fkfun(double theta[])
 {
 
     vector<double> P;
-    vector<double> theta(9);
 
     double r1 = part_length[0], r2 = part_length[1], l1 = part_length[2], l2 = part_length[3], stick = part_length[4];
 
@@ -319,8 +326,7 @@ void TestManager::fkfun(double arr[])
     P.push_back(-0.5 * s * sin(theta[0]) + l1 * sin(theta[5]) * sin(theta[0] + theta[2]) + l2 * sin(theta[5] + theta[6]) * sin(theta[0] + theta[2]) + stick * sin(theta[5] + theta[6] + theta[8]) * sin(theta[0] + theta[2]));
     P.push_back(z0 - l1 * cos(theta[5]) - l2 * cos(theta[5] + theta[6]) - stick * cos(theta[5] + theta[6] + theta[8]));
 
-
-    std::cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
+    std::cout << "\nRight Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
     std::cout << "Left Hand Position : { " << P[3] << " , " << P[4] << " , " << P[5] << " }\n";
 }
 

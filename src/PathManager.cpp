@@ -1002,10 +1002,10 @@ void PathManager::GetMusicSheet()
 
     default_right.resize(9);
     default_left.resize(9);
-    default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
-    default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
+    default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
+    default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
+    string score_path = "../include/managers/codeTest_01.txt";
 
     ifstream file(score_path);
     if (!file.is_open())
@@ -1097,7 +1097,7 @@ void PathManager::SetReadyAng()
 void PathManager::PathLoopTask()
 {
     double v_wrist = M_PI;
-    double v_elbow = 0.5 * M_PI;
+    double v_elbow = M_PI / 5;
     double t_now = time_arr[line];
 
     VectorXd qt = VectorXd::Zero(9);

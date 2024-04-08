@@ -601,26 +601,12 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (getReady)
         {
-            if (!testManager.isMaxonEnable)
-            {
-                //homeManager.MaxonEnable();
-                //homeManager.setMaxonMode("CSP");
-                testManager.isMaxonEnable = true;
-            }
-
             std::cout << "Get Ready...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
         }
         else if (getBack)
         {
-            if (!testManager.isMaxonEnable)
-            {
-                homeManager.MaxonEnable();
-                homeManager.setMaxonMode("CSP");
-                testManager.isMaxonEnable = true;
-            }
-
             std::cout << "Get Back...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -640,6 +626,14 @@ void DrumRobot::SendAddStanceProcess()
                 pathManager.GetArr(pathManager.standby);
             }
             else if (getBack)
+            {
+                pathManager.GetArr(pathManager.standby);
+            }
+            else if (isReady)
+            {
+                pathManager.GetArr(pathManager.readyarr);
+            }
+            else if (isBack)
             {
                 pathManager.GetArr(pathManager.backarr);
             }
@@ -683,10 +677,9 @@ void DrumRobot::SendAddStanceProcess()
         }
         else
         {
-            state.addstance = AddStanceSub::CheckCommand;
-            canManager.clearReadBuffers();
             if (getReady)
             {
+                state.addstance = AddStanceSub::FillBuf;
                 isReady = true;
                 getReady = false;
                 isBack = false;
@@ -694,10 +687,21 @@ void DrumRobot::SendAddStanceProcess()
             }
             else if (getBack)
             {
+                state.addstance = AddStanceSub::FillBuf;
                 isBack = true;
                 getBack = false;
                 isReady = false;
                 getReady = false;
+            }
+            else if (isReady)
+            {
+                state.addstance = AddStanceSub::CheckCommand;
+                canManager.clearReadBuffers();
+            }
+            else if (isBack)
+            {
+                state.addstance = AddStanceSub::CheckCommand;
+                canManager.clearReadBuffers();
             }
         }
         break;
