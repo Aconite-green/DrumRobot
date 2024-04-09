@@ -77,6 +77,10 @@ void HomeManager::saveHomingInfoToFile()
             {
                 tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
             }
+            else if (motor.first == "waist")
+            {
+                tMotor->homeOffset = -tMotor->currentPos;
+            }
 
             if (motor.first == "L_arm2") // 센서 위치 이상한거 보정
                 tMotor->homeOffset += 6.0 / 180 * M_PI;
