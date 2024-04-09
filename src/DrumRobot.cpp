@@ -494,12 +494,12 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 else if (maxonMotor->rMin > coordinationPos)
                                 {
                                     std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Out of Range : Min)\n";
-                                    cout << "Current : " << maxonMotor->currentPos / M_PI * 180 << "deg\n";
+                                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                                 }
                                 else
                                 {
                                     std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Out of Range : Max)\n";
-                                    cout << "Current : " << maxonMotor->currentPos / M_PI * 180 << "deg\n";
+                                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                                 }
 
                                 isSafe = false;
@@ -524,14 +524,18 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                             {
                                 std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Pos Diff)\n";
+                                cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
+                                cout << "Diff : " << abs(maxonMotor->currentPos - mData.position) / M_PI * 180 << "deg\n";
                             }
                             else if (maxonMotor->rMin > coordinationPos)
                             {
                                 std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                                cout << "Current : " << maxonMotor->currentPos << "Target coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                             }
                             else
                             {
                                 std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                                cout << "Current : " << maxonMotor->currentPos << "Target coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                             }
                             isSafe = false;
                             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
@@ -557,14 +561,18 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     if (abs(tMotor->currentPos - tData.position) > 0.2)
                     {
                         std::cout << "Error Druing Perform For " << tMotor->myName << " (Pos Diff)\n";
+                        cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";
+                        cout << "Diff : " << abs(tMotor->currentPos - tData.position) / M_PI * 180 << "deg\n";
                     }
                     else if (tMotor->rMin > coordinationPos)
                     {
                         std::cout << "Error Druing Perform For " << tMotor->myName << " (Out of Range : Min)\n";
+                        cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                     }
                     else
                     {
                         std::cout << "Error Druing Perform For " << tMotor->myName << " (Out of Range : Max)\n";
+                        cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                     }
 
                     isSafe = false;
