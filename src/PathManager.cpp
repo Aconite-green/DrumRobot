@@ -577,7 +577,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
             double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             double the4 = the34 - the3[i];
 
-            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
+            if (the4 >= 0 && the4 < M_PI * 0.75) // the4 범위 : 0deg ~ 135deg
             {
                 double r = r1 * sin(the3[i]) + r2 * sin(the34);
                 double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
@@ -585,7 +585,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                 if (det_the1 < 1 && det_the1 > -1)
                 {
                     double the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
+                    if (the1 > 0 && the1 < M_PI * 0.8) // the1 범위 : 0deg ~ 144deg
                     {
                         double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
                         double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
@@ -609,7 +609,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                                         if (det_the6 < 1 && det_the6 > -1)
                                         {
                                             double the6 = acos(det_the6);
-                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
+                                            if (the6 >= 0 && the6 < M_PI * 0.75) // the6 범위 : 0deg ~ 135deg
                                             {
                                                 double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
                                                 double det_the5 = L * L + zeta * zeta - T * T;
