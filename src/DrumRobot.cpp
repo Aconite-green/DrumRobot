@@ -359,7 +359,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 else
                     state.perform = PerformSub::SafetyCheck;
             }
-            break;
         }
         break;
     }
