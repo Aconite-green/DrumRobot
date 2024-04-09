@@ -470,7 +470,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 300 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 200 * maxonMotor->cwDir);
                     }
                     else if (maxonMotor->atPosition || maxonMotor->stay)
                     {
@@ -589,7 +589,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SendCANFrame:
     {
-        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;

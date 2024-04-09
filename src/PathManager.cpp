@@ -527,16 +527,16 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
         {
             double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_elbow;
-            if (theta_L(0, i) > (M_PI / 2) * 0.8)
-                theta_L(0, i) = (M_PI / 2) * 0.8;
+            if (theta_L(0, i) > (M_PI / 10))
+                theta_L(0, i) = (M_PI / 10);
         }
 
         if (sts_R(0, i) == -1)
         {
             double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_elbow;
-            if (theta_R(0, i) > (M_PI / 2) * 0.8)
-                theta_R(0, i) = (M_PI / 2) * 0.8;
+            if (theta_R(0, i) > (M_PI / 10))
+                theta_R(0, i) = (M_PI / 10);
         }
     }
 
@@ -1098,7 +1098,7 @@ void PathManager::SetReadyAng()
 void PathManager::PathLoopTask()
 {
     double v_wrist = M_PI;
-    double v_elbow = M_PI / 5;
+    double v_elbow = M_PI / 10;
     double t_now = time_arr[line];
 
     VectorXd qt = VectorXd::Zero(9);
