@@ -251,17 +251,26 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
         break;
     case ReadSub::UpdateMotorInfo:
+    {
         canManager.distributeFramesToMotors();
-        for (auto &motor_pair : motors)
+        if (maxonMotorCount == 0)
         {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                maxonMotor->checked = false;
-            }
+            state.read = ReadSub::TimeCheck;
         }
-        state.read = ReadSub::CheckMaxonControl;
+        else
+        {
+            for (auto &motor_pair : motors)
+            {
+                auto &motor = motor_pair.second;
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    maxonMotor->checked = false;
+                }
+            }
+            state.read = ReadSub::CheckMaxonControl;
+        }
         break;
+    }
     case ReadSub::CheckMaxonControl:
         for (auto &motor_pair : motors)
         {
@@ -352,14 +361,20 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     {
         for (const auto &motor_pair : motors)
         {
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                if (tMotor->commandBuffer.size() < 10)
+                    state.perform = PerformSub::GeneratePath;
+                else
+                    state.perform = PerformSub::SafetyCheck;
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
                 if (maxonMotor->commandBuffer.size() < 10)
                     state.perform = PerformSub::GeneratePath;
                 else
                     state.perform = PerformSub::SafetyCheck;
             }
-            break;
         }
         break;
     }
@@ -377,7 +392,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             bool allBuffersEmpty = true;
             for (const auto &motor_pair : motors)
             {
-                if (!dynamic_pointer_cast<MaxonMotor>(motor_pair.second)->commandBuffer.empty())
+                if (!dynamic_pointer_cast<TMotor>(motor_pair.second)->commandBuffer.empty())
                 {
                     allBuffersEmpty = false;
                     break;
@@ -579,14 +594,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                virtualMaxonMotor = maxonMotor;
-                needSync = true;
-            }
         }
-
-        if (needSync)
+        if (maxonMotorCount != 0)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
             canManager.sendMotorFrame(virtualMaxonMotor);
@@ -723,19 +732,13 @@ void DrumRobot::SendAddStanceProcess()
     case AddStanceSub::SendCANFrame:
     {
 
-        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
             canManager.sendMotorFrame(motor);
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                virtualMaxonMotor = maxonMotor;
-                needSync = true;
-            }
         }
 
-        if (needSync)
+        if (maxonMotorCount != 0)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
             canManager.sendMotorFrame(virtualMaxonMotor);
