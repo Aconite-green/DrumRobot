@@ -333,6 +333,7 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
+            
             for (auto &PmotorNames : Priority)
             {
                 vector<shared_ptr<GenericMotor>> temp;
