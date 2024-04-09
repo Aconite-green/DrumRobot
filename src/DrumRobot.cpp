@@ -589,7 +589,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SendCANFrame:
     {
-        bool needSync = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
