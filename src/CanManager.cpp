@@ -563,57 +563,6 @@ void CanManager::distributeFramesToMotors()
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
 }
 
-bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
-{
-    struct can_frame frame;
-    clearReadBuffers();
-
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-    {
-        tmotorcmd.getQuickStop(*tMotor, &frame);
-        txFrame(motor, frame);
-        if (sendAndRecv(motor, frame))
-        {
-            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-            motor->currentPos = std::get<1>(parsedData);
-            motor->currentVel = std::get<2>(parsedData);
-            motor->currentTor = std::get<3>(parsedData);
-            motor->isConected = true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-    {
-        maxoncmd.getSync(&frame);
-        txFrame(motor, frame);
-        motor->clearReceiveBuffer();
-        if (recvToBuff(motor, maxonCnt))
-        {
-            while (!motor->recieveBuffer.empty())
-            {
-                frame = motor->recieveBuffer.front();
-                if (frame.can_id == maxonMotor->rxPdoIds[0])
-                {
-                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    maxonMotor->currentPos = std::get<1>(parsedData);
-                    maxonMotor->currentTor = std::get<2>(parsedData);
-                    maxonMotor->statusBit = std::get<3>(parsedData);
-                    maxonMotor->isConected = true;
-                }
-                motor->recieveBuffer.pop();
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
@@ -647,22 +596,6 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         sendMotorFrame(maxonMotor);
     }
     return true;
-}
-
-bool CanManager::checkAllMotors()
-{
-    bool allMotorsChecked = true;
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        if (!checkConnection(motor))
-        {
-            allMotorsChecked = false;
-        }
-    }
-    return allMotorsChecked;
 }
 
 bool CanManager::checkAllMotors_test()

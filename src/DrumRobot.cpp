@@ -1329,7 +1329,7 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (tmotor->myName == "waist" || initPosition > 2)
+            if (/*tmotor->myName == "waist" || */ initPosition > 2)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);
@@ -1414,7 +1414,7 @@ void DrumRobot::clearMotorsCommandBuffer()
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
-    std::ofstream ofs(csv_file_name, std::ios::app);
+    std::ofstream ofs(csv_file_name);
     if (!ofs.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
