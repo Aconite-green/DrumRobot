@@ -81,5 +81,4 @@ private:
 
     void HomeTmotor();
     void HomeMaxon();
-    void HomeMaxon_test();
 };

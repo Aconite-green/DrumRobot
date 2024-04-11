@@ -1403,7 +1403,7 @@ void DrumRobot::clearMotorsCommandBuffer()
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
-    std::ofstream ofs(csv_file_name, std::ios::app);
+    std::ofstream ofs(csv_file_name);
     if (!ofs.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
@@ -1415,39 +1415,48 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     if (ofs.tellp() == 0)
         ofs << "CAN_ID,p_act,tff_des,tff_act\n";
 
-    // 각 모터에 대한 처리
-    for (const auto &pair : motors)
+    while (true)
     {
-        auto &motor = pair.second;
-        if (!motor->recieveBuffer.empty())
+        bool allRecvBufferEmpty = true;
+        for (const auto &pair : motors)
         {
-            can_frame frame = motor->recieveBuffer.front();
-            motor->recieveBuffer.pop();
-
-            int id = motor->nodeId;
-            float position, speed, torque;
-
-            // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            auto &motor = pair.second;
+            if (!motor->recieveBuffer.empty())
             {
-                std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-                position = std::get<1>(parsedData);
-                speed = std::get<2>(parsedData);
-                torque = std::get<3>(parsedData);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                position = std::get<1>(parsedData);
-                torque = std::get<2>(parsedData);
-                speed = 0.0;
-            }
+                allRecvBufferEmpty = false;
+                can_frame frame = motor->recieveBuffer.front();
+                motor->recieveBuffer.pop();
 
-            // 데이터 CSV 파일에 쓰기
-            ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
-                << std::dec << position << "," << speed << "," << torque << "\n";
+                int id = motor->nodeId;
+                float position, speed, torque;
+
+                // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+                {
+                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    position = std::get<1>(parsedData);
+                    speed = std::get<2>(parsedData);
+                    torque = std::get<3>(parsedData);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    position = std::get<1>(parsedData);
+                    torque = std::get<2>(parsedData);
+                    speed = 0.0;
+                }
+
+                // 데이터 CSV 파일에 쓰기
+                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                    << std::dec << position << "," << speed << "," << torque << "\n";
+            }
         }
+
+        if (allRecvBufferEmpty)
+            break;
     }
+
+    // 각 모터에 대한 처리
 
     ofs.close();
     std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
