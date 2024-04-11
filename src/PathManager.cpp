@@ -1217,7 +1217,7 @@ void PathManager::GetArr(vector<double> &arr)
     cout << "Get Array...\n";
 
     vector<double> Qi;
-    vector<vector<double>> q_setting;
+    //vector<vector<double>> q_setting;
 
     getMotorPos();
 
@@ -1226,7 +1226,7 @@ void PathManager::GetArr(vector<double> &arr)
     {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
-        q_setting.push_back(Qi);
+        pos.push_back(Qi);
 
         // Send to Buffer
         for (auto &entry : motors)
