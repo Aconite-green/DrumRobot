@@ -1413,7 +1413,7 @@ void DrumRobot::clearMotorsCommandBuffer()
 
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {
-    // CSV 파일 열기. 파일이 없으면 새로 생성됩니다.
+    // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
     std::ofstream ofs(csv_file_name);
     if (!ofs.is_open())
     {
