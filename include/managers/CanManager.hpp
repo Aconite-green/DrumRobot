@@ -48,10 +48,6 @@ public:
 
     void setMotorsSocket();
 
-    bool checkConnection(std::shared_ptr<GenericMotor> motor);
-
-    bool checkAllMotors();
-
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
 
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);

@@ -286,38 +286,6 @@ void HomeManager::setMaxonMode(std::string targetMode)
     }
 }
 
-void HomeManager::FixMotorPosition(std::shared_ptr<GenericMotor> &motor)
-{
-    struct can_frame frame;
-
-    canManager.checkConnection(motor);
-
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-    {
-        tmotorcmd.parseSendCommand(*tMotor, &frame, motor->nodeId, 8, motor->currentPos, 0, 450, 1, 0);
-        if (canManager.sendAndRecv(motor, frame))
-        {
-            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
-        }
-    }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-    {
-        maxoncmd.getTargetPosition(*maxonMotor, &frame, motor->currentPos);
-        if (canManager.sendAndRecv(motor, frame))
-        {
-            std::cout << "Position fixed for motor [" << motor->nodeId << "]." << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to fix position for motor [" << motor->nodeId << "]." << std::endl;
-        }
-    }
-}
-
 void HomeManager::SendHomeProcess()
 {
     switch (state.home.load())
@@ -337,6 +305,8 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
+            canManager.checkAllMotors_test(); //Waist 모터 포지션 업데이트
+
             for (auto &PmotorNames : Priority)
             {
                 vector<shared_ptr<GenericMotor>> temp;

@@ -392,10 +392,21 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             bool allBuffersEmpty = true;
             for (const auto &motor_pair : motors)
             {
-                if (!dynamic_pointer_cast<TMotor>(motor_pair.second)->commandBuffer.empty())
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    allBuffersEmpty = false;
-                    break;
+                    if (!tMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    if (!maxonMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
                 }
             }
             if (allBuffersEmpty)
@@ -1318,7 +1329,7 @@ void DrumRobot::motorSettingCmd()
             std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
             float initPosition = abs(std::get<1>(parsedData));
 
-            if (tmotor->myName == "waist" || initPosition > 2)
+            if (/*tmotor->myName == "waist" || */ initPosition > 2)
             {
                 usleep(5000);
                 tmotorcmd.getZero(*tmotor, &frame);

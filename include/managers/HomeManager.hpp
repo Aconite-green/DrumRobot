@@ -77,8 +77,6 @@ private:
     void displayHomingStatus();
     void UpdateHomingStatus();
 
-    void FixMotorPosition(std::shared_ptr<GenericMotor> &motor);
-
     void HomeTmotor();
     void HomeMaxon();
 };
