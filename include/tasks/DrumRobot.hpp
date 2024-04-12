@@ -77,6 +77,7 @@ private:
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
     bool sendCheckFrame = false;
+    
     // System Initialize 메소드들
     void initializeMotors();
     void initializecanManager();
