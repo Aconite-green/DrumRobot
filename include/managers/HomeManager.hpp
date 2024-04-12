@@ -75,7 +75,6 @@ private:
     void loadHomingInfoFromFile();
     void saveHomingInfoToFile();
     void displayHomingStatus();
-    void UpdateHomingStatus();
 
     void HomeTmotor();
     void HomeMaxon();

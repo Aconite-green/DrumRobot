@@ -18,25 +18,6 @@ void HomeManager::displayHomingStatus()
     }
 }
 
-void HomeManager::UpdateHomingStatus()
-{
-    bool allMotorsHomed = true;
-    for (const auto &motor_pair : motors)
-    {
-        if (!motor_pair.second->isHomed)
-        {
-            allMotorsHomed = false;
-            break;
-        }
-    }
-
-    if (allMotorsHomed)
-    {
-        state.home = HomeSub::Done;
-        state.main = Main::Ideal;
-    }
-}
-
 void HomeManager::saveHomingInfoToFile()
 {
     // 실행 파일 위치인 bin 디렉토리로부터 상대 경로 설정
@@ -292,7 +273,6 @@ void HomeManager::SendHomeProcess()
     {
     case HomeSub::SelectMotorByUser:
     {
-
         displayHomingStatus();
 
         std::cout << "Enter a 'motor name', 'all', 'load' for loading home file : ";

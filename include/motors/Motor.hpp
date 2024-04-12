@@ -112,6 +112,7 @@ public:
     queue<MaxonData> commandBuffer;
     queue<double> wrist_BackArr;
     void clearCommandBuffer();
+    void clearWrist_BackArr();
 };
 
 #endif // MOTOR_H

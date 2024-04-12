@@ -59,3 +59,10 @@ void MaxonMotor::clearCommandBuffer(){
         commandBuffer.pop();
     }
 }
+
+void MaxonMotor::clearWrist_BackArr(){
+    while (!wrist_BackArr.empty())
+    {
+        wrist_BackArr.pop();
+    }
+}

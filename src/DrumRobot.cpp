@@ -459,8 +459,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     maxonMotor->hitting = true;
                     maxonMotor->positioning = false;
                     maxonMotor->atPosition = false;
-                    while (!maxonMotor->wrist_BackArr.empty())
-                        maxonMotor->wrist_BackArr.pop();
+                    maxonMotor->clearWrist_BackArr();
 
                     if (maxonMotor->isPositionMode)
                     {
