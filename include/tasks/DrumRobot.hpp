@@ -96,7 +96,10 @@ private:
     void clearMotorsCommandBuffer();
 
     can_frame frame;
-    int temp = 0;
+    int des = 0;
+    int act = 0;
+    int cnt = 0;
+    int k = 0;
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;

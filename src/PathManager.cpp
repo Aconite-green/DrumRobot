@@ -355,8 +355,6 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
         }
     }
 
-    cout << "T :\n" << T << "\n";
-
     /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
     int j = 0;
     for (int k = 0; k < nn; ++k)
@@ -459,13 +457,13 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
         if (sts_R(0, i) == 1)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
-            theta_R(0, i) = wrist_targetPos;
+            theta_R(0, i) = wrist_backPos;
         // theta_R(0, i) = 0.15 * v_wrist;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
-            theta_L(0, i) = wrist_targetPos;
+            theta_L(0, i) = wrist_backPos;
         // theta_L(0, i) = 0.15 * v_wrist;
     }
 
@@ -474,7 +472,7 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     {
         if (sts_L(0, i) == -1)
         {
-            theta_L(0, i) = wrist_targetPos;
+            theta_L(0, i) = wrist_backPos;
             /*double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_wrist;
             if (theta_L(0, i) > (M_PI / 2) * 0.8)
@@ -483,7 +481,7 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
 
         if (sts_R(0, i) == -1)
         {
-            theta_R(0, i) = wrist_targetPos;
+            theta_R(0, i) = wrist_backPos;
             /*double dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_wrist;
             if (theta_R(0, i) > (M_PI / 2) * 0.8)
@@ -492,8 +490,8 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     }
 
     t_wrist_madi << t_madi.block(0, 0, 1, 3),
-    theta_R.block(0, 0, 1, 3),
-    theta_L.block(0, 0, 1, 3);
+        theta_R.block(0, 0, 1, 3),
+        theta_L.block(0, 0, 1, 3);
 
     return t_wrist_madi;
 }
@@ -795,7 +793,8 @@ pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
                 q7_isTorq = -0.5;
                 q8_isTorq = -0.5;
             }
-            else{
+            else
+            {
                 q7_isTorq = 0;
                 q8_isTorq = 0;
             }
@@ -1178,8 +1177,7 @@ void PathManager::PathLoopTask()
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
     cout << "State :\n"
-         << State << "\nt_wrist_madi :\n"
-         << t_wrist_madi << "\n";
+         << State << "\n";
 
     double t1 = p2(0) - p1(0);
     double t2 = p3(0) - p1(0);
@@ -1217,7 +1215,7 @@ void PathManager::GetArr(vector<double> &arr)
     cout << "Get Array...\n";
 
     vector<double> Qi;
-    //vector<vector<double>> q_setting;
+    // vector<vector<double>> q_setting;
 
     getMotorPos();
 
@@ -1244,6 +1242,27 @@ void PathManager::GetArr(vector<double> &arr)
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+}
+
+void PathManager::Get_wrist_BackArr(string MotorName, float &A, float &B, double t)
+{
+    float dt = 0.005;
+    int n = t / dt;
+
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            if (maxonMotor->myName == MotorName)
+            {
+                for (int k = 1; k <= n; k++)
+                {
+                    float data = (A - B) * pow(((k / n) - 1), 2) + B;
+                    maxonMotor->wrist_BackArr.push(data);
+                }
             }
         }
     }

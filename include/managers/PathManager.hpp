@@ -87,6 +87,8 @@ public:
      */
     void GetArr(vector<double> &arr);
 
+    void Get_wrist_BackArr(string MotorName, float &A, float &B, double t);
+
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
 
@@ -105,8 +107,11 @@ public:
     //                      { 0    , 80    , 80    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<double> backarr = {0, M_PI * 0.4, M_PI * 0.4, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
-    float wrist_targetPos = M_PI / 6.0;
+    float wrist_targetPos = M_PI / 18.0;
     double wrist_hit_time = 0.1;
+
+    float wrist_backPos = M_PI / 6.0;
+    double wrist_back_time = 0.1;
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.

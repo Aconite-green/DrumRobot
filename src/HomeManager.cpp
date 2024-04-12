@@ -355,7 +355,6 @@ void HomeManager::SendHomeProcess()
             // 첫 번째 요소를 currentMotors에 할당
             for (const auto &motor : currentMotors)
             {
-
                 if (motor->myName == "L_arm1" || motor->myName == "R_arm1" || motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
                 {
                     state.home = HomeSub::HomeTmotor;

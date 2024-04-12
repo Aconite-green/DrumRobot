@@ -394,7 +394,6 @@ void CanManager::setMotorsSocket()
                     maxoncmd.getCheck(*maxonMotor, &frame);
                 }
                 motor->socket = socket_fd;
-                
 
                 txFrame(motor, frame);
                 usleep(50000);
@@ -596,14 +595,18 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
                 if (abs(maxonMotor->currentPos - mData.position) > 0.2)
                 {
                     std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
+                    cout << "Diff : " << abs(maxonMotor->currentPos - mData.position) / M_PI * 180 << "deg\n";
                 }
                 else if (maxonMotor->rMin > coordinationPos)
                 {
                     std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                 }
                 else
                 {
                     std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                 }
 
                 isSafe = false;
