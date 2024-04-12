@@ -40,8 +40,6 @@ public:
 
     void initializeCAN();
 
-    void restartCanPorts();
-
     void setSocketsTimeout(int sec, int usec);
 
     void checkCanPortsStatus();
@@ -97,7 +95,6 @@ private:
     bool getCanPortStatus(const char *port);
     void activateCanPort(const char *port);
     void list_and_activate_available_can_ports();
-    void deactivateCanPort(const char *port);
 
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);

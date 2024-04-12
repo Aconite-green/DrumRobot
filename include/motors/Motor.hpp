@@ -109,7 +109,8 @@ public:
     double homeOffset = 0.0;
     double bumperLocation = 0.0;
 
-    std::queue<MaxonData> commandBuffer;
+    queue<MaxonData> commandBuffer;
+    queue<double> wrist_BackArr;
     void clearCommandBuffer();
 };
 
