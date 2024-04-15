@@ -14,7 +14,8 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
-        for(auto &motor_pair : motors){
+        for (auto &motor_pair : motors)
+        {
             motor_pair.second->clearReceiveBuffer();
         }
         cnt = 0;
@@ -142,7 +143,89 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetSingleTuneParm:
     {
-        singleTestLoop();
+        char userInput = '0';
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+
+        std::cout << "< Current Position >\n";
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+                cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
+            }
+        }
+        std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
+        std::cout << "Selected Motor : " << selectedMotor << "\n"
+                  << "Time : " << t << "\n"
+                  << "Cycles : " << cycles << "\n"
+                  << "Amplitude : " << amp << "[radian]\n"
+                  << "Kp : " << kp << ",\tKd : " << kd << "\n"
+                  << "Kp for Fixed : " << Kp_for_Fixed << ",\tKd for Fixed : " << Kd_for_Fixed << "\n";
+        std::cout << "------------------------------------------------------------------------------------------------------------\n";
+
+        std::cout << "\n[Commands]\n";
+        std::cout << "[s] : Select Other Motor\n"
+                  << "[t] : Time\t [c] : Cycles\n"
+                  << "[a] : Amplitude\t [p] : Kp\t [d] : Kd\n"
+                  << "[f] : Change Fixed Parameter\n"
+                  << "[r] : run\t [e] : Exit\n";
+        std::cout << "Enter Command : ";
+        std::cin >> userInput;
+
+        if (userInput == 's')
+        {
+            std::cout << "\nMotor List : \n";
+            for (auto &motor_pair : motors)
+            {
+                std::cout << motor_pair.first << "\n";
+            }
+            std::cout << "\nEnter Desire Motor : ";
+            std::cin >> selectedMotor;
+        }
+        else if (userInput == 't')
+        {
+            std::cout << "\nEnter Desire Time : ";
+            std::cin >> t;
+        }
+        else if (userInput == 'c')
+        {
+            std::cout << "\nEnter Desire Cycles : ";
+            std::cin >> cycles;
+        }
+        else if (userInput == 'a')
+        {
+            std::cout << "\nEnter Desire Amplitude : ";
+            std::cin >> amp;
+        }
+        else if (userInput == 'p')
+        {
+            std::cout << "\nEnter Desire Kp : ";
+            std::cin >> kp;
+        }
+        else if (userInput == 'd')
+        {
+            std::cout << "\nEnter Desire Kd : ";
+            std::cin >> kd;
+        }
+        else if (userInput == 'f')
+        {
+            std::cout << "\nEnter Desire Kp for Fixed : ";
+            std::cin >> Kp_for_Fixed;
+            std::cout << "\nEnter Desire Kd for Fixed : ";
+            std::cin >> Kd_for_Fixed;
+        }
+        else if (userInput == 'r')
+        {
+            state.test = TestSub::FillBuf;
+        }
+        else if (userInput == 'e')
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        break;
     }
     case TestSub::FillBuf:
     {
@@ -248,14 +331,17 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
-        if(method == 3){
+        if (method == 3)
+        {
             string fileName = "../../READ/" + selectedMotor + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Input.txt";
             save_to_txt_inputData(fileName);
             fileName = "../../READ/" + selectedMotor + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Output.txt";
             parse_and_save_to_csv(fileName);
+
+            state.test = TestSub::SetSingleTuneParm;
         }
-        
-        state.test = TestSub::SelectParamByUser;
+        else
+            state.test = TestSub::SelectParamByUser;
         break;
     }
     }
@@ -578,7 +664,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
 
 void TestManager::singleTestLoop()
 {
-    char userInput;
+    char userInput = '0';
     int result = system("clear");
     if (result != 0)
     {
@@ -600,7 +686,7 @@ void TestManager::singleTestLoop()
               << "Cycles : " << cycles << "\n"
               << "Amplitude : " << amp << "[radian]\n"
               << "Kp : " << kp << ",\tKd : " << kd << "\n"
-              << "Kp for Fixed : " << Kp_for_Fixed << ",\tKd for Fixed : " << Kp_for_Fixed << "\n";
+              << "Kp for Fixed : " << Kp_for_Fixed << ",\tKd for Fixed : " << Kd_for_Fixed << "\n";
     std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
     std::cout << "\n[Commands]\n";
@@ -609,7 +695,7 @@ void TestManager::singleTestLoop()
               << "[a] : Amplitude\t [p] : Kp\t [d] : Kd\n"
               << "[f] : Change Fixed Parameter\n"
               << "[r] : run\t [e] : Exit\n";
-    std::cout << "Enter Command: ";
+    std::cout << "Enter Command : ";
     std::cin >> userInput;
 
     if (userInput == 's')
@@ -664,7 +750,7 @@ void TestManager::singleTestLoop()
     }
 }
 
-void TestManager::startTest(string selectedMotor, double time, int cycles, float amp, float kp, float kd)
+void TestManager::startTest(string selectedMotor, double t, int cycles, float amp, float kp, float kd)
 {
     std::cout << "Test Start!!\n";
 
@@ -685,6 +771,7 @@ void TestManager::startTest(string selectedMotor, double time, int cycles, float
         }
     }
 
+    int time = t / 0.005;
     for (int c = 0; c < cycles; c++)
     {
         for (int i = 0; i < time; i++)
@@ -700,12 +787,14 @@ void TestManager::startTest(string selectedMotor, double time, int cycles, float
                         TMotorData newData;
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
                         newData.velocity = 0.0;
+                        tMotor->commandBuffer.push(newData);
                     }
                     else
                     {
                         TMotorData newData;
                         newData.position = tMotor->currentPos;
                         newData.velocity = 0.0;
+                        tMotor->commandBuffer.push(newData);
                     }
                 }
             }
@@ -713,7 +802,8 @@ void TestManager::startTest(string selectedMotor, double time, int cycles, float
     }
 }
 
-void TestManager::save_to_txt_inputData(const string &csv_file_name){
+void TestManager::save_to_txt_inputData(const string &csv_file_name)
+{
     // CSV 파일 열기
     std::ofstream csvFile(csv_file_name);
 

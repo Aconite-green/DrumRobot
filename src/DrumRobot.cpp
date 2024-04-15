@@ -83,7 +83,7 @@ void DrumRobot::stateMachine()
         }
         case Main::Test:
         {
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::SetSingleTuneParm || state.test == TestSub::StickTest)
             {
                 usleep(50000);
             }

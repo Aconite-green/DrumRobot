@@ -632,14 +632,18 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
                 if (abs(tMotor->currentPos - tData.position) > 0.2)
                 {
                     std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";
+                    cout << "Diff : " << abs(tMotor->currentPos - tData.position) / M_PI * 180 << "deg\n";
                 }
                 else if (tMotor->rMin > coordinationPos)
                 {
                     std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                 }
                 else
                 {
                     std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                 }
 
                 isSafe = false;
