@@ -14,6 +14,9 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
+        for(auto &motor_pair : motors){
+            motor_pair.second->clearReceiveBuffer();
+        }
         cnt = 0;
         int ret = system("clear");
         if (ret == -1)
@@ -29,7 +32,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 멀티 회전, 4 - 나가기) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 나가기) : ";
         cin >> method;
 
         if (method == 1)
@@ -42,21 +45,20 @@ void TestManager::SendTestProcess()
         }
         else if (method == 3)
         {
+            state.test = TestSub::SetSingleTuneParm;
         }
         else if (method == 4)
         {
-            state.main = Main::Ideal;
+            multiTestLoop();
         }
         else if (method == 5)
         {
             state.test = TestSub::StickTest;
         }
-        // Get User Input
-        /* method 1 : q[0]~q[8] 까지 값을 설정 후에 4초에 걸쳐서 해당 위치로 이동 (frame 800개)
-           method 2 : Left, Right 에 대한 xyz 설정
-           method 3 : 연속 동작?
-           +Testing 환경에서 나갈지도 입력으로 받아야 함
-        */
+        else if (method == 6)
+        {
+            state.main = Main::Ideal;
+        }
         break;
     }
     case TestSub::StickTest:
@@ -64,10 +66,12 @@ void TestManager::SendTestProcess()
         canManager.setSocketBlock();
         TestStickLoop();
         canManager.setSocketNonBlock();
+        state.test = TestSub::SelectParamByUser;
         break;
     }
     case TestSub::SetQValue:
     {
+        int userInput = 100;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -77,15 +81,19 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
 
-        cout << "\nSelect Motor to Change Value (0-8) or Start Test (9) : ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) : ";
         cin >> userInput;
 
-        if (userInput < 9)
+        if (userInput == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (userInput < 9)
         {
             cout << "Enter q[" << userInput << "] Values (Radian) : ";
             cin >> q[userInput];
         }
-        if (userInput == 9)
+        else if (userInput == 9)
         {
             state.test = TestSub::FillBuf;
         }
@@ -93,6 +101,7 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetXYZ:
     {
+        int userInput = 100;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -108,10 +117,14 @@ void TestManager::SendTestProcess()
             cout << L_xyz[i] << ", ";
         }
 
-        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) or Start Test (3) : ";
+        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) / Start Test (3) / Exit (-1) : ";
         cin >> userInput;
 
-        if (userInput == 1)
+        if (userInput == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (userInput == 1)
         {
             cout << "Enter x, y, z Values (meter) : ";
             cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
@@ -126,6 +139,10 @@ void TestManager::SendTestProcess()
             state.test = TestSub::FillBuf;
         }
         break;
+    }
+    case TestSub::SetSingleTuneParm:
+    {
+        singleTestLoop();
     }
     case TestSub::FillBuf:
     {
@@ -149,12 +166,15 @@ void TestManager::SendTestProcess()
             sleep(1);
             GetArr(q);
         }
+        else if (method == 3)
+        {
+            startTest(selectedMotor, t, cycles, amp, kp, kd);
+        }
         state.test = TestSub::CheckBuf;
         break;
     }
     case TestSub::CheckBuf:
     {
-
         bool allBuffersEmpty = true;
 
         for (const auto &motor_pair : motors)
@@ -228,6 +248,13 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
+        if(method == 3){
+            string fileName = "../../READ/" + selectedMotor + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Input.txt";
+            save_to_txt_inputData(fileName);
+            fileName = "../../READ/" + selectedMotor + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Output.txt";
+            parse_and_save_to_csv(fileName);
+        }
+        
         state.test = TestSub::SelectParamByUser;
         break;
     }
@@ -543,6 +570,175 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
     }
 
     return Qf;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 Single Test Mode                           */
+///////////////////////////////////////////////////////////////////////////////
+
+void TestManager::singleTestLoop()
+{
+    char userInput;
+    int result = system("clear");
+    if (result != 0)
+    {
+        cerr << "Error during clear screen" << std::endl;
+    }
+
+    std::cout << "< Current Position >\n";
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+            cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
+        }
+    }
+    std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
+    std::cout << "Selected Motor : " << selectedMotor << "\n"
+              << "Time : " << t << "\n"
+              << "Cycles : " << cycles << "\n"
+              << "Amplitude : " << amp << "[radian]\n"
+              << "Kp : " << kp << ",\tKd : " << kd << "\n"
+              << "Kp for Fixed : " << Kp_for_Fixed << ",\tKd for Fixed : " << Kp_for_Fixed << "\n";
+    std::cout << "------------------------------------------------------------------------------------------------------------\n";
+
+    std::cout << "\n[Commands]\n";
+    std::cout << "[s] : Select Other Motor\n"
+              << "[t] : Time\t [c] : Cycles\n"
+              << "[a] : Amplitude\t [p] : Kp\t [d] : Kd\n"
+              << "[f] : Change Fixed Parameter\n"
+              << "[r] : run\t [e] : Exit\n";
+    std::cout << "Enter Command: ";
+    std::cin >> userInput;
+
+    if (userInput == 's')
+    {
+        std::cout << "\nMotor List : \n";
+        for (auto &motor_pair : motors)
+        {
+            std::cout << motor_pair.first << "\n";
+        }
+        std::cout << "\nEnter Desire Motor : ";
+        std::cin >> selectedMotor;
+    }
+    else if (userInput == 't')
+    {
+        std::cout << "\nEnter Desire Time : ";
+        std::cin >> t;
+    }
+    else if (userInput == 'c')
+    {
+        std::cout << "\nEnter Desire Cycles : ";
+        std::cin >> cycles;
+    }
+    else if (userInput == 'a')
+    {
+        std::cout << "\nEnter Desire Amplitude : ";
+        std::cin >> amp;
+    }
+    else if (userInput == 'p')
+    {
+        std::cout << "\nEnter Desire Kp : ";
+        std::cin >> kp;
+    }
+    else if (userInput == 'd')
+    {
+        std::cout << "\nEnter Desire Kd : ";
+        std::cin >> kd;
+    }
+    else if (userInput == 'f')
+    {
+        std::cout << "\nEnter Desire Kp for Fixed : ";
+        std::cin >> Kp_for_Fixed;
+        std::cout << "\nEnter Desire Kd for Fixed : ";
+        std::cin >> Kd_for_Fixed;
+    }
+    else if (userInput == 'r')
+    {
+        state.test = TestSub::FillBuf;
+    }
+    else if (userInput == 'e')
+    {
+        state.test = TestSub::SelectParamByUser;
+    }
+}
+
+void TestManager::startTest(string selectedMotor, double time, int cycles, float amp, float kp, float kd)
+{
+    std::cout << "Test Start!!\n";
+
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        {
+            if (tMotor->myName == selectedMotor)
+            {
+                tMotor->Kp = kp;
+                tMotor->Kd = kd;
+            }
+            else
+            {
+                tMotor->Kp = Kp_for_Fixed;
+                tMotor->Kd = Kd_for_Fixed;
+            }
+        }
+    }
+
+    for (int c = 0; c < cycles; c++)
+    {
+        for (int i = 0; i < time; i++)
+        {
+            for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    if (tMotor->myName == selectedMotor)
+                    {
+                        float pos = tMotor->coordinatePos + sin(2.0 * M_PI * i / time) * amp;
+
+                        TMotorData newData;
+                        newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
+                        newData.velocity = 0.0;
+                    }
+                    else
+                    {
+                        TMotorData newData;
+                        newData.position = tMotor->currentPos;
+                        newData.velocity = 0.0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void TestManager::save_to_txt_inputData(const string &csv_file_name){
+    // CSV 파일 열기
+    std::ofstream csvFile(csv_file_name);
+
+    if (!csvFile.is_open())
+        std::cerr << "Error opening CSV file." << std::endl;
+
+    // 헤더 추가
+    csvFile << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+
+    // 2차원 벡터의 데이터를 CSV 파일로 쓰기
+    for (const auto &row : canManager.iData)
+    {
+        for (const float cell : row)
+        {
+            csvFile << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                csvFile << ","; // 쉼표로 셀 구분
+        }
+        csvFile << "\n"; // 다음 행으로 이동
+    }
+
+    // CSV 파일 닫기
+    csvFile.close();
+
+    std::cout << "연주 DrumData_in 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

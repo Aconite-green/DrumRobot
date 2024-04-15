@@ -78,6 +78,7 @@ enum class TestSub
     SelectParamByUser,
     SetQValue,
     SetXYZ,
+    SetSingleTuneParm,
     FillBuf,
     CheckBuf,
     TimeCheck,

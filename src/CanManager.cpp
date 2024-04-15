@@ -582,6 +582,7 @@ bool CanManager::checkAllMotors_Fixed()
 
 bool CanManager::safetyCheck(std::string errorMessagePart)
 {
+    vector<float> idata(7);
     bool isSafe = true;
     for (auto &motor_pair : motors)
     {
@@ -650,10 +651,12 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             }
             else
             {
+                idata[motor_mapping[tMotor->myName]] = tData.position;
                 tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
+    iData.push_back(idata);
 
     return isSafe;
 }

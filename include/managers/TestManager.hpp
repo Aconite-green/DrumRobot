@@ -53,7 +53,6 @@ private:
 
     /*For SendTestProcess*/
     int method = 0;
-    int userInput = 0;
     double q[9] = {0.0};
     double R_xyz[3] = {0.0};
     double L_xyz[3] = {0.0};
@@ -76,7 +75,7 @@ private:
 
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
     int maxonMotorCount = 0;
-     struct can_frame frame;
+    struct can_frame frame;
 
     /*Value Test Code*/
     void getMotorPos(double c_MotorAngle[]);
@@ -85,9 +84,20 @@ private:
     void fkfun(double arr[]);
     void GetArr(double arr[]);
    
-     
+    /* Single Test Code */
+    string selectedMotor = "waist";
+    float t = 4.0;
+    int cycles = 1;
+    float amp = 0.2; // [Radian]
+    float kp = 400;
+    float kd = 3.0;
+    float Kp_for_Fixed = 450;
+    float Kd_for_Fixed = 3.5;
+    void singleTestLoop();
+    void startTest(string selectedMotor, double time, int cycles, float amp, float kp, float kd);
+    void save_to_txt_inputData(const string &csv_file_name);
 
-    /*Hayeon Test Code*/
+    /*Multi Test Code*/
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
     void SendLoop();
     void parse_and_save_to_csv(const std::string &csv_file_name);

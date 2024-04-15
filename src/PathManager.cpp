@@ -18,7 +18,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
