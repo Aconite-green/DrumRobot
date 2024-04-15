@@ -1,6 +1,66 @@
 #include "../include/motors/CommandParser.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                                      Tmotor Servo Mode Parser definition                           */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum class CAN_PACKET_ID
+{
+    CAN_PACKET_SET_DUTY = 0,
+    CAN_PACKET_SET_CURRENT,
+    CAN_PACKET_SET_DUTY_CURRENT_BRAKE,
+    CAN_PACKET_SET_RPM,
+    CAN_PACKET_SET_POS,
+    CAN_PACKET_SET_ORIGIN_HERE,
+    CAN_PACKET_SET_POS_SPD
+};
+
+std::tuple<int, float, float, float, int8_t, int8_t> TMotorServoCommandParser::motor_receive(struct can_frame *frame)
+{
+    int id = frame->can_id;
+    int16_t pos_int = (frame)->data[0] << 8 | (frame)->data[1];
+    int16_t spd_int = (frame)->data[2] << 8 | (frame)->data[3];
+    int16_t cur_int = (frame)->data[4] << 8 | (frame)->data[5];
+
+    float pos = (float)(pos_int * 0.1f);  // Motor Position
+    float spd = (float)(spd_int * 10.0f); // Motor Speed
+    float cur = (float)(cur_int * 0.01f); // Motor Current
+    int8_t temp = frame->data[6];         // Motor Temperature
+    int8_t error = frame->data[7];        // Motor Error Code
+
+    return std::make_tuple(id, pos, spd, cur, temp, error);
+}
+
+void TMotorServoCommandParser::comm_can_set_origin(TMotor &motor, struct can_frame *frame, uint8_t set_origin_mode)
+{
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_ORIGIN_HERE << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 1;
+    frame->data[0] = set_origin_mode; // 0:tempoaray origin
+                                      // 1: setting a permanent zero point
+}
+
+void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, uint8_t controller_id, float pos, int16_t spd, int16_t RPA)
+{
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);
+
+    int32_t pos_int = static_cast<int32_t>(pos * 10000.0);
+    frame->data[0] = (pos_int >> 24) & 0xFF;
+    frame->data[1] = (pos_int >> 16) & 0xFF;
+    frame->data[2] = (pos_int >> 8) & 0xFF;
+    frame->data[3] = pos_int & 0xFF;
+
+    // spd를 CAN 프레임 데이터에 저장
+    frame->data[4] = (spd / 10) >> 8;
+    frame->data[5] = (spd / 10) & 0xFF;
+
+    // RPA를 CAN 프레임 데이터에 저장
+    frame->data[6] = (RPA / 10) >> 8;
+    frame->data[7] = (RPA / 10) & 0xFF;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                                      Tmotor Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -227,7 +287,6 @@ std::tuple<int, float, float, unsigned char> MaxonCommandParser::parseRecieveCom
 {
     int id = frame->can_id;
 
-
     unsigned char statusBit = frame->data[1];
 
     int32_t currentPosition = 0;
@@ -452,7 +511,7 @@ void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_fra
 
 void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    float value_per_degree = 398.22*motor.cwDir;
+    float value_per_degree = 398.22 * motor.cwDir;
     // int 대신 int32_t 사용하여 플랫폼 독립적인 크기 보장
     int32_t value = static_cast<int32_t>(degree * value_per_degree);
 
@@ -463,12 +522,11 @@ void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *fr
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
     // 음수 값을 포함하여 value를 올바르게 바이트로 변환
-    frame->data[4] = value & 0xFF;                // 가장 낮은 바이트
-    frame->data[5] = (value >> 8) & 0xFF;         // 다음 낮은 바이트
-    frame->data[6] = (value >> 16) & 0xFF;        // 다음 높은 바이트
-    frame->data[7] = (value >> 24) & 0xFF;        // 가장 높은 바이트
+    frame->data[4] = value & 0xFF;         // 가장 낮은 바이트
+    frame->data[5] = (value >> 8) & 0xFF;  // 다음 낮은 바이트
+    frame->data[6] = (value >> 16) & 0xFF; // 다음 높은 바이트
+    frame->data[7] = (value >> 24) & 0xFF; // 가장 높은 바이트
 }
-
 
 void MaxonCommandParser::getHomingMethodL(MaxonMotor &motor, struct can_frame *frame)
 {
