@@ -82,7 +82,8 @@ public:
     // Functions for Thread Case
 
     bool safetyCheck(std::string errorMessagePart);
-    vector<vector<float>> iData;
+    vector<vector<float>> iPosData;
+    vector<vector<float>> iVelData;
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},
         {"R_arm1", 1},

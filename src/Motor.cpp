@@ -41,6 +41,13 @@ void TMotor::clearCommandBuffer(){
     }
 }
 
+void TMotor::clearInRecordBuffer(){
+    while (!InRecordBuffer.empty())
+    {
+        InRecordBuffer.pop();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // maxonMotor
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +64,13 @@ void MaxonMotor::clearCommandBuffer(){
     while (!commandBuffer.empty())
     {
         commandBuffer.pop();
+    }
+}
+
+void MaxonMotor::clearInRecordBuffer(){
+    while (!InRecordBuffer.empty())
+    {
+        InRecordBuffer.pop();
     }
 }
 

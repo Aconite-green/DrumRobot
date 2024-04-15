@@ -590,6 +590,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
         {
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
+            maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
             if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
@@ -626,6 +627,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
         {
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
+            tMotor->InRecordBuffer.push(tData);
             float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
             if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
             {
@@ -660,7 +662,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             }
         }
     }
-    iData.push_back(idata);
+    iPosData.push_back(idata);
 
     return isSafe;
 }

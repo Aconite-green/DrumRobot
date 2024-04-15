@@ -50,6 +50,7 @@ private:
     MaxonCommandParser maxoncmd;
 
     vector<string> InputData;
+    bool error = false;
 
     /*For SendTestProcess*/
     int method = 0;

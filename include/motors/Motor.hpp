@@ -20,12 +20,12 @@ class GenericMotor
 {
 public:
     // For CAN communication
-    uint32_t nodeId; 
-    int socket; 
+    uint32_t nodeId;
+    int socket;
     bool isConected;
 
     // Motors Feature
-    float cwDir; 
+    float cwDir;
     float rMin, rMax;
     std::string myName;
     std::string interFaceName;
@@ -41,6 +41,7 @@ public:
 
     std::queue<can_frame> recieveBuffer;
     std::queue<can_frame> sendBuffer;
+
     struct can_frame sendFrame;
 
     GenericMotor(uint32_t nodeId);
@@ -70,8 +71,10 @@ public:
     bool atFirstSensor, atSecondSensor, atZeroPosition;
 
     std::queue<TMotorData> commandBuffer;
+    std::queue<TMotorData> InRecordBuffer;
 
     void clearCommandBuffer();
+    void clearInRecordBuffer();
 
 private:
 };
@@ -101,7 +104,7 @@ public:
     bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
-    //float targetPos = M_PI / 18.0;
+    // float targetPos = M_PI / 18.0;
 
     bool checked = false;
 
@@ -110,8 +113,10 @@ public:
     double bumperLocation = 0.0;
 
     queue<MaxonData> commandBuffer;
+    queue<MaxonData> InRecordBuffer;
     queue<double> wrist_BackArr;
     void clearCommandBuffer();
+    void clearInRecordBuffer();
     void clearWrist_BackArr();
 };
 
