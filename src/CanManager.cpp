@@ -587,7 +587,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
+        {   
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
             maxonMotor->InRecordBuffer.push(mData);

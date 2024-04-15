@@ -814,6 +814,13 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                         tMotor->commandBuffer.push(newData);
                     }
                 }
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    MaxonData newData;
+                    newData.position = maxonMotor->currentPos;
+                    newData.WristState = 0.0;
+                    maxonMotor->commandBuffer.push(newData);
+                }
             }
         }
     }
