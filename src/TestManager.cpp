@@ -782,6 +782,9 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
 {
     std::cout << "Test Start!!\n";
 
+    float dt = 0.005;
+    int time = t / dt;
+    float p_pos = 0.0;
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
@@ -790,6 +793,7 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
             {
                 tMotor->Kp = kp;
                 tMotor->Kd = kd;
+                p_pos = tMotor->coordinatePos;
             }
             else
             {
@@ -799,9 +803,6 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
         }
     }
 
-    float dt = 0.005;
-    int time = t / dt;
-    float p_pos = 0.0;
     for (int c = 0; c < cycles; c++)
     {
         for (int i = 1; i <= time; i++)
