@@ -31,6 +31,7 @@ public:
     std::string interFaceName;
     // Values
     float desPos, desVel, desTor;
+    float prePos;
     float currentPos, currentVel, currentTor;
     float coordinatePos;
     int Kp;

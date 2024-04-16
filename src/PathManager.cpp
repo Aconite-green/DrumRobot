@@ -70,6 +70,7 @@ void PathManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
+        entry.second->prePos = entry.second->currentPos;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
@@ -1217,8 +1218,10 @@ void PathManager::GetArr(vector<double> &arr)
 
     getMotorPos();
 
-    int n = 800; // 4초동안 실행
-    for (int k = 0; k < n; ++k)
+    float dt = 0.005;
+    float t = 4;
+    int n = t / dt; // 4초동안 실행
+    for (int k = 1; k <= n; ++k)
     {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
@@ -1230,7 +1233,10 @@ void PathManager::GetArr(vector<double> &arr)
             {
                 TMotorData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.velocity = 0.5;
+                newData.velocity = (newData.position - tmotor->prePos) / dt;
+
+                tmotor->prePos = newData.position;
+
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

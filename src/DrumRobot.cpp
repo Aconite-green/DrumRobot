@@ -24,7 +24,6 @@ DrumRobot::DrumRobot(State &stateRef,
 
 void DrumRobot::stateMachine()
 {
-
     while (state.main != Main::Shutdown)
     {
         switch (state.main.load())
