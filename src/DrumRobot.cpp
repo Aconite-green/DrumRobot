@@ -1091,7 +1091,7 @@ void DrumRobot::initializeMotors()
             // 각 모터 이름에 따른 멤버 변수 설정
             if (motor_pair.first == "waist")
             {
-                tMotor->cwDir = 1.0f;
+                tMotor->cwDir = -1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->Kp = 400;
@@ -1603,7 +1603,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     // 각 모터에 대한 처리
 
     ofs.close();
-    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 DrumData_out 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 bool DrumRobot::dct_fun(float positions[], float vel_th)

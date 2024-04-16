@@ -455,7 +455,6 @@ void TestManager::setMaxonMode(std::string targetMode)
 
 void TestManager::fkfun(double theta[])
 {
-
     vector<double> P;
 
     double r1 = part_length[0], r2 = part_length[1], l1 = part_length[2], l2 = part_length[3], stick = part_length[4];
@@ -595,7 +594,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
 
     // the3 배열 초기화
     for (int i = 0; i < 1351; ++i)
-        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
+        the3[i] = (-M_PI * 0.25) + (i / 1350.0 * M_PI * 0.75); // the3 범위 : -45deg ~ 90deg
 
     for (int i = 0; i < 1351; ++i)
     {
@@ -606,7 +605,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
             double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
             double the4 = the34 - the3[i];
 
-            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
+            if (the4 >= 0 && the4 < (M_PI * 0.75)) // the4 범위 : 0deg ~ 135deg
             {
                 double r = r1 * sin(the3[i]) + r2 * sin(the34);
                 double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
@@ -614,7 +613,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
                 if (det_the1 < 1 && det_the1 > -1)
                 {
                     double the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
+                    if (the1 > 0 && the1 < (M_PI * 0.8)) // the1 범위 : 0deg ~ 144deg
                     {
                         double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
                         double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
@@ -622,15 +621,15 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
                         if (det_the0 < 1 && det_the0 > -1)
                         {
                             double the0 = asin(det_the0) - alpha;
-                            if (the0 > -M_PI / 2 && the0 < M_PI / 2) // the0 범위 : -90deg ~ 90deg
+                            if (the0 > (-M_PI / 2) && the0 < (M_PI / 2)) // the0 범위 : -90deg ~ 90deg
                             {
-                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
                                 double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
 
                                 if (det_the2 < 1 && det_the2 > -1)
                                 {
                                     double the2 = acos(det_the2) - the0;
-                                    if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
+                                    if (the2 > (M_PI * 0.2) && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
                                     {
                                         double Lp = sqrt(L * L + zeta * zeta);
                                         double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
@@ -638,7 +637,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
                                         if (det_the6 < 1 && det_the6 > -1)
                                         {
                                             double the6 = acos(det_the6);
-                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
+                                            if (the6 >= 0 && the6 < (M_PI * 0.75)) // the6 범위 : 0deg ~ 135deg
                                             {
                                                 double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
                                                 double det_the5 = L * L + zeta * zeta - T * T;
@@ -648,7 +647,7 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
                                                     double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
                                                     sol /= (L * L + zeta * zeta);
                                                     double the5 = asin(sol);
-                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
+                                                    if (the5 > (-M_PI * 0.25) && the5 < (M_PI / 2)) // the5 범위 : -45deg ~ 90deg
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
@@ -1490,7 +1489,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
     // 각 모터에 대한 처리
 
     ofs.close();
-    std::cout << "연주 txt_OutData 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 DrumData_out 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

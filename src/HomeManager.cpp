@@ -63,9 +63,6 @@ void HomeManager::saveHomingInfoToFile()
                 tMotor->homeOffset = -tMotor->currentPos;
             }
 
-            if (motor.first == "L_arm2") // 센서 위치 이상한거 보정
-                tMotor->homeOffset += 6.0 / 180 * M_PI;
-
             file << motor.first << ", " << tMotor->homeOffset << std::endl;
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor.second))

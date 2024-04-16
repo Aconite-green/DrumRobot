@@ -57,7 +57,7 @@ private:
     double q[9] = {0.0};
     double R_xyz[3] = {0.0};
     double L_xyz[3] = {0.0};
-    double part_length[6] = {0.363, 0.3835, 0.363, 0.3835, 0.417, 0.417};
+    double part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
     double s = 0.600;  ///< 허리 길이.
     double z0 = 1.026; ///< 바닥부터 허리까지의 높이.
     int cnt = 0;
