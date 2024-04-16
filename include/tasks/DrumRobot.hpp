@@ -69,7 +69,6 @@ private:
     bool processInput(const std::string &input);
     void idealStateRoutine();
     void checkUserInput();
-    void printCurrentPositions();
     int kbhit();
 
     bool isReady = false; ///< 준비 상태 플래그.
@@ -82,6 +81,8 @@ private:
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
+    void ClearBufferforRecord();
+    void printCurrentPositions();
     void motorSettingCmd();
     void setMaxonMode(std::string targetMode);
 

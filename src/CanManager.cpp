@@ -582,12 +582,11 @@ bool CanManager::checkAllMotors_Fixed()
 
 bool CanManager::safetyCheck(std::string errorMessagePart)
 {
-    vector<float> idata(7);
     bool isSafe = true;
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
+        {   
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
             maxonMotor->InRecordBuffer.push(mData);
@@ -657,12 +656,10 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             }
             else
             {
-                idata[motor_mapping[tMotor->myName]] = tData.position;
                 tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
-    iPosData.push_back(idata);
 
     return isSafe;
 }

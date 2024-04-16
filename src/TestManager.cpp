@@ -344,7 +344,15 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
-        if (method == 3)
+        if (method == 1)
+        {
+            state.test = TestSub::SetQValue;
+        }
+        else if (method == 2)
+        {
+            state.test = TestSub::SetXYZ;
+        }
+        else if (method == 3)
         {
             string fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Input.txt";
             save_to_txt_inputData(fileName);
@@ -352,6 +360,10 @@ void TestManager::SendTestProcess()
             parse_and_save_to_csv(fileName);
 
             state.test = TestSub::SetSingleTuneParm;
+        }
+        else if (method == 4)
+        {
+            // multiTestLoop(); State로 변경 시 state.test 값 변환으로 변경
         }
         else
             state.test = TestSub::SelectParamByUser;
@@ -787,10 +799,12 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
         }
     }
 
-    int time = t / 0.005;
+    float dt = 0.005;
+    int time = t / dt;
+    float p_pos = 0.0;
     for (int c = 0; c < cycles; c++)
     {
-        for (int i = 0; i < time; i++)
+        for (int i = 1; i <= time; i++)
         {
             for (const auto &motor_pair : motors)
             {
@@ -799,7 +813,9 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                     if (tMotor->myName == selectedMotor)
                     {
                         float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
-                        float vel = sin(2.0 * M_PI * i / time) / 2 * amp;
+                        float vel = (pos - p_pos) / dt;
+
+                        p_pos = pos;
 
                         TMotorData newData;
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
@@ -813,6 +829,13 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                         newData.velocity = 0.0;
                         tMotor->commandBuffer.push(newData);
                     }
+                }
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    MaxonData newData;
+                    newData.position = maxonMotor->currentPos;
+                    newData.WristState = 0.0;
+                    maxonMotor->commandBuffer.push(newData);
                 }
             }
         }
@@ -866,7 +889,7 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
             }
 
             // 데이터 CSV 파일에 쓰기
-            ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+            ofs << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
                 << std::dec << position << "," << velocity << "\n";
         }
 
@@ -1454,7 +1477,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
                 }
 
                 // 데이터 CSV 파일에 쓰기
-                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                ofs << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
                     << std::dec << position << "," << speed << "," << torque << "\n";
             }
         }
