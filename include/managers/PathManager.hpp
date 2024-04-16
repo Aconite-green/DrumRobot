@@ -92,18 +92,14 @@ public:
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
 
-    // 악보에 따른 position & velocity 값 저장 (5ms 단위)
-    vector<vector<double>> pos; ///< 위치 경로 벡터
-    vector<vector<double>> vel; ///< 속도 경로 벡터
-
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
     vector<double> readyarr = {0, M_PI / 2, M_PI / 2, M_PI / 4, M_PI / 2.4, M_PI / 4, M_PI / 2.4, M_PI / 6, M_PI / 6};
 
-    //     Back Standby      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
+    //   Standby Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 120    , 60    , -45    , 90     , -45     , 90     , 90      , 90 }      [deg]
     vector<double> standby = {0, M_PI / 3 * 2, M_PI / 3, -M_PI / 4, M_PI / 2, -M_PI / 4, M_PI / 2, M_PI / 2, M_PI / 2};
-    //     Back Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
+    //     Back Array       : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 80    , 80    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<double> backarr = {0, M_PI * 0.4, M_PI * 0.4, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 

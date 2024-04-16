@@ -1204,9 +1204,7 @@ void PathManager::PathLoopTask()
 
         Motors_sendBuffer(qt, qv_in, wrist_state);
         vector<double> qt_vector(qt.data(), qt.data() + qt.size());
-        pos.push_back(qt_vector);
         vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
-        vel.push_back(qv_in_vector);
     }
 }
 
@@ -1224,7 +1222,6 @@ void PathManager::GetArr(vector<double> &arr)
     {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
-        pos.push_back(Qi);
 
         // Send to Buffer
         for (auto &entry : motors)
