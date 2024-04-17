@@ -1254,7 +1254,6 @@ void PathManager::Get_wrist_BackArr(string MotorName, float &A, float &B, double
 {
     float dt = 0.005;
     int n = t / dt;
-
     for (auto &entry : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1263,7 +1262,7 @@ void PathManager::Get_wrist_BackArr(string MotorName, float &A, float &B, double
             {
                 for (int k = 1; k <= n; k++)
                 {
-                    float data = (A - B) * pow(((k / n) - 1), 2) + B;
+                    float data = (A - B) * pow((((float) k / (float) n) - 1), 2) + B;
                     maxonMotor->wrist_BackArr.push(data);
                 }
             }
