@@ -420,7 +420,7 @@ void HomeManager::HomeTmotor()
                 tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
 
                 double initialDirection;
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
+                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
                     initialDirection = (-0.2) * tMotors[i]->cwDir;
                 else
                     initialDirection = 0.2 * tMotors[i]->cwDir;
