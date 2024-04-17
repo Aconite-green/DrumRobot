@@ -171,6 +171,7 @@ void DrumRobot::sendLoopForThread()
         {
             save_to_txt_inputData("../../READ/DrumData_Input");
             sleep(2);
+            state.main = Main::Pause;
             break;
         }
         case Main::Shutdown:
@@ -240,6 +241,7 @@ void DrumRobot::recvLoopForThread()
         {
             parse_and_save_to_csv("../../READ/DrumData_Output");
             sleep(2);
+            state.main = Main::Pause;
             break;
         }
         case Main::Shutdown:
@@ -455,7 +457,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                maxonMotor->InRecordBuffer.push(mData);
                 cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
                 if (mData.WristState == 1)
                 {
@@ -512,7 +513,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 100 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 50 * maxonMotor->cwDir);
                     }
                     else if (maxonMotor->stay)
                     {
@@ -524,6 +525,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         }
                         else
                         {
+                            mData.position = pathManager.wrist_backPos;
+                            maxonMotor->InRecordBuffer.push(mData);
                             float coordinationPos = (pathManager.wrist_backPos) * maxonMotor->cwDir;
                             if (abs(maxonMotor->currentPos - pathManager.wrist_backPos) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                             {
@@ -577,7 +580,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 data = maxonMotor->wrist_BackArr.front();
                                 maxonMotor->wrist_BackArr.pop();
                             }
-
+                            mData.position = data;
+                            maxonMotor->InRecordBuffer.push(mData);
                             if (abs(maxonMotor->currentPos - data) > 0.4 || maxonMotor->rMin > data || maxonMotor->rMax < data)
                             {
                                 if (abs(maxonMotor->currentPos - data) > 0.4)
@@ -613,6 +617,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else // !hitting, !positioning, !atPosition, !stay
                     {
+                        maxonMotor->InRecordBuffer.push(mData);
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - mData.position) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                         {
