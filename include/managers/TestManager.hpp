@@ -90,10 +90,10 @@ private:
     float t = 4.0;
     int cycles = 1;
     float amp = 0.2; // [Radian]
-    float kp = 400;
+    float kp = 200;
     float kd = 3.0;
-    float Kp_for_Fixed = 450;
-    float Kd_for_Fixed = 3.5;
+    float Kp_for_Fixed = 300;
+    float Kd_for_Fixed = 3;
     void singleTestLoop();
     void startTest(string selectedMotor, double t, int cycles, float amp, float kp, float kd);
     void save_to_txt_inputData(const string &csv_file_name);

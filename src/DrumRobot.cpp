@@ -169,7 +169,7 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Error:
         {
-            save_to_txt_inputData("../../READ/DrumData_in.txt");
+            save_to_txt_inputData("../../READ/DrumData_Input");
             sleep(2);
             break;
         }
@@ -238,7 +238,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Error:
         {
-            parse_and_save_to_csv("../../READ/DrumData_out.txt");
+            parse_and_save_to_csv("../../READ/DrumData_Output");
             sleep(2);
             break;
         }
@@ -432,8 +432,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             if (allBuffersEmpty)
             {
                 std::cout << "Performance is Over\n";
-                save_to_txt_inputData("../../READ/DrumData_in.txt");
-                parse_and_save_to_csv("../../READ/DrumData_out.txt");
+                save_to_txt_inputData("../../READ/DrumData_Input");
+                parse_and_save_to_csv("../../READ/DrumData_Output");
                 state.main = Main::AddStance;
                 isReady = false;
                 getReady = false;
@@ -737,11 +737,7 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (canManager.checkAllMotors_Fixed())
         {
-            if (getReady)
-            {
-                pathManager.GetArr(pathManager.standby);
-            }
-            else if (getBack)
+            if (getReady || getBack)
             {
                 pathManager.GetArr(pathManager.standby);
             }
@@ -1262,11 +1258,13 @@ void DrumRobot::ClearBufferforRecord()
         {
             tMotor->clearCommandBuffer();
             tMotor->clearInRecordBuffer();
+            tMotor->clearReceiveBuffer();
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotor->clearCommandBuffer();
             maxonMotor->clearInRecordBuffer();
+            maxonMotor->clearReceiveBuffer();
         }
     }
 }
@@ -1451,17 +1449,23 @@ void DrumRobot::motorSettingCmd()
 void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
-    std::ofstream ofs(csv_file_name);
-    if (!ofs.is_open())
+    std::ofstream ofs_p(csv_file_name + "_pos.txt");
+    std::ofstream ofs_v(csv_file_name + "_vel.txt");
+
+    if (!ofs_p.is_open())
+    {
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
+    if (!ofs_v.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
         return;
     }
 
-    // 파일이 새로 생성되었으면 CSV 헤더를 추가
-    ofs.seekp(0, std::ios::end);
-    if (ofs.tellp() == 0)
-        ofs << "CAN_ID,p_des,v_des\n";
+    // CSV 헤더 추가
+    ofs_p << "CAN_ID,p_des\n";
+    ofs_v << "CAN_ID,v_des\n";        
 
     while (true)
     {
@@ -1495,19 +1499,20 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
             }
 
             // 데이터 CSV 파일에 쓰기
-            ofs << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
-                << std::dec << position << "," << velocity << "\n";
+            ofs_p << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
+                << std::dec << position << "\n";
+            ofs_v << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
+                << std::dec << velocity << "\n";
         }
 
         if (allInRecordBufferEmpty)
             break;
     }
 
-    // 각 모터에 대한 처리
+    ofs_p.close();
+    ofs_v.close();
 
-    ofs.close();
-
-    std::cout << "연주 DrumData_in 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 DrumData_Input 파일이 생성되었습니다 : " << csv_file_name << std::endl;
 }
 
 void DrumRobot::initializePathManager()
@@ -1547,17 +1552,15 @@ void DrumRobot::clearMotorsCommandBuffer()
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
-    std::ofstream ofs(csv_file_name);
+    std::ofstream ofs(csv_file_name + ".txt");
     if (!ofs.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
         return;
     }
 
-    // 파일이 새로 생성되었으면 CSV 헤더를 추가
-    ofs.seekp(0, std::ios::end);
-    if (ofs.tellp() == 0)
-        ofs << "CAN_ID,p_act,tff_des,tff_act\n";
+    // CSV 헤더 추가
+    ofs << "CAN_ID,p_act,v_act,tff_act\n";  
 
     while (true)
     {
@@ -1603,7 +1606,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     // 각 모터에 대한 처리
 
     ofs.close();
-    std::cout << "연주 DrumData_out 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "연주 DrumData_Output 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 bool DrumRobot::dct_fun(float positions[], float vel_th)
