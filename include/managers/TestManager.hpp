@@ -41,6 +41,9 @@ public:
 
     bool isMaxonEnable = false;
 
+    vector<vector<float>> Input_pos;
+    vector<vector<float>> Input_vel;
+
 private:
     State &state;
     CanManager &canManager;
@@ -54,12 +57,12 @@ private:
 
     /*For SendTestProcess*/
     int method = 0;
-    double q[9] = {0.0};
-    double R_xyz[3] = {0.0};
-    double L_xyz[3] = {0.0};
-    double part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
-    double s = 0.600;  ///< 허리 길이.
-    double z0 = 1.026; ///< 바닥부터 허리까지의 높이.
+    float q[9] = {0.0};
+    float R_xyz[3] = {0.0};
+    float L_xyz[3] = {0.0};
+    float part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
+    float s = 0.600;  ///< 허리 길이.
+    float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
     int cnt = 0;
 
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
@@ -79,11 +82,11 @@ private:
     struct can_frame frame;
 
     /*Value Test Code*/
-    void getMotorPos(double c_MotorAngle[]);
-    vector<double> connect(double Q1[], double Q2[], int k, int n);
-    vector<double> ikfun_final(double pR[], double pL[], double part_length[], double s, double z0);
-    void fkfun(double arr[]);
-    void GetArr(double arr[]);
+    void getMotorPos(float c_MotorAngle[]);
+    vector<float> connect(float Q1[], float Q2[], int k, int n);
+    vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
+    void fkfun(float arr[]);
+    void GetArr(float arr[]);
    
     /* Single Test Code */
     string selectedMotor = "waist";
@@ -95,15 +98,15 @@ private:
     float Kp_for_Fixed = 300;
     float Kd_for_Fixed = 3;
     void singleTestLoop();
-    void startTest(string selectedMotor, double t, int cycles, float amp, float kp, float kd);
+    void startTest(string selectedMotor, float t, int cycles, float amp, float kp, float kd);
     void save_to_txt_inputData(const string &csv_file_name);
 
     /*Multi Test Code*/
-    void mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp);
+    void mkArr(vector<string> &motorName, int time, int cycles, int LnR, float amp);
     void SendLoop();
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void multiTestLoop();
-    void TestArr(double t, int cycles, int type, int LnR, double amp[]);
+    void TestArr(float t, int cycles, int type, int LnR, float amp[]);
 
     /*Stick Test Code*/
     void TestStickLoop();
