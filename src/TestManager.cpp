@@ -19,7 +19,7 @@ void TestManager::SendTestProcess()
         if (ret == -1)
             std::cout << "system clear error" << endl;
 
-        double c_MotorAngle[9];
+        float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
         cout << "[ Current Q Values (Ladian) ]\n";
@@ -248,7 +248,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 2)
         {
-            vector<double> Qf(7);
+            vector<float> Qf(7);
             Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
             Qf.push_back(0.0);                                  // 오른쪽 손목 각도
             Qf.push_back(0.0);                                  // 왼쪽 손목 각도
@@ -456,11 +456,11 @@ void TestManager::setMaxonMode(std::string targetMode)
     }
 }
 
-void TestManager::fkfun(double theta[])
+void TestManager::fkfun(float theta[])
 {
-    vector<double> P;
+    vector<float> P;
 
-    double r1 = part_length[0], r2 = part_length[1], l1 = part_length[2], l2 = part_length[3], stick = part_length[4];
+    float r1 = part_length[0], r2 = part_length[1], l1 = part_length[2], l2 = part_length[3], stick = part_length[4];
 
     P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
@@ -477,7 +477,7 @@ void TestManager::fkfun(double theta[])
 /*                                 Values Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::getMotorPos(double c_MotorAngle[])
+void TestManager::getMotorPos(float c_MotorAngle[])
 {
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
@@ -493,10 +493,10 @@ void TestManager::getMotorPos(double c_MotorAngle[])
     }
 }
 
-vector<double> TestManager::connect(double Q1[], double Q2[], int k, int n)
+vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
 {
-    vector<double> Qi;
-    std::vector<double> A, B;
+    vector<float> Qi;
+    std::vector<float> A, B;
 
     // Compute A and Bk
     for (long unsigned int i = 0; i < 9; ++i)
@@ -508,20 +508,20 @@ vector<double> TestManager::connect(double Q1[], double Q2[], int k, int n)
     // Compute Qi using the provided formula
     for (long unsigned int i = 0; i < 9; ++i)
     {
-        double val = A[i] * cos(M_PI * k / n) + B[i];
+        float val = A[i] * cos(M_PI * k / n) + B[i];
         Qi.push_back(val);
     }
 
     return Qi;
 }
 
-void TestManager::GetArr(double arr[])
+void TestManager::GetArr(float arr[])
 {
     cout << "Get Array...\n";
 
-    vector<double> Qi;
-    vector<vector<double>> q_setting;
-    double c_MotorAngle[9];
+    vector<float> Qi;
+    vector<vector<float>> q_setting;
+    float c_MotorAngle[9];
 
     getMotorPos(c_MotorAngle);
 
@@ -578,22 +578,22 @@ void TestManager::GetArr(double arr[])
     cout << "\n";
 }
 
-vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_length[], double s, double z0)
+vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)
 {
-    double direction = 0.0 * M_PI;
+    float direction = 0.0 * M_PI;
 
-    double X1 = pR[0], Y1 = pR[1], z1 = pR[2];
-    double X2 = pL[0], Y2 = pL[1], z2 = pL[2];
-    double r1 = part_length[0];
-    double r2 = part_length[1] + part_length[4];
-    double L1 = part_length[2];
-    double L2 = part_length[3] + part_length[5];
+    float X1 = pR[0], Y1 = pR[1], z1 = pR[2];
+    float X2 = pL[0], Y2 = pL[1], z2 = pL[2];
+    float r1 = part_length[0];
+    float r2 = part_length[1] + part_length[4];
+    float L1 = part_length[2];
+    float L2 = part_length[3] + part_length[5];
 
     int j = 0;
-    double the3[1351];
-    double zeta = z0 - z2;
-    vector<double> Qf(7);
-    double the0_f = 0;
+    float the3[1351];
+    float zeta = z0 - z2;
+    vector<float> Qf(7);
+    float the0_f = 0;
 
     // the3 배열 초기화
     for (int i = 0; i < 1351; ++i)
@@ -601,55 +601,55 @@ vector<double> TestManager::ikfun_final(double pR[], double pL[], double part_le
 
     for (int i = 0; i < 1351; ++i)
     {
-        double det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
+        float det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
 
         if (det_the4 < 1 && det_the4 > -1)
         {
-            double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
-            double the4 = the34 - the3[i];
+            float the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
+            float the4 = the34 - the3[i];
 
             if (the4 >= 0 && the4 < (M_PI * 0.75)) // the4 범위 : 0deg ~ 135deg
             {
-                double r = r1 * sin(the3[i]) + r2 * sin(the34);
-                double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
+                float r = r1 * sin(the3[i]) + r2 * sin(the34);
+                float det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
 
                 if (det_the1 < 1 && det_the1 > -1)
                 {
-                    double the1 = acos(det_the1);
+                    float the1 = acos(det_the1);
                     if (the1 > 0 && the1 < (M_PI * 0.8)) // the1 범위 : 0deg ~ 144deg
                     {
-                        double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
-                        double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
+                        float alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
+                        float det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
 
                         if (det_the0 < 1 && det_the0 > -1)
                         {
-                            double the0 = asin(det_the0) - alpha;
+                            float the0 = asin(det_the0) - alpha;
                             if (the0 > (-M_PI / 2) && the0 < (M_PI / 2)) // the0 범위 : -90deg ~ 90deg
                             {
-                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
-                                double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
+                                float det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
 
                                 if (det_the2 < 1 && det_the2 > -1)
                                 {
-                                    double the2 = acos(det_the2) - the0;
+                                    float the2 = acos(det_the2) - the0;
                                     if (the2 > (M_PI * 0.2) && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
                                     {
-                                        double Lp = sqrt(L * L + zeta * zeta);
-                                        double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+                                        float Lp = sqrt(L * L + zeta * zeta);
+                                        float det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
 
                                         if (det_the6 < 1 && det_the6 > -1)
                                         {
-                                            double the6 = acos(det_the6);
+                                            float the6 = acos(det_the6);
                                             if (the6 >= 0 && the6 < (M_PI * 0.75)) // the6 범위 : 0deg ~ 135deg
                                             {
-                                                double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
-                                                double det_the5 = L * L + zeta * zeta - T * T;
+                                                float T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                float det_the5 = L * L + zeta * zeta - T * T;
 
                                                 if (det_the5 > 0)
                                                 {
-                                                    double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    float sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
                                                     sol /= (L * L + zeta * zeta);
-                                                    double the5 = asin(sol);
+                                                    float the5 = asin(sol);
                                                     if (the5 > (-M_PI * 0.25) && the5 < (M_PI / 2)) // the5 범위 : -45deg ~ 90deg
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
@@ -780,9 +780,11 @@ void TestManager::singleTestLoop()
     }
 }
 
-void TestManager::startTest(string selectedMotor, double t, int cycles, float amp, float kp, float kd)
+void TestManager::startTest(string selectedMotor, float t, int cycles, float amp, float kp, float kd)
 {
     std::cout << "Test Start!!\n";
+    vector<float> Pos(9);
+    vector<float> Vel(9);
 
     float dt = 0.005;
     int time = t / dt;
@@ -824,6 +826,9 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
                         newData.velocity = vel;
                         tMotor->commandBuffer.push(newData);
+
+                        Pos[motor_mapping[tMotor->myName]] = newData.position;
+                        Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                     }
                     else
                     {
@@ -831,6 +836,9 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                         newData.position = tMotor->currentPos;
                         newData.velocity = 0.0;
                         tMotor->commandBuffer.push(newData);
+
+                        Pos[motor_mapping[tMotor->myName]] = newData.position;
+                        Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                     }
                 }
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -839,8 +847,12 @@ void TestManager::startTest(string selectedMotor, double t, int cycles, float am
                     newData.position = maxonMotor->currentPos;
                     newData.WristState = 0.0;
                     maxonMotor->commandBuffer.push(newData);
+
+                    Pos[motor_mapping[maxonMotor->myName]] = newData.position;
                 }
             }
+            Input_pos.push_back(Pos);
+            Input_vel.push_back(Vel);
         }
     }
 }
@@ -863,9 +875,34 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
     }
 
     // CSV 헤더 추가
-    ofs_p << "CAN_ID,p_des\n";
-    ofs_v << "CAN_ID,v_des\n"; 
+    ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+    ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
+    for (const auto &row : Input_pos)
+    {
+        for (const float cell : row)
+        {
+            ofs_p << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_p << ","; // 쉼표로 셀 구분
+        }
+        ofs_p << "\n"; // 다음 행으로 이동
+    }
+    for (const auto &row : Input_vel)
+    {
+        for (const float cell : row)
+        {
+            ofs_v << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_v << ","; // 쉼표로 셀 구분
+        }
+        ofs_v << "\n"; // 다음 행으로 이동
+    }
+
+    Input_pos.clear();
+    Input_vel.clear();
+
+    /*
     while (true)
     {
         bool allInRecordBufferEmpty = true;
@@ -907,7 +944,7 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
         if (allInRecordBufferEmpty)
             break;
     }
-
+    */
     ofs_p.close();
     ofs_v.close();
 
@@ -918,11 +955,11 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
 /*                                 Multi Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, double amp)
+void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, float amp)
 {
     struct can_frame frame;
     int Kp_fixed = 450;
-    double Kd_fixed = 4.5;
+    float Kd_fixed = 4.5;
     map<string, bool> TestMotor;
     if (LnR == 0) // 양쪽 다 고정
     {
@@ -972,7 +1009,7 @@ void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
                 {
                     int kp = tMotor->Kp;
-                    double kd = tMotor->Kd;
+                    float kd = tMotor->Kd;
 
                     for (int c = 0; c < cycles; c++)
                     {
@@ -1098,12 +1135,12 @@ void TestManager::SendLoop()
 void TestManager::multiTestLoop()
 {
     string userInput;
-    vector<double> c_deg;
-    double t = 4.0;
+    vector<float> c_deg;
+    float t = 4.0;
     int cycles = 1;
     int type = 0b00001;
     int LnR = 1;
-    double amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
+    float amplitude[5] = {30.0, 30.0, 30.0, 30.0, 30.0};
 
     while (state.main == Main::Test)
     {
@@ -1340,7 +1377,7 @@ void TestManager::multiTestLoop()
              while (true)
              {
                  string input;
-                 double deg;
+                 float deg;
                  cout << "\n[Move to]\n";
                  int i = 0;
                  for (auto &motor : motors)
@@ -1378,7 +1415,7 @@ void TestManager::multiTestLoop()
     }
 }
 
-void TestManager::TestArr(double t, int cycles, int type, int LnR, double amp[])
+void TestManager::TestArr(float t, int cycles, int type, int LnR, float amp[])
 {
     std::cout << "Test Start!!\n";
 

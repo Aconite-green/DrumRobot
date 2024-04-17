@@ -327,9 +327,9 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                         cout << "Read : Htting True!!!!!!!!!!!!!!!!!\n";
                         maxonMotor->positioning = true;
                         maxonMotor->hitting = false;
-                    }
+                    }/*
                     else
-                        cout << "Read : Htting..\n";
+                        cout << "Read : Htting..\n";*/
                     maxonMotor->checked = true;
                 }
             }
@@ -349,9 +349,9 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                         cout << "Read : Positioning True!!!!!!!!!!!!!!!!!!!\n";
                         maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
                         maxonMotor->positioning = false;
-                    }
+                    }/*
                     else
-                        cout << "Read : Positioning..\n";
+                        cout << "Read : Positioning..\n";*/
                     maxonMotor->checked = true;
                 }
             }
@@ -457,7 +457,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
+                //cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
                 if (mData.WristState == 1)
                 {
                     des = cnt;
@@ -513,7 +513,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 50 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 10 * maxonMotor->cwDir);
                     }
                     else if (maxonMotor->stay)
                     {
@@ -569,7 +569,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                             maxonMotor->isPositionMode = true;
 
-                            float coordinationPos = maxonMotor->currentPos * maxonMotor->cwDir;
+                            float coordinationPos = (maxonMotor->currentPos + M_PI / 18) * maxonMotor->cwDir;
                             pathManager.Get_wrist_BackArr(maxonMotor->myName, coordinationPos, pathManager.wrist_backPos, pathManager.wrist_back_time);
                         }
                         else
@@ -1284,7 +1284,7 @@ void DrumRobot::printCurrentPositions()
         std::cout << name << " Pos: " << motor->currentPos << " Tor: " << motor->currentTor << endl;
     }
 
-    vector<double> P(6);
+    vector<float> P(6);
     P = pathManager.fkfun();
 
     std::cout << "Right Hand Position : { " << P[0] << " , " << P[1] << " , " << P[2] << " }\n";
@@ -1469,9 +1469,33 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     }
 
     // CSV 헤더 추가
-    ofs_p << "CAN_ID,p_des\n";
-    ofs_v << "CAN_ID,v_des\n";        
+    ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+    ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
+    for (const auto &row : pathManager.Input_pos)
+    {
+        for (const float cell : row)
+        {
+            ofs_p << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_p << ","; // 쉼표로 셀 구분
+        }
+        ofs_p << "\n"; // 다음 행으로 이동
+    }
+    for (const auto &row : pathManager.Input_vel)
+    {
+        for (const float cell : row)
+        {
+            ofs_v << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_v << ","; // 쉼표로 셀 구분
+        }
+        ofs_v << "\n"; // 다음 행으로 이동
+    } 
+
+    pathManager.Input_pos.clear();
+    pathManager.Input_vel.clear();
+    /*
     while (true)
     {
         bool allInRecordBufferEmpty = true;
@@ -1513,7 +1537,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
         if (allInRecordBufferEmpty)
             break;
     }
-
+    */
     ofs_p.close();
     ofs_v.close();
 

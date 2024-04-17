@@ -552,7 +552,6 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
 bool CanManager::checkAllMotors_test()
 {
-
     for (auto &motorPair : motors)
     {
         std::string name = motorPair.first;
@@ -565,7 +564,6 @@ bool CanManager::checkAllMotors_test()
 
 bool CanManager::checkAllMotors_Fixed()
 {
-
     for (auto &motorPair : motors)
     {
         std::string name = motorPair.first;
