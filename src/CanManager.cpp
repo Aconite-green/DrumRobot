@@ -591,9 +591,9 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             maxonMotor->commandBuffer.pop();
             maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
-            if (abs(maxonMotor->currentPos - mData.position) > 0.2 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            if (abs(maxonMotor->currentPos - mData.position) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
-                if (abs(maxonMotor->currentPos - mData.position) > 0.2)
+                if (abs(maxonMotor->currentPos - mData.position) > 0.4)
                 {
                     std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
                     cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
@@ -628,9 +628,9 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             tMotor->commandBuffer.pop();
             tMotor->InRecordBuffer.push(tData);
             float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
-            if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+            if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
             {
-                if (abs(tMotor->currentPos - tData.position) > 0.2)
+                if (abs(tMotor->currentPos - tData.position) > 0.4)
                 {
                     std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
                     cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";

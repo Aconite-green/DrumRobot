@@ -282,7 +282,7 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
-            canManager.checkAllMotors_test(); //Waist 모터 포지션 업데이트
+            canManager.checkAllMotors_test(); // Waist 모터 포지션 업데이트
 
             for (auto &PmotorNames : Priority)
             {
@@ -512,21 +512,28 @@ void HomeManager::HomeTmotor()
         }
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
+            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
             {
                 midpoints[i] = midpoints[i] * (-1);
             }
 
             directions.push_back(-tMotors[i]->cwDir);
         }
-
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
+            if (tMotors[i]->myName == "L_arm1")
+            {
+                midpoints[i] -= (M_PI * 0.25);
+            }
+            else if (tMotors[i]->myName == "R_arm1")
+            {
+                midpoints[i] += (M_PI * 0.25);
+            }
             targetRadians.push_back((midpoints[i]) * directions[i]);
             tMotors[i]->clearCommandBuffer();
         }
 
-        int totalSteps = 1000 / 5;
+        int totalSteps = 3000 / 5;      // 3초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -540,7 +547,7 @@ void HomeManager::HomeTmotor()
             }
         }
 
-        totalSteps = 100 / 5;
+        totalSteps = 100 / 5;       // 0.1초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
