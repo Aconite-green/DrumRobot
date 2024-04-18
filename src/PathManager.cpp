@@ -13,6 +13,8 @@ PathManager::PathManager(State &stateRef,
 
 void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si)
 {
+    vector<float> Pos(9);
+    vector<float> Vel(9);
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
@@ -22,6 +24,9 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
+
+            Pos[motor_mapping[tMotor->myName]] = newData.position;
+            Vel[motor_mapping[tMotor->myName]] = newData.velocity;
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
@@ -35,8 +40,12 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
                 newData.WristState = Si.second;
 
             maxonMotor->commandBuffer.push(newData);
+
+            Pos[motor_mapping[maxonMotor->myName]] = newData.position;
         }
     }
+    Input_pos.push_back(Pos);
+    Input_vel.push_back(Vel);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1204,10 +1213,6 @@ void PathManager::PathLoopTask()
         qt(8) = qWrist.second;
 
         Motors_sendBuffer(qt, qv_in, wrist_state);
-        vector<float> qt_vector(qt.data(), qt.data() + qt.size());
-        Input_pos.push_back(qt_vector);
-        vector<float> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
-        Input_vel.push_back(qv_in_vector);
     }
 }
 
@@ -1264,7 +1269,7 @@ void PathManager::Get_wrist_BackArr(string MotorName, float &A, float &B, float 
             {
                 for (int k = 1; k <= n; k++)
                 {
-                    float data = (A - B) * pow((((float) k / (float) n) - 1), 2) + B;
+                    float data = (A - B) * pow((((float)k / (float)n) - 1), 2) + B;
                     maxonMotor->wrist_BackArr.push(data);
                 }
             }

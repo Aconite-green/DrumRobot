@@ -169,7 +169,7 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Error:
         {
-            save_to_txt_inputData("../../READ/DrumData_Input");
+            save_to_txt_inputData("../../READ/Error_DrumData_in");
             sleep(2);
             state.main = Main::Pause;
             break;
@@ -239,7 +239,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Error:
         {
-            parse_and_save_to_csv("../../READ/DrumData_Output");
+            parse_and_save_to_csv("../../READ/Error_DrumData_out");
             sleep(2);
             state.main = Main::Pause;
             break;
@@ -434,8 +434,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             if (allBuffersEmpty)
             {
                 std::cout << "Performance is Over\n";
-                save_to_txt_inputData("../../READ/DrumData_Input");
-                parse_and_save_to_csv("../../READ/DrumData_Output");
+                save_to_txt_inputData("../../READ/DrumData_in");
+                parse_and_save_to_csv("../../READ/DrumData_out");
                 state.main = Main::AddStance;
                 isReady = false;
                 getReady = false;
@@ -513,7 +513,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else if (maxonMotor->positioning)
                     {
-                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 10 * maxonMotor->cwDir);
+                        maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 180 * maxonMotor->cwDir);
                     }
                     else if (maxonMotor->stay)
                     {
@@ -569,7 +569,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
                             maxonMotor->isPositionMode = true;
 
-                            float coordinationPos = (maxonMotor->currentPos + M_PI / 18) * maxonMotor->cwDir;
+                            float coordinationPos = (maxonMotor->currentPos + M_PI / 12) * maxonMotor->cwDir;
                             pathManager.Get_wrist_BackArr(maxonMotor->myName, coordinationPos, pathManager.wrist_backPos, pathManager.wrist_back_time);
                         }
                         else
@@ -582,9 +582,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             }
                             mData.position = data;
                             maxonMotor->InRecordBuffer.push(mData);
-                            if (abs(maxonMotor->currentPos - data) > 0.4 || maxonMotor->rMin > data || maxonMotor->rMax < data)
+                            if (abs(maxonMotor->currentPos - data) > 1 || maxonMotor->rMin > data || maxonMotor->rMax < data)
                             {
-                                if (abs(maxonMotor->currentPos - data) > 0.4)
+                                if (abs(maxonMotor->currentPos - data) > 1)
                                 {
                                     std::cout << "Error Druing Hybrid Perform For " << maxonMotor->myName << " (Pos Diff)\n";
                                     cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << data << "\n";
@@ -619,9 +619,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     {
                         maxonMotor->InRecordBuffer.push(mData);
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
-                        if (abs(maxonMotor->currentPos - mData.position) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+                        if (abs(maxonMotor->currentPos - mData.position) > 1 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                         {
-                            if (abs(maxonMotor->currentPos - mData.position) > 0.4)
+                            if (abs(maxonMotor->currentPos - mData.position) > 1)
                             {
                                 std::cout << "Error Druing Perform For " << maxonMotor->myName << " (Pos Diff)\n";
                                 cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";

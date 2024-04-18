@@ -357,9 +357,9 @@ void TestManager::SendTestProcess()
         }
         else if (method == 3)
         {
-            string fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Input";
+            string fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_in";
             save_to_txt_inputData(fileName);
-            fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_Output";
+            fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_out";
             parse_and_save_to_csv(fileName);
 
             state.test = TestSub::SetSingleTuneParm;
@@ -815,31 +815,27 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
+                    TMotorData newData;
                     if (tMotor->myName == selectedMotor)
                     {
                         float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
                         float vel = (pos - p_pos) / dt;
 
                         p_pos = pos;
-
-                        TMotorData newData;
+                        
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
                         newData.velocity = vel;
                         tMotor->commandBuffer.push(newData);
-
-                        Pos[motor_mapping[tMotor->myName]] = newData.position;
-                        Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                     }
                     else
                     {
-                        TMotorData newData;
                         newData.position = tMotor->currentPos;
                         newData.velocity = 0.0;
                         tMotor->commandBuffer.push(newData);
-
-                        Pos[motor_mapping[tMotor->myName]] = newData.position;
-                        Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                     }
+
+                    Pos[motor_mapping[tMotor->myName]] = newData.position;
+                    Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                 }
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
@@ -1488,7 +1484,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
     }
 
     // CSV 헤더 추가
-    ofs << "CAN_ID,p_act,v_act,tff_act\n";        
+    ofs << "CAN_ID,p_act,v_act,tff_act\n";
 
     while (true)
     {
