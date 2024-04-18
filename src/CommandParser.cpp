@@ -110,6 +110,7 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_T_MIN = -65;
         GLOBAL_T_MAX = 65;
         GLOBAL_I_MAX = 29.8;
+        Kt = 0.198;
     }
     else if (motor.motorType == "AK70_10")
     {
@@ -118,6 +119,7 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_T_MIN = -25;
         GLOBAL_T_MAX = 25;
         GLOBAL_I_MAX = 23.2;
+        Kt=0.123;
     }
     else if (motor.motorType == "AK60_6")
     {
@@ -176,7 +178,7 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     /// convert ints to floats ///
     position = uintToFloat(p_int, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
     speed = uintToFloat(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
-    torque = uintToFloat(i_int, -GLOBAL_I_MAX, GLOBAL_I_MAX, 12);
+    torque = uintToFloat(i_int, -GLOBAL_I_MAX, GLOBAL_I_MAX, 12)*Kt;
 
     return std::make_tuple(id, position, speed, torque);
 }
