@@ -30,6 +30,7 @@ public:
     float GLOBAL_KD_MIN = 0;
     float GLOBAL_KD_MAX = 5;
     float GLOBAL_V_MIN, GLOBAL_V_MAX, GLOBAL_T_MIN, GLOBAL_T_MAX;
+    float GLOBAL_I_MAX;
 
     void parseSendCommand(TMotor &motor, struct can_frame *frame, int canId, int dlc, float p_des, float v_des, float kp, float kd, float t_ff);
 
