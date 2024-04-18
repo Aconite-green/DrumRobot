@@ -25,12 +25,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
 
             tMotor->commandBuffer.push(newData);
 
-            if (tMotor->myName == "waist")
-            {
-                newData.position = (-1) * tMotor->homeOffset;
-                newData.velocity = 0.0;
-            }
-
             Pos[motor_mapping[tMotor->myName]] = newData.position;
             Vel[motor_mapping[tMotor->myName]] = newData.velocity;
         }
@@ -1249,12 +1243,6 @@ void PathManager::GetArr(vector<float> &arr)
                 newData.velocity = (newData.position - tmotor->prePos) / dt;
 
                 tmotor->prePos = newData.position;
-
-                if (tmotor->myName == "waist")
-                {
-                    newData.position = (-1) * tmotor->homeOffset;
-                    newData.velocity = 0.0;
-                }
 
                 tmotor->commandBuffer.push(newData);
             }

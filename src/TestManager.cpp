@@ -822,9 +822,9 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                         float vel = (pos - p_pos) / dt;
 
                         p_pos = pos;
-                        
+
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
-                        newData.velocity = vel;
+                        newData.velocity = vel * tMotor->cwDir;
                         tMotor->commandBuffer.push(newData);
                     }
                     else

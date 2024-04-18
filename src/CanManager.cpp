@@ -589,7 +589,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             maxonMotor->commandBuffer.pop();
             maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
-            if (abs(maxonMotor->currentPos - mData.position) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
                 if (abs(maxonMotor->currentPos - mData.position) > 0.4)
                 {

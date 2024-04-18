@@ -311,6 +311,7 @@ void HomeManager::SendHomeProcess()
             loadHomingInfoFromFile();
             setMaxonMode("CSP");
             MaxonEnable();
+            canManager.checkAllMotors_test();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
         }

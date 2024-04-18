@@ -327,9 +327,9 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                         cout << "Read : Htting True!!!!!!!!!!!!!!!!!\n";
                         maxonMotor->positioning = true;
                         maxonMotor->hitting = false;
-                    }/*
-                    else
-                        cout << "Read : Htting..\n";*/
+                    } /*
+                     else
+                         cout << "Read : Htting..\n";*/
                     maxonMotor->checked = true;
                 }
             }
@@ -349,9 +349,9 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                         cout << "Read : Positioning True!!!!!!!!!!!!!!!!!!!\n";
                         maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
                         maxonMotor->positioning = false;
-                    }/*
-                    else
-                        cout << "Read : Positioning..\n";*/
+                    } /*
+                     else
+                         cout << "Read : Positioning..\n";*/
                     maxonMotor->checked = true;
                 }
             }
@@ -457,7 +457,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                //cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
+                // cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
                 if (mData.WristState == 1)
                 {
                     des = cnt;
@@ -734,27 +734,30 @@ void DrumRobot::SendAddStanceProcess()
         }
         else
         {
+            save_to_txt_inputData("../../READ/AddStance_in");
+            parse_and_save_to_csv("../../READ/AddStance_out");
             state.main = Main::Ideal;
         }
         break;
     }
     case AddStanceSub::FillBuf:
     {
-        if (canManager.checkAllMotors_Fixed())
+        /*if (canManager.checkAllMotors_Fixed())
+        {}*/
+        // 이동시 소리가 나서 제거
+        if (getReady || getBack)
         {
-            if (getReady || getBack)
-            {
-                pathManager.GetArr(pathManager.standby);
-            }
-            else if (isReady)
-            {
-                pathManager.GetArr(pathManager.readyarr);
-            }
-            else if (isBack)
-            {
-                pathManager.GetArr(pathManager.backarr);
-            }
+            pathManager.GetArr(pathManager.standby);
         }
+        else if (isReady)
+        {
+            pathManager.GetArr(pathManager.readyarr);
+        }
+        else if (isBack)
+        {
+            pathManager.GetArr(pathManager.backarr);
+        }
+
         state.addstance = AddStanceSub::TimeCheck;
         break;
     }
@@ -1491,7 +1494,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
                 ofs_v << ","; // 쉼표로 셀 구분
         }
         ofs_v << "\n"; // 다음 행으로 이동
-    } 
+    }
 
     pathManager.Input_pos.clear();
     pathManager.Input_vel.clear();
@@ -1589,7 +1592,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     }
 
     // CSV 헤더 추가
-    ofs << "CAN_ID,p_act,v_act,tff_act\n";  
+    ofs << "CAN_ID,p_act,v_act,tff_act\n";
 
     while (true)
     {
