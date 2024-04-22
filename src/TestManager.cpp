@@ -503,9 +503,21 @@ void TestManager::SendTestProcess()
         }
         else if (method == 3)
         {
-            string fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_in";
+            std::ostringstream fileNameIn;
+            fileNameIn << "../../READ/" << selectedMotor << "_Period"
+                       << std::fixed << std::setprecision(2) << t
+                       << "_Kp" << std::fixed << std::setprecision(2) << kp
+                       << "_Kd" << std::fixed << std::setprecision(2) << kd
+                       << "_in";
+            std::string fileName = fileNameIn.str();
             save_to_txt_inputData(fileName);
-            fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_out";
+            std::ostringstream fileNameOut;
+            fileNameOut << "../../READ/" << selectedMotor << "_Period"
+                       << std::fixed << std::setprecision(2) << t
+                       << "_Kp" << std::fixed << std::setprecision(2) << kp
+                       << "_Kd" << std::fixed << std::setprecision(2) << kd
+                       << "_in";
+            fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
 
             state.test = TestSub::SetSingleTuneParm;
@@ -1013,6 +1025,7 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
     // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
     std::ofstream ofs_p(csv_file_name + "_pos.txt");
     std::ofstream ofs_v(csv_file_name + "_vel.txt");
+    std::ofstream ofs_v_d(csv_file_name + "_vel_d.txt");
 
     if (!ofs_p.is_open())
     {
@@ -1024,12 +1037,17 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
         return;
     }
-
+    if (!ofs_v_d.is_open())
+    {
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
     // CSV 헤더 추가
     ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
     ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
+    ofs_v_d << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
-    for (const auto &row : Input_pos)
+    for (const auto &row : canManager.Input_pos)
     {
         for (const float cell : row)
         {
@@ -1039,7 +1057,7 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
         }
         ofs_p << "\n"; // 다음 행으로 이동
     }
-    for (const auto &row : Input_vel)
+    for (const auto &row : canManager.Input_vel)
     {
         for (const float cell : row)
         {
@@ -1049,9 +1067,20 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
         }
         ofs_v << "\n"; // 다음 행으로 이동
     }
+    for (const auto &row : canManager.Input_vel_d)
+    {
+        for (const float cell : row)
+        {
+            ofs_v_d << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_v_d << ","; // 쉼표로 셀 구분
+        }
+        ofs_v_d << "\n"; // 다음 행으로 이동
+    }
 
-    Input_pos.clear();
-    Input_vel.clear();
+    canManager.Input_pos.clear();
+    canManager.Input_vel.clear();
+    canManager.Input_vel_d.clear();
 
     /*
     while (true)
@@ -1098,6 +1127,7 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
     */
     ofs_p.close();
     ofs_v.close();
+    ofs_v_d.close();
 
     std::cout << "Tunning Input Data (pos / vel) 파일이 생성되었습니다 : " << csv_file_name << std::endl;
 }

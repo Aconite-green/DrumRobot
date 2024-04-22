@@ -94,7 +94,7 @@ private:
     float t = 4.0;
     int cycles = 1;
     float amp = 0.2; // [Radian]
-    float kp = 200;
+    float kp = 20;
     float kd = 3.0;
     float Kp_for_Fixed = 300;
     float Kd_for_Fixed = 3;
