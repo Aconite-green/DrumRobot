@@ -82,6 +82,7 @@ public:
     // Functions for Thread Case
 
     bool safetyCheck(std::string errorMessagePart);
+    bool safetyCheck_servo(std::string errorMessagePart);
 
 private:
     std::vector<std::string> ifnames;
@@ -89,6 +90,7 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
 
     std::map<int, std::vector<can_frame>> tempFrames;
 

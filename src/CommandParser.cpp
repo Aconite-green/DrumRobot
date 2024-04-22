@@ -40,11 +40,12 @@ void TMotorServoCommandParser::comm_can_set_origin(TMotor &motor, struct can_fra
                                       // 1: setting a permanent zero point
 }
 
-void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, uint8_t controller_id, float pos, int16_t spd, int16_t RPA)
+void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA)
 {
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);
-
+    
+    frame->can_dlc=8;
     int32_t pos_int = static_cast<int32_t>(pos * 10000.0);
     frame->data[0] = (pos_int >> 24) & 0xFF;
     frame->data[1] = (pos_int >> 16) & 0xFF;
@@ -60,6 +61,17 @@ void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_fr
     frame->data[7] = (RPA / 10) & 0xFF;
 }
 
+void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current)
+{
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_DUTY_CURRENT_BRAKE << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 4;
+    int32_t current_int = static_cast<int32_t>(current * 1000.0);
+    frame->data[0] = (current_int >> 24) & 0xFF;
+    frame->data[1] = (current_int >> 16) & 0xFF;
+    frame->data[2] = (current_int >> 8) & 0xFF;
+    frame->data[3] = current_int & 0xFF;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                                      Tmotor Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +131,7 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_T_MIN = -25;
         GLOBAL_T_MAX = 25;
         GLOBAL_I_MAX = 23.2;
-        Kt=0.123;
+        Kt = 0.123;
     }
     else if (motor.motorType == "AK60_6")
     {

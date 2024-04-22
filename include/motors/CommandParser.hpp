@@ -14,8 +14,9 @@ class TMotorServoCommandParser
 
 public:
     void comm_can_set_origin(TMotor &motor, struct can_frame *frame, uint8_t set_origin_mode);
-    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, uint8_t controller_id, float pos, int16_t spd, int16_t RPA);
+    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA);
     std::tuple<int, float, float, float, int8_t, int8_t> motor_receive(struct can_frame *frame);
+    void comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current);
 
 private:
 };
@@ -30,7 +31,7 @@ public:
     float GLOBAL_KD_MIN = 0;
     float GLOBAL_KD_MAX = 5;
     float GLOBAL_V_MIN, GLOBAL_V_MAX, GLOBAL_T_MIN, GLOBAL_T_MAX;
-    float GLOBAL_I_MAX,Kt;
+    float GLOBAL_I_MAX, Kt;
 
     void parseSendCommand(TMotor &motor, struct can_frame *frame, int canId, int dlc, float p_des, float v_des, float kp, float kd, float t_ff);
 

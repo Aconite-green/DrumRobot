@@ -85,7 +85,8 @@ enum class TestSub
     SafetyCheck,
     SendCANFrame,
     Done,
-    StickTest
+    StickTest,
+    SetServoTestParm
 };
 
 struct State

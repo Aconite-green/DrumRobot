@@ -584,12 +584,12 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {   
+        {
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
             maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
-            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
                 if (abs(maxonMotor->currentPos - mData.position) > 0.4)
                 {
@@ -654,7 +654,89 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             }
             else
             {
-                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 2);
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+            }
+        }
+    }
+
+    return isSafe;
+}
+
+bool CanManager::safetyCheck_servo(std::string errorMessagePart)
+{
+    bool isSafe = true;
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            MaxonData mData = maxonMotor->commandBuffer.front();
+            maxonMotor->commandBuffer.pop();
+            maxonMotor->InRecordBuffer.push(mData);
+            float coordinationPos = (mData.position) * maxonMotor->cwDir;
+            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            {
+                if (abs(maxonMotor->currentPos - mData.position) > 0.4)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
+                    cout << "Diff : " << abs(maxonMotor->currentPos - mData.position) / M_PI * 180 << "deg\n";
+                }
+                else if (maxonMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+                maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+                usleep(5000);
+                maxoncmd.getSync(&maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+            }
+            else
+            {
+                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+            }
+        }
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        {
+            TMotorData tData = tMotor->commandBuffer.front();
+            tMotor->commandBuffer.pop();
+            tMotor->InRecordBuffer.push(tData);
+            float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+            if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+            {
+                if (abs(tMotor->currentPos - tData.position) > 0.4)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";
+                    cout << "Diff : " << abs(tMotor->currentPos - tData.position) / M_PI * 180 << "deg\n";
+                }
+                else if (tMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+
+                tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
+                sendMotorFrame(tMotor);
+            }
+            else
+            {
+                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, (tData.velocity * 60) / (2 * M_PI), 10000);
             }
         }
     }

@@ -51,6 +51,7 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
 
     vector<string> InputData;
     bool error = false;
@@ -113,4 +114,14 @@ private:
     void TestStick(const std::string selectedMotor, int des_tff, float tffThreshold, float posThreshold, int backTorqueUnit);
     bool dct_fun(float positions[], float vel_th);
     int drumHitDuration, drumReachedDuration;
+
+    /*Servo Mode Test Code*/
+    string selectedMotor_servo = "waist";
+    float t_servo = 4.0;
+    int cycles_servo = 1;
+    float amp_servo = 0.2; // [Radian]
+    float targetpos_servo, current_servo;
+    
+    void startTest_servo(string selectedMotor_servo, float t_servo, int cycles_servo, float amp_servo);
+
 };

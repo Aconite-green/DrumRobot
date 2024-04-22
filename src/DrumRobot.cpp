@@ -1098,8 +1098,8 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 400;
-                tMotor->Kd = 3.5;
+                tMotor->Kp = 450;
+                tMotor->Kd = 4.0;
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
             }
