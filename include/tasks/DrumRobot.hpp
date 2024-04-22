@@ -76,7 +76,7 @@ private:
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
     bool sendCheckFrame = false;
-    
+
     // System Initialize 메소드들
     void initializeMotors();
     void initializecanManager();
@@ -96,6 +96,20 @@ private:
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess();
     void clearMotorsCommandBuffer();
+
+    vector<vector<float>> Input_pos;
+    vector<vector<float>> Input_vel;
+    map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
+        {"waist", 0},
+        {"R_arm1", 1},
+        {"L_arm1", 2},
+        {"R_arm2", 3},
+        {"R_arm3", 4},
+        {"L_arm2", 5},
+        {"L_arm3", 6},
+        {"R_wrist", 7},
+        {"L_wrist", 8},
+        {"maxonForTest", 8}};
 
     can_frame frame;
     int des = 0;

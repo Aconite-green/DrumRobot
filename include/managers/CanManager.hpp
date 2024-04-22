@@ -83,6 +83,21 @@ public:
 
     bool safetyCheck(std::string errorMessagePart);
 
+    vector<vector<float>> Input_pos;
+    vector<vector<float>> Input_vel;
+    vector<vector<float>> Input_vel_d;
+    map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
+        {"waist", 0},
+        {"R_arm1", 1},
+        {"L_arm1", 2},
+        {"R_arm2", 3},
+        {"R_arm3", 4},
+        {"L_arm2", 5},
+        {"L_arm3", 6},
+        {"R_wrist", 7},
+        {"L_wrist", 8},
+        {"maxonForTest", 8}};
+
 private:
     std::vector<std::string> ifnames;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;

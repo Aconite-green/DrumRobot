@@ -451,6 +451,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     case PerformSub::SafetyCheck:
     {
         bool isSafe = true;
+        vector<float> Pos(9);
+        vector<float> Vel(9);
         for (auto &motor_pair : motors)
         {
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -557,6 +559,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             else
                             {
                                 // cout << "Stay Hold!!\n";
+                                Pos[motor_mapping[maxonMotor->myName]] = pathManager.wrist_backPos;
                                 maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, pathManager.wrist_backPos);
                             }
                         }
@@ -611,6 +614,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                             else
                             {
                                 // cout << "Stay Hold!!\n";
+                                Pos[motor_mapping[maxonMotor->myName]] = data;
                                 maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, data);
                             }
                         }
@@ -646,6 +650,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         }
                         else
                         {
+                            Pos[motor_mapping[maxonMotor->myName]] = mData.position;
                             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
                         }
                     }
@@ -655,7 +660,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 TMotorData tData = tMotor->commandBuffer.front();
                 tMotor->commandBuffer.pop();
+                float vel = tMotor->Kp * (tData.position - tMotor->currentPos);
+                if (vel < tData.velocity)
+                    tData.velocity = vel;
                 tMotor->InRecordBuffer.push(tData);
+
                 float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
                 if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
                 {
@@ -685,10 +694,14 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 }
                 else
                 {
-                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                    Pos[motor_mapping[tMotor->myName]] = tData.position;
+                    Vel[motor_mapping[tMotor->myName]] = tData.velocity;
+                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, 0.0, tMotor->Kd, 0.0);
                 }
             }
         }
+        Input_pos.push_back(Pos);
+        Input_vel.push_back(Vel);
 
         if (isSafe)
             state.perform = PerformSub::SendCANFrame;
@@ -1098,7 +1111,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 400;
+                tMotor->Kp = 10;
                 tMotor->Kd = 3.5;
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
@@ -1275,6 +1288,9 @@ void DrumRobot::ClearBufferforRecord()
             maxonMotor->clearReceiveBuffer();
         }
     }
+    canManager.Input_pos.clear();
+    canManager.Input_vel.clear();
+    canManager.Input_vel_d.clear();
 }
 
 void DrumRobot::printCurrentPositions()
@@ -1475,7 +1491,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
     ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
-    for (const auto &row : pathManager.Input_pos)
+    for (const auto &row : Input_pos)
     {
         for (const float cell : row)
         {
@@ -1485,7 +1501,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
         }
         ofs_p << "\n"; // 다음 행으로 이동
     }
-    for (const auto &row : pathManager.Input_vel)
+    for (const auto &row : Input_vel)
     {
         for (const float cell : row)
         {
