@@ -583,14 +583,12 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
     bool isSafe = true;
     vector<float> Pos(9);
     vector<float> Vel(9);
-    vector<float> Vel_d(9);
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
-            maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
             if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
@@ -628,11 +626,6 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
         {
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
-            float vel = tMotor->Kp * (tData.position - tMotor->currentPos);
-            Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-            if (vel < tData.velocity)
-                tData.velocity = vel;
-            tMotor->InRecordBuffer.push(tData);
 
             float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
             if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
@@ -663,30 +656,30 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             }
             else
             {
-                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 2);
+                Pos[motor_mapping[tMotor->myName]] = tData.position;
+                Vel[motor_mapping[tMotor->myName]] = tData.velocity;
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
     Input_pos.push_back(Pos);
     Input_vel.push_back(Vel);
-    Input_vel_d.push_back(Vel_d);
 
     return isSafe;
 }
+
 
 bool CanManager::safetyCheck_servo(std::string errorMessagePart)
 {
     bool isSafe = true;
     vector<float> Pos(9);
     vector<float> Vel(9);
-    vector<float> Vel_d(9);
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             MaxonData mData = maxonMotor->commandBuffer.front();
             maxonMotor->commandBuffer.pop();
-            maxonMotor->InRecordBuffer.push(mData);
             float coordinationPos = (mData.position) * maxonMotor->cwDir;
             if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
@@ -724,11 +717,6 @@ bool CanManager::safetyCheck_servo(std::string errorMessagePart)
         {
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
-            float vel = tMotor->Kp * (tData.position - tMotor->currentPos);
-            Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-            if (vel < tData.velocity)
-                tData.velocity = vel;
-            tMotor->InRecordBuffer.push(tData);
 
             float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
             if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
@@ -751,21 +739,22 @@ bool CanManager::safetyCheck_servo(std::string errorMessagePart)
                 }
 
                 isSafe = false;
-
-                tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
+                tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+                usleep(5000);
+                tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
                 sendMotorFrame(tMotor);
             }
             else
             {
                 Pos[motor_mapping[tMotor->myName]] = tData.position;
                 Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, 0.0, tMotor->Kd, 0.0);
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
     Input_pos.push_back(Pos);
     Input_vel.push_back(Vel);
-    Input_vel_d.push_back(Vel_d);
 
     return isSafe;
 }

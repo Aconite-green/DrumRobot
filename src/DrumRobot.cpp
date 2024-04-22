@@ -528,7 +528,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         else
                         {
                             mData.position = pathManager.wrist_backPos;
-                            maxonMotor->InRecordBuffer.push(mData);
                             float coordinationPos = (pathManager.wrist_backPos) * maxonMotor->cwDir;
                             if (abs(maxonMotor->currentPos - pathManager.wrist_backPos) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                             {
@@ -584,7 +583,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 maxonMotor->wrist_BackArr.pop();
                             }
                             mData.position = data;
-                            maxonMotor->InRecordBuffer.push(mData);
                             if (abs(maxonMotor->currentPos - data) > 1 || maxonMotor->rMin > data || maxonMotor->rMax < data)
                             {
                                 if (abs(maxonMotor->currentPos - data) > 1)
@@ -621,7 +619,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
                     else // !hitting, !positioning, !atPosition, !stay
                     {
-                        maxonMotor->InRecordBuffer.push(mData);
                         float coordinationPos = (mData.position) * maxonMotor->cwDir;
                         if (abs(maxonMotor->currentPos - mData.position) > 1 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
                         {
@@ -660,10 +657,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 TMotorData tData = tMotor->commandBuffer.front();
                 tMotor->commandBuffer.pop();
-                float vel = tMotor->Kp * (tData.position - tMotor->currentPos);
-                if (vel < tData.velocity)
-                    tData.velocity = vel;
-                tMotor->InRecordBuffer.push(tData);
 
                 float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
                 if (abs(tMotor->currentPos - tData.position) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
@@ -696,7 +689,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 {
                     Pos[motor_mapping[tMotor->myName]] = tData.position;
                     Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, 0.0, tMotor->Kd, 0.0);
+                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
                 }
             }
         }
@@ -755,9 +748,6 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::FillBuf:
     {
-        /*if (canManager.checkAllMotors_Fixed())
-        {}*/
-        // 이동시 소리가 나서 제거
         if (getReady || getBack)
         {
             pathManager.GetArr(pathManager.standby);
@@ -1111,13 +1101,8 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-<<<<<<< HEAD
                 tMotor->Kp = 450;
                 tMotor->Kd = 4.0;
-=======
-                tMotor->Kp = 10;
-                tMotor->Kd = 3.5;
->>>>>>> 19e821d4a00f8514545f2e1eab8d4c6f1b78e849
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
             }
@@ -1283,19 +1268,18 @@ void DrumRobot::ClearBufferforRecord()
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
             tMotor->clearCommandBuffer();
-            tMotor->clearInRecordBuffer();
             tMotor->clearReceiveBuffer();
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             maxonMotor->clearCommandBuffer();
-            maxonMotor->clearInRecordBuffer();
             maxonMotor->clearReceiveBuffer();
         }
     }
     canManager.Input_pos.clear();
     canManager.Input_vel.clear();
-    canManager.Input_vel_d.clear();
+    Input_pos.clear();
+    Input_vel.clear();
 }
 
 void DrumRobot::printCurrentPositions()
@@ -1496,7 +1480,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
     ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
     ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
 
-    for (const auto &row : Input_pos)
+    for (const auto &row : canManager.Input_pos)
     {
         for (const float cell : row)
         {
@@ -1506,7 +1490,7 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
         }
         ofs_p << "\n"; // 다음 행으로 이동
     }
-    for (const auto &row : Input_vel)
+    for (const auto &row : canManager.Input_vel)
     {
         for (const float cell : row)
         {
@@ -1517,55 +1501,13 @@ void DrumRobot::save_to_txt_inputData(const string &csv_file_name)
         ofs_v << "\n"; // 다음 행으로 이동
     }
 
-    pathManager.Input_pos.clear();
-    pathManager.Input_vel.clear();
-    /*
-    while (true)
-    {
-        bool allInRecordBufferEmpty = true;
-        for (const auto &pair : motors)
-        {
-            int id = pair.second->nodeId;
-            float position, velocity;
+    canManager.Input_pos.clear();
+    canManager.Input_vel.clear();
 
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(pair.second))
-            {
-                if (!tMotor->InRecordBuffer.empty())
-                {
-                    allInRecordBufferEmpty = false;
-                    TMotorData tData = tMotor->InRecordBuffer.front();
-                    tMotor->InRecordBuffer.pop();
-                    position = tData.position;
-                    velocity = tData.velocity;
-                }
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(pair.second))
-            {
-                if (!maxonMotor->InRecordBuffer.empty())
-                {
-                    allInRecordBufferEmpty = false;
-                    MaxonData mData = maxonMotor->InRecordBuffer.front();
-                    maxonMotor->InRecordBuffer.pop();
-                    position = mData.position;
-                    velocity = 0.0;
-                }
-            }
-
-            // 데이터 CSV 파일에 쓰기
-            ofs_p << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
-                << std::dec << position << "\n";
-            ofs_v << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
-                << std::dec << velocity << "\n";
-        }
-
-        if (allInRecordBufferEmpty)
-            break;
-    }
-    */
     ofs_p.close();
     ofs_v.close();
 
-    std::cout << "연주 DrumData_Input 파일이 생성되었습니다 : " << csv_file_name << std::endl;
+    std::cout << "DrumData_Input 파일이 생성되었습니다 : " << csv_file_name << std::endl;
 }
 
 void DrumRobot::initializePathManager()
@@ -1659,7 +1601,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
     // 각 모터에 대한 처리
 
     ofs.close();
-    std::cout << "연주 DrumData_Output 파일이 생성되었습니다: " << csv_file_name << std::endl;
+    std::cout << "DrumData_Output 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }
 
 bool DrumRobot::dct_fun(float positions[], float vel_th)

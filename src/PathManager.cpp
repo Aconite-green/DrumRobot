@@ -13,8 +13,6 @@ PathManager::PathManager(State &stateRef,
 
 void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si)
 {
-    vector<float> Pos(9);
-    vector<float> Vel(9);
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
@@ -24,9 +22,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
-
-            Pos[motor_mapping[tMotor->myName]] = newData.position;
-            Vel[motor_mapping[tMotor->myName]] = newData.velocity;
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
@@ -40,12 +35,8 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
                 newData.WristState = Si.second;
 
             maxonMotor->commandBuffer.push(newData);
-
-            Pos[motor_mapping[maxonMotor->myName]] = newData.position;
         }
     }
-    Input_pos.push_back(Pos);
-    Input_vel.push_back(Vel);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

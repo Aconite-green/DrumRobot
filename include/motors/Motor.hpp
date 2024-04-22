@@ -72,10 +72,8 @@ public:
     bool atFirstSensor, atSecondSensor, atZeroPosition;
 
     std::queue<TMotorData> commandBuffer;
-    std::queue<TMotorData> InRecordBuffer;
 
     void clearCommandBuffer();
-    void clearInRecordBuffer();
 
 private:
 };
@@ -114,10 +112,8 @@ public:
     double bumperLocation = 0.0;
 
     queue<MaxonData> commandBuffer;
-    queue<MaxonData> InRecordBuffer;
     queue<double> wrist_BackArr;
     void clearCommandBuffer();
-    void clearInRecordBuffer();
     void clearWrist_BackArr();
 };
 

@@ -89,9 +89,6 @@ public:
 
     void Get_wrist_BackArr(string MotorName, float &A, float &B, float t);
 
-    vector<vector<float>> Input_pos;
-    vector<vector<float>> Input_vel;
-
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
 

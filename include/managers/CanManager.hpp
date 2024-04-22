@@ -86,7 +86,6 @@ public:
 
     vector<vector<float>> Input_pos;
     vector<vector<float>> Input_vel;
-    vector<vector<float>> Input_vel_d;
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},
         {"R_arm1", 1},
