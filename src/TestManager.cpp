@@ -140,6 +140,18 @@ void TestManager::SendTestProcess()
         {
             std::cout << "\nEnter Desire Target Position [Single] : ";
             std::cin >> targetpos_servo;
+
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    if (tMotor->myName == selectedMotor_servo)
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                }
+            }
         }
         else if (userInput == 'd')
         {
@@ -509,10 +521,10 @@ void TestManager::SendTestProcess()
             save_to_txt_inputData(fileName);
             std::ostringstream fileNameOut;
             fileNameOut << "../../READ/" << selectedMotor << "_Period"
-                       << std::fixed << std::setprecision(2) << t
-                       << "_Kp" << std::fixed << std::setprecision(2) << kp
-                       << "_Kd" << std::fixed << std::setprecision(2) << kd
-                       << "_in";
+                        << std::fixed << std::setprecision(2) << t
+                        << "_Kp" << std::fixed << std::setprecision(2) << kp
+                        << "_Kd" << std::fixed << std::setprecision(2) << kd
+                        << "_in";
             fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
 
