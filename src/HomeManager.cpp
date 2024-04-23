@@ -534,7 +534,7 @@ void HomeManager::HomeTmotor()
             tMotors[i]->clearCommandBuffer();
         }
 
-        int totalSteps = 3000 / 5;      // 3초
+        int totalSteps = 2000 / 5;      // 2초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -548,7 +548,7 @@ void HomeManager::HomeTmotor()
             }
         }
 
-        totalSteps = 100 / 5;       // 0.1초
+        totalSteps = 500 / 5;       // 0.5초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
