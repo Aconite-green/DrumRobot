@@ -1003,10 +1003,15 @@ void DrumRobot::checkUserInput()
         char input = getchar();
         if (state.main == Main::Perform || state.main == Main::Pause)
         {
-            if (input == 'q')
+            if (input == 'q'){
                 state.main = Main::Pause;
+                canManager.checkAllMotors_Fixed();
+            }
             else if (input == 'e')
             {
+                std::cout << "Performance is interrupted!\n";
+                save_to_txt_inputData("../../READ/interrupted_DrumData_in");
+                parse_and_save_to_csv("../../READ/interrupted_DrumData_out");
                 isReady = false;
                 getReady = false;
                 getBack = true;
