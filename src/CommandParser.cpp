@@ -17,7 +17,7 @@ enum class CAN_PACKET_ID
 
 std::tuple<int, float, float, float, int8_t, int8_t> TMotorServoCommandParser::motor_receive(struct can_frame *frame)
 {
-    int id = frame->can_id;
+    int id = frame->can_id & 0xFF;
     int16_t pos_int = (frame)->data[0] << 8 | (frame)->data[1];
     int16_t spd_int = (frame)->data[2] << 8 | (frame)->data[3];
     int16_t cur_int = (frame)->data[4] << 8 | (frame)->data[5];
