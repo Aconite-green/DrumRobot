@@ -64,8 +64,11 @@ void DrumRobot::stateMachine()
         }
         case Main::Check:
         {
-            canManager.checkAllMotors_Fixed();
 
+            if (state.home == HomeSub::Done)
+            {
+                canManager.checkAllMotors_Fixed();
+            }
             printCurrentPositions();
             std::cout << "Put any keyboard input\n";
             if (kbhit())
@@ -1232,14 +1235,9 @@ void DrumRobot::DeactivateControlTask()
         // 타입에 따라 적절한 캐스팅과 초기화 수행
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            tmotorcmd.getCheck(*tMotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            tmotorcmd.getExit(*tMotor, &frame);
-            if (canManager.sendAndRecv(motor, frame))
-                std::cout << "Exiting for motor [" << name << "]" << std::endl;
-            else
-                std::cerr << "Failed to exit control mode for motor [" << name << "]." << std::endl;
+            tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
+            canManager.sendMotorFrame(tMotor);
+            std::cout << "Exiting for motor [" << name << "]" << std::endl;
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
