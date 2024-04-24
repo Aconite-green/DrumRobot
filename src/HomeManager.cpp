@@ -282,7 +282,7 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
-            canManager.checkAllMotors_test(); // Waist 모터 포지션 업데이트
+            canManager.checkMaxon(); // Waist 모터 포지션 업데이트
 
             for (auto &PmotorNames : Priority)
             {
@@ -311,7 +311,7 @@ void HomeManager::SendHomeProcess()
             loadHomingInfoFromFile();
             setMaxonMode("CSP");
             MaxonEnable();
-            canManager.checkAllMotors_test();
+            canManager.checkMaxon();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
         }
@@ -328,7 +328,6 @@ void HomeManager::SendHomeProcess()
         cout << "Now Im in GetSelectedMotor state\n";
         if (!HomingMotorsArr.empty())
         {
-
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
             // 첫 번째 요소를 currentMotors에 할당
             for (const auto &motor : currentMotors)
@@ -344,8 +343,8 @@ void HomeManager::SendHomeProcess()
                     setMaxonMode("HMM");
                     usleep(50000);
                     MaxonEnable();
-                    state.homeMaxon = HomeMaxon::StartHoming;
                     state.home = HomeSub::HomeMaxon;
+                    state.homeMaxon = HomeMaxon::StartHoming;
                     break;
                 }
             }
@@ -411,12 +410,21 @@ void HomeManager::HomeTmotor()
 
         if (sensor.OpenDeviceUntilSuccess())
         {
-
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
 
+            for (auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    if(){
+
+                    }
+                }
+            }
             // 속도 제어 - 센서 방향으로 이동
             for (long unsigned int i = 0; i < currentMotors.size(); i++)
             {
+
                 std::cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
                 tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
 
@@ -534,7 +542,7 @@ void HomeManager::HomeTmotor()
             tMotors[i]->clearCommandBuffer();
         }
 
-        int totalSteps = 2000 / 5;      // 2초
+        int totalSteps = 2000 / 5; // 2초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)
@@ -548,7 +556,7 @@ void HomeManager::HomeTmotor()
             }
         }
 
-        totalSteps = 500 / 5;       // 0.5초
+        totalSteps = 500 / 5; // 0.5초
         for (int step = 1; step <= totalSteps; ++step)
         {
             for (long unsigned int i = 0; i < tMotors.size(); i++)

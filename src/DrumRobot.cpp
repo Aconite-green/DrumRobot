@@ -1082,7 +1082,6 @@ int DrumRobot::kbhit()
 
 void DrumRobot::initializeMotors()
 {
-
     motors["waist"] = make_shared<TMotor>(0x007, "AK10_9");
     motors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10");
