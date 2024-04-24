@@ -378,7 +378,7 @@ void CanManager::setMotorsSocket()
     {
         // 모든 모터에 임의의 소켓값 할당 및 canframe 전송(Maxon 만)
         int socket_fd = socketPair.second;
-        int motorsConnectedToSocket = 0;
+
         for (auto &motor_pair : motors)
         {
             auto &motor = motor_pair.second;
@@ -399,9 +399,14 @@ void CanManager::setMotorsSocket()
 
         // 해당 소켓으로 프레임을 무작정 읽어서 버퍼에 넣음
         int readCount = 0;
-        while (readCount < 30 || read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        while (readCount < 30)
         {
-            tempFrames[socket_fd].push_back(frame);
+            ssize_t result = read(socket_fd, &frame, sizeof(frame));
+
+            if (result > 0)
+            {
+                tempFrames[socket_fd].push_back(frame);
+            }
             readCount++;
         }
 
@@ -444,12 +449,12 @@ void CanManager::setMotorsSocket()
         std::shared_ptr<GenericMotor> motor = it->second;
         if (motor->isConected)
         {
-            std::cerr << "--------------> Motor [" << name << "] is Connected." << std::endl;
+            std::cerr << "--------------> Motor [" << name << "] is Connected. "<< motor->nodeId << std::endl;
             ++it;
         }
         else
         {
-            std::cerr << "Motor [" << name << "] Not Connected." << std::endl;
+            std::cerr << "Motor [" << name << "] Not Connected. " << motor->nodeId << std::endl;
             it = motors.erase(it);
         }
     }
@@ -480,9 +485,9 @@ void CanManager::distributeFramesToMotors()
             // TMotor 처리
             for (auto &frame : tempFrames[motor->socket])
             {
-                if (frame.can_id & 0xFF == tMotor->nodeId)
+                if ((frame.can_id & 0xFF) == tMotor->nodeId)
                 {
-                    std::tuple<int, float, float, float,int8_t,int8_t> parsedData = tservocmd.motor_receive(&frame);
+                    std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
@@ -513,7 +518,6 @@ void CanManager::distributeFramesToMotors()
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
 }
 
-
 bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 {
     clearReadBuffers();
@@ -521,6 +525,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tMotor->currentPos, 1, 10);
+        //tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, 1000);
         sendMotorFrame(tMotor);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

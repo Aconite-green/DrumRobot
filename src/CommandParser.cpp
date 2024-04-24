@@ -78,6 +78,25 @@ void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *
     frame->data[2] = (current_int >> 8) & 0xFF;
     frame->data[3] = current_int & 0xFF;
 }
+
+void TMotorServoCommandParser::comm_can_set_spd(TMotor &motor, struct can_frame *frame, float spd_rad_s)
+{
+    // rad/s를 RPM으로 변환
+    float spd_rpm = spd_rad_s * (60.0 / (2 * M_PI));
+
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_RPM << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 4;
+
+    // 변환된 RPM 값을 정수로 변환
+    int32_t spd_int = static_cast<int32_t>(spd_rpm);
+    
+    frame->data[0] = (spd_int >> 24) & 0xFF;
+    frame->data[1] = (spd_int >> 16) & 0xFF;
+    frame->data[2] = (spd_int >> 8) & 0xFF;
+    frame->data[3] = spd_int & 0xFF;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                                      Tmotor Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////

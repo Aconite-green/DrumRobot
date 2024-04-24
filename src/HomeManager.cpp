@@ -282,7 +282,7 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
-            canManager.checkAllMotors_test(); // Waist 모터 포지션 업데이트
+            canManager.checkMaxon(); // Waist 모터 포지션 업데이트
 
             for (auto &PmotorNames : Priority)
             {
@@ -311,7 +311,7 @@ void HomeManager::SendHomeProcess()
             loadHomingInfoFromFile();
             setMaxonMode("CSP");
             MaxonEnable();
-            canManager.checkAllMotors_test();
+            canManager.checkMaxon();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
         }
