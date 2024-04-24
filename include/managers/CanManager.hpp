@@ -52,11 +52,9 @@ public:
 
     bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
 
-    bool checkAllMotors_test();
+    bool checkMaxon();
 
     bool checkAllMotors_Fixed();
-
-    bool sendForCheck(std::shared_ptr<GenericMotor> motor);
 
     bool sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor);
 
@@ -76,9 +74,7 @@ public:
     void setSocketBlock();
     std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
     std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
-    int maxonCnt = 0;                        ///< 연결된 Maxon 모터의 수.
-    std::map<int, int> motorsPerSocket;
-
+    int maxonCnt=0;
     // Functions for Thread Case
 
     bool safetyCheck(std::string errorMessagePart);

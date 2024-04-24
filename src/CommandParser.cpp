@@ -22,8 +22,8 @@ std::tuple<int, float, float, float, int8_t, int8_t> TMotorServoCommandParser::m
     int16_t spd_int = (frame)->data[2] << 8 | (frame)->data[3];
     int16_t cur_int = (frame)->data[4] << 8 | (frame)->data[5];
 
-    float pos = (float)(pos_int * 0.1f);  // Motor Position
-    float spd = (float)(spd_int * 10.0f); // Motor Speed
+    float pos = (float)(pos_int * 0.1f * M_PI / 180.0f); // Motor Position in radians
+    float spd = (float)(spd_int * 10.0f * 2 * M_PI / 60.0f); // Motor Speed in radians per second
     float cur = (float)(cur_int * 0.01f); // Motor Current
     int8_t temp = frame->data[6];         // Motor Temperature
     int8_t error = frame->data[7];        // Motor Error Code
@@ -36,29 +36,35 @@ void TMotorServoCommandParser::comm_can_set_origin(TMotor &motor, struct can_fra
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_ORIGIN_HERE << 8 | CAN_EFF_FLAG);
     frame->can_dlc = 1;
-    frame->data[0] = set_origin_mode; // 0:tempoaray origin
-                                      // 1: setting a permanent zero point
+    frame->data[0] = set_origin_mode; 
 }
 
 void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA)
 {
+    // 라디안에서 도로 변환
+    float pos_deg = pos * (180.0 / M_PI); // 라디안을 도로 변환
+    // 라디안/초에서 ERPM으로 변환
+    int16_t spd_erpm = static_cast<int16_t>(spd * (60.0 / (2 * M_PI)));
+    // 라디안/초²에서 1 unit equals 10 electrical RPM/S²로 변환
+    int16_t RPA_unit = static_cast<int16_t>(RPA * (60.0 / (2 * M_PI * 10)));
+
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);
     
     frame->can_dlc=8;
-    int32_t pos_int = static_cast<int32_t>(pos * 10000.0);
+    int32_t pos_int = static_cast<int32_t>(pos_deg * 10000.0);
     frame->data[0] = (pos_int >> 24) & 0xFF;
     frame->data[1] = (pos_int >> 16) & 0xFF;
     frame->data[2] = (pos_int >> 8) & 0xFF;
     frame->data[3] = pos_int & 0xFF;
 
-    // spd를 CAN 프레임 데이터에 저장
-    frame->data[4] = (spd / 10) >> 8;
-    frame->data[5] = (spd / 10) & 0xFF;
+    // spd_erpm를 CAN 프레임 데이터에 저장
+    frame->data[4] = (spd_erpm / 10) >> 8;
+    frame->data[5] = (spd_erpm / 10) & 0xFF;
 
-    // RPA를 CAN 프레임 데이터에 저장
-    frame->data[6] = (RPA / 10) >> 8;
-    frame->data[7] = (RPA / 10) & 0xFF;
+    // RPA_unit를 CAN 프레임 데이터에 저장
+    frame->data[6] = (RPA_unit / 10) >> 8;
+    frame->data[7] = (RPA_unit / 10) & 0xFF;
 }
 
 void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current)

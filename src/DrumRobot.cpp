@@ -43,7 +43,6 @@ void DrumRobot::stateMachine()
         {
             ClearBufferforRecord();
             idealStateRoutine();
-            sendCheckFrame = false;
             break;
         }
         case Main::Homing:
@@ -131,9 +130,13 @@ void DrumRobot::sendLoopForThread()
         case Main::Ideal:
         {
             usleep(200000);
-            if (state.home != HomeSub::Done)
+            if (state.home == HomeSub::Done)
             {
-                canManager.checkAllMotors_test();
+                canManager.checkAllMotors_Fixed();
+            }
+            else
+            {
+                canManager.checkMaxon();
             }
             break;
         }
@@ -194,7 +197,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Ideal:
         {
-            ReadProcess(200000); /*200ms*/
+            ReadProcess(5000); /*5ms*/
             break;
         }
         case Main::Homing:
@@ -859,6 +862,9 @@ void DrumRobot::SendAddStanceProcess()
     }
 }
 
+void DrumRobot::SendFixProcess()
+{
+}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
@@ -1101,8 +1107,6 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->rMin = -M_PI / 2.0f; // -90deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 450;
-                tMotor->Kd = 4.0;
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
             }
@@ -1112,8 +1116,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 3;
                 tMotor->rMin = 0.0f;       // 0deg
                 tMotor->rMax = M_PI * 0.8; // 144deg
-                tMotor->Kp = 200;
-                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
             }
@@ -1123,8 +1125,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 0;
                 tMotor->rMin = M_PI / 5; // 36deg
                 tMotor->rMax = M_PI;     // 180deg
-                tMotor->Kp = 200;
-                tMotor->Kd = 2.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
             }
@@ -1134,8 +1134,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 4;
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 350;
-                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
             }
@@ -1145,8 +1143,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
                 tMotor->rMax = M_PI * 0.75f; // 135deg
-                tMotor->Kp = 250;
-                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
             }
@@ -1156,8 +1152,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 1;
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
-                tMotor->Kp = 350;
-                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
             }
@@ -1167,8 +1161,6 @@ void DrumRobot::initializeMotors()
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
                 tMotor->rMax = M_PI * 0.75f; // 135deg
-                tMotor->Kp = 250;
-                tMotor->Kd = 3.5;
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
             }
@@ -1429,27 +1421,11 @@ void DrumRobot::motorSettingCmd()
         }
         else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
-            tmotorcmd.getQuickStop(*tmotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-            usleep(5000);
-            tmotorcmd.getControlMode(*tmotor, &frame);
-            canManager.sendAndRecv(motor, frame);
 
-            usleep(5000);
-            tmotorcmd.getControlMode(*tmotor, &frame);
-            canManager.sendAndRecv(motor, frame);
-
-            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tmotor, &frame);
-            float initPosition = abs(std::get<1>(parsedData));
-
-            if (/*tmotor->myName == "waist" || */ initPosition > 2)
+            if (tmotor->currentPos > 40)
             {
-                usleep(5000);
-                tmotorcmd.getZero(*tmotor, &frame);
-                canManager.sendAndRecv(motor, frame);
-                usleep(5000);
-                tmotorcmd.getQuickStop(*tmotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                tservocmd.comm_can_set_origin(*tmotor, &tmotor->sendFrame, 1);
+                canManager.sendMotorFrame(tmotor);
             }
         }
     }

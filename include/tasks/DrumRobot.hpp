@@ -58,6 +58,7 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
     Sensor sensor;
 
     chrono::system_clock::time_point ReadStandard;
@@ -95,6 +96,7 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess();
+    void SendFixProcess();
     void clearMotorsCommandBuffer();
 
     vector<vector<float>> Input_pos;
