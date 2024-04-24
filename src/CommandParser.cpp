@@ -1,6 +1,84 @@
 #include "../include/motors/CommandParser.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                                      Tmotor Servo Mode Parser definition                           */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum class CAN_PACKET_ID
+{
+    CAN_PACKET_SET_DUTY = 0,
+    CAN_PACKET_SET_CURRENT,
+    CAN_PACKET_SET_DUTY_CURRENT_BRAKE,
+    CAN_PACKET_SET_RPM,
+    CAN_PACKET_SET_POS,
+    CAN_PACKET_SET_ORIGIN_HERE,
+    CAN_PACKET_SET_POS_SPD
+};
+
+std::tuple<int, float, float, float, int8_t, int8_t> TMotorServoCommandParser::motor_receive(struct can_frame *frame)
+{
+    int id = frame->can_id & 0xFF;
+    int16_t pos_int = (frame)->data[0] << 8 | (frame)->data[1];
+    int16_t spd_int = (frame)->data[2] << 8 | (frame)->data[3];
+    int16_t cur_int = (frame)->data[4] << 8 | (frame)->data[5];
+
+    float pos = (float)(pos_int * 0.1f * M_PI / 180.0f); // Motor Position in radians
+    float spd = (float)(spd_int * 10.0f * 2 * M_PI / 60.0f); // Motor Speed in radians per second
+    float cur = (float)(cur_int * 0.01f); // Motor Current
+    int8_t temp = frame->data[6];         // Motor Temperature
+    int8_t error = frame->data[7];        // Motor Error Code
+
+    return std::make_tuple(id, pos, spd, cur, temp, error);
+}
+
+void TMotorServoCommandParser::comm_can_set_origin(TMotor &motor, struct can_frame *frame, uint8_t set_origin_mode)
+{
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_ORIGIN_HERE << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 1;
+    frame->data[0] = set_origin_mode; 
+}
+
+void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA)
+{
+    // 라디안에서 도로 변환
+    float pos_deg = pos * (180.0 / M_PI); // 라디안을 도로 변환
+    // 라디안/초에서 ERPM으로 변환
+    int16_t spd_erpm = static_cast<int16_t>(spd * (60.0 / (2 * M_PI)));
+    // 라디안/초²에서 1 unit equals 10 electrical RPM/S²로 변환
+    int16_t RPA_unit = static_cast<int16_t>(RPA * (60.0 / (2 * M_PI * 10)));
+
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);
+    
+    frame->can_dlc=8;
+    int32_t pos_int = static_cast<int32_t>(pos_deg * 10000.0);
+    frame->data[0] = (pos_int >> 24) & 0xFF;
+    frame->data[1] = (pos_int >> 16) & 0xFF;
+    frame->data[2] = (pos_int >> 8) & 0xFF;
+    frame->data[3] = pos_int & 0xFF;
+
+    // spd_erpm를 CAN 프레임 데이터에 저장
+    frame->data[4] = (spd_erpm / 10) >> 8;
+    frame->data[5] = (spd_erpm / 10) & 0xFF;
+
+    // RPA_unit를 CAN 프레임 데이터에 저장
+    frame->data[6] = (RPA_unit / 10) >> 8;
+    frame->data[7] = (RPA_unit / 10) & 0xFF;
+}
+
+void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current)
+{
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_DUTY_CURRENT_BRAKE << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 4;
+    int32_t current_int = static_cast<int32_t>(current * 1000.0);
+    frame->data[0] = (current_int >> 24) & 0xFF;
+    frame->data[1] = (current_int >> 16) & 0xFF;
+    frame->data[2] = (current_int >> 8) & 0xFF;
+    frame->data[3] = current_int & 0xFF;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                                      Tmotor Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,6 +127,8 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_V_MAX = 50;
         GLOBAL_T_MIN = -65;
         GLOBAL_T_MAX = 65;
+        GLOBAL_I_MAX = 29.8;
+        Kt = 0.198;
     }
     else if (motor.motorType == "AK70_10")
     {
@@ -56,6 +136,8 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_V_MAX = 50;
         GLOBAL_T_MIN = -25;
         GLOBAL_T_MAX = 25;
+        GLOBAL_I_MAX = 23.2;
+        Kt = 0.123;
     }
     else if (motor.motorType == "AK60_6")
     {
@@ -63,6 +145,7 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_V_MAX = 45;
         GLOBAL_T_MIN = -15;
         GLOBAL_T_MAX = 15;
+        GLOBAL_I_MAX = 23.2;
     }
     else if (motor.motorType == "AK80_6")
     {
@@ -70,6 +153,7 @@ void TMotorCommandParser::setMotorLimits(TMotor &motor)
         GLOBAL_V_MAX = 76;
         GLOBAL_T_MIN = -12;
         GLOBAL_T_MAX = 12;
+        GLOBAL_I_MAX = 23.2;
     }
     else if (motor.motorType == "AK80_9")
     {
@@ -112,7 +196,7 @@ std::tuple<int, float, float, float> TMotorCommandParser::parseRecieveCommand(TM
     /// convert ints to floats ///
     position = uintToFloat(p_int, GLOBAL_P_MIN, GLOBAL_P_MAX, 16);
     speed = uintToFloat(v_int, GLOBAL_V_MIN, GLOBAL_V_MAX, 12);
-    torque = uintToFloat(i_int, GLOBAL_T_MIN, GLOBAL_T_MAX, 12);
+    torque = uintToFloat(i_int, -GLOBAL_I_MAX, GLOBAL_I_MAX, 12);
 
     return std::make_tuple(id, position, speed, torque);
 }
@@ -226,7 +310,6 @@ void TMotorCommandParser::getQuickStop(TMotor &motor, struct can_frame *frame)
 std::tuple<int, float, float, unsigned char> MaxonCommandParser::parseRecieveCommand(MaxonMotor &motor, struct can_frame *frame)
 {
     int id = frame->can_id;
-
 
     unsigned char statusBit = frame->data[1];
 
@@ -452,7 +535,7 @@ void MaxonCommandParser::getHomeoffsetDistance(MaxonMotor &motor, struct can_fra
 
 void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *frame, int degree)
 {
-    float value_per_degree = 398.22*motor.cwDir;
+    float value_per_degree = 398.22 * motor.cwDir;
     // int 대신 int32_t 사용하여 플랫폼 독립적인 크기 보장
     int32_t value = static_cast<int32_t>(degree * value_per_degree);
 
@@ -463,12 +546,11 @@ void MaxonCommandParser::getHomePosition(MaxonMotor &motor, struct can_frame *fr
     frame->data[2] = 0x30;
     frame->data[3] = 0x00;
     // 음수 값을 포함하여 value를 올바르게 바이트로 변환
-    frame->data[4] = value & 0xFF;                // 가장 낮은 바이트
-    frame->data[5] = (value >> 8) & 0xFF;         // 다음 낮은 바이트
-    frame->data[6] = (value >> 16) & 0xFF;        // 다음 높은 바이트
-    frame->data[7] = (value >> 24) & 0xFF;        // 가장 높은 바이트
+    frame->data[4] = value & 0xFF;         // 가장 낮은 바이트
+    frame->data[5] = (value >> 8) & 0xFF;  // 다음 낮은 바이트
+    frame->data[6] = (value >> 16) & 0xFF; // 다음 높은 바이트
+    frame->data[7] = (value >> 24) & 0xFF; // 가장 높은 바이트
 }
-
 
 void MaxonCommandParser::getHomingMethodL(MaxonMotor &motor, struct can_frame *frame)
 {
@@ -498,6 +580,20 @@ void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *f
     frame->data[7] = 0xFF;
 }
 
+void MaxonCommandParser::getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame)
+{
+    frame->can_id = motor.canSendId;
+    frame->can_dlc = 8;
+    frame->data[0] = 0x22;
+    frame->data[1] = 0x98;
+    frame->data[2] = 0x60;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0xFC;
+    frame->data[5] = 0xFF;
+    frame->data[6] = 0xFF;
+    frame->data[7] = 0xFF;
+}
+
 void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *frame)
 {
     frame->can_id = motor.txPdoIds[0];
@@ -512,9 +608,25 @@ void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *fra
     frame->data[7] = 0x00;
 }
 
-void MaxonCommandParser::getCurrentThreshold(MaxonMotor &motor, struct can_frame *frame)
+void MaxonCommandParser::getCurrentThresholdR(MaxonMotor &motor, struct can_frame *frame)
 {
     // 1000 = 3E8
+    // 500 = 01F4
+    frame->can_id = motor.canSendId;
+    frame->can_dlc = 8;
+    frame->data[0] = 0x23;
+    frame->data[1] = 0xB2;
+    frame->data[2] = 0x30;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0xF4;
+    frame->data[5] = 0x01;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
+}
+
+void MaxonCommandParser::getCurrentThresholdL(MaxonMotor &motor, struct can_frame *frame)
+{
+    // 1000 =03E8
     // 500 = 01F4
     frame->can_id = motor.canSendId;
     frame->can_dlc = 8;

@@ -31,7 +31,9 @@ public:
     std::string interFaceName;
     // Values
     float desPos, desVel, desTor;
+    float prePos;
     float currentPos, currentVel, currentTor;
+    float coordinatePos;
     int Kp;
     double Kd;
     // For Homing Session
@@ -40,6 +42,7 @@ public:
 
     std::queue<can_frame> recieveBuffer;
     std::queue<can_frame> sendBuffer;
+
     struct can_frame sendFrame;
 
     GenericMotor(uint32_t nodeId);
@@ -95,18 +98,23 @@ public:
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;
 
+    bool stay = false;
     bool hitting = false;
-
+    bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
-    float targetPos = M_PI / 2;
+    // float targetPos = M_PI / 18.0;
 
     bool checked = false;
 
     unsigned char statusBit;
+    double homeOffset = 0.0;
+    double bumperLocation = 0.0;
 
-    std::queue<MaxonData> commandBuffer;
+    queue<MaxonData> commandBuffer;
+    queue<double> wrist_BackArr;
     void clearCommandBuffer();
+    void clearWrist_BackArr();
 };
 
 #endif // MOTOR_H

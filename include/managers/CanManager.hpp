@@ -40,28 +40,24 @@ public:
 
     void initializeCAN();
 
-    void restartCanPorts();
-
     void setSocketsTimeout(int sec, int usec);
 
     void checkCanPortsStatus();
 
     void setMotorsSocket();
 
-    bool checkConnection(std::shared_ptr<GenericMotor> motor);
-
-    bool checkAllMotors();
-
     bool sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
 
     bool sendFromBuff(std::shared_ptr<GenericMotor> &motor);
 
     bool sendMotorFrame(std::shared_ptr<GenericMotor> motor);
-    
-    bool checkAllMotors_test();
-    
-    bool sendForCheck(std::shared_ptr<GenericMotor> motor);
-    
+
+    bool checkMaxon();
+
+    bool checkAllMotors_Fixed();
+
+    bool sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor);
+
     bool recvToBuff(std::shared_ptr<GenericMotor> &motor, int readCount);
 
     bool txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame);
@@ -78,8 +74,25 @@ public:
     void setSocketBlock();
     std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
     std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
-    int maxonCnt = 0;                        ///< 연결된 Maxon 모터의 수.
-    std::map<int, int> motorsPerSocket;
+    int maxonCnt=0;
+    // Functions for Thread Case
+
+    bool safetyCheck(std::string errorMessagePart);
+    bool safetyCheck_servo(std::string errorMessagePart);
+
+    vector<vector<float>> Input_pos;
+    vector<vector<float>> Input_vel;
+    map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
+        {"waist", 0},
+        {"R_arm1", 1},
+        {"L_arm1", 2},
+        {"R_arm2", 3},
+        {"R_arm3", 4},
+        {"L_arm2", 5},
+        {"L_arm3", 6},
+        {"R_wrist", 7},
+        {"L_wrist", 8},
+        {"maxonForTest", 8}};
 
 private:
     std::vector<std::string> ifnames;
@@ -87,13 +100,13 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
 
     std::map<int, std::vector<can_frame>> tempFrames;
 
     bool getCanPortStatus(const char *port);
     void activateCanPort(const char *port);
     void list_and_activate_available_can_ports();
-    void deactivateCanPort(const char *port);
 
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);

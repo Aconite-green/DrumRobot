@@ -11,14 +11,14 @@ PathManager::PathManager(State &stateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, double> Si)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si)
 {
     for (auto &entry : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = (Qi[motor_mapping[entry.first]] + tMotor->homeOffset) * tMotor->cwDir;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
 
             tMotor->commandBuffer.push(newData);
@@ -43,10 +43,10 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<double, dou
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
 
-vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int k, int n)
+vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, int n)
 {
-    vector<double> Qi;
-    std::vector<double> A, B;
+    vector<float> Qi;
+    std::vector<float> A, B;
 
     // Compute A and Bk
     for (long unsigned int i = 0; i < Q1.size(); ++i)
@@ -58,7 +58,7 @@ vector<double> PathManager::connect(vector<double> &Q1, vector<double> &Q2, int 
     // Compute Qi using the provided formula
     for (long unsigned int i = 0; i < Q1.size(); ++i)
     {
-        double val = A[i] * cos(M_PI * k / n) + B[i];
+        float val = A[i] * cos(M_PI * k / n) + B[i];
         Qi.push_back(val);
     }
 
@@ -70,18 +70,14 @@ void PathManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
+        entry.second->prePos = entry.second->currentPos;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            if (entry.first == "R_arm1" || entry.first == "L_arm1" || entry.first == "R_arm3" || entry.first == "L_arm3")
-            {
-                tMotor->homeOffset = M_PI / 2 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-            else if (entry.first == "R_arm2" || entry.first == "L_arm2")
-            {
-                tMotor->homeOffset = -M_PI / 6 * tMotor->cwDir - tMotor->sensorLocation;
-            }
-
             c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+        }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir;
         }
     }
 }
@@ -97,13 +93,13 @@ string trimWhitespace(const std::string &str)
     return str.substr(first, (last - first + 1));
 }
 
-MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, VectorXd &inst2_b)
+MatrixXd PathManager::tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b)
 {
     int flag = 0;
 
     VectorXd inst_c = VectorXd::Zero(18);
 
-    double t3;
+    float t3;
     MatrixXd t3_inst3;
 
     // 1번 룰: 1이 연속되면 t3와 inst3를 생성하고, t2 0.2초 앞에 inst2를 타격할 준비(-1)를 함
@@ -189,7 +185,7 @@ MatrixXd PathManager::tms_fun(double t2_a, double t2_b, VectorXd &inst2_a, Vecto
     return t3_inst3;
 }
 
-void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
+void PathManager::itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41)
 {
     MatrixXd T(0, 0);
 
@@ -219,14 +215,14 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
     {
         if (round(T.block(1, k, 9, 1).sum()) == 0)
         {
-            double norm_val = T.block(1, k - 1, 9, 1).norm();
+            float norm_val = T.block(1, k - 1, 9, 1).norm();
             MatrixXd block = T.block(1, k - 1, 9, 1);
             T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
 
         if (round(T.block(10, k, 9, 1).sum()) == 0)
         {
-            double norm_val = T.block(10, k - 1, 9, 1).norm();
+            float norm_val = T.block(10, k - 1, 9, 1).norm();
             MatrixXd block = T.block(10, k - 1, 9, 1);
             T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
@@ -317,7 +313,7 @@ void PathManager::itms0_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &A30, 
         t4_inst4.block(10, 0, 9, 1).sum(), t4_inst4.block(10, 1, 9, 1).sum(), t4_inst4.block(10, 2, 9, 1).sum(), t4_inst4.block(10, 3, 9, 1).sum();
 }
 
-void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
+void PathManager::itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB)
 {
     MatrixXd T(0, 0);
 
@@ -347,14 +343,14 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
     {
         if (round(T.block(1, k, 9, 1).sum()) == 0)
         {
-            double norm_val = T.block(1, k - 1, 9, 1).norm();
+            float norm_val = T.block(1, k - 1, 9, 1).norm();
             MatrixXd block = T.block(1, k - 1, 9, 1);
             T.block(1, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
 
         if (round(T.block(10, k, 9, 1).sum()) == 0)
         {
-            double norm_val = T.block(10, k - 1, 9, 1).norm();
+            float norm_val = T.block(10, k - 1, 9, 1).norm();
             MatrixXd block = T.block(10, k - 1, 9, 1);
             T.block(10, k, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
         }
@@ -420,7 +416,7 @@ void PathManager::itms_fun(vector<double> &t2, MatrixXd &inst2, MatrixXd &B, Mat
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
 {
-    double time = A(0);
+    float time = A(0);
 
     VectorXd inst_right = A.segment(1, 9);
     VectorXd inst_left = A.segment(10, 9);
@@ -428,8 +424,8 @@ VectorXd PathManager::pos_madi_fun(VectorXd &A)
     VectorXd inst_right_01 = inst_right / inst_right.sum();
     VectorXd inst_left_01 = inst_left / inst_left.sum();
 
-    double inst_right_state = inst_right.sum();
-    double inst_left_state = inst_left.sum();
+    float inst_right_state = inst_right.sum();
+    float inst_left_state = inst_left.sum();
 
     VectorXd inst_p(18);
     inst_p << inst_right_01,
@@ -448,7 +444,7 @@ VectorXd PathManager::pos_madi_fun(VectorXd &A)
     return output;
 }
 
-MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
+MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, float v_wrist)
 {
     MatrixXd t_madi = AA.row(0);
     MatrixXd sts_R = AA.row(1);
@@ -462,12 +458,14 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
         if (sts_R(0, i) == 1)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
-            theta_R(0, i) = 0.15 * v_wrist;
+            theta_R(0, i) = wrist_backPos;
+        // theta_R(0, i) = 0.15 * v_wrist;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
-            theta_L(0, i) = 0.15 * v_wrist;
+            theta_L(0, i) = wrist_backPos;
+        // theta_L(0, i) = 0.15 * v_wrist;
     }
 
     MatrixXd t_wrist_madi(3, 3);
@@ -475,18 +473,20 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     {
         if (sts_L(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_L(0, i) = wrist_backPos;
+            /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_wrist;
             if (theta_L(0, i) > (M_PI / 2) * 0.8)
-                theta_L(0, i) = (M_PI / 2) * 0.8;
+                theta_L(0, i) = (M_PI / 2) * 0.8;*/
         }
 
         if (sts_R(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_R(0, i) = wrist_backPos;
+            /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_wrist;
             if (theta_R(0, i) > (M_PI / 2) * 0.8)
-                theta_R(0, i) = (M_PI / 2) * 0.8;
+                theta_R(0, i) = (M_PI / 2) * 0.8;*/
         }
     }
 
@@ -497,7 +497,7 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, double v_wrist)
     return t_wrist_madi;
 }
 
-MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
+MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
 {
     MatrixXd t_madi = AA.row(0);
     MatrixXd sts_R = AA.row(1);
@@ -524,18 +524,18 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
     {
         if (sts_L(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_elbow;
-            if (theta_L(0, i) > (M_PI / 2) * 0.8)
-                theta_L(0, i) = (M_PI / 2) * 0.8;
+            if (theta_L(0, i) > (M_PI / 10))
+                theta_L(0, i) = (M_PI / 10);
         }
 
         if (sts_R(0, i) == -1)
         {
-            double dt = t_madi(0, i + 1) - t_madi(0, i);
+            float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_elbow;
-            if (theta_R(0, i) > (M_PI / 2) * 0.8)
-                theta_R(0, i) = (M_PI / 2) * 0.8;
+            if (theta_R(0, i) > (M_PI / 10))
+                theta_R(0, i) = (M_PI / 10);
         }
     }
 
@@ -546,22 +546,22 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, double v_elbow)
     return t_elbow_madi;
 }
 
-VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, double s, double z0)
+VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0)
 {
-    double direction = 0.0 * M_PI;
+    float direction = 0.0 * M_PI;
 
-    double X1 = pR(0), Y1 = pR(1), z1 = pR(2);
-    double X2 = pL(0), Y2 = pL(1), z2 = pL(2);
-    double r1 = part_length(0);
-    double r2 = part_length(1) + part_length(4);
-    double L1 = part_length(2);
-    double L2 = part_length(3) + part_length(5);
+    float X1 = pR(0), Y1 = pR(1), z1 = pR(2);
+    float X2 = pL(0), Y2 = pL(1), z2 = pL(2);
+    float r1 = part_length(0);
+    float r2 = part_length(1) + part_length(4);
+    float L1 = part_length(2);
+    float L2 = part_length(3) + part_length(5);
 
     int j = 0;
-    double the3[1351];
-    double zeta = z0 - z2;
+    float the3[1351];
+    float zeta = z0 - z2;
     VectorXd Qf(7);
-    double the0_f = 0;
+    float the0_f = 0;
 
     // the3 배열 초기화
     for (int i = 0; i < 1351; ++i)
@@ -569,60 +569,66 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
 
     for (int i = 0; i < 1351; ++i)
     {
-        double det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
+        float det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
 
         if (det_the4 < 1 && det_the4 > -1)
         {
-            double the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
-            double the4 = the34 - the3[i];
+            float the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
+            float the4 = the34 - the3[i];
 
-            if (the4 >= 0 && the4 < M_PI * (3.0 / 4.0)) // the4 범위 : 0deg ~ 135deg
+            if (the4 >= 0 && the4 < M_PI * 0.75) // the4 범위 : 0deg ~ 135deg
             {
-                double r = r1 * sin(the3[i]) + r2 * sin(the34);
-                double det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
+                float r = r1 * sin(the3[i]) + r2 * sin(the34);
+                float det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
 
                 if (det_the1 < 1 && det_the1 > -1)
                 {
-                    double the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < M_PI * (4.0 / 5.0)) // the1 범위 : 0deg ~ 144deg
+                    float the1 = acos(det_the1);
+                    if (the1 > 0 && the1 < M_PI * 0.8) // the1 범위 : 0deg ~ 144deg
                     {
-                        double alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
-                        double det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
+                        float alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
+                        float det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
 
                         if (det_the0 < 1 && det_the0 > -1)
                         {
-                            double the0 = asin(det_the0) - alpha;
+                            float the0 = asin(det_the0) - alpha;
                             if (the0 > -M_PI / 2 && the0 < M_PI / 2) // the0 범위 : -90deg ~ 90deg
                             {
-                                double L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
-                                double det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                float det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
 
                                 if (det_the2 < 1 && det_the2 > -1)
                                 {
-                                    double the2 = acos(det_the2) - the0;
+                                    float the2 = acos(det_the2) - the0;
                                     if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
                                     {
-                                        double Lp = sqrt(L * L + zeta * zeta);
-                                        double det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+                                        float Lp = sqrt(L * L + zeta * zeta);
+                                        float det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
 
                                         if (det_the6 < 1 && det_the6 > -1)
                                         {
-                                            double the6 = acos(det_the6);
-                                            if (the6 >= 0 && the6 < M_PI * (3.0 / 4.0)) // the6 범위 : 0deg ~ 135deg
+                                            float the6 = acos(det_the6);
+                                            if (the6 >= 0 && the6 < M_PI * 0.75) // the6 범위 : 0deg ~ 135deg
                                             {
-                                                double T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
-                                                double det_the5 = L * L + zeta * zeta - T * T;
+                                                float T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                float det_the5 = L * L + zeta * zeta - T * T;
 
                                                 if (det_the5 > 0)
                                                 {
-                                                    double sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    float sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
                                                     sol /= (L * L + zeta * zeta);
-                                                    double the5 = asin(sol);
+                                                    float the5 = asin(sol);
                                                     if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
                                                     {
                                                         if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
                                                         {
-                                                            Qf << the0, the1, the2, the3[i], the4, the5, the6;
+                                                            Qf(0) = the0;
+                                                            Qf(1) = the1;
+                                                            Qf(2) = the2;
+                                                            Qf(3) = the3[i];
+                                                            Qf(4) = the4;
+                                                            Qf(5) = the5;
+                                                            Qf(6) = the6;
                                                             the0_f = the0;
                                                             j = 1;
                                                         }
@@ -641,17 +647,20 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     }
 
     if (j == 0)
+    {
         cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
+    }
 
     return Qf;
 }
 
-vector<double> PathManager::fkfun()
+vector<float> PathManager::fkfun()
 {
     getMotorPos();
 
-    vector<double> P;
-    vector<double> theta(9);
+    vector<float> P;
+    vector<float> theta(9);
     for (auto &motorPair : motors)
     {
         auto &name = motorPair.first;
@@ -667,8 +676,8 @@ vector<double> PathManager::fkfun()
             cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
     }
-    double r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
-    // double r, l;
+    float r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
+    // float r, l;
     // r = r1 * sin(theta[3]) + r2 * sin(theta[3] + theta[4]);
     // l = l1 * sin(theta[5]) + l2 * sin(theta[5] + theta[6]);
 
@@ -689,20 +698,20 @@ vector<double> PathManager::fkfun()
     return P;
 }
 
-double PathManager::con_fun(double t_a, double t_b, double th_a, double th_b, double t_now)
+float PathManager::con_fun(float t_a, float t_b, float th_a, float th_b, float t_now)
 {
     return (th_b - th_a) * (t_now - t_a) / (t_b - t_a) + th_a;
 }
 
-pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double qk3_06, double qv_in, double t1, double t2, double t)
+pair<float, float> PathManager::iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t)
 {
-    double p_out, v_out /*, V1_out*/;
+    float p_out, v_out /*, V1_out*/;
 
     if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
     { // 방향 지속의 경우, 2차 함수
-        double c = qk1_06;
-        double b = qv_in;
-        double a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
+        float c = qk1_06;
+        float b = qv_in;
+        float a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
 
         p_out = a * t * t + b * t + c; // 위치
         v_out = 2 * a * t + b;         // 속도
@@ -710,27 +719,27 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
     }
     else
     { // 방향 전환의 경우, 3차 함수
-        double c = qv_in;
-        double d = qk1_06;
+        float c = qv_in;
+        float d = qk1_06;
 
-        double T11 = t1 * t1 * t1;
-        double T12 = t1 * t1;
-        double T21 = 3 * t1 * t1;
-        double T22 = 2 * t1;
+        float T11 = t1 * t1 * t1;
+        float T12 = t1 * t1;
+        float T21 = 3 * t1 * t1;
+        float T22 = 2 * t1;
 
         // 역행렬 계산을 위한 수식 처리
-        double det = T11 * T22 - T12 * T21;
-        double invT11 = T22 / det;
-        double invT12 = -T12 / det;
-        double invT21 = -T21 / det;
-        double invT22 = T11 / det;
+        float det = T11 * T22 - T12 * T21;
+        float invT11 = T22 / det;
+        float invT12 = -T12 / det;
+        float invT21 = -T21 / det;
+        float invT22 = T11 / det;
 
-        double ANS1 = -c * t1 - d + qk2_06;
-        double ANS2 = -c;
+        float ANS1 = -c * t1 - d + qk2_06;
+        float ANS2 = -c;
 
         // 행렬식을 이용한 계산
-        double a = invT11 * ANS1 + invT12 * ANS2;
-        double b = invT21 * ANS1 + invT22 * ANS2;
+        float a = invT11 * ANS1 + invT12 * ANS2;
+        float b = invT21 * ANS1 + invT22 * ANS2;
 
         p_out = a * t * t * t + b * t * t + c * t + d; // 위치
         v_out = 3 * a * t * t + 2 * b * t + c;         // 속도
@@ -740,9 +749,9 @@ pair<double, double> PathManager::iconf_fun(double qk1_06, double qk2_06, double
     return std::make_pair(p_out, v_out);
 }
 
-pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
+pair<float, float> PathManager::qRL_fun(MatrixXd &t_madi, float t_now)
 {
-    double qR_t, qL_t;
+    float qR_t, qL_t;
 
     VectorXd time_madi = t_madi.row(0);
     VectorXd q7_madi = t_madi.row(1);
@@ -767,72 +776,144 @@ pair<double, double> PathManager::qRL_fun(MatrixXd &t_madi, double t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
-pair<double, double> PathManager::SetTorqFlag(MatrixXd &State, double t_now)
+pair<float, float> PathManager::SetTorqFlag(MatrixXd &State, float t_now)
 {
-    double q7_isTorq = 0.0;
-    double q8_isTorq = 0.0;
+    float q7_isTorq = 10.0;
+    float q8_isTorq = 10.0;
 
     VectorXd time_madi = State.row(0);
     VectorXd q7_state = State.row(1);
     VectorXd q8_state = State.row(2);
 
-    if (time_madi(0) == 0.0)
+    if (time_madi(0) == 0) // 연주 시작 시
     {
-        if (t_now >= time_madi(0) && t_now < time_madi(1))
+        if (t_now < time_madi(1))
         {
-            q7_isTorq = -0.5;
-            q8_isTorq = -0.5;
+            if (abs(t_now - time_madi(0)) < 0.001)
+            {
+                q7_isTorq = -0.5;
+                q8_isTorq = -0.5;
+            }
+            else
+            {
+                q7_isTorq = 0;
+                q8_isTorq = 0;
+            }
         }
-        else if (t_now >= time_madi(1) && t_now < time_madi(2))
+        else if (t_now < time_madi(2))
         {
-            q7_isTorq = time_madi(1);
-            q8_isTorq = time_madi(1);
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
+                else
+                    q8_isTorq = 0;
+            }
         }
     }
-    else if (t_now >= time_madi(0) && t_now < time_madi(1))
+    else
     {
-        q7_isTorq = time_madi(0);
-        q8_isTorq = time_madi(0);
-    }
-    else if (t_now >= time_madi(1) && t_now < time_madi(2))
-    {
-        q7_isTorq = time_madi(1);
-        q8_isTorq = time_madi(1);
+        if (t_now < time_madi(1))
+        {
+            if (q7_state(0) == -1)
+            {
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q7_isTorq = q7_state(0);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(0) == -1)
+            {
+                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(0)) < 0.001)
+                    q8_isTorq = q8_state(0);
+                else
+                    q8_isTorq = 0;
+            }
+        }
+        else if (t_now < time_madi(2))
+        {
+            if (q7_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q7_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q7_isTorq = -1;
+                else
+                    q7_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q7_isTorq = q7_state(1);
+                else
+                    q7_isTorq = 0;
+            }
+
+            if (q8_state(1) == -1)
+            {
+                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
+                    q8_isTorq = 2;
+                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
+                    q8_isTorq = -1;
+                else
+                    q8_isTorq = 0;
+            }
+            else
+            {
+                if (abs(t_now - time_madi(1)) < 0.001)
+                    q8_isTorq = q8_state(1);
+                else
+                    q8_isTorq = 0;
+            }
+        }
     }
 
     return std::make_pair(q7_isTorq, q8_isTorq);
-}
-
-void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
-{
-    VectorXd q7_state = State.row(1);
-    VectorXd q8_state = State.row(2);
-    VectorXd q7_madi = t_madi.row(1);
-    VectorXd q8_madi = t_madi.row(2);
-
-    if (q7_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if (entry.first == "R_wrist")
-            {
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q7_madi(1);
-            }
-        }
-    }
-
-    if (q8_state(0) == 1)
-    {
-        for (auto &entry : motors)
-        {
-            if (entry.first == "L_wrist" || entry.first == "maxonForTest")
-            {
-                std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second);
-                maxonMotor->targetPos = q8_madi(1);
-            }
-        }
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -841,9 +922,8 @@ void PathManager::SetTargetPos(MatrixXd &State, MatrixXd &t_madi)
 
 void PathManager::GetDrumPositoin()
 {
-    getMotorPos();
     part_length.resize(6);
-    part_length << 0.363, 0.3835, 0.363, 0.3835, 0.417, 0.417; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
+    part_length << 0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 
@@ -923,8 +1003,8 @@ void PathManager::GetMusicSheet()
 
     default_right.resize(9);
     default_left.resize(9);
-    default_right << 1, 0, 0, 0, 0, 0, 0, 0, 0;
-    default_left << 1, 0, 0, 0, 0, 0, 0, 0, 0;
+    default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
+    default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
 
     string score_path = "../include/managers/codeConfession copy.txt";
 
@@ -934,7 +1014,7 @@ void PathManager::GetMusicSheet()
 
     string row;
     int lineIndex = 0;
-    double time = 0.0;
+    float time = 0.0;
     time_arr.push_back(time);
     inst_arr.resize(18, 1);
     inst_arr.block(0, 0, 9, 1) = default_right;
@@ -1009,15 +1089,17 @@ void PathManager::SetReadyAng()
 
     for (int i = 0; i < qk.size(); ++i)
     {
-        standby[i] = qk(i);
+        readyarr[i] = qk(i);
     }
+    readyarr[7] = 0.0;
+    readyarr[8] = 0.0;
 }
 
 void PathManager::PathLoopTask()
 {
-    double v_wrist = M_PI;
-    double v_elbow = 0.5 * M_PI;
-    double t_now = time_arr[line];
+    float v_wrist = M_PI;
+    float v_elbow = M_PI / 10;
+    float t_now = time_arr[line];
 
     VectorXd qt = VectorXd::Zero(9);
     VectorXd qv_in = VectorXd::Zero(7);
@@ -1035,7 +1117,7 @@ void PathManager::PathLoopTask()
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
     {
-        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
         MatrixXd inst2 = inst_arr.middleCols(0, 5);
         itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
@@ -1050,7 +1132,7 @@ void PathManager::PathLoopTask()
     }
     else if (line == 1)
     {
-        std::vector<double> t2(time_arr.begin(), time_arr.begin() + 5);
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
         MatrixXd inst2 = inst_arr.middleCols(0, 5);
         itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
@@ -1065,7 +1147,7 @@ void PathManager::PathLoopTask()
     }
     else if (line > 1)
     {
-        std::vector<double> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
         MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
         itms_fun(t2, inst2, B, BB);
 
@@ -1095,25 +1177,26 @@ void PathManager::PathLoopTask()
     t_wrist_madi = sts2wrist_fun(State, v_wrist);
     t_elbow_madi = sts2elbow_fun(State, v_elbow);
 
-    SetTargetPos(State, t_wrist_madi); // 타격시 새로운 손목 targetPos값 전달
+    cout << "State :\n"
+         << State << "\n";
 
-    double t1 = p2(0) - p1(0);
-    double t2 = p3(0) - p1(0);
-    double dt = 0.005;
+    float t1 = p2(0) - p1(0);
+    float t2 = p3(0) - p1(0);
+    float dt = 0.005;
     int n = t1 / dt;
 
     for (int i = 0; i < n; i++)
     {
         for (int m = 0; m < 7; m++)
         {
-            pair<double, double> p = iconf_fun(qk1_06(m), qk2_06(m), qk3_06(m), qv_in(m), t1, t2, t_now - p1(0) + dt * i);
+            pair<float, float> p = iconf_fun(qk1_06(m), qk2_06(m), qk3_06(m), qv_in(m), t1, t2, t_now - p1(0) + dt * i);
             qt(m) = p.first;
             qv_in(m) = p.second;
         }
 
-        pair<double, double> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
-        pair<double, double> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
-        pair<double, double> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+        pair<float, float> qElbow = qRL_fun(t_elbow_madi, t_now + dt * i);
+        pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now + dt * i);
+        pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
 
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
@@ -1121,28 +1204,25 @@ void PathManager::PathLoopTask()
         qt(8) = qWrist.second;
 
         Motors_sendBuffer(qt, qv_in, wrist_state);
-        vector<double> qt_vector(qt.data(), qt.data() + qt.size());
-        pos.push_back(qt_vector);
-        vector<double> qv_in_vector(qv_in.data(), qv_in.data() + qv_in.size());
-        vel.push_back(qv_in_vector);
     }
 }
 
-void PathManager::GetArr(vector<double> &arr)
+void PathManager::GetArr(vector<float> &arr)
 {
     cout << "Get Array...\n";
 
-    vector<double> Qi;
-    vector<vector<double>> q_setting;
+    vector<float> Qi;
+    // vector<vector<float>> q_setting;
 
     getMotorPos();
 
-    int n = 800; // 4초동안 실행
-    for (int k = 0; k < n; ++k)
+    float dt = 0.005;
+    float t = 4;
+    int n = t / dt; // 4초동안 실행
+    for (int k = 1; k <= n; ++k)
     {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
-        q_setting.push_back(Qi);
 
         // Send to Buffer
         for (auto &entry : motors)
@@ -1150,17 +1230,39 @@ void PathManager::GetArr(vector<double> &arr)
             if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = (Qi[motor_mapping[entry.first]] + tmotor->homeOffset) * tmotor->cwDir;
-                newData.velocity = 0.5;
+                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.velocity = (newData.position - tmotor->prePos) / dt;
+
+                tmotor->prePos = newData.position;
+
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
-
                 MaxonData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+}
+
+void PathManager::Get_wrist_BackArr(string MotorName, float &A, float &B, float t)
+{
+    float dt = 0.005;
+    int n = t / dt;
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            if (maxonMotor->myName == MotorName)
+            {
+                for (int k = 1; k <= n; k++)
+                {
+                    float data = (A - B) * pow((((float)k / (float)n) - 1), 2) + B;
+                    maxonMotor->wrist_BackArr.push(data);
+                }
             }
         }
     }

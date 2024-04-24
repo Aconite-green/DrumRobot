@@ -58,36 +58,37 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
     Sensor sensor;
 
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
+    std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
     // State Utility 메소드들
     void displayAvailableCommands() const;
     bool processInput(const std::string &input);
     void idealStateRoutine();
     void checkUserInput();
-    void printCurrentPositions();
     int kbhit();
 
     bool isReady = false; ///< 준비 상태 플래그.
     bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
+    bool sendCheckFrame = false;
 
     // System Initialize 메소드들
     void initializeMotors();
     void initializecanManager();
     void DeactivateControlTask();
+    void ClearBufferforRecord();
+    void printCurrentPositions();
     void motorSettingCmd();
     void setMaxonMode(std::string targetMode);
-    void MaxonEnable();
-    void MaxonDisable();
 
     // Send Thread Loop 메소드들
-   
+
     void save_to_txt_inputData(const string &csv_file_name);
     int writeFailCount;
     int maxonMotorCount = 0;
@@ -95,10 +96,28 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess();
+    void SendFixProcess();
     void clearMotorsCommandBuffer();
 
+    vector<vector<float>> Input_pos;
+    vector<vector<float>> Input_vel;
+    map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
+        {"waist", 0},
+        {"R_arm1", 1},
+        {"L_arm1", 2},
+        {"R_arm2", 3},
+        {"R_arm3", 4},
+        {"L_arm2", 5},
+        {"L_arm3", 6},
+        {"R_wrist", 7},
+        {"L_wrist", 8},
+        {"maxonForTest", 8}};
+
     can_frame frame;
-    int temp=0;
+    int des = 0;
+    int act = 0;
+    int cnt = 0;
+    int k = 0;
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;

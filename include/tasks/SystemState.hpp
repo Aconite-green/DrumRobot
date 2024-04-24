@@ -7,7 +7,7 @@ enum class Main
     SystemInit,
     Ideal,
     Homing,
-    Tune,
+    Test,
     Perform,
     Check,
     Shutdown,
@@ -73,19 +73,20 @@ enum class ReadSub
     CheckReachedPosition
 };
 
-enum class Maxon
+enum class TestSub
 {
-    Position,
-    Torque_Move,
-    Torque_Touch,
-    Torque_Back,
-    Torque_InPos
-};
-
-struct MaxonState
-{
-    std::atomic<Maxon> state;
-    MaxonState() : state(Maxon::Position) {}
+    SelectParamByUser,
+    SetQValue,
+    SetXYZ,
+    SetSingleTuneParm,
+    FillBuf,
+    CheckBuf,
+    TimeCheck,
+    SafetyCheck,
+    SendCANFrame,
+    Done,
+    StickTest,
+    SetServoTestParm
 };
 
 struct State
@@ -97,8 +98,7 @@ struct State
     std::atomic<PerformSub> perform;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
-    MaxonState leftMaxon;
-    MaxonState rightMaxon;
+    std::atomic<TestSub> test;
 
     State() : main(Main::SystemInit),
               home(HomeSub::SelectMotorByUser),
@@ -106,7 +106,8 @@ struct State
               homeMaxon(HomeMaxon::StartHoming),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
-              read(ReadSub::TimeCheck)
+              read(ReadSub::TimeCheck),
+              test(TestSub::SelectParamByUser)
     {
     }
 };

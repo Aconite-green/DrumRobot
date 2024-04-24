@@ -40,42 +40,6 @@ void CanManager::initializeCAN()
     }
 }
 
-void CanManager::restartCanPorts()
-{
-    // 먼저 모든 포트를 down 시킵니다.
-    for (const auto &port : ifnames)
-    {
-        deactivateCanPort(port.c_str());
-
-        int socket_fd = sockets[port];
-        if (socket_fd >= 0)
-        {
-            close(socket_fd);   // 기존 소켓을 닫습니다.
-            sockets[port] = -1; // 소켓 디스크립터 값을 초기화합니다.
-        }
-    }
-
-    // 각 포트에 대해 새로운 소켓을 생성하고 디스크립터를 업데이트합니다.
-    for (const auto &port : ifnames)
-    {
-        usleep(100000); // 100ms 대기
-        activateCanPort(port.c_str());
-
-        int new_socket_fd = createSocket(port);
-        if (new_socket_fd < 0)
-        {
-            // 새로운 소켓 생성에 실패한 경우 처리
-            fprintf(stderr, "Failed to create a new socket for port: %s\n", port.c_str());
-        }
-        else
-        {
-            sockets[port] = new_socket_fd; // 소켓 디스크립터 값을 업데이트합니다.
-        }
-    }
-
-    setMotorsSocket();
-}
-
 void CanManager::setSocketsTimeout(int sec, int usec)
 {
     for (const auto &socketPair : sockets)
@@ -250,17 +214,6 @@ void CanManager::list_and_activate_available_can_ports()
     }
 }
 
-void CanManager::deactivateCanPort(const char *port)
-{
-    char command[100];
-    snprintf(command, sizeof(command), "sudo ip link set %s down", port);
-    int ret = system(command);
-    if (ret != 0)
-    {
-        fprintf(stderr, "Failed to down port: %s\n", port);
-    }
-}
-
 void CanManager::clearReadBuffers()
 {
     for (const auto &socketPair : sockets)
@@ -384,6 +337,7 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
     std::cout << "Erase this function\n";
     return true;
 }
+
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
@@ -416,49 +370,72 @@ void CanManager::setMotorsSocket()
 {
     struct can_frame frame;
     setSocketsTimeout(0, 10000);
-
+    clearReadBuffers();
     std::map<int, int> localMotorsPerSocket;
 
-    // 모든 소켓에 대해 각 모터에 명령을 보내고 응답을 확인
+    // 모든 소켓에 대해 Maxon 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
     {
+        // 모든 모터에 임의의 소켓값 할당 및 canframe 전송(Maxon 만)
         int socket_fd = socketPair.second;
         int motorsConnectedToSocket = 0;
         for (auto &motor_pair : motors)
         {
             auto &motor = motor_pair.second;
-            clearReadBuffers();
 
-            // TMotor 및 MaxonMotor에 대해 적절한 명령 설정
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            if (!motor->isConected)
             {
-                tmotorcmd.getCheck(*tMotor, &frame);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                maxoncmd.getCheck(*maxonMotor, &frame);
-            }
-            usleep(10000);
-            // 모터의 현재 소켓을 임시 소켓으로 설정
-            int original_socket = motor->socket;
-            motor->socket = socket_fd;
-            usleep(10000);
-            // 소켓에 CAN 프레임 보내고 응답 확인
-            if (sendAndRecv(motor, frame))
-            {
-                motor->isConected = true;
-                motorsConnectedToSocket++;
-            }
-            else
-            {
-                motor->socket = original_socket;
+
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    maxoncmd.getCheck(*maxonMotor, &frame);
+                }
+                motor->socket = socket_fd;
+
+                txFrame(motor, frame);
+                usleep(50000);
             }
         }
 
-        localMotorsPerSocket[socket_fd] = motorsConnectedToSocket;
-    }
+        // 해당 소켓으로 프레임을 무작정 읽어서 버퍼에 넣음
+        int readCount = 0;
+        while (readCount < 30 || read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        {
+            tempFrames[socket_fd].push_back(frame);
+            readCount++;
+        }
 
-    motorsPerSocket = localMotorsPerSocket;
+        // 버퍼에서 하나씩 읽어옴
+        for (auto &motor_pair : motors)
+        {
+            auto &motor = motor_pair.second;
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+            {
+                for (auto &frame : tempFrames[motor->socket])
+                {
+                    if ((frame.can_id & 0xFF) == tMotor->nodeId)
+                    {
+                        motor->isConected = true;
+                        std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
+                        motor->currentPos = std::get<1>(parsedData);
+                    }
+                }
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+            {
+                for (auto &frame : tempFrames[motor->socket])
+                {
+                    if (frame.can_id == maxonMotor->canReceiveId)
+                    {
+                        motor->isConected = true;
+                        maxonCnt++;
+                    }
+                }
+            }
+        }
+
+        tempFrames.clear();
+    }
 
     // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 삭제
     for (auto it = motors.begin(); it != motors.end();)
@@ -476,7 +453,6 @@ void CanManager::setMotorsSocket()
             it = motors.erase(it);
         }
     }
-
 }
 
 void CanManager::readFramesFromAllSockets()
@@ -504,12 +480,13 @@ void CanManager::distributeFramesToMotors()
             // TMotor 처리
             for (auto &frame : tempFrames[motor->socket])
             {
-                if (frame.data[0] == tMotor->nodeId)
+                if (frame.can_id & 0xFF == tMotor->nodeId)
                 {
-                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    std::tuple<int, float, float, float,int8_t,int8_t> parsedData = tservocmd.motor_receive(&frame);
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
+                    tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
                     tMotor->recieveBuffer.push(frame);
                 }
             }
@@ -528,6 +505,7 @@ void CanManager::distributeFramesToMotors()
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
+                    maxonMotor->coordinatePos = maxonMotor->currentPos * maxonMotor->cwDir;
                 }
             }
         }
@@ -535,100 +513,235 @@ void CanManager::distributeFramesToMotors()
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
 }
 
-bool CanManager::checkConnection(std::shared_ptr<GenericMotor> motor)
+
+bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 {
-    struct can_frame frame;
     clearReadBuffers();
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tmotorcmd.getQuickStop(*tMotor, &frame);
-        txFrame(motor, frame);
-        if (sendAndRecv(motor, frame))
-        {
-            std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
-            motor->currentPos = std::get<1>(parsedData);
-            motor->currentVel = std::get<2>(parsedData);
-            motor->currentTor = std::get<3>(parsedData);
-            motor->isConected = true;
-        }
-        else
-        {
-            return false;
-        }
+        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tMotor->currentPos, 1, 10);
+        sendMotorFrame(tMotor);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
-        maxoncmd.getSync(&frame);
-        txFrame(motor, frame);
-        motor->clearReceiveBuffer();
-        if (recvToBuff(motor, maxonCnt))
+        maxoncmd.getSync(&maxonMotor->sendFrame);
+        sendMotorFrame(maxonMotor);
+    }
+    return true;
+}
+
+bool CanManager::checkMaxon()
+{
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        struct can_frame frame;
+        clearReadBuffers();
+
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
-            while (!motor->recieveBuffer.empty())
+            maxoncmd.getSync(&frame);
+            txFrame(motor, frame);
+        }
+    }
+    return true;
+}
+
+bool CanManager::checkAllMotors_Fixed()
+{
+    for (auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        auto &motor = motorPair.second;
+
+        sendForCheck_Fixed(motor);
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                Functions for Thread Case                                      */
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CanManager::safetyCheck(std::string errorMessagePart)
+{
+    bool isSafe = true;
+    vector<float> Pos(9);
+    vector<float> Vel(9);
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            MaxonData mData = maxonMotor->commandBuffer.front();
+            maxonMotor->commandBuffer.pop();
+            float coordinationPos = (mData.position) * maxonMotor->cwDir;
+            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
             {
-                frame = motor->recieveBuffer.front();
-                if (frame.can_id == maxonMotor->rxPdoIds[0])
+                if (abs(maxonMotor->currentPos - mData.position) > 0.4)
                 {
-                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    maxonMotor->currentPos = std::get<1>(parsedData);
-                    maxonMotor->currentTor = std::get<2>(parsedData);
-                    maxonMotor->statusBit = std::get<3>(parsedData);
-                    maxonMotor->isConected = true;
+                    std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
+                    cout << "Diff : " << abs(maxonMotor->currentPos - mData.position) / M_PI * 180 << "deg\n";
                 }
-                motor->recieveBuffer.pop();
+                else if (maxonMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+                maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+                usleep(5000);
+                maxoncmd.getSync(&maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+            }
+            else
+            {
+                Pos[motor_mapping[maxonMotor->myName]] = mData.position;
+                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
             }
         }
-        else
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
-            return false;
+            TMotorData tData = tMotor->commandBuffer.front();
+            tMotor->commandBuffer.pop();
+
+            float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+            if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+            {
+                if (abs(tMotor->currentPos - tData.position) > 0.4)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";
+                    cout << "Diff : " << abs(tMotor->currentPos - tData.position) / M_PI * 180 << "deg\n";
+                }
+                else if (tMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+                tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+                usleep(5000);
+                tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+            }
+            else
+            {
+                Pos[motor_mapping[tMotor->myName]] = tData.position;
+                Vel[motor_mapping[tMotor->myName]] = tData.velocity;
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+            }
         }
     }
-    return true;
+    Input_pos.push_back(Pos);
+    Input_vel.push_back(Vel);
+
+    return isSafe;
 }
 
-bool CanManager::sendForCheck(std::shared_ptr<GenericMotor> motor)
+bool CanManager::safetyCheck_servo(std::string errorMessagePart)
 {
-    struct can_frame frame;
-    clearReadBuffers();
-
-    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+    bool isSafe = true;
+    vector<float> Pos(9);
+    vector<float> Vel(9);
+    for (auto &motor_pair : motors)
     {
-        tmotorcmd.getQuickStop(*tMotor, &frame);
-        txFrame(motor, frame);
-    }
-    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-    {
-        maxoncmd.getSync(&frame);
-        txFrame(motor, frame);
-    }
-    return true;
-}
-
-bool CanManager::checkAllMotors()
-{
-    bool allMotorsChecked = true;
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        if (!checkConnection(motor))
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
-            allMotorsChecked = false;
+            MaxonData mData = maxonMotor->commandBuffer.front();
+            maxonMotor->commandBuffer.pop();
+            float coordinationPos = (mData.position) * maxonMotor->cwDir;
+            if (/*abs(maxonMotor->currentPos - mData.position) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+            {
+                if (abs(maxonMotor->currentPos - mData.position) > 0.4)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << maxonMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << maxonMotor->currentPos << "\nTarget : " << mData.position << "\n";
+                    cout << "Diff : " << abs(maxonMotor->currentPos - mData.position) / M_PI * 180 << "deg\n";
+                }
+                else if (maxonMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Min)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << maxonMotor->myName << " (Out of Range : Max)\n";
+                    cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+                maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+                usleep(5000);
+                maxoncmd.getSync(&maxonMotor->sendFrame);
+                sendMotorFrame(maxonMotor);
+            }
+            else
+            {
+                Pos[motor_mapping[maxonMotor->myName]] = mData.position;
+                maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+            }
+        }
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        {
+            TMotorData tData = tMotor->commandBuffer.front();
+            tMotor->commandBuffer.pop();
+
+            float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+            if (abs(tMotor->currentPos - tData.position) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+            {
+                if (abs(tMotor->currentPos - tData.position) > 0.4)
+                {
+                    std::cout << "Error : " << errorMessagePart << " For " << tMotor->myName << " (Pos Diff)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget : " << tData.position << "\n";
+                    cout << "Diff : " << abs(tMotor->currentPos - tData.position) / M_PI * 180 << "deg\n";
+                }
+                else if (tMotor->rMin > coordinationPos)
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Min)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+                else
+                {
+                    std::cout << "Error :  " << errorMessagePart << " For " << tMotor->myName << " (Out of Range : Max)\n";
+                    cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                }
+
+                isSafe = false;
+                tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+                usleep(5000);
+                tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
+                sendMotorFrame(tMotor);
+            }
+            else
+            {
+                Pos[motor_mapping[tMotor->myName]] = tData.position;
+                Vel[motor_mapping[tMotor->myName]] = tData.velocity;
+                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+            }
         }
     }
-    return allMotorsChecked;
-}
+    Input_pos.push_back(Pos);
+    Input_vel.push_back(Vel);
 
-bool CanManager::checkAllMotors_test()
-{
-
-    for (auto &motorPair : motors)
-    {
-        std::string name = motorPair.first;
-        auto &motor = motorPair.second;
-
-        sendForCheck(motor);
-    }
-    return true;
+    return isSafe;
 }
