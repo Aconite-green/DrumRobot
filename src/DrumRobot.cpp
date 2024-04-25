@@ -694,8 +694,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 else
                 {
                     Pos[motor_mapping[tMotor->myName]] = tData.position;
-                    Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                    // Servo로 변경 tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
                 }
             }
         }

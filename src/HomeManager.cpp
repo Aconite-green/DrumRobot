@@ -432,41 +432,43 @@ void HomeManager::HomeTmotor()
     {
         for (auto &motor_pair : motors)
         {
-            shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second);
-            int hMotoridx = -1;
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                if (tMotors[i]->myName == motor->myName)
+                int hMotoridx = -1;
+                for (long unsigned int i = 0; i < tMotors.size(); i++)
                 {
-                    hMotoridx = i;
+                    if (tMotors[i]->myName == motor->myName)
+                    {
+                        hMotoridx = i;
+                    }
                 }
-            }
 
-            if (hMotoridx < 0)
-            {
-                // 위치속도제어 모드로 변경
-                tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, 10000, 10000);
-            }
-            else
-            {
-                // 속도제어 모드로 변경
-                if (TriggeredDone[hMotoridx])
+                if (hMotoridx < 0)
                 {
                     // 위치속도제어 모드로 변경
-                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, 10000, 10000);
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
                 }
                 else
                 {
-                    float initialDirection = 0.0;
-                    if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
-                        initialDirection = (-0.2) * motor->cwDir;
+                    // 속도제어 모드로 변경
+                    if (TriggeredDone[hMotoridx])
+                    {
+                        // 위치속도제어 모드로 변경
+                        tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    }
                     else
-                        initialDirection = 0.2 * motor->cwDir;
+                    {
+                        float initialDirection = 0.0;
+                        if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
+                            initialDirection = (-0.2) * motor->cwDir;
+                        else
+                            initialDirection = 0.2 * motor->cwDir;
 
-                    tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
+                        tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
+                    }
                 }
+                canManager.sendMotorFrame(motor);
             }
-            canManager.sendMotorFrame(motor);
         }
 
         state.homeTmotor = HomeTmotor::SensorCheck;
@@ -544,7 +546,12 @@ void HomeManager::HomeTmotor()
                 midpoints[i] += (M_PI * 0.25);
             }
             targetRadians.push_back((midpoints[i]) * directions[i]);
-            tMotors[i]->clearCommandBuffer();
+        }
+
+        for (auto &motor_pair : motors)
+        {
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                motor->clearCommandBuffer();
         }
 
         int totalSteps = 2000 / 5; // 2초
@@ -552,31 +559,30 @@ void HomeManager::HomeTmotor()
         {
             for (auto &motor_pair : motors)
             {
-                shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second);
-                int hMotoridx = -1;
-                for (long unsigned int i = 0; i < tMotors.size(); i++)
+                if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    if (tMotors[i]->myName == motor->myName)
+                    int hMotoridx = -1;
+                    for (long unsigned int i = 0; i < tMotors.size(); i++)
                     {
-                        hMotoridx = i;
+                        if (tMotors[i]->myName == motor->myName)
+                        {
+                            hMotoridx = i;
+                        }
                     }
-                }
 
-                if (hMotoridx < 0)
-                {
                     TMotorData newData;
-                    newData.position = tMotors[hMotoridx]->currentPos;
-                    newData.velocity = ;
-                    newData.acceleration = 
-                }
-                else
-                {
-                    double targetPosition = targetRadians[hMotoridx] * (static_cast<double>(step) / totalSteps) + tMotors[hMotoridx]->currentPos;
-                    TMotorData newData;
-                    newData.position = targetPosition;
-                    newData.velocity = 0;
+                    if (hMotoridx < 0)
+                    {
 
-                    tMotors[hMotoridx]->commandBuffer.push(newData);
+                        newData.position = tMotors[hMotoridx]->currentPos;
+                        motor->commandBuffer.push(newData);
+                    }
+                    else
+                    {
+                        double targetPosition = targetRadians[hMotoridx] * (static_cast<double>(step) / totalSteps) + tMotors[hMotoridx]->currentPos;
+                        newData.position = targetPosition;
+                        tMotors[hMotoridx]->commandBuffer.push(newData);
+                    }
                 }
             }
         }
@@ -584,14 +590,32 @@ void HomeManager::HomeTmotor()
         totalSteps = 500 / 5; // 0.5초
         for (int step = 1; step <= totalSteps; ++step)
         {
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            for (auto &motor_pair : motors)
             {
-                double targetPosition = targetRadians[i] + tMotors[i]->currentPos;
-                TMotorData newData;
-                newData.position = targetPosition;
-                newData.velocity = 0;
+                if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    int hMotoridx = -1;
+                    for (long unsigned int i = 0; i < tMotors.size(); i++)
+                    {
+                        if (tMotors[i]->myName == motor->myName)
+                        {
+                            hMotoridx = i;
+                        }
+                    }
 
-                tMotors[i]->commandBuffer.push(newData);
+                    TMotorData newData;
+                    if (hMotoridx < 0)
+                    {
+                        newData.position = tMotors[hMotoridx]->currentPos;
+                        motor->commandBuffer.push(newData);
+                    }
+                    else
+                    {
+                        double targetPosition = targetRadians[hMotoridx] + tMotors[hMotoridx]->currentPos;
+                        newData.position = targetPosition;
+                        tMotors[hMotoridx]->commandBuffer.push(newData);
+                    }
+                }
             }
         }
         state.homeTmotor = HomeTmotor::CheckBuf;
@@ -601,12 +625,15 @@ void HomeManager::HomeTmotor()
     case HomeTmotor::CheckBuf:
     {
         bool isEmpty = true;
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            if (!tMotors[i]->commandBuffer.empty())
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                isEmpty = false;
-                break;
+                if (!motor->commandBuffer.empty())
+                {
+                    isEmpty = false;
+                    break;
+                }
             }
         }
 
@@ -628,25 +655,38 @@ void HomeManager::HomeTmotor()
     case HomeTmotor::SafetyCheck:
     {
         bool isSafe = true;
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            TMotorData tData = tMotors[i]->commandBuffer.front();
-            tMotors[i]->commandBuffer.pop();
-            if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                std::cout << "Error During Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
+                int hMotoridx = -1;
+                for (long unsigned int i = 0; i < tMotors.size(); i++)
+                {
+                    if (tMotors[i]->myName == motor->myName)
+                        hMotoridx = i;
+                }
 
-                isSafe = false;
-                tmotorcmd.getQuickStop(*tMotors[i], &tMotors[i]->sendFrame);
-                canManager.sendMotorFrame(tMotors[i]);
-                usleep(5000);
-                tmotorcmd.getExit(*tMotors[i], &tMotors[i]->sendFrame);
-                canManager.sendMotorFrame(tMotors[i]);
-                break;
-            }
-            else
-            {
-                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, tData.position, tData.velocity, tMotors[i]->Kp, tMotors[i]->Kd, 0.0);
+                TMotorData tData;
+                if (hMotoridx < 0)
+                {
+                    tData = tMotors[hMotoridx]->commandBuffer.front();
+                    tMotors[hMotoridx]->commandBuffer.pop();
+                }
+                else
+                {
+                    tData = motor->commandBuffer.front();
+                    motor->commandBuffer.pop();
+                }
+                if (abs(motor->currentPos - tData.position) > 0.2)
+                {
+                    std::cout << "Error During Homing For" << motor->myName << " (Pos Diff)\n";
+                    isSafe = false;
+                    break;
+                }
+                else
+                {
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, tData.position, motor->spd, motor->acl);
+                }
             }
         }
 
@@ -664,11 +704,11 @@ void HomeManager::HomeTmotor()
     case HomeTmotor::SendCANFrameForZeroPos:
     {
         usleep(5000);
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            canManager.sendMotorFrame(tMotors[i]);
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                canManager.sendMotorFrame(motor);
         }
-
         state.homeTmotor = HomeTmotor::CheckBuf;
         break;
     }

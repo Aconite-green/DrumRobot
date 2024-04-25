@@ -575,7 +575,6 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
 {
     bool isSafe = true;
     vector<float> Pos(9);
-    vector<float> Vel(9);
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -650,13 +649,11 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
             else
             {
                 Pos[motor_mapping[tMotor->myName]] = tData.position;
-                Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                // tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
     Input_pos.push_back(Pos);
-    Input_vel.push_back(Vel);
 
     return isSafe;
 }
@@ -665,7 +662,6 @@ bool CanManager::safetyCheck_servo(std::string errorMessagePart)
 {
     bool isSafe = true;
     vector<float> Pos(9);
-    vector<float> Vel(9);
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -740,13 +736,11 @@ bool CanManager::safetyCheck_servo(std::string errorMessagePart)
             else
             {
                 Pos[motor_mapping[tMotor->myName]] = tData.position;
-                Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                // tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
             }
         }
     }
     Input_pos.push_back(Pos);
-    Input_vel.push_back(Vel);
 
     return isSafe;
 }

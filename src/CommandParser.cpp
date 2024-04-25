@@ -43,10 +43,6 @@ void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_fr
 {
     // 라디안에서 도로 변환
     float pos_deg = pos * (180.0 / M_PI); // 라디안을 도로 변환
-    // 라디안/초에서 ERPM으로 변환
-    int16_t spd_erpm = static_cast<int16_t>(spd * (60.0 / (2 * M_PI)));
-    // 라디안/초²에서 1 unit equals 10 electrical RPM/S²로 변환
-    int16_t RPA_unit = static_cast<int16_t>(RPA * (60.0 / (2 * M_PI * 10)));
 
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);
@@ -59,12 +55,12 @@ void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_fr
     frame->data[3] = pos_int & 0xFF;
 
     // spd_erpm를 CAN 프레임 데이터에 저장
-    frame->data[4] = (spd_erpm / 10) >> 8;
-    frame->data[5] = (spd_erpm / 10) & 0xFF;
+    frame->data[4] = (spd / 10) >> 8;
+    frame->data[5] = (spd / 10) & 0xFF;
 
     // RPA_unit를 CAN 프레임 데이터에 저장
-    frame->data[6] = (RPA_unit / 10) >> 8;
-    frame->data[7] = (RPA_unit / 10) & 0xFF;
+    frame->data[6] = (RPA / 10) >> 8;
+    frame->data[7] = (RPA / 10) & 0xFF;
 }
 
 void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current)
@@ -79,17 +75,14 @@ void TMotorServoCommandParser::comm_can_set_cb(TMotor &motor, struct can_frame *
     frame->data[3] = current_int & 0xFF;
 }
 
-void TMotorServoCommandParser::comm_can_set_spd(TMotor &motor, struct can_frame *frame, float spd_rad_s)
+void TMotorServoCommandParser::comm_can_set_spd(TMotor &motor, struct can_frame *frame, float spd_erpm)
 {
-    // rad/s를 RPM으로 변환
-    float spd_rpm = spd_rad_s * (60.0 / (2 * M_PI));
-
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_RPM << 8 | CAN_EFF_FLAG);
     frame->can_dlc = 4;
 
-    // 변환된 RPM 값을 정수로 변환
-    int32_t spd_int = static_cast<int32_t>(spd_rpm);
+    // 변환된 ERPM 값을 정수로 변환
+    int32_t spd_int = static_cast<int32_t>(spd_erpm);
     
     frame->data[0] = (spd_int >> 24) & 0xFF;
     frame->data[1] = (spd_int >> 16) & 0xFF;

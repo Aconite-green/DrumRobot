@@ -19,8 +19,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
         {
             TMotorData newData;
             newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
-            newData.velocity = Vi(motor_mapping[entry.first]) * tMotor->cwDir;
-
             tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1231,10 +1229,6 @@ void PathManager::GetArr(vector<float> &arr)
             {
                 TMotorData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.velocity = (newData.position - tmotor->prePos) / dt;
-
-                tmotor->prePos = newData.position;
-
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
