@@ -56,6 +56,7 @@ struct TMotorData
 {
     float position;
     float velocity;
+    float acceleration;
 };
 
 class TMotor : public GenericMotor

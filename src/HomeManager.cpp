@@ -394,7 +394,7 @@ void HomeManager::HomeTmotor()
 {
     switch (state.homeTmotor.load())
     {
-    case HomeTmotor::MoveToSensor:
+    case HomeTmotor::SelectHMotor:
     {
         sensorsBit.clear();
         firstPosition.clear();
@@ -405,40 +405,16 @@ void HomeManager::HomeTmotor()
         targetRadians.clear();
         midpoints.clear();
         directions.clear();
-
         tMotors.clear();
 
         if (sensor.OpenDeviceUntilSuccess())
         {
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
-
-            for (auto &motor_pair : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-                {
-                    if(){
-
-                    }
-                }
-            }
             // 속도 제어 - 센서 방향으로 이동
             for (long unsigned int i = 0; i < currentMotors.size(); i++)
             {
-
-                std::cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
                 tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
-
-                double initialDirection;
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
-                    initialDirection = (-0.2) * tMotors[i]->cwDir;
-                else
-                    initialDirection = 0.2 * tMotors[i]->cwDir;
-
-                double additionalTorque = 0.0;
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
-                    additionalTorque = currentMotors[i]->cwDir * (-3.0);
-                else if (tMotors[i]->myName == "L_arm3" || tMotors[i]->myName == "R_arm3")
-                    additionalTorque = tMotors[i]->cwDir * (2.1);
+                std::cout << "<< Homing for " << tMotors[i]->myName << " >>\n";
 
                 sensorsBit.push_back(tMotors[i]->sensorBit);
                 firstPosition.push_back(0.0f);
@@ -447,10 +423,50 @@ void HomeManager::HomeTmotor()
                 TriggeredDone.push_back(false);
 
                 std::cout << "Moving " << tMotors[i]->myName << " to sensor location.\n";
-
-                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
-                canManager.sendMotorFrame(tMotors[i]);
             }
+        }
+        state.homeTmotor = HomeTmotor::MoveToSensor;
+        break;
+    }
+    case HomeTmotor::MoveToSensor:
+    {
+        for (auto &motor_pair : motors)
+        {
+            shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second);
+            int hMotoridx = -1;
+            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            {
+                if (tMotors[i]->myName == motor->myName)
+                {
+                    hMotoridx = i;
+                }
+            }
+
+            if (hMotoridx < 0)
+            {
+                // 위치속도제어 모드로 변경
+                tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, 10000, 10000);
+            }
+            else
+            {
+                // 속도제어 모드로 변경
+                if (TriggeredDone[hMotoridx])
+                {
+                    // 위치속도제어 모드로 변경
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, 10000, 10000);
+                }
+                else
+                {
+                    float initialDirection = 0.0;
+                    if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
+                        initialDirection = (-0.2) * motor->cwDir;
+                    else
+                        initialDirection = 0.2 * motor->cwDir;
+
+                    tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
+                }
+            }
+            canManager.sendMotorFrame(motor);
         }
 
         state.homeTmotor = HomeTmotor::SensorCheck;
@@ -467,13 +483,13 @@ void HomeManager::HomeTmotor()
 
         if (doneSensing)
         {
-
             state.homeTmotor = HomeTmotor::FillBuf;
             sensor.closeDevice();
             break;
         }
         else
         {
+            state.homeTmotor = HomeTmotor::MoveToSensor;
             for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
                 if (!TriggeredDone[i])
@@ -497,13 +513,7 @@ void HomeManager::HomeTmotor()
                     else
                     {
                         usleep(5000);
-                        canManager.sendMotorFrame(tMotors[i]);
                     }
-                }
-                else
-                {
-                    tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, secondPosition[i], 0, tMotors[i]->Kp, 2.5, 0);
-                    canManager.sendMotorFrame(tMotors[i]);
                 }
             }
         }
@@ -511,25 +521,20 @@ void HomeManager::HomeTmotor()
     }
     case HomeTmotor::FillBuf:
     {
-
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
             midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
             tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
             cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
             cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
-        }
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
+
             if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
             {
                 midpoints[i] = midpoints[i] * (-1);
             }
 
             directions.push_back(-tMotors[i]->cwDir);
-        }
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
+
             if (tMotors[i]->myName == "L_arm1")
             {
                 midpoints[i] -= (M_PI * 0.25);
@@ -545,14 +550,34 @@ void HomeManager::HomeTmotor()
         int totalSteps = 2000 / 5; // 2초
         for (int step = 1; step <= totalSteps; ++step)
         {
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            for (auto &motor_pair : motors)
             {
-                double targetPosition = targetRadians[i] * (static_cast<double>(step) / totalSteps) + tMotors[i]->currentPos;
-                TMotorData newData;
-                newData.position = targetPosition;
-                newData.velocity = 0;
+                shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second);
+                int hMotoridx = -1;
+                for (long unsigned int i = 0; i < tMotors.size(); i++)
+                {
+                    if (tMotors[i]->myName == motor->myName)
+                    {
+                        hMotoridx = i;
+                    }
+                }
 
-                tMotors[i]->commandBuffer.push(newData);
+                if (hMotoridx < 0)
+                {
+                    TMotorData newData;
+                    newData.position = tMotors[hMotoridx]->currentPos;
+                    newData.velocity = ;
+                    newData.acceleration = 
+                }
+                else
+                {
+                    double targetPosition = targetRadians[hMotoridx] * (static_cast<double>(step) / totalSteps) + tMotors[hMotoridx]->currentPos;
+                    TMotorData newData;
+                    newData.position = targetPosition;
+                    newData.velocity = 0;
+
+                    tMotors[hMotoridx]->commandBuffer.push(newData);
+                }
             }
         }
 
