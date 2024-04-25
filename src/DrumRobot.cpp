@@ -68,6 +68,7 @@ void DrumRobot::stateMachine()
             if (state.home == HomeSub::Done)
             {
                 canManager.checkAllMotors_Fixed();
+                canManager.checkMaxon();
             }
             printCurrentPositions();
             std::cout << "Put any keyboard input\n";
@@ -132,7 +133,7 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Ideal:
         {
-            usleep(200000);
+            usleep(50000);
             if (state.home == HomeSub::Done)
             {
                 canManager.checkAllMotors_Fixed();
@@ -170,7 +171,8 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Pause:
         {
-            usleep(5000);
+            canManager.checkAllMotors_Fixed();
+            usleep(50000); // 50ms
             break;
         }
         case Main::Error:
@@ -554,6 +556,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 }
 
                                 isSafe = false;
+                                maxonMotor->isError = true;
                                 maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                                 canManager.sendMotorFrame(maxonMotor);
                                 usleep(5000);
@@ -608,6 +611,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 }
 
                                 isSafe = false;
+                                maxonMotor->isError = true;
                                 maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                                 canManager.sendMotorFrame(maxonMotor);
                                 usleep(5000);
@@ -644,6 +648,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                                 cout << "Current : " << maxonMotor->currentPos << "Target coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                             }
                             isSafe = false;
+                            maxonMotor->isError = true;
                             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                             canManager.sendMotorFrame(maxonMotor);
                             usleep(5000);
@@ -683,10 +688,10 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                         cout << "Current : " << tMotor->currentPos << "\nTarget RealPos : " << tData.position / M_PI * 180 << "deg\nTarget coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
                     }
 
+                    tMotor->isError = true;
                     isSafe = false;
                     tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
                     canManager.sendMotorFrame(tMotor);
-                    
                 }
                 else
                 {

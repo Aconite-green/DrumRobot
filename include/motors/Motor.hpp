@@ -29,6 +29,7 @@ public:
     float rMin, rMax;
     std::string myName;
     std::string interFaceName;
+    bool isError = false;
     // Values
     float desPos, desVel, desTor;
     float prePos;

@@ -449,7 +449,7 @@ void CanManager::setMotorsSocket()
         std::shared_ptr<GenericMotor> motor = it->second;
         if (motor->isConected)
         {
-            std::cerr << "--------------> Motor [" << name << "] is Connected. "<< motor->nodeId << std::endl;
+            std::cerr << "--------------> Motor [" << name << "] is Connected. " << motor->nodeId << std::endl;
             ++it;
         }
         else
@@ -524,8 +524,8 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tMotor->currentPos, 1, 10);
-        //tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, 1000);
+        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tMotor->currentPos, tMotor->spd, tMotor->acl);
+        // tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, 1000);
         sendMotorFrame(tMotor);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -561,8 +561,10 @@ bool CanManager::checkAllMotors_Fixed()
     {
         std::string name = motorPair.first;
         auto &motor = motorPair.second;
-
-        sendForCheck_Fixed(motor);
+        if (!motor->isError)
+        {
+            sendForCheck_Fixed(motor);
+        }
     }
     return true;
 }
@@ -602,6 +604,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
                 }
 
                 isSafe = false;
+                maxonMotor->isError = true;
                 maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
                 sendMotorFrame(maxonMotor);
                 usleep(5000);
@@ -640,6 +643,7 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
                 }
 
                 isSafe = false;
+                tMotor->isError = true;
                 tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
                 sendMotorFrame(tMotor);
             }
@@ -654,4 +658,3 @@ bool CanManager::safetyCheck(std::string errorMessagePart)
 
     return isSafe;
 }
-
