@@ -335,7 +335,7 @@ void HomeManager::SendHomeProcess()
                 if (motor->myName == "L_arm1" || motor->myName == "R_arm1" || motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
                 {
                     state.home = HomeSub::HomeTmotor;
-                    state.homeTmotor = HomeTmotor::MoveToSensor;
+                    state.homeTmotor = HomeTmotor::SelectHMotor;
                     break; // 내부 for 루프 탈출
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
@@ -460,9 +460,9 @@ void HomeManager::HomeTmotor()
                     {
                         float initialDirection = 0.0;
                         if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
-                            initialDirection = (-0.2) * motor->cwDir;
+                            initialDirection = (-500) * motor->cwDir;
                         else
-                            initialDirection = 0.2 * motor->cwDir;
+                            initialDirection = 500 * motor->cwDir;
 
                         tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
                     }
