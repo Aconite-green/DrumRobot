@@ -681,6 +681,7 @@ void HomeManager::HomeTmotor()
                 {
                     std::cout << "Error During Homing For" << motor->myName << " (Pos Diff)\n";
                     isSafe = false;
+                    // Error 났을 경우 명령
                     break;
                 }
                 else
@@ -769,6 +770,16 @@ void HomeManager::HomeMaxon()
                 if (maxonMotors[i]->statusBit & 0x80)
                 {
                     maxonMotors[i]->isHomed = true;
+                }
+            }
+
+            for (auto &motor_pair : motors)
+            {
+                if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    // 위치속도제어 모드로 변경
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    canManager.sendMotorFrame(motor);
                 }
             }
         }
