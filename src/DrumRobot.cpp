@@ -685,16 +685,14 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
 
                     isSafe = false;
-                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                    tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
                     canManager.sendMotorFrame(tMotor);
-                    usleep(5000);
-                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
-                    canManager.sendMotorFrame(tMotor);
+                    
                 }
                 else
                 {
                     Pos[motor_mapping[tMotor->myName]] = tData.position;
-                    // Servo로 변경 tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tMotor->spd, tMotor->acl);
                 }
             }
         }
@@ -864,9 +862,6 @@ void DrumRobot::SendAddStanceProcess()
     }
 }
 
-void DrumRobot::SendFixProcess()
-{
-}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
