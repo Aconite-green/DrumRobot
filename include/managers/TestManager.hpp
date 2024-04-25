@@ -42,7 +42,6 @@ public:
     bool isMaxonEnable = false;
 
     vector<vector<float>> Input_pos;
-    vector<vector<float>> Input_vel;
 
 private:
     State &state;

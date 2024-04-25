@@ -957,7 +957,6 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
 {
     std::cout << "Test Start!!\n";
     vector<float> Pos(9);
-    vector<float> Vel(9);
 
     float dt = 0.005;
     int time = t / dt;
@@ -1013,7 +1012,6 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                 }
             }
             Input_pos.push_back(Pos);
-            Input_vel.push_back(Vel);
         }
     }
 }
@@ -1022,14 +1020,8 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
     std::ofstream ofs_p(csv_file_name + "_pos.txt");
-    std::ofstream ofs_v(csv_file_name + "_vel.txt");
 
     if (!ofs_p.is_open())
-    {
-        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
-        return;
-    }
-    if (!ofs_v.is_open())
     {
         std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
         return;
@@ -1037,8 +1029,6 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
 
     // CSV 헤더 추가
     ofs_p << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
-    ofs_v << "0x007,0x001,0x002,0x003,0x004,0x005,0x006,0x008,0x009\n";
-
     for (const auto &row : canManager.Input_pos)
     {
         for (const float cell : row)
@@ -1049,22 +1039,9 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
         }
         ofs_p << "\n"; // 다음 행으로 이동
     }
-    for (const auto &row : canManager.Input_vel)
-    {
-        for (const float cell : row)
-        {
-            ofs_v << std::fixed << std::setprecision(5) << cell;
-            if (&cell != &row.back())
-                ofs_v << ","; // 쉼표로 셀 구분
-        }
-        ofs_v << "\n"; // 다음 행으로 이동
-    }
 
     canManager.Input_pos.clear();
-    canManager.Input_vel.clear();
-
     ofs_p.close();
-    ofs_v.close();
 
     std::cout << "Tunning Input Data (pos / vel) 파일이 생성되었습니다 : " << csv_file_name << std::endl;
 }
@@ -1930,7 +1907,6 @@ void TestManager::startTest_servo(string selectedMotor_servo, float t_servo, int
 {
     std::cout << "Test Start!!\n";
     vector<float> Pos(9);
-    vector<float> Vel(9);
 
     float dt = 0.005;
     int time = t / dt;
@@ -1968,7 +1944,6 @@ void TestManager::startTest_servo(string selectedMotor_servo, float t_servo, int
                 }
             }
             Input_pos.push_back(Pos);
-            Input_vel.push_back(Vel);
         }
     }
 }
