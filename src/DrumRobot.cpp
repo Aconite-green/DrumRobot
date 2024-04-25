@@ -847,7 +847,6 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::SendCANFrame:
     {
-
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
@@ -1129,10 +1128,10 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm2")
             {
-                tMotor->cwDir = 1.0f;
+                tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 4;
-                tMotor->rMin = -M_PI / 4.0f; // -45deg
-                tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->rMin = -M_PI / 2.0f; // -90deg
+                tMotor->rMax = M_PI / 4.0f;  // 45deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
             }

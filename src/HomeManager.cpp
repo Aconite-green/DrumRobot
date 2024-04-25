@@ -621,7 +621,6 @@ void HomeManager::HomeTmotor()
         state.homeTmotor = HomeTmotor::CheckBuf;
         break;
     }
-
     case HomeTmotor::CheckBuf:
     {
         bool isEmpty = true;
@@ -680,8 +679,9 @@ void HomeManager::HomeTmotor()
                 if (abs(motor->currentPos - tData.position) > 0.2)
                 {
                     std::cout << "Error During Homing For" << motor->myName << " (Pos Diff)\n";
+                    motor->isError = true;
                     isSafe = false;
-                    // Error 났을 경우 명령
+                    tmotorServocmd.comm_can_set_cb(*motor, &motor->sendFrame, 0);
                     break;
                 }
                 else
