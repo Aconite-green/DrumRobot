@@ -685,17 +685,14 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                     }
 
                     isSafe = false;
-                    tmotorcmd.getQuickStop(*tMotor, &tMotor->sendFrame);
+                    tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
                     canManager.sendMotorFrame(tMotor);
-                    usleep(5000);
-                    tmotorcmd.getExit(*tMotor, &tMotor->sendFrame);
-                    canManager.sendMotorFrame(tMotor);
+                    
                 }
                 else
                 {
                     Pos[motor_mapping[tMotor->myName]] = tData.position;
-                    Vel[motor_mapping[tMotor->myName]] = tData.velocity;
-                    tmotorcmd.parseSendCommand(*tMotor, &tMotor->sendFrame, tMotor->nodeId, 8, tData.position, tData.velocity, tMotor->Kp, tMotor->Kd, 0.0);
+                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tMotor->spd, tMotor->acl);
                 }
             }
         }
@@ -865,9 +862,6 @@ void DrumRobot::SendAddStanceProcess()
     }
 }
 
-void DrumRobot::SendFixProcess()
-{
-}
 /////////////////////////////////////////////////////////////////////////////////
 /*                                STATE UTILITY                               */
 ///////////////////////////////////////////////////////////////////////////////
@@ -1085,7 +1079,6 @@ int DrumRobot::kbhit()
 
 void DrumRobot::initializeMotors()
 {
-
     motors["waist"] = make_shared<TMotor>(0x007, "AK10_9");
     motors["R_arm1"] = make_shared<TMotor>(0x001, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x002, "AK70_10");

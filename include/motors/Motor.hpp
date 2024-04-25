@@ -36,8 +36,11 @@ public:
     float coordinatePos;
     int Kp;
     double Kd;
-    // For Homing Session
 
+    float spd = 35000; // ERPM
+    float acl = 35000; // ERPA
+
+    // For Homing Session
     bool isHomed;
 
     std::queue<can_frame> recieveBuffer;
@@ -55,7 +58,6 @@ public:
 struct TMotorData
 {
     float position;
-    float velocity;
 };
 
 class TMotor : public GenericMotor

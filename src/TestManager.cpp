@@ -714,7 +714,6 @@ void TestManager::GetArr(float arr[])
             {
                 TMotorData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.velocity = 0.5;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -737,7 +736,6 @@ void TestManager::GetArr(float arr[])
             {
                 TMotorData newData;
                 newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.velocity = 0;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -963,7 +961,6 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
 
     float dt = 0.005;
     int time = t / dt;
-    float p_pos = 0.0;
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
@@ -972,7 +969,6 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
             {
                 tMotor->Kp = kp;
                 tMotor->Kd = kd;
-                p_pos = tMotor->coordinatePos;
             }
             else
             {
@@ -994,23 +990,17 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                     if (tMotor->myName == selectedMotor)
                     {
                         float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
-                        float vel = (pos - p_pos) / dt;
-
-                        p_pos = pos;
 
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
-                        newData.velocity = vel * tMotor->cwDir;
                         tMotor->commandBuffer.push(newData);
                     }
                     else
                     {
                         newData.position = tMotor->currentPos;
-                        newData.velocity = 0.0;
                         tMotor->commandBuffer.push(newData);
                     }
 
                     Pos[motor_mapping[tMotor->myName]] = newData.position;
-                    Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                 }
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
@@ -1944,18 +1934,6 @@ void TestManager::startTest_servo(string selectedMotor_servo, float t_servo, int
 
     float dt = 0.005;
     int time = t / dt;
-    float p_pos = 0.0;
-    for (auto &motor_pair : motors)
-    {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-        {
-            if (tMotor->myName == selectedMotor)
-            {
-                p_pos = tMotor->coordinatePos;
-            }
-        }
-    }
-
     for (int c = 0; c < cycles; c++)
     {
         for (int i = 1; i <= time; i++)
@@ -1968,23 +1946,16 @@ void TestManager::startTest_servo(string selectedMotor_servo, float t_servo, int
                     if (tMotor->myName == selectedMotor)
                     {
                         float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
-                        float vel = (pos - p_pos) / dt;
-
-                        p_pos = pos;
-
                         newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
-                        newData.velocity = vel * tMotor->cwDir;
                         tMotor->commandBuffer.push(newData);
                     }
                     else
                     {
                         newData.position = tMotor->currentPos;
-                        newData.velocity = 0.0;
                         tMotor->commandBuffer.push(newData);
                     }
 
                     Pos[motor_mapping[tMotor->myName]] = newData.position;
-                    Vel[motor_mapping[tMotor->myName]] = newData.velocity;
                 }
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {

@@ -28,6 +28,7 @@ enum class HomeSub
 
 enum class HomeTmotor
 {
+    SelectHMotor,
     MoveToSensor,
     SensorCheck,
     FillBuf,
