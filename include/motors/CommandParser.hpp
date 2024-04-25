@@ -18,7 +18,7 @@ public:
     
     // pos [rad], speed[erpm], acceleration [erpm/s^2]
     void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA);
-    
+
     // id, position, speed, current, temperature, error
     std::tuple<int, float, float, float, int8_t, int8_t> motor_receive(struct can_frame *frame);
     // current break
