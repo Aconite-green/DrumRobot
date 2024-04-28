@@ -11,12 +11,6 @@ The project's significance lies in its novel approach to blending robotic accura
 This endeavor stands as a testament to the potential of robotics in the arts, showcasing how robots can be more than mere tools, but active participants and contributors to the field of music.
 
 
-## Team Members
-- **SeongYong Park**: Key developer responsible for the entire project's core components. Developed advanced algorithms in C++ for precision motor control, implemented real-time system performance using Linux Ubuntu with a Real-Time Kernel, and integrated control logic with a collaboratively developed Qt user interface Also responsible for implementing the CAN Bus Protocol with SocketCAN Library for motor communications, and incorporating USB IO devices and proximity sensors for accurate robotic movement and positioning.
-
-
-<!-- - **Partner's Name**: Partner's role and contributions in the project-->
-
 ## Features
 - **Precision Motor Control**: Utilizing advanced algorithms in C++ to control Tmotor and Maxon motors with high precision, enabling accurate and dynamic drumming.
 - **Real-Time System Performance**: Leveraging Linux Ubuntu with a Real-Time Kernel to ensure immediate response and consistent performance during drumming sequences.
@@ -80,20 +74,3 @@ Include some screenshots of your project in action, and/or links to demo videos.
 
 ## License
 State the license under which the project is available. Example: This project is licensed under the MIT License - see the LICENSE.md file for details.
-
-## Contact and Additional Information
-
-For any questions, feedback, or further information, feel free to reach out to us:
-
-- **SeongYong Park**
-  - Email: park50260@gmail.com
-  - Resume : [Go to Resume](https://aconite-green.github.io/)
-  <!--- LinkedIn: [Go to LinkedIn ](your-linkedin-url)-->
-  
-<!-- - **Your Teammate's Name**
-  - Email: teammate.email@example.com
-  - LinkedIn: [Teammate's LinkedIn](teammate-linkedin-url)-->
-
-Additional resources and information:
-- Project Link: [handover document](https://seongyongs-organization.gitbook.io/design-system/)
-

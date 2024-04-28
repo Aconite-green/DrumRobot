@@ -106,7 +106,7 @@ public:
     float wrist_hit_time = 0.1;
 
     float wrist_backPos = M_PI / 6.0;
-    float wrist_back_time = 0.1;
+    float wrist_back_time = 0.04;
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
