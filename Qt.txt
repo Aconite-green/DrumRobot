@@ -1,104 +1,30 @@
-sudo apt-get update
-sudo apt-get install qt5-default
-sudo apt-get install libqt5charts5 libqt5charts5-dev
+Managers 
 
+HomeManager 
+public -> std::string m_MotorName;
 
+DrumRobot
 
-using namespace QtCharts;
-
-/////////////////// In main function /////////////////////////
-{
-
- ChartHandler chartHandler;
-
-    QApplication app(argc, argv);
-    QObject::connect(&chartHandler, &ChartHandler::displayChartSignal,
-                     &chartHandler, &ChartHandler::displayChartSlot);
-    QObject::connect(&chartHandler, &ChartHandler::requestQuit, &app, &QApplication::quit);
-
-    task.setChartHandler(&chartHandler); 
-
-int ret = app.exec();
-
-
-}
-
-////////////////// Makefile //////////////////////////////////////
-# Declare variables
-CC = g++
-CFLAGS = -Wall -O2 -g -std=c++17 -fPIC `pkg-config --cflags Qt5Widgets Qt5Charts`
-INCLUDE = -I./include -I./lib `pkg-config --cflags Qt5Widgets Qt5Charts`
-LDFLAGS = -lm -lpthread -lstdc++fs -L./lib -lUSBIO_64 `pkg-config --libs Qt5Widgets Qt5Charts`
-SRCDIR = ./src
-BINDIR = ./src/main.out
-
-# Automatically include all .cpp files from the src directory
-SOURCES := $(wildcard $(SRCDIR)/*.cpp)
-OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
-
-# Qt MOC 처리
-MOC = moc
-MOC_HEADERS = $(wildcard ./include/*.hpp)  # Adjust to include all headers in include directory
-MOC_SRC = $(patsubst %.hpp, %.moc.cpp, $(MOC_HEADERS))
-MOC_OBJ = $(patsubst %.moc.cpp, %.moc.o, $(MOC_SRC))
-
-# Build target
-all: $(BINDIR)
-
-$(BINDIR): $(OBJFILES) $(MOC_OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE) $(LDFLAGS)
-
-# Pattern rules
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-
-# MOC 규칙
-%.moc.cpp: %.hpp
-	$(MOC) $< -o $@
-
-%.moc.o: %.moc.cpp
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-
-# Clean rule
-clean:
-	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.moc.cpp $(SRCDIR)/*.moc.o $(BINDIR)
-
-
-////////////////////////// ChartHandler.hpp///////////////////////////
-#ifndef CHARTHANDLER_HPP
-#define CHARTHANDLER_HPP
-
-#include <QDir>
-#include <QFileInfoList>
-#include <QStringList>
-#include <QtCharts/QChart>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QChartView>
-#include <QtWidgets/QMainWindow>
-#include <QtCharts/QValueAxis>
-#include <QSplitter> 
-#include <QDateTime>
-
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <regex>
-
-using namespace QtCharts;
+#include <QObject>
 using namespace std;
 
-class ChartHandler : public QObject
+[external class]
+class Signals: public QObject
 {
     Q_OBJECT
 
 public:
-    ChartHandler(QObject *parent = nullptr) : QObject(parent) {}
+    explicit Signals(QObject *parent = nullptr) : QObject(parent) {}
 
 signals:
-    void displayChartSignal();
-    void requestQuit();
-
-public slots:
-    void displayChartSlot();
+    void stateChanged();
+    void motorInfosUpdated();
+    void canStateChanged();
+    void homingDone();
 };
-#endif // CHARTHANDLER_HPP
+
+[internal class]
+
+public:
+    Signals m_Signals;
+    std::string m_Input;
