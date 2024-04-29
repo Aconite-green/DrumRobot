@@ -734,12 +734,14 @@ void DrumRobot::SendAddStanceProcess()
     {
         if (getReady)
         {
+            ClearBufferforRecord();
             std::cout << "Get Ready...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
         }
         else if (getBack)
         {
+            ClearBufferforRecord();
             std::cout << "Get Back...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
@@ -1522,7 +1524,7 @@ void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
                 // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
                 {
-                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
                     position = std::get<1>(parsedData);
                     speed = std::get<2>(parsedData);
                     torque = std::get<3>(parsedData);
