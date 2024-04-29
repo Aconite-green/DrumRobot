@@ -64,7 +64,6 @@ void DrumRobot::stateMachine()
         }
         case Main::Check:
         {
-
             if (state.home == HomeSub::Done)
             {
                 canManager.checkAllMotors_Fixed();
