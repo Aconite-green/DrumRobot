@@ -95,17 +95,16 @@ void TestManager::SendTestProcess()
         }
         std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
         std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
-                  << "Time : " << t_servo << "\n"
-                  << "Cycles : " << cycles_servo << "\n"
-                  << "Amplitude : " << amp_servo << "[radian]\n"
-                  << "Single Target Pos : " << targetpos_servo << " [rad]\n"
+                  << "Velocity : " << vel << "[ERPM]\n"
+                  << "Acceleration : " << acl << "[ERPM / s]\n"
+                  << "Single Target Pos : " << targetpos_servo << " [Degree]\n"
                   << "Current Break Val : " << current_servo << "[A]\n";
         std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
         std::cout << "\n[Commands]\n";
         std::cout << "[s] : Select Other Motor\n"
-                  << "[t] : Time\t [c] : Cycles\n"
-                  << "[a] : Amplitude\t [p] : Set Single Target Pos\t [d] : Set Break Current\n"
+                  << "[v] : Velocity\t [a] : Acceleration\n"
+                  << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
                   << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
                   << "[r] : run\t [e] : Exit\n";
         std::cout << "Enter Command : ";
@@ -121,37 +120,20 @@ void TestManager::SendTestProcess()
             std::cout << "\nEnter Desire Motor : ";
             std::cin >> selectedMotor_servo;
         }
-        else if (userInput == 't')
+        else if (userInput == 'v')
         {
-            std::cout << "\nEnter Desire Time : ";
-            std::cin >> t_servo;
-        }
-        else if (userInput == 'c')
-        {
-            std::cout << "\nEnter Desire Cycles : ";
-            std::cin >> cycles_servo;
+            std::cout << "\nEnter Desire Velocity [ERPM] : ";
+            std::cin >> vel;
         }
         else if (userInput == 'a')
         {
-            std::cout << "\nEnter Desire Amplitude : ";
-            std::cin >> amp_servo;
+            std::cout << "\nEnter Desire Acceleration [ERPM / s] : ";
+            std::cin >> acl;
         }
         else if (userInput == 'p')
         {
-            std::cout << "\nEnter Desire Target Position [Single] : ";
+            std::cout << "\nEnter Desire Target Position [Degree] : ";
             std::cin >> targetpos_servo;
-
-            for (auto &entry : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                {
-                    if (tMotor->myName == selectedMotor_servo)
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                }
-            }
         }
         else if (userInput == 'd')
         {
@@ -417,7 +399,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 7)
         {
-            startTest_servo(selectedMotor_servo, t_servo, cycles_servo, amp_servo);
+            startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
         }
         state.test = TestSub::CheckBuf;
         break;
@@ -1903,47 +1885,47 @@ bool TestManager::dct_fun(float positions[], float vel_th)
 /*                                 Servo Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::startTest_servo(string selectedMotor_servo, float t_servo, int cycles_servo, float amp_servo)
+void TestManager::startTest_servo(string selectedMotor_servo, float pos, float vel, float acl)
 {
     std::cout << "Test Start!!\n";
     vector<float> Pos(9);
 
     float dt = 0.005;
-    int time = t / dt;
-    for (int c = 0; c < cycles; c++)
+    float time = (pos / 360) * (60 * 21 * 64) / vel + 5;
+    int n = time / dt;
+
+    for (int i = 0; i < n; i++)
     {
-        for (int i = 1; i <= time; i++)
+        for (const auto &motor_pair : motors)
         {
-            for (const auto &motor_pair : motors)
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                TMotorData newData;
+                if (tMotor->myName == selectedMotor)
                 {
-                    TMotorData newData;
-                    if (tMotor->myName == selectedMotor)
-                    {
-                        float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
-                        newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
-                        tMotor->commandBuffer.push(newData);
-                    }
-                    else
-                    {
-                        newData.position = tMotor->currentPos;
-                        tMotor->commandBuffer.push(newData);
-                    }
-
-                    Pos[motor_mapping[tMotor->myName]] = newData.position;
+                    tMotor->spd = vel;
+                    tMotor->acl = acl;
+                    newData.position = pos;
+                    tMotor->commandBuffer.push(newData);
                 }
-                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                else
                 {
-                    MaxonData newData;
-                    newData.position = maxonMotor->currentPos;
-                    newData.WristState = 0.0;
-                    maxonMotor->commandBuffer.push(newData);
-
-                    Pos[motor_mapping[maxonMotor->myName]] = newData.position;
+                    newData.position = tMotor->currentPos;
+                    tMotor->commandBuffer.push(newData);
                 }
+
+                Pos[motor_mapping[tMotor->myName]] = newData.position;
             }
-            Input_pos.push_back(Pos);
+            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                MaxonData newData;
+                newData.position = maxonMotor->currentPos;
+                newData.WristState = 0.0;
+                maxonMotor->commandBuffer.push(newData);
+
+                Pos[motor_mapping[maxonMotor->myName]] = newData.position;
+            }
         }
+        Input_pos.push_back(Pos);
     }
 }

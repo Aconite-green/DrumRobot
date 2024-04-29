@@ -116,11 +116,14 @@ private:
 
     /*Servo Mode Test Code*/
     string selectedMotor_servo = "waist";
+    float pos = 30;
+    float vel = 50;
+    float acl = 50;
     float t_servo = 4.0;
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
     float targetpos_servo, current_servo;
     
-    void startTest_servo(string selectedMotor_servo, float t_servo, int cycles_servo, float amp_servo);
+    void startTest_servo(string selectedMotor_servo, float pos, float vel, float acl);
 
 };
