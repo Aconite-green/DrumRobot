@@ -38,8 +38,8 @@ public:
     int Kp;
     double Kd;
 
-    float spd = 35000; // ERPM
-    float acl = 35000; // ERPA
+    float spd = 350000; // ERPM
+    float acl = 10000; // ERPA
 
     // For Homing Session
     bool isHomed;
