@@ -50,6 +50,7 @@ private:
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
+    TMotorServoCommandParser tmotorServocmd;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     Sensor sensor;

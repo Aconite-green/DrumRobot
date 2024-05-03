@@ -13,10 +13,18 @@ class TMotorServoCommandParser
 {
 
 public:
+    // 0:tempoaray origin  1: setting a permanent zero point
     void comm_can_set_origin(TMotor &motor, struct can_frame *frame, uint8_t set_origin_mode);
-    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA);
+    
+    // pos [rad], speed[erpm], acceleration [erpm/s^2]
+    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int32_t spd, int32_t RPA);
+
+    // id, position, speed, current, temperature, error
     std::tuple<int, float, float, float, int8_t, int8_t> motor_receive(struct can_frame *frame);
+    // current break
     void comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current);
+    // speed [erpm]
+    void comm_can_set_spd(TMotor &motor, struct can_frame *frame, float spd_erpm);
 
 private:
 };

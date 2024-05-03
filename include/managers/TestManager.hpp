@@ -42,7 +42,6 @@ public:
     bool isMaxonEnable = false;
 
     vector<vector<float>> Input_pos;
-    vector<vector<float>> Input_vel;
 
 private:
     State &state;
@@ -116,12 +115,16 @@ private:
     int drumHitDuration, drumReachedDuration;
 
     /*Servo Mode Test Code*/
-    string selectedMotor_servo = "waist";
+    string selectedMotor_servo = "R_arm2";
+    float time_servo = 1;
+    float targetpos_servo = 90;
+    int32_t vel = 1050;
+    int32_t acl = 1050;
     float t_servo = 4.0;
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
-    float targetpos_servo, current_servo;
+    float current_servo;
     
-    void startTest_servo(string selectedMotor_servo, float t_servo, int cycles_servo, float amp_servo);
+    void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
 };

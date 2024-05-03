@@ -76,7 +76,8 @@
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
         "valarray": "cpp",
-        "hash_map": "cpp"
+        "hash_map": "cpp",
+        "alignedvector3": "cpp"
     },
     "makefile.launchConfigurations": [
         {

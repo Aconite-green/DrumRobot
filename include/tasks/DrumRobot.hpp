@@ -58,6 +58,7 @@ private:
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
+    TMotorServoCommandParser tservocmd;
     Sensor sensor;
 
     chrono::system_clock::time_point ReadStandard;
@@ -95,10 +96,10 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess();
+    void SendFixProcess();
     void clearMotorsCommandBuffer();
 
     vector<vector<float>> Input_pos;
-    vector<vector<float>> Input_vel;
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},
         {"R_arm1", 1},

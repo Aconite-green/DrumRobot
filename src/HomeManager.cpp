@@ -277,12 +277,11 @@ void HomeManager::SendHomeProcess()
         state.home = HomeSub::MakeHomingOrderBuf;
         break;
     }
-
     case HomeSub::MakeHomingOrderBuf:
     {
         if (motorName == "all")
         {
-            canManager.checkAllMotors_test(); // Waist 모터 포지션 업데이트
+            canManager.checkMaxon(); // Waist 모터 포지션 업데이트
 
             for (auto &PmotorNames : Priority)
             {
@@ -311,7 +310,7 @@ void HomeManager::SendHomeProcess()
             loadHomingInfoFromFile();
             setMaxonMode("CSP");
             MaxonEnable();
-            canManager.checkAllMotors_test();
+            canManager.checkMaxon();
             state.home = HomeSub::Done;
             state.main = Main::Ideal;
         }
@@ -322,13 +321,11 @@ void HomeManager::SendHomeProcess()
         }
         break;
     }
-
     case HomeSub::GetSelectedMotor:
     {
         cout << "Now Im in GetSelectedMotor state\n";
         if (!HomingMotorsArr.empty())
         {
-
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
             // 첫 번째 요소를 currentMotors에 할당
             for (const auto &motor : currentMotors)
@@ -336,7 +333,7 @@ void HomeManager::SendHomeProcess()
                 if (motor->myName == "L_arm1" || motor->myName == "R_arm1" || motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
                 {
                     state.home = HomeSub::HomeTmotor;
-                    state.homeTmotor = HomeTmotor::MoveToSensor;
+                    state.homeTmotor = HomeTmotor::SelectHMotor;
                     break; // 내부 for 루프 탈출
                 }
                 else if (motor->myName == "L_wrist" || motor->myName == "R_wrist" || motor->myName == "maxonForTest")
@@ -344,8 +341,8 @@ void HomeManager::SendHomeProcess()
                     setMaxonMode("HMM");
                     usleep(50000);
                     MaxonEnable();
-                    state.homeMaxon = HomeMaxon::StartHoming;
                     state.home = HomeSub::HomeMaxon;
+                    state.homeMaxon = HomeMaxon::StartHoming;
                     break;
                 }
             }
@@ -373,21 +370,22 @@ void HomeManager::SendHomeProcess()
         // 이 부분에 호밍 작업이 모드 끝났을경우에 대한 처리를 할 것
         break;
     }
-
     case HomeSub::HomeTmotor:
-
+    {
         HomeTmotor();
         break;
-
+    }
     case HomeSub::HomeMaxon:
-
+    {
         HomeMaxon();
         break;
-
+    }
     case HomeSub::Done:
+    {
         state.main = Main::Ideal;
         saveHomingInfoToFile();
         break;
+    }
     }
 }
 
@@ -395,7 +393,7 @@ void HomeManager::HomeTmotor()
 {
     switch (state.homeTmotor.load())
     {
-    case HomeTmotor::MoveToSensor:
+    case HomeTmotor::SelectHMotor:
     {
         sensorsBit.clear();
         firstPosition.clear();
@@ -406,31 +404,16 @@ void HomeManager::HomeTmotor()
         targetRadians.clear();
         midpoints.clear();
         directions.clear();
-
         tMotors.clear();
 
         if (sensor.OpenDeviceUntilSuccess())
         {
-
             vector<shared_ptr<GenericMotor>> currentMotors = HomingMotorsArr.front();
-
             // 속도 제어 - 센서 방향으로 이동
             for (long unsigned int i = 0; i < currentMotors.size(); i++)
             {
-                std::cout << "<< Homing for " << currentMotors[i]->myName << " >>\n";
                 tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
-
-                double initialDirection;
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
-                    initialDirection = (-0.2) * tMotors[i]->cwDir;
-                else
-                    initialDirection = 0.2 * tMotors[i]->cwDir;
-
-                double additionalTorque = 0.0;
-                if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2")
-                    additionalTorque = currentMotors[i]->cwDir * (-3.0);
-                else if (tMotors[i]->myName == "L_arm3" || tMotors[i]->myName == "R_arm3")
-                    additionalTorque = tMotors[i]->cwDir * (2.1);
+                std::cout << "<< Homing for " << tMotors[i]->myName << " >>\n";
 
                 sensorsBit.push_back(tMotors[i]->sensorBit);
                 firstPosition.push_back(0.0f);
@@ -439,9 +422,49 @@ void HomeManager::HomeTmotor()
                 TriggeredDone.push_back(false);
 
                 std::cout << "Moving " << tMotors[i]->myName << " to sensor location.\n";
+            }
+        }
+        state.homeTmotor = HomeTmotor::MoveToSensor;
+        break;
+    }
+    case HomeTmotor::MoveToSensor:
+    {
+        for (auto &motor_pair : motors)
+        {
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                int hMotoridx = -1;
+                for (long unsigned int i = 0; i < tMotors.size(); i++)
+                {
+                    if (tMotors[i]->myName == motor->myName)
+                    {
+                        hMotoridx = i;
+                    }
+                }
 
-                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, 0, initialDirection, 0, 4.5, additionalTorque);
-                canManager.sendMotorFrame(tMotors[i]);
+                if (hMotoridx < 0) // homing 하지 않는 모터
+                {
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                }
+                else // homing 하는 모터
+                {
+                    if (TriggeredDone[hMotoridx]) // 센서 위치에 도달했으면 대기
+                    {
+                        // 위치속도제어 모드로 변경
+                        tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    }
+                    else // 센서 위치로 속도제어로 이동
+                    {
+                        float initialDirection = 0.0;
+                        if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
+                            initialDirection = (-500) * motor->cwDir;
+                        else
+                            initialDirection = 500 * motor->cwDir;
+
+                        tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
+                    }
+                }
+                canManager.sendMotorFrame(motor);
             }
         }
 
@@ -459,13 +482,13 @@ void HomeManager::HomeTmotor()
 
         if (doneSensing)
         {
-
             state.homeTmotor = HomeTmotor::FillBuf;
             sensor.closeDevice();
             break;
         }
         else
         {
+            state.homeTmotor = HomeTmotor::MoveToSensor;
             for (long unsigned int i = 0; i < tMotors.size(); i++)
             {
                 if (!TriggeredDone[i])
@@ -489,13 +512,7 @@ void HomeManager::HomeTmotor()
                     else
                     {
                         usleep(5000);
-                        canManager.sendMotorFrame(tMotors[i]);
                     }
-                }
-                else
-                {
-                    tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, secondPosition[i], 0, tMotors[i]->Kp, 2.5, 0);
-                    canManager.sendMotorFrame(tMotors[i]);
                 }
             }
         }
@@ -503,25 +520,20 @@ void HomeManager::HomeTmotor()
     }
     case HomeTmotor::FillBuf:
     {
-
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
             midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
             tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
             cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
             cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
-        }
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
+
             if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
             {
                 midpoints[i] = midpoints[i] * (-1);
             }
 
             directions.push_back(-tMotors[i]->cwDir);
-        }
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
-        {
+
             if (tMotors[i]->myName == "L_arm1")
             {
                 midpoints[i] -= (M_PI * 0.25);
@@ -531,49 +543,61 @@ void HomeManager::HomeTmotor()
                 midpoints[i] += (M_PI * 0.25);
             }
             targetRadians.push_back((midpoints[i]) * directions[i]);
-            tMotors[i]->clearCommandBuffer();
         }
 
-        int totalSteps = 2000 / 5;      // 2초
+        for (auto &motor_pair : motors)
+        {
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                motor->clearCommandBuffer();
+        }
+
+        int totalSteps = 2000 / 5; // 2초
         for (int step = 1; step <= totalSteps; ++step)
         {
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
+            for (auto &motor_pair : motors)
             {
-                double targetPosition = targetRadians[i] * (static_cast<double>(step) / totalSteps) + tMotors[i]->currentPos;
-                TMotorData newData;
-                newData.position = targetPosition;
-                newData.velocity = 0;
+                if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    int hMotoridx = -1;
+                    for (long unsigned int i = 0; i < tMotors.size(); i++)
+                    {
+                        if (tMotors[i]->myName == motor->myName)
+                        {
+                            hMotoridx = i;
+                        }
+                    }
 
-                tMotors[i]->commandBuffer.push(newData);
+                    TMotorData newData;
+                    if (hMotoridx < 0) // homing 진행중이지 않은 모터
+                    {
+                        newData.position = motor->currentPos;
+                    }
+                    else // homing 진행중인 모터
+                    {
+                        newData.position = targetRadians[hMotoridx] + motor->currentPos;
+                    }
+                    newData.spd = motor->spd;
+                    newData.acl = motor->acl;
+                    motor->commandBuffer.push(newData);
+                }
             }
         }
 
-        totalSteps = 500 / 5;       // 0.5초
-        for (int step = 1; step <= totalSteps; ++step)
-        {
-            for (long unsigned int i = 0; i < tMotors.size(); i++)
-            {
-                double targetPosition = targetRadians[i] + tMotors[i]->currentPos;
-                TMotorData newData;
-                newData.position = targetPosition;
-                newData.velocity = 0;
-
-                tMotors[i]->commandBuffer.push(newData);
-            }
-        }
         state.homeTmotor = HomeTmotor::CheckBuf;
         break;
     }
-
     case HomeTmotor::CheckBuf:
     {
         bool isEmpty = true;
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            if (!tMotors[i]->commandBuffer.empty())
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                isEmpty = false;
-                break;
+                if (!motor->commandBuffer.empty())
+                {
+                    isEmpty = false;
+                    break;
+                }
             }
         }
 
@@ -588,54 +612,32 @@ void HomeManager::HomeTmotor()
         }
         else
         {
-            state.homeTmotor = HomeTmotor::SafetyCheck;
+            state.homeTmotor = HomeTmotor::SetCANFrame;
         }
         break;
     }
-    case HomeTmotor::SafetyCheck:
+    case HomeTmotor::SetCANFrame:
     {
-        bool isSafe = true;
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            TMotorData tData = tMotors[i]->commandBuffer.front();
-            tMotors[i]->commandBuffer.pop();
-            if (abs(tMotors[i]->currentPos - tData.position) > 0.2)
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                std::cout << "Error During Homing For" << tMotors[i]->myName << " (Pos Diff)\n";
-
-                isSafe = false;
-                tmotorcmd.getQuickStop(*tMotors[i], &tMotors[i]->sendFrame);
-                canManager.sendMotorFrame(tMotors[i]);
-                usleep(5000);
-                tmotorcmd.getExit(*tMotors[i], &tMotors[i]->sendFrame);
-                canManager.sendMotorFrame(tMotors[i]);
-                break;
-            }
-            else
-            {
-                tmotorcmd.parseSendCommand(*tMotors[i], &tMotors[i]->sendFrame, tMotors[i]->nodeId, 8, tData.position, tData.velocity, tMotors[i]->Kp, tMotors[i]->Kd, 0.0);
+                TMotorData tData = motor->commandBuffer.front();
+                motor->commandBuffer.pop();
+                tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, tData.position, tData.spd, tData.acl);
             }
         }
-
-        if (isSafe)
-        {
-            state.homeTmotor = HomeTmotor::SendCANFrameForZeroPos;
-        }
-        else
-        {
-            std::cout << "Go to Error State\n";
-            state.main = Main::Error;
-        }
+        state.homeTmotor = HomeTmotor::SendCANFrameForZeroPos;
         break;
     }
     case HomeTmotor::SendCANFrameForZeroPos:
     {
         usleep(5000);
-        for (long unsigned int i = 0; i < tMotors.size(); i++)
+        for (auto &motor_pair : motors)
         {
-            canManager.sendMotorFrame(tMotors[i]);
+            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                canManager.sendMotorFrame(motor);
         }
-
         state.homeTmotor = HomeTmotor::CheckBuf;
         break;
     }
@@ -696,6 +698,16 @@ void HomeManager::HomeMaxon()
                 if (maxonMotors[i]->statusBit & 0x80)
                 {
                     maxonMotors[i]->isHomed = true;
+                }
+            }
+
+            for (auto &motor_pair : motors)
+            {
+                if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    // 위치속도제어 모드로 변경
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    canManager.sendMotorFrame(motor);
                 }
             }
         }

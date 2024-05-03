@@ -28,11 +28,12 @@ enum class HomeSub
 
 enum class HomeTmotor
 {
+    SelectHMotor,
     MoveToSensor,
     SensorCheck,
     FillBuf,
     CheckBuf,
-    SafetyCheck,
+    SetCANFrame,
     SendCANFrameForZeroPos,
     Done
 };
@@ -49,7 +50,7 @@ enum class PerformSub
     TimeCheck,
     CheckBuf,
     GeneratePath,
-    SafetyCheck,
+    SetCANFrame,
     SendCANFrame
 };
 
@@ -59,7 +60,7 @@ enum class AddStanceSub
     CheckCommand,
     CheckBuf,
     FillBuf,
-    SafetyCheck,
+    SetCANFrame,
     SendCANFrame
 };
 
@@ -82,7 +83,7 @@ enum class TestSub
     FillBuf,
     CheckBuf,
     TimeCheck,
-    SafetyCheck,
+    SetCANFrame,
     SendCANFrame,
     Done,
     StickTest,
