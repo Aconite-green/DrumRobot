@@ -293,8 +293,9 @@ void HomeManager::SendHomeProcess()
                         temp.push_back(motors[pmotorName]);
                     }
                 }
-
-                HomingMotorsArr.push_back(temp);
+                if(!temp.empty()){
+                    HomingMotorsArr.push_back(temp);
+                }
             }
             state.home = HomeSub::GetSelectedMotor;
         }
