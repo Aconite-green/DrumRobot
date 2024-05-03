@@ -17,7 +17,7 @@ public:
     void comm_can_set_origin(TMotor &motor, struct can_frame *frame, uint8_t set_origin_mode);
     
     // pos [rad], speed[erpm], acceleration [erpm/s^2]
-    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA);
+    void comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int32_t spd, int32_t RPA);
 
     // id, position, speed, current, temperature, error
     std::tuple<int, float, float, float, int8_t, int8_t> motor_receive(struct can_frame *frame);

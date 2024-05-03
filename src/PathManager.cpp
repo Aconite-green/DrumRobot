@@ -1228,7 +1228,9 @@ void PathManager::GetArr(vector<float> &arr)
             if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.spd = tmotor->spd;
+                newData.acl = tmotor->acl;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

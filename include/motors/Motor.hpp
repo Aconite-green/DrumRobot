@@ -14,6 +14,7 @@
 #include <linux/can/raw.h>
 #include <iostream>
 #include <cmath>
+#include <map>
 using namespace std;
 
 class GenericMotor
@@ -38,8 +39,15 @@ public:
     int Kp;
     double Kd;
 
-    float spd = 300000; // ERPM
-    float acl = 300000; // ERPA
+    float pre_spd = 0.0;
+    int32_t spd = 1000; // ERPM
+    int32_t acl = 2000; // ERPA
+
+    std::map<std::string, int> R_Ratio = {
+        {"AK80_64", 64},
+        {"AK70_10", 10},
+    };
+    int PolePairs = 21;
 
     // For Homing Session
     bool isHomed;
@@ -48,6 +56,7 @@ public:
     std::queue<can_frame> sendBuffer;
 
     struct can_frame sendFrame;
+    struct can_frame recieveFrame;
 
     GenericMotor(uint32_t nodeId);
     virtual ~GenericMotor() = default;
@@ -59,6 +68,8 @@ public:
 struct TMotorData
 {
     float position;
+    int32_t spd;
+    int32_t acl;
 };
 
 class TMotor : public GenericMotor

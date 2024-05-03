@@ -77,6 +77,7 @@ void TestManager::SendTestProcess()
                 maxonMotor->clearCommandBuffer();
                 maxonMotor->clearReceiveBuffer();
             }
+            Input_pos.clear();
         }
 
         char userInput = '0';
@@ -95,15 +96,17 @@ void TestManager::SendTestProcess()
         }
         std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
         std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
-                  << "Velocity : " << vel << "[ERPM]\n"
-                  << "Acceleration : " << acl << "[ERPM / s]\n"
+                  /*<< "Velocity : " << vel << "[ERPM]\n"
+                  << "Acceleration : " << acl << "[ERPM / s]\n"*/
+                  << "Time : " << time_servo << "[sec]\n"
                   << "Single Target Pos : " << targetpos_servo << " [Degree]\n"
                   << "Current Break Val : " << current_servo << "[A]\n";
         std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
         std::cout << "\n[Commands]\n";
         std::cout << "[s] : Select Other Motor\n"
-                  << "[v] : Velocity\t [a] : Acceleration\n"
+                  /*<< "[v] : Set Velocity\t [a] : Set Acceleration\n"*/
+                  << "[t] : Set Time"
                   << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
                   << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
                   << "[r] : run\t [e] : Exit\n";
@@ -129,6 +132,11 @@ void TestManager::SendTestProcess()
         {
             std::cout << "\nEnter Desire Acceleration [ERPM / s] : ";
             std::cin >> acl;
+        }
+        else if (userInput == 't')
+        {
+            std::cout << "\nEnter Desire Time [sec] : ";
+            std::cin >> time_servo;
         }
         else if (userInput == 'p')
         {
@@ -399,6 +407,10 @@ void TestManager::SendTestProcess()
         }
         else if (method == 7)
         {
+            std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
+            vel = (targetpos_servo / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+            // vel = 327680;
+            acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
         }
         state.test = TestSub::CheckBuf;
@@ -429,33 +441,21 @@ void TestManager::SendTestProcess()
         }
 
         if (!allBuffersEmpty)
-        {
             state.test = TestSub::TimeCheck;
-        }
         else
-        {
             state.test = TestSub::Done;
-        }
         break;
     }
     case TestSub::TimeCheck:
     {
         usleep(5000);
-        state.test = TestSub::SafetyCheck;
+        state.test = TestSub::SetCANFrame;
         break;
     }
-    case TestSub::SafetyCheck:
+    case TestSub::SetCANFrame:
     {
-        bool isSafe = canManager.safetyCheck("Test");
-
-        if (isSafe)
-            state.test = TestSub::SendCANFrame;
-        else
-        {
-            error = true;
-            state.test = TestSub::Done;
-        }
-
+        canManager.setCANFrame();
+        state.test = TestSub::SendCANFrame;
         break;
     }
     case TestSub::SendCANFrame:
@@ -494,19 +494,22 @@ void TestManager::SendTestProcess()
         else if (method == 3)
         {
             std::ostringstream fileNameIn;
-            fileNameIn << "../../READ/" << selectedMotor << "_Period"
-                       << std::fixed << std::setprecision(2) << t
-                       << "_Kp" << std::fixed << std::setprecision(2) << kp
-                       << "_Kd" << std::fixed << std::setprecision(2) << kd
+            fileNameIn << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            fileNameIn << "../../READ/" << selectedMotor
+                       << "_Period" << t
+                       << "_Kp" << kp
+                       << "_Kd" << kd
                        << "_in";
             std::string fileName = fileNameIn.str();
             save_to_txt_inputData(fileName);
+
             std::ostringstream fileNameOut;
-            fileNameOut << "../../READ/" << selectedMotor << "_Period"
-                        << std::fixed << std::setprecision(2) << t
-                        << "_Kp" << std::fixed << std::setprecision(2) << kp
-                        << "_Kd" << std::fixed << std::setprecision(2) << kd
-                        << "_in";
+            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            fileNameOut << "../../READ/" << selectedMotor
+                        << "_Period" << t
+                        << "_Kp" << kp
+                        << "_Kd" << kd
+                        << "_out";
             fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
 
@@ -518,9 +521,25 @@ void TestManager::SendTestProcess()
         }
         else if (method == 7)
         {
-            string fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_in";
+            sleep(1);
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            oss << "../../READ/" << selectedMotor_servo
+                << "_T" << time_servo
+                << "_P" << targetpos_servo
+                << "_V" << vel
+                << "_A" << acl << "_in";
+            std::string fileName = oss.str();
             save_to_txt_inputData(fileName);
-            fileName = "../../READ/" + selectedMotor + "_Period" + to_string(t) + "_Kp" + to_string(kp) + "_Kd" + to_string(kd) + "_out";
+
+            oss.str("");
+
+            oss << "../../READ/" << selectedMotor_servo
+                << "_T" << time_servo
+                << "_P" << targetpos_servo
+                << "_V" << vel
+                << "_A" << acl << "_out";
+            fileName = oss.str();
             parse_and_save_to_csv(fileName);
 
             state.test = TestSub::SetServoTestParm;
@@ -695,7 +714,9 @@ void TestManager::GetArr(float arr[])
             if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                newData.spd = tmotor->spd;
+                newData.acl = tmotor->acl;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -707,30 +728,6 @@ void TestManager::GetArr(float arr[])
             }
         }
     }
-
-    n = 100;
-    for (int k = 0; k < n; ++k)
-    {
-        // Send to Buffer
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                tmotor->commandBuffer.push(newData);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-            {
-                MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
-                newData.WristState = 0;
-                maxonMotor->commandBuffer.push(newData);
-            }
-        }
-    }
-
-    cout << "\n";
 }
 
 vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)
@@ -1565,7 +1562,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
     }
 
     // CSV 헤더 추가
-    ofs << "CAN_ID,p_act,v_act,tff_act\n";
+    ofs << "CAN_ID,p_act,v_act,c_act,a_act\n";
 
     while (true)
     {
@@ -1573,6 +1570,7 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
         for (const auto &pair : motors)
         {
             auto &motor = pair.second;
+
             if (!motor->recieveBuffer.empty())
             {
                 allRecvBufferEmpty = false;
@@ -1580,15 +1578,17 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
                 motor->recieveBuffer.pop();
 
                 int id = motor->nodeId;
-                float position, speed, torque;
+                float position, speed, torque, acceleration;
 
                 // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
                 {
-                    std::tuple<int, float, float, float> parsedData = tmotorcmd.parseRecieveCommand(*tMotor, &frame);
+                    std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
                     position = std::get<1>(parsedData);
                     speed = std::get<2>(parsedData);
                     torque = std::get<3>(parsedData);
+                    acceleration = (speed - motor->pre_spd) / 0.002;
+                    motor->pre_spd = speed;
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
                 {
@@ -1599,8 +1599,8 @@ void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
                 }
 
                 // 데이터 CSV 파일에 쓰기
-                ofs << "0x" << std::hex << std::setw(3) << std::setfill('0') << id << ","
-                    << std::dec << position << "," << speed << "," << torque << "\n";
+                ofs << "0x" << std::hex << std::setw(2) << std::setfill('0') << id << ","
+                    << std::dec << position << "," << speed << "," << torque << "," << acceleration << "\n";
             }
         }
 
@@ -1885,13 +1885,13 @@ bool TestManager::dct_fun(float positions[], float vel_th)
 /*                                 Servo Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::startTest_servo(string selectedMotor_servo, float pos, float vel, float acl)
+void TestManager::startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl)
 {
-    std::cout << "Test Start!!\n";
-    vector<float> Pos(9);
+    std::cout << "Test Start For " << selectedMotor_servo << "\n";
 
     float dt = 0.005;
-    float time = (pos / 360) * (60 * 21 * 64) / vel + 5;
+    std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
+    float time = time_servo + 1;
     int n = time / dt;
 
     for (int i = 0; i < n; i++)
@@ -1901,10 +1901,10 @@ void TestManager::startTest_servo(string selectedMotor_servo, float pos, float v
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
                 TMotorData newData;
-                if (tMotor->myName == selectedMotor)
+                if (tMotor->myName == selectedMotor_servo)
                 {
-                    tMotor->spd = vel;
-                    tMotor->acl = acl;
+                    newData.spd = vel;
+                    newData.acl = acl;
                     newData.position = pos;
                     tMotor->commandBuffer.push(newData);
                 }
@@ -1913,8 +1913,6 @@ void TestManager::startTest_servo(string selectedMotor_servo, float pos, float v
                     newData.position = tMotor->currentPos;
                     tMotor->commandBuffer.push(newData);
                 }
-
-                Pos[motor_mapping[tMotor->myName]] = newData.position;
             }
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
@@ -1922,10 +1920,7 @@ void TestManager::startTest_servo(string selectedMotor_servo, float pos, float v
                 newData.position = maxonMotor->currentPos;
                 newData.WristState = 0.0;
                 maxonMotor->commandBuffer.push(newData);
-
-                Pos[motor_mapping[maxonMotor->myName]] = newData.position;
             }
         }
-        Input_pos.push_back(Pos);
     }
 }

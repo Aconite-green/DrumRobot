@@ -23,7 +23,7 @@ std::tuple<int, float, float, float, int8_t, int8_t> TMotorServoCommandParser::m
     int16_t cur_int = (frame)->data[4] << 8 | (frame)->data[5];
 
     float pos = (float)(pos_int * 0.1f * M_PI / 180.0f); // Motor Position in radians
-    float spd = (float)(spd_int * 10.0f * 2 * M_PI / 60.0f); // Motor Speed in radians per second
+    float spd = (float)(spd_int * 10.0f); // Motor Speed in radians per second
     float cur = (float)(cur_int * 0.01f); // Motor Current
     int8_t temp = frame->data[6];         // Motor Temperature
     int8_t error = frame->data[7];        // Motor Error Code
@@ -39,10 +39,10 @@ void TMotorServoCommandParser::comm_can_set_origin(TMotor &motor, struct can_fra
     frame->data[0] = set_origin_mode; 
 }
 
-void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int16_t spd, int16_t RPA)
+void TMotorServoCommandParser::comm_can_set_pos_spd(TMotor &motor, struct can_frame *frame, float pos, int32_t spd, int32_t RPA)
 {
     // 라디안에서 도로 변환
-    float pos_deg = pos * (180.0 / M_PI); // 라디안을 도로 변환
+    float pos_deg = pos * (180.0 / M_PI);
 
     frame->can_id = motor.nodeId |
                     ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS_SPD << 8 | CAN_EFF_FLAG);

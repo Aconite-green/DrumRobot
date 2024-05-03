@@ -66,7 +66,7 @@ public:
 
     void readFramesFromAllSockets();
 
-    void distributeFramesToMotors();
+    bool distributeFramesToMotors(bool isHomed);
 
     void clearReadBuffers();
 
@@ -77,8 +77,9 @@ public:
     int maxonCnt=0;
     // Functions for Thread Case
 
-    bool safetyCheck(std::string errorMessagePart);
-    bool safetyCheck_servo(std::string errorMessagePart);
+    void setCANFrame();
+    bool safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData);
+    bool safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, unsigned char> parsedData);
 
     vector<vector<float>> Input_pos;
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
