@@ -32,7 +32,7 @@ void CanManager::initializeCAN()
         if (hsocket < 0)
         {
             std::cerr << "Socket creation error for interface: " << ifname << std::endl;
-            exit(EXIT_FAILURE);
+            
         }
         sockets[ifname] = hsocket;
         isConnected[ifname] = true;
@@ -152,7 +152,7 @@ void CanManager::activateCanPort(const char *port)
     if (ret1 != 0 || ret2 != 0)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
-        exit(1); // 또는 다른 에러 처리
+        
     }
 }
 
@@ -164,7 +164,7 @@ void CanManager::list_and_activate_available_can_ports()
     if (fp == nullptr)
     {
         perror("No available CAN port");
-        exit(1);
+        
     }
 
     char output[1024];
@@ -210,7 +210,7 @@ void CanManager::list_and_activate_available_can_ports()
     if (portCount == 0)
     {
         printf("No CAN port found. Exiting...\n");
-        exit(1);
+        
     }
 }
 
@@ -305,7 +305,7 @@ bool CanManager::txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
 {
     if (write(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
-        // perror("CAN write error");
+        perror("CAN write error");
         return false;
     }
     return true;
@@ -316,7 +316,7 @@ bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
 
     if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
-        // perror("CAN read error");
+        perror("CAN read error");
         return false;
     }
     return true;
@@ -326,7 +326,7 @@ bool CanManager::sendAndRecv(std::shared_ptr<GenericMotor> &motor, struct can_fr
 {
     if (!txFrame(motor, frame) || !rxFrame(motor, frame))
     {
-        // perror("Send and receive error");
+        perror("Send and receive error");
         return false;
     }
     return true;
@@ -343,7 +343,7 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
-        // perror("CAN write error");
+        perror("CAN write error");
         return false;
     }
     return true;
