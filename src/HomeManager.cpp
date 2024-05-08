@@ -293,7 +293,8 @@ void HomeManager::SendHomeProcess()
                         temp.push_back(motors[pmotorName]);
                     }
                 }
-                if(!temp.empty()){
+                if (!temp.empty())
+                {
                     HomingMotorsArr.push_back(temp);
                 }
             }
@@ -405,7 +406,7 @@ void HomeManager::HomeTmotor()
         targetRadians.clear();
         midpoints.clear();
         directions.clear();
-        tMotors.clear();
+        tMotors.clear(); // 동시 homing 하는 모터배열 저장
 
         if (sensor.OpenDeviceUntilSuccess())
         {
@@ -443,11 +444,7 @@ void HomeManager::HomeTmotor()
                     }
                 }
 
-                if (hMotoridx < 0) // homing 하지 않는 모터
-                {
-                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
-                }
-                else // homing 하는 모터
+                if (hMotoridx >= 0) // homing 하는 모터
                 {
                     if (TriggeredDone[hMotoridx]) // 센서 위치에 도달했으면 대기
                     {
@@ -464,6 +461,10 @@ void HomeManager::HomeTmotor()
 
                         tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
                     }
+                }
+                else // homing 하지 않는 모터
+                {
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
                 }
                 canManager.sendMotorFrame(motor);
             }
@@ -569,13 +570,13 @@ void HomeManager::HomeTmotor()
                     }
 
                     TMotorData newData;
-                    if (hMotoridx < 0) // homing 진행중이지 않은 모터
-                    {
-                        newData.position = motor->currentPos;
-                    }
-                    else // homing 진행중인 모터
+                    if (hMotoridx >= 0) // homing 진행중인 모터
                     {
                         newData.position = targetRadians[hMotoridx] + motor->currentPos;
+                    }
+                    else // homing 진행중이지 않은 모터
+                    {
+                        newData.position = motor->currentPos;
                     }
                     newData.spd = motor->spd;
                     newData.acl = motor->acl;
