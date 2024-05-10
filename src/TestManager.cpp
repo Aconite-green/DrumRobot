@@ -99,7 +99,7 @@ void TestManager::SendTestProcess()
                   /*<< "Velocity : " << vel << "[ERPM]\n"
                   << "Acceleration : " << acl << "[ERPM / s]\n"*/
                   << "Time : " << time_servo << "[sec]\n"
-                  << "Single Target Pos : " << targetpos_servo << " [Degree]\n"
+                  << "Single Target Pos : " << targetpos_servo << " [Radian]\n"
                   << "Current Break Val : " << current_servo << "[A]\n";
         std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
@@ -408,7 +408,7 @@ void TestManager::SendTestProcess()
         else if (method == 7)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-            vel = (targetpos_servo / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+            vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
             // vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
@@ -1905,7 +1905,7 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 {
                     newData.spd = vel;
                     newData.acl = acl;
-                    newData.position = pos;
+                    newData.position = pos * tMotor->cwDir;
                     tMotor->commandBuffer.push(newData);
                 }
                 else
