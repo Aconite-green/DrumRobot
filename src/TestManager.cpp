@@ -408,8 +408,8 @@ void TestManager::SendTestProcess()
         else if (method == 7)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-            //vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-            vel = 327680;
+            vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+            //vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
         }
