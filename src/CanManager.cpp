@@ -474,7 +474,7 @@ void CanManager::readFramesFromAllSockets()
     }
 }
 
-bool CanManager::distributeFramesToMotors(bool isHomed)
+bool CanManager::distributeFramesToMotors(bool setlimit)
 {
     for (auto &motor_pair : motors)
     {
@@ -488,7 +488,7 @@ bool CanManager::distributeFramesToMotors(bool isHomed)
                 if ((frame.can_id & 0xFF) == tMotor->nodeId)
                 {
                     std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
-                    if (isHomed)
+                    if (setlimit)
                     {
                         bool isSafe = safetyCheck_T(motor, parsedData);
                         if (!isSafe)
@@ -512,7 +512,7 @@ bool CanManager::distributeFramesToMotors(bool isHomed)
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
                     std::tuple<int, float, float, unsigned char> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    if (isHomed)
+                    if (setlimit)
                     {
                         bool isSafe = safetyCheck_M(motor, parsedData);
                         if (!isSafe)

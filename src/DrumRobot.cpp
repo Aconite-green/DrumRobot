@@ -278,17 +278,17 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         break;
     case ReadSub::UpdateMotorInfo:
     {
-        if (state.home == HomeSub::Done)
+        if (state.home != HomeSub::Done || state.main == Main::Test)
+        {   // homing이 되지 않았거나 테스트 시엔 제한을 두지 않음.
+            canManager.distributeFramesToMotors(false);
+        }
+        else
         {
             bool isSafe = canManager.distributeFramesToMotors(true);
             if (!isSafe)
             {
                 state.main = Main::Error;
             }
-        }
-        else
-        {
-            canManager.distributeFramesToMotors(false);
         }
 
         if (maxonMotorCount == 0)
@@ -893,7 +893,8 @@ void DrumRobot::checkUserInput()
         char input = getchar();
         if (state.main == Main::Perform || state.main == Main::Pause)
         {
-            if (input == 'q'){
+            if (input == 'q')
+            {
                 state.main = Main::Pause;
                 canManager.checkAllMotors_Fixed();
             }
