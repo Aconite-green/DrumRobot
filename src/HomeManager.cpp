@@ -455,9 +455,9 @@ void HomeManager::HomeTmotor()
                     {
                         float initialDirection = 0.0;
                         if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
-                            initialDirection = (-500) * motor->cwDir;
+                            initialDirection = (-300) * motor->cwDir;
                         else
-                            initialDirection = 500 * motor->cwDir;
+                            initialDirection = 300 * motor->cwDir;
 
                         tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
                     }

@@ -40,8 +40,8 @@ public:
     double Kd;
 
     float pre_spd = 0.0;
-    int32_t spd = 500; // ERPM
-    int32_t acl = 1000; // ERPA
+    int32_t spd = 100; // ERPM
+    int32_t acl = 500; // ERPA
 
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},

@@ -389,10 +389,10 @@ void CanManager::setMotorsSocket()
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
                 {
                     maxoncmd.getCheck(*maxonMotor, &frame);
+                    txFrame(motor, frame);
                 }
                 motor->socket = socket_fd;
 
-                txFrame(motor, frame);
                 usleep(50000);
             }
         }

@@ -1000,7 +1000,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm1")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 3;
                 tMotor->rMin = 0.0f;       // 0deg
                 tMotor->rMax = M_PI * 0.8; // 144deg
@@ -1009,7 +1009,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_arm1")
             {
-                tMotor->cwDir = 1.0f;
+                tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 0;
                 tMotor->rMin = M_PI / 5; // 36deg
                 tMotor->rMax = M_PI;     // 180deg
@@ -1018,7 +1018,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm2")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 4;
                 tMotor->rMin = -M_PI / 4.0f; // 45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
@@ -1027,7 +1027,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm3")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
                 tMotor->rMax = M_PI * 0.75f; // 135deg
@@ -1036,7 +1036,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_arm2")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 1;
                 tMotor->rMin = -M_PI / 4.0f; // -45deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
@@ -1045,7 +1045,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_arm3")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
                 tMotor->rMax = M_PI * 0.75f; // 135deg
