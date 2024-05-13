@@ -408,8 +408,8 @@ void TestManager::SendTestProcess()
         else if (method == 7)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-            vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-            // vel = 327680;
+            //vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+            vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
         }
@@ -526,7 +526,7 @@ void TestManager::SendTestProcess()
             oss << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
             oss << "../../READ/" << selectedMotor_servo
                 << "_T" << time_servo
-                << "_P" << targetpos_servo
+                << "_P" << targetpos_servo / M_PI * 180
                 << "_V" << vel
                 << "_A" << acl << "_in";
             std::string fileName = oss.str();
@@ -536,7 +536,7 @@ void TestManager::SendTestProcess()
 
             oss << "../../READ/" << selectedMotor_servo
                 << "_T" << time_servo
-                << "_P" << targetpos_servo
+                << "_P" << targetpos_servo / M_PI * 180
                 << "_V" << vel
                 << "_A" << acl << "_out";
             fileName = oss.str();

@@ -66,7 +66,7 @@ public:
 
     void readFramesFromAllSockets();
 
-    bool distributeFramesToMotors(bool isHomed);
+    bool distributeFramesToMotors(bool setlimit);
 
     void clearReadBuffers();
 
