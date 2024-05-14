@@ -409,7 +409,7 @@ void TestManager::SendTestProcess()
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
             vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-            //vel = 327680;
+            // vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
         }
@@ -1903,6 +1903,7 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 TMotorData newData;
                 if (tMotor->myName == selectedMotor_servo)
                 {
+                    tMotor->isfixed = false;
                     newData.spd = vel;
                     newData.acl = acl;
                     newData.position = pos * tMotor->cwDir;
@@ -1910,7 +1911,12 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 }
                 else
                 {
-                    newData.position = tMotor->currentPos;
+                    if (tMotor->isfixed == false)
+                    {
+                        tMotor->fixedPos = tMotor->currentPos;
+                        tMotor->isfixed = true;
+                    }
+                    newData.position = tMotor->isfixed;
                     tMotor->commandBuffer.push(newData);
                 }
             }

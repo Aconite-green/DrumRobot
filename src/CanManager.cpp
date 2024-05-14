@@ -140,16 +140,18 @@ int CanManager::createSocket(const std::string &ifname)
     return localSocket; // 생성된 소켓 디스크립터 반환
 }
 
-void CanManager::activateCanPort(const char *port)
+void CanManager::activateCanPort(const char *port) 
 {
-    char command1[100], command2[100];
+    char command1[100], command2[100], command3[100];
     snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.850", port);
     snprintf(command2, sizeof(command2), "sudo ip link set %s up", port);
+    snprintf(command3, sizeof(command3), "sudo ifconfig %s txqueuelen 1000", port);
 
     int ret1 = system(command1);
     int ret2 = system(command2);
+    int ret3 = system(command3);
 
-    if (ret1 != 0 || ret2 != 0)
+    if (ret1 != 0 || ret2 != 0 || ret3 != 0)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
         
@@ -391,7 +393,8 @@ void CanManager::setMotorsSocket()
                     maxoncmd.getCheck(*maxonMotor, &frame);
                     txFrame(motor, frame);
                 }
-                
+               
+
                 usleep(50000);
             }
         }
@@ -542,8 +545,11 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tMotor->currentPos, tMotor->spd, tMotor->acl);
-        // tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, 1000);
+        if(motor->isfixed == false){
+            motor->fixedPos = tMotor->currentPos;
+            motor->isfixed = true;
+        }
+        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, tMotor->spd, tMotor->acl);
         sendMotorFrame(tMotor);
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
