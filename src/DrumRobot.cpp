@@ -985,7 +985,7 @@ void DrumRobot::initializeMotors()
     motors["L_arm3"] = make_shared<TMotor>(0x06, "AK70_10");
     motors["L_wrist"] = make_shared<MaxonMotor>(0x09);
     motors["R_wrist"] = make_shared<MaxonMotor>(0x08);
-    motors["maxonForTest"] = make_shared<MaxonMotor>(0x0A);
+    motors["maxonForTest"] = make_shared<MaxonMotor>(0x08);
 
     for (auto &motor_pair : motors)
     {
