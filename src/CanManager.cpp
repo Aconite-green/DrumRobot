@@ -385,27 +385,27 @@ void CanManager::setMotorsSocket()
 
             if (!motor->isConected)
             {
-
+                motor->socket = socket_fd;
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
                 {
                     maxoncmd.getCheck(*maxonMotor, &frame);
+                    txFrame(motor, frame);
                 }
-                motor->socket = socket_fd;
-
-                txFrame(motor, frame);
+                
                 usleep(50000);
             }
         }
 
         // 해당 소켓으로 프레임을 무작정 읽어서 버퍼에 넣음
         int readCount = 0;
-        while (readCount < 30)
+        while (readCount < 10)
         {
             ssize_t result = read(socket_fd, &frame, sizeof(frame));
 
             if (result > 0)
             {
                 tempFrames[socket_fd].push_back(frame);
+                
             }
             readCount++;
         }
@@ -440,7 +440,7 @@ void CanManager::setMotorsSocket()
         }
 
         tempFrames.clear();
-    }
+    } 
 
     // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 삭제
     for (auto it = motors.begin(); it != motors.end();)
