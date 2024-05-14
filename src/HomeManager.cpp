@@ -448,23 +448,38 @@ void HomeManager::HomeTmotor()
                 {
                     if (TriggeredDone[hMotoridx]) // 센서 위치에 도달했으면 대기
                     {
-                        // 위치속도제어 모드로 변경
-                        tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                        if (motor->isfixed == false)
+                        {
+                            motor->fixedPos = motor->currentPos;
+                            motor->isfixed = true;
+                        }
+                        tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->fixedPos, motor->spd, motor->acl);
                     }
                     else // 센서 위치로 속도제어로 이동
                     {
-                        float initialDirection = 0.0;
-                        if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
-                            initialDirection = (-300) * motor->cwDir;
-                        else
-                            initialDirection = 300 * motor->cwDir;
+                        motor->isfixed = false;
+                        float speed = 500;
+                        float add_speed = 300;
 
-                        tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, initialDirection);
+                        if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "L_arm3" || motor->myName == "R_arm3")
+                        {
+                            speed += add_speed;
+                        }
+
+                        if (motor->myName == "L_arm2" || motor->myName == "R_arm2" || motor->myName == "R_arm1")
+                            speed *= (-1);
+
+                        tmotorServocmd.comm_can_set_spd(*motor, &motor->sendFrame, speed * motor->cwDir);
                     }
                 }
                 else // homing 하지 않는 모터
                 {
-                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    if (motor->isfixed == false)
+                    {
+                        motor->fixedPos = motor->currentPos;
+                        motor->isfixed = true;
+                    }
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->fixedPos, motor->spd, motor->acl);
                 }
                 canManager.sendMotorFrame(motor);
             }
@@ -506,6 +521,14 @@ void HomeManager::HomeTmotor()
                     }
                     else if (firstSensorTriggered[i] && !sensorTriggered)
                     {
+                        for (auto &motor_pair : motors)
+                        {
+                            if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
+                            {
+                                tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                                canManager.sendMotorFrame(motor);
+                            }
+                        }
                         // 센서 인식 해제
                         secondPosition[i] = tMotors[i]->currentPos;
                         std::cout << tMotors[i]->myName << " second sensor position: " << secondPosition[i] << endl;
@@ -513,7 +536,7 @@ void HomeManager::HomeTmotor()
                     }
                     else
                     {
-                        usleep(5000);
+                        usleep(5000); // 50ms
                     }
                 }
             }
@@ -524,27 +547,26 @@ void HomeManager::HomeTmotor()
     {
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f));
+            midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f) * (-1));
             tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
             cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
             cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
 
-            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1")
+            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1") // (-)방향으로 이동하는 축
             {
                 midpoints[i] = midpoints[i] * (-1);
             }
 
-            directions.push_back(-tMotors[i]->cwDir);
-
-            if (tMotors[i]->myName == "L_arm1")
+            if (tMotors[i]->myName == "R_arm1")
             {
                 midpoints[i] -= (M_PI * 0.25);
             }
-            else if (tMotors[i]->myName == "R_arm1")
+            else if (tMotors[i]->myName == "L_arm1")
             {
                 midpoints[i] += (M_PI * 0.25);
             }
-            targetRadians.push_back((midpoints[i]) * directions[i]);
+
+            targetRadians.push_back((midpoints[i]) * tMotors[i]->cwDir);
         }
 
         for (auto &motor_pair : motors)
@@ -572,11 +594,17 @@ void HomeManager::HomeTmotor()
                     TMotorData newData;
                     if (hMotoridx >= 0) // homing 진행중인 모터
                     {
+                        motor->isfixed = false;
                         newData.position = targetRadians[hMotoridx] + motor->currentPos;
                     }
                     else // homing 진행중이지 않은 모터
                     {
-                        newData.position = motor->currentPos;
+                        if (motor->isfixed == false)
+                        {
+                            motor->fixedPos = motor->currentPos;
+                            motor->isfixed = true;
+                        }
+                        newData.position = motor->fixedPos;
                     }
                     newData.spd = motor->spd;
                     newData.acl = motor->acl;

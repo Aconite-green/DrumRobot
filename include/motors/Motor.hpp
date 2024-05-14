@@ -36,12 +36,14 @@ public:
     float prePos;
     float currentPos, currentVel, currentTor;
     float coordinatePos;
+    float fixedPos;
+    bool isfixed = false;
     int Kp;
     double Kd;
 
     float pre_spd = 0.0;
-    int32_t spd = 100; // ERPM
-    int32_t acl = 500; // ERPA
+    int32_t spd = 1000; // ERPM
+    int32_t acl = 3000; // ERPA
 
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},

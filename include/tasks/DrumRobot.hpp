@@ -88,7 +88,6 @@ private:
     void setMaxonMode(std::string targetMode);
 
     // Send Thread Loop 메소드들
-
     void save_to_txt_inputData(const string &csv_file_name);
     int writeFailCount;
     int maxonMotorCount = 0;
@@ -97,6 +96,7 @@ private:
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess();
     void SendFixProcess();
+    void UnfixedMotor();
     void clearMotorsCommandBuffer();
 
     vector<vector<float>> Input_pos;
