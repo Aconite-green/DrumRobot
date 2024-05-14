@@ -1321,8 +1321,11 @@ void DrumRobot::motorSettingCmd()
         }
         else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
-            tservocmd.comm_can_set_origin(*tmotor, &tmotor->sendFrame, 0);
-            canManager.sendMotorFrame(tmotor);
+            if (tmotor->myName == "waist")
+            {
+                tservocmd.comm_can_set_origin(*tmotor, &tmotor->sendFrame, 0);
+                canManager.sendMotorFrame(tmotor);
+            }
         }
     }
 }

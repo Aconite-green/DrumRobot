@@ -117,7 +117,8 @@ private:
     /*Servo Mode Test Code*/
     string selectedMotor_servo = "R_arm2";
     float time_servo = 1;
-    float targetpos_servo = 1.57;   // Radian
+    float targetpos_des = 1.57;   // Radian
+    float targetpos_coo;
     int32_t vel = 1050;
     int32_t acl = 1050;
     float t_servo = 4.0;

@@ -32,7 +32,6 @@ void CanManager::initializeCAN()
         if (hsocket < 0)
         {
             std::cerr << "Socket creation error for interface: " << ifname << std::endl;
-            
         }
         sockets[ifname] = hsocket;
         isConnected[ifname] = true;
@@ -140,21 +139,23 @@ int CanManager::createSocket(const std::string &ifname)
     return localSocket; // 생성된 소켓 디스크립터 반환
 }
 
-void CanManager::activateCanPort(const char *port) 
+void CanManager::activateCanPort(const char *port)
 {
-    char command1[100], command2[100], command3[100];
-    snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 sample-point 0.850", port);
+    char command1[100], command2[100], command3[100], command4[100];
+
+    snprintf(command4, sizeof(command4), "sudo ip link set %s down", port);
+    snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 restart-ms 100", port);
     snprintf(command2, sizeof(command2), "sudo ip link set %s up", port);
     snprintf(command3, sizeof(command3), "sudo ifconfig %s txqueuelen 1000", port);
 
+    int ret4 = system(command4);
     int ret1 = system(command1);
     int ret2 = system(command2);
     int ret3 = system(command3);
 
-    if (ret1 != 0 || ret2 != 0 || ret3 != 0)
+    if (ret1 != 0 || ret2 != 0 || ret3 != 0  || ret4 != 0)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
-        
     }
 }
 
@@ -166,7 +167,6 @@ void CanManager::list_and_activate_available_can_ports()
     if (fp == nullptr)
     {
         perror("No available CAN port");
-        
     }
 
     char output[1024];
@@ -212,7 +212,6 @@ void CanManager::list_and_activate_available_can_ports()
     if (portCount == 0)
     {
         printf("No CAN port found. Exiting...\n");
-        
     }
 }
 
@@ -544,7 +543,8 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        if(motor->isfixed == false){
+        if (motor->isfixed == false)
+        {
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }

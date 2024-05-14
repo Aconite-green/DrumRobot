@@ -90,8 +90,12 @@ void TestManager::SendTestProcess()
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
-                entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+                tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
                 cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
+                if (tMotor->myName == selectedMotor_servo)
+                {
+                    targetpos_coo = tMotor->coordinatePos;
+                }
             }
         }
         std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
@@ -99,7 +103,8 @@ void TestManager::SendTestProcess()
                   /*<< "Velocity : " << vel << "[ERPM]\n"
                   << "Acceleration : " << acl << "[ERPM / s]\n"*/
                   << "Time : " << time_servo << "[sec]\n"
-                  << "Single Target Pos : " << targetpos_servo << " [Radian]\n"
+                  << "Target coordinate Pos : " << targetpos_coo << " [Radian]\n"
+                  << "Single Target Pos : " << targetpos_des << " [Radian]\n"
                   << "Current Break Val : " << current_servo << "[A]\n";
         std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
@@ -141,7 +146,7 @@ void TestManager::SendTestProcess()
         else if (userInput == 'p')
         {
             std::cout << "\nEnter Desire Target Position [Degree] : ";
-            std::cin >> targetpos_servo;
+            std::cin >> targetpos_des;
         }
         else if (userInput == 'd')
         {
@@ -408,10 +413,11 @@ void TestManager::SendTestProcess()
         else if (method == 7)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-            vel = ((targetpos_servo / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+
+            vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
             // vel = 327680;
             acl = 327670;
-            startTest_servo(selectedMotor_servo, targetpos_servo, vel, acl);
+            startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
         }
         state.test = TestSub::CheckBuf;
         break;
@@ -526,7 +532,7 @@ void TestManager::SendTestProcess()
             oss << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
             oss << "../../READ/" << selectedMotor_servo
                 << "_T" << time_servo
-                << "_P" << targetpos_servo / M_PI * 180
+                << "_P" << abs(targetpos_coo - targetpos_des) / M_PI * 180
                 << "_V" << vel
                 << "_A" << acl << "_in";
             std::string fileName = oss.str();
@@ -536,7 +542,7 @@ void TestManager::SendTestProcess()
 
             oss << "../../READ/" << selectedMotor_servo
                 << "_T" << time_servo
-                << "_P" << targetpos_servo / M_PI * 180
+                << "_P" << abs(targetpos_coo - targetpos_des) / M_PI * 180
                 << "_V" << vel
                 << "_A" << acl << "_out";
             fileName = oss.str();

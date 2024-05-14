@@ -281,6 +281,14 @@ void HomeManager::SendHomeProcess()
     {
         if (motorName == "all")
         {
+            for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    tmotorServocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                    canManager.sendMotorFrame(tMotor);
+                }
+            }
             canManager.checkMaxon(); // Waist 모터 포지션 업데이트
 
             for (auto &PmotorNames : Priority)
@@ -302,6 +310,15 @@ void HomeManager::SendHomeProcess()
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
         {
+             for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    tmotorServocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                    canManager.sendMotorFrame(tMotor);
+                }
+            }
+            
             vector<shared_ptr<GenericMotor>> temp;
             temp.push_back(motors[motorName]);
             HomingMotorsArr.push_back(temp);
