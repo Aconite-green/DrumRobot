@@ -1904,9 +1904,9 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 if (tMotor->myName == selectedMotor_servo)
                 {
                     tMotor->isfixed = false;
+                    newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
                     newData.spd = vel;
                     newData.acl = acl;
-                    newData.position = pos * tMotor->cwDir;
                     tMotor->commandBuffer.push(newData);
                 }
                 else
@@ -1916,7 +1916,7 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                         tMotor->fixedPos = tMotor->currentPos;
                         tMotor->isfixed = true;
                     }
-                    newData.position = tMotor->isfixed;
+                    newData.position = tMotor->fixedPos;
                     tMotor->commandBuffer.push(newData);
                 }
             }
