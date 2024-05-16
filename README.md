@@ -1,15 +1,6 @@
 # Ubuntu-Based CAN Communication Robot Drummer
 This project is a unique endeavor that leverages CAN communication to control nine motors within a Linux Ubuntu environment, enabling a robot to play drums. It's designed for music enthusiasts and tech aficionados alike, blending robotics with artistry to create rhythmic music.
 
-## Background and Purpose
-This project, led by Dr. Sehyeok Im of the Intelligent Robotics Research Division at the Korea Institute of Science and Technology, was embarked upon to merge the realms of robotics and music. The initiative's main objective was to create a robotic drummer, demonstrating sophisticated control over nine motors and real-time processing in a musical context.
-
-Under the guidance of Dr. Im, SeongYong Park contributed significantly to this project by implementing the technology stack and features. The challenges addressed included achieving precise motor synchronization, adapting rhythm generation to various music genres, and maintaining responsive system performance. 
-
-The project's significance lies in its novel approach to blending robotic accuracy with the art of music. Utilizing C++, Linux Ubuntu with a Real-Time Kernel, and the CAN Bus Protocol with the SocketCAN Library, it pushes the frontiers of robotic interaction in musical performances. Additionally, the incorporation of Qt for GUI development, USB IO devices, and proximity sensors, underlines the project's advanced application of technology in an artistic and creative setting.
-
-This endeavor stands as a testament to the potential of robotics in the arts, showcasing how robots can be more than mere tools, but active participants and contributors to the field of music.
-
 
 ## Features
 - **Precision Motor Control**: Utilizing advanced algorithms in C++ to control Tmotor and Maxon motors with high precision, enabling accurate and dynamic drumming.
@@ -38,34 +29,12 @@ This endeavor stands as a testament to the potential of robotics in the arts, sh
 
 
 
-
-## Installation & Usage
-To set up and use this robotic drummer, please follow the outlined steps:
-
-1. **Setup Linux Ubuntu Environment with Real-Time Kernel**: Ensure that you have a Linux Ubuntu environment with a Real-Time Kernel installed for optimal performance.
-
-2. **Clone the Project Repository**: Clone the project from GitHub using the command `git clone [repository link]`.
-
-3. **Install Qt for GUI Development (If Applicable)**: If involved in GUI development, install Qt for creating and managing the user interface.
-
-4. **Install SocketCAN Library**: Install the SocketCAN library for CAN Bus communication, which is crucial for motor control.
-
-5. **Connect and Configure Motors and Sensors**:
-    - Connect Tmotor and Maxon motors via the Peak USBtoCAN device.
-    - Setup USB IO devices and proximity sensors for accurate positioning and motor synchronization.
-
-6. **Compile and Run the Control Software**:
-    - Compile the C++ based control software.
-    - Execute the compiled program to start the robotic drummer.
-
-Remember to adjust these steps based on your project's specific requirements and the hardware components used.
-
-
 ## Screenshots and Demo
 Include some screenshots of your project in action, and/or links to demo videos.
 
-<img src="./image/Ready_Pos.jpg" width="500" alt="Screenshot Front Robot">
-<img src="./image/Ready_Pos2.jpg" width="500" alt="Screenshot Ready Position diagonal Robot">
+<img src="./image/Ready_Pos.jpg" width="750" alt="Screenshot Front Robot">
+<img src="./image/Ready_Pos2.jpg" width="750" alt="Screenshot Ready Position diagonal Robot">
+<img src="./image/Qt.png" width="750" alt="Screenshot for Qt GUI">
 
 ### 🎥 **Check out the drum robot video playlist here:** [**Drum Robot Video Playlist Link**](https://www.youtube.com/playlist?list=PLZbG63B7tdmLVjM_1uWHxAeesx-kkmfXY)
 

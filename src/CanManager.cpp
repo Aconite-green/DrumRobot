@@ -614,7 +614,8 @@ void CanManager::setCANFrame()
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
             Pos[motor_mapping[tMotor->myName]] = tData.position;
-            tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+            //tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+            tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
         }
     }
     Input_pos.push_back(Pos);
