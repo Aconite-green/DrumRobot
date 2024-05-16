@@ -25,6 +25,8 @@ public:
     void comm_can_set_cb(TMotor &motor, struct can_frame *frame, float current);
     // speed [erpm]
     void comm_can_set_spd(TMotor &motor, struct can_frame *frame, float spd_erpm);
+    // pos [rad]
+    void comm_can_set_pos(TMotor &motor, struct can_frame *frame, float pos);
 
 private:
 };
