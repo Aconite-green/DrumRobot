@@ -28,6 +28,15 @@
 #include <chrono>
 #include <set>
 
+//For Qt
+/*
+#include "CanManager.hpp"
+#include "../managers/PathManager.hpp"
+#include "../motors/CommandParser.hpp"
+#include "../motors/Motor.hpp"
+#include "../tasks/SystemState.hpp"
+*/
+
 using namespace std;
 
 class TestManager

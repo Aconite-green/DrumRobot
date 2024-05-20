@@ -30,6 +30,16 @@
 #include <numeric>
 #include "../include/eigen-3.4.0/Eigen/Dense"
 
+//For Qt
+/*
+#include "CanManager.hpp"
+#include "../motors/CommandParser.hpp"
+#include "../motors/Motor.hpp"
+#include "../tasks/SystemState.hpp"
+*/
+
+
+
 using namespace std;
 using namespace Eigen;
 
