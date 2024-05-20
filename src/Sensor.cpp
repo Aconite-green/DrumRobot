@@ -1,5 +1,7 @@
 #include "../include/usbio/SenSor.hpp"
 
+// For Qt
+// #include "../usbio/SenSor.hpp"
 Sensor::Sensor()
 {
 }

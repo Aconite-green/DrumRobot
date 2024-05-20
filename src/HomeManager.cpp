@@ -1,5 +1,6 @@
 #include "../include/managers/HomeManager.hpp"
-
+//For Qt
+//#include "../managers/HomeManager.hpp"
 HomeManager::HomeManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
