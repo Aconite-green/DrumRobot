@@ -282,17 +282,17 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         break;
     case ReadSub::UpdateMotorInfo:
     {
-        if (state.home == HomeSub::Done)
+        if (state.home != HomeSub::Done || state.main == Main::Test)
+        {
+            canManager.distributeFramesToMotors(false);
+        }
+        else
         {
             bool isSafe = canManager.distributeFramesToMotors(true);
             if (!isSafe)
             {
                 state.main = Main::Error;
             }
-        }
-        else
-        {
-            canManager.distributeFramesToMotors(false);
         }
 
         if (maxonMotorCount == 0)

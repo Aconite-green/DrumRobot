@@ -98,7 +98,7 @@ void TMotorServoCommandParser::comm_can_set_pos(TMotor &motor, struct can_frame 
     float pos_deg = pos * (180.0 / M_PI);
 
     // 변환된 ERPM 값을 정수로 변환
-    int32_t pos_int = static_cast<int32_t>(pos_deg);
+    int32_t pos_int = static_cast<int32_t>(pos_deg*10000.0);
     
     frame->data[0] = (pos_int >> 24) & 0xFF;
     frame->data[1] = (pos_int >> 16) & 0xFF;
