@@ -90,6 +90,22 @@ void TMotorServoCommandParser::comm_can_set_spd(TMotor &motor, struct can_frame 
     frame->data[3] = spd_int & 0xFF;
 }
 
+void TMotorServoCommandParser::comm_can_set_pos(TMotor &motor, struct can_frame *frame, float pos){
+    frame->can_id = motor.nodeId |
+                    ((uint32_t)CAN_PACKET_ID::CAN_PACKET_SET_POS << 8 | CAN_EFF_FLAG);
+    frame->can_dlc = 4;
+    // 라디안에서 도로 변환
+    float pos_deg = pos * (180.0 / M_PI);
+
+    // 변환된 ERPM 값을 정수로 변환
+    int32_t pos_int = static_cast<int32_t>(pos_deg*10000.0);
+    
+    frame->data[0] = (pos_int >> 24) & 0xFF;
+    frame->data[1] = (pos_int >> 16) & 0xFF;
+    frame->data[2] = (pos_int >> 8) & 0xFF;
+    frame->data[3] = pos_int & 0xFF;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                                      Tmotor Parser definition                           */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
