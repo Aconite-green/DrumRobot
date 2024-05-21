@@ -511,12 +511,14 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
         if (sts_R(0, i) == 1)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
-            theta_R(0, i) = 0.15 * v_elbow;
+            theta_R(0, i) = elbow_backPos;
+            //theta_R(0, i) = 0.15 * v_elbow;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
-            theta_L(0, i) = 0.15 * v_elbow;
+            theta_L(0, i) = elbow_backPos;
+            //theta_L(0, i) = 0.15 * v_elbow;
     }
 
     MatrixXd t_elbow_madi(3, 3);
@@ -524,18 +526,20 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
     {
         if (sts_L(0, i) == -1)
         {
-            float dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_L(0, i) = elbow_backPos;
+            /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_elbow;
             if (theta_L(0, i) > (M_PI / 10))
-                theta_L(0, i) = (M_PI / 10);
+                theta_L(0, i) = (M_PI / 10);*/
         }
 
         if (sts_R(0, i) == -1)
         {
-            float dt = t_madi(0, i + 1) - t_madi(0, i);
+            theta_R(0, i) = elbow_backPos;
+            /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_elbow;
             if (theta_R(0, i) > (M_PI / 10))
-                theta_R(0, i) = (M_PI / 10);
+                theta_R(0, i) = (M_PI / 10);*/
         }
     }
 
@@ -757,19 +761,12 @@ pair<float, float> PathManager::qRL_fun(MatrixXd &t_madi, float t_now)
     VectorXd q7_madi = t_madi.row(1);
     VectorXd q8_madi = t_madi.row(2);
 
-    cout << "time_madi :\n"
-         << time_madi << "\n";
-    cout << "q7_madi :\n"
-         << q7_madi << "\n";
-    cout << "q8_madi :\n"
-         << q8_madi << "\n";
-
-    if (t_now >= time_madi(0) && t_now <= time_madi(1))
+    if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
         qR_t = q7_madi(1);
         qL_t = q8_madi(1);
     }
-    else if (t_now > time_madi(1) && t_now < time_madi(2))
+    else if (t_now >= time_madi(1) && t_now < time_madi(2))
     {
         qR_t = q7_madi(2);
         qL_t = q8_madi(2);
@@ -1013,8 +1010,6 @@ void PathManager::GetMusicSheet()
     default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
     default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
 
-    string score_path = "../include/managers/codeConfession copy.txt";
-
     ifstream file(score_path);
     if (!file.is_open())
         cerr << "Error opening file." << endl;
@@ -1184,60 +1179,116 @@ void PathManager::PathLoopTask()
 
     cout << "State :\n"
          << State << "\n";
-    cout << "qk1_06 :\n"
-         << qk1_06 << "\n";
-    cout << "qk2_06 :\n"
-         << qk2_06 << "\n";
+    cout << "t_wrist_madi :\n"
+         << t_wrist_madi << "\n";
+    cout << "t_elbow_madi :\n"
+         << t_elbow_madi << "\n";
 
-    float t1 = p2(0) - p1(0);
-    // float t2 = p3(0) - p1(0);
-    VectorXd qt_pre = qk1_06;
-    float dt = 0.005;
-    int n = t1 / dt;
-    for (int i = 0; i < n; i++)
+    cout << "p1 :\n"
+         << p1 << "\n";
+    cout << "p2 :\n"
+         << p2 << "\n";
+
+    VectorXd q_current(7);
+    for (auto &motor : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
+        {
+            q_current(motor_mapping[motor.first]) = tMotor->currentPos;
+        }
+    }
+
+    if (p2(0) == State(0, 1)) // 안쪼개진 경우
     {
         VectorXd qt = VectorXd::Zero(9);
         VectorXd qv_in = VectorXd::Zero(7);
+        float t1 = p2(0) - p1(0);
         for (int m = 0; m < 7; m++)
         {
             qt(m) = qk2_06(m);
+            if (m == 0 || m == 1 || m == 2 || m == 3 || m == 5)
+                qv_in(m) = ((abs(qt(m) - q_current(m)) / M_PI * 180) / t1); // [deg/s]
         }
 
-        VectorXd time_madi = t_elbow_madi.row(0);
-        float time_i = t_now + dt * i;
-        pair<float, float> qElbow = qRL_fun(t_elbow_madi, time_i);
-        pair<float, float> qWrist = qRL_fun(t_wrist_madi, time_i);
-        pair<float, float> wrist_state = SetTorqFlag(State, time_i); // -1. 1. 0.5 값 5ms단위로 전달
-
+        pair<float, float> qElbow = qRL_fun(t_elbow_madi, t_now);
+        pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now);
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
         qt(7) = qWrist.first;
         qt(8) = qWrist.second;
 
-        cout << "qt :" << qt << "\n";
-        cout << "qt_pre :" << qt_pre << "\n";
+        float dt = 0.005;
+        int n = t1 / dt;
+        qv_in(4) = ((abs(qt(4) - q_current(4)) / M_PI * 180) / t1); // [deg/s]
+        qv_in(6) = ((abs(qt(6) - q_current(6)) / M_PI * 180) / t1); // [deg/s]
 
+        cout << "qt :\n"
+             << qt << "\n";
+        cout << "qv_in :\n"
+             << qv_in << "\n";
+        for (int i = 0; i < n; i++)
+        {
+            pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+
+            Motors_sendBuffer(qt, qv_in, wrist_state);
+        }
+    }
+    else // 쪼개진 경우
+    {
+        VectorXd qt1 = VectorXd::Zero(9);
+        VectorXd qt2 = VectorXd::Zero(9);
+        VectorXd qv_in = VectorXd::Zero(7);
+        float t1 = p2(0) - p1(0); // 쪼개지지 않은 시간
+        float t2 = t1 / 2.0;      // 쪼개진 시간
         for (int m = 0; m < 7; m++)
         {
-            if (m == 4 || m == 6)
-            {
-                qv_in(m) = ((abs(qt(m) - qt_pre(m)) / M_PI * 180) / (time_madi(1) - time_madi(0))); // [deg/s]
-            }
-            else
-            {
-                qv_in(m) = ((abs(qt(m) - qt_pre(m)) / M_PI * 180) / t1); // [deg/s]
-            }
+            qt1(m) = qk2_06(m);
+            qt2(m) = qk2_06(m);
+            if (m == 0 || m == 1 || m == 2 || m == 3 || m == 5)
+                qv_in(m) = ((abs(qt1(m) - q_current(m)) / M_PI * 180) / t1); // [deg/s]
         }
 
-        if (time_i == time_madi(1))
+        pair<float, float> qElbow = qRL_fun(t_elbow_madi, t_now);
+        pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now);
+        qt1(4) += qElbow.first;
+        qt1(6) += qElbow.second;
+        qt1(7) = qWrist.first;
+        qt1(8) = qWrist.second;
+
+        float dt = 0.005;
+        int n = t2 / dt;
+        qv_in(4) = ((abs(qt1(4) - q_current(4)) / M_PI * 180) / t2); // [deg/s]
+        qv_in(6) = ((abs(qt1(6) - q_current(6)) / M_PI * 180) / t2); // [deg/s]
+
+        cout << "qt1 :\n"
+             << qt1 << "\n";
+        cout << "qv_in :\n"
+             << qv_in << "\n";
+        for (int i = 0; i < n; i++)
         {
-            for (int m = 0; m < 7; m++)
-            {
-                qt_pre(m) = qt(m);
-            }
+            pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+
+            Motors_sendBuffer(qt1, qv_in, wrist_state);
         }
 
-        Motors_sendBuffer(qt, qv_in, wrist_state);
+        qElbow = qRL_fun(t_elbow_madi, t_now + t2);
+        qWrist = qRL_fun(t_wrist_madi, t_now + t2);
+        qt2(4) += qElbow.first;
+        qt2(6) += qElbow.second;
+        qt2(7) = qWrist.first;
+        qt2(8) = qWrist.second;
+        qv_in(4) = ((abs(qt2(4) - qt1(4)) / M_PI * 180) / t2); // [deg/s]
+        qv_in(6) = ((abs(qt2(6) - qt1(6)) / M_PI * 180) / t2); // [deg/s]
+        cout << "qt2 :\n"
+             << qt2 << "\n";
+        cout << "qv_in :\n"
+             << qv_in << "\n";
+        for (int i = 0; i < n; i++)
+        {
+            pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+
+            Motors_sendBuffer(qt2, qv_in, wrist_state);
+        }
     }
 }
 
@@ -1251,8 +1302,8 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = 0.005;
-    float t = 3; // 3초동안 실행
-    int n = t / dt;
+    float t = 3;
+    int n = t / dt; // 4초동안 실행
     for (int k = 1; k <= n; ++k)
     {
         // Make GetBack Array
@@ -1265,7 +1316,6 @@ void PathManager::GetArr(vector<float> &arr)
             {
                 TMotorData newData;
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.spd = (abs(arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]]) / M_PI * 180) / t * tmotor->R_Ratio[tmotor->motorType] * tmotor->PolePairs * 60 / 360;
                 newData.spd = tmotor->spd;
                 newData.acl = tmotor->acl;
                 tmotor->commandBuffer.push(newData);

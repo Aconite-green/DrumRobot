@@ -108,6 +108,8 @@ public:
     float wrist_backPos = M_PI / 6.0;
     float wrist_back_time = 0.04;
 
+    float elbow_backPos = M_PI / 12.0;
+
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
@@ -115,6 +117,8 @@ private:
     State &state;                                                 ///< 시스템의 현재 상태입니다.
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
+
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     // Functions for DrumRobot PathGenerating
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
