@@ -23,8 +23,18 @@
 #include <map>
 #include <queue>
 #include <memory>
+
+
 #include "Motor.hpp"
 #include "CommandParser.hpp"
+
+// For Qt
+/*
+#include "../motors/Motor.hpp"
+#include "../motors/CommandParser.hpp"
+#include <QDebug>
+#include <sys/types.h>
+*/
 
 using namespace std;
 
@@ -94,8 +104,10 @@ public:
         {"L_wrist", 8},
         {"maxonForTest", 8}};
 
+        std::vector<std::string> ifnames;
+
 private:
-    std::vector<std::string> ifnames;
+    
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;

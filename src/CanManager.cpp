@@ -1,4 +1,7 @@
 #include "../include/managers/CanManager.hpp"
+
+// For Qt 
+// #include "../managers/CanManager.hpp"
 CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : motors(motorsRef)
 {

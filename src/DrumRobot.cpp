@@ -1,5 +1,8 @@
 #include "../include/tasks/DrumRobot.hpp"
 
+// For Qt
+// #include "../tasks/DrumRobot.hpp" 
+
 // DrumRobot 클래스의 생성자
 DrumRobot::DrumRobot(State &stateRef,
                      CanManager &canManagerRef,

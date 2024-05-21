@@ -1,11 +1,6 @@
 #pragma once
 
 #include <stdio.h>
-#include "../include/managers/CanManager.hpp"
-#include "../include/motors/CommandParser.hpp"
-#include "../include/motors/Motor.hpp"
-#include "../include/tasks/SystemState.hpp"
-#include "../include/usbio/SenSor.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -30,6 +25,22 @@
 #include <cstdio>     // std::remove를 사용하기 위해 필요
 #include <sys/stat.h> // mkdir을 사용하기 위해 필요
 #include <cstdlib>
+
+
+#include "../include/managers/CanManager.hpp"
+#include "../include/motors/CommandParser.hpp"
+#include "../include/motors/Motor.hpp"
+#include "../include/tasks/SystemState.hpp"
+#include "../include/usbio/SenSor.hpp"
+//For Qt
+/*
+#include "CanManager.hpp"
+#include "../motors/CommandParser.hpp"
+#include "../motors/Motor.hpp"
+#include "../tasks/SystemState.hpp"
+#include "../usbio/SenSor.hpp"
+*/
+
 
 using namespace std;
 
