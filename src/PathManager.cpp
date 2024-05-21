@@ -1,7 +1,7 @@
 #include "../include/managers/PathManager.hpp" // 적절한 경로로 변경하세요.
 
 // For Qt
-//#include "../managers/PathManager.hpp" 
+// #include "../managers/PathManager.hpp"
 PathManager::PathManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
@@ -514,13 +514,13 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
             theta_R(0, i) = 0;
         else if (sts_R(0, i) == -0.5)
             theta_R(0, i) = elbow_backPos;
-            //theta_R(0, i) = 0.15 * v_elbow;
+        // theta_R(0, i) = 0.15 * v_elbow;
 
         if (sts_L(0, i) == 1)
             theta_L(0, i) = 0;
         else if (sts_L(0, i) == -0.5)
             theta_L(0, i) = elbow_backPos;
-            //theta_L(0, i) = 0.15 * v_elbow;
+        // theta_L(0, i) = 0.15 * v_elbow;
     }
 
     MatrixXd t_elbow_madi(3, 3);
@@ -704,9 +704,13 @@ vector<float> PathManager::fkfun()
     return P;
 }
 
-float PathManager::con_fun(float t_a, float t_b, float th_a, float th_b, float t_now)
+float PathManager::con_fun(float th_a, float th_b, int k, int n)
 {
-    return (th_b - th_a) * (t_now - t_a) / (t_b - t_a) + th_a;
+    float A, B;
+    A = 0.5 * (th_a - th_b);
+    B = 0.5 * (th_a + th_b);
+
+    return (A * cos(M_PI * k / n) + B);
 }
 
 pair<float, float> PathManager::iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t)
@@ -1191,12 +1195,16 @@ void PathManager::PathLoopTask()
     cout << "p2 :\n"
          << p2 << "\n";
 
-    VectorXd q_current(7);
+    VectorXd q_current(9);
     for (auto &motor : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
         {
             q_current(motor_mapping[motor.first]) = tMotor->currentPos;
+        }
+        else if (std::shared_ptr<MaxonMotor> mMotor = std::dynamic_pointer_cast<MaxonMotor>(motor.second))
+        {
+            q_current(motor_mapping[motor.first]) = mMotor->currentPos;
         }
     }
 
@@ -1216,11 +1224,6 @@ void PathManager::PathLoopTask()
         pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now);
         qt(4) += qElbow.first;
         qt(6) += qElbow.second;
-        qt(7) = qWrist.first;
-        qt(8) = qWrist.second;
-
-        float dt = 0.005;
-        int n = t1 / dt;
         qv_in(4) = ((abs(qt(4) - q_current(4)) / M_PI * 180) / t1); // [deg/s]
         qv_in(6) = ((abs(qt(6) - q_current(6)) / M_PI * 180) / t1); // [deg/s]
 
@@ -1228,10 +1231,15 @@ void PathManager::PathLoopTask()
              << qt << "\n";
         cout << "qv_in :\n"
              << qv_in << "\n";
+
+        float dt = 0.005;
+        int n = t1 / dt;
         for (int i = 0; i < n; i++)
         {
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
-
+            // 손목부분은 cos함수로 연결 (위치제어)
+            qt(7) = con_fun(q_current(7), qWrist.first, i, n);
+            qt(8) = con_fun(q_current(8), qWrist.second, i, n);
             Motors_sendBuffer(qt, qv_in, wrist_state);
         }
     }
@@ -1254,11 +1262,6 @@ void PathManager::PathLoopTask()
         pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now);
         qt1(4) += qElbow.first;
         qt1(6) += qElbow.second;
-        qt1(7) = qWrist.first;
-        qt1(8) = qWrist.second;
-
-        float dt = 0.005;
-        int n = t2 / dt;
         qv_in(4) = ((abs(qt1(4) - q_current(4)) / M_PI * 180) / t2); // [deg/s]
         qv_in(6) = ((abs(qt1(6) - q_current(6)) / M_PI * 180) / t2); // [deg/s]
 
@@ -1266,10 +1269,15 @@ void PathManager::PathLoopTask()
              << qt1 << "\n";
         cout << "qv_in :\n"
              << qv_in << "\n";
+
+        float dt = 0.005;
+        int n = t2 / dt;
         for (int i = 0; i < n; i++)
         {
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
-
+            // 손목부분은 cos함수로 연결 (위치제어)
+            qt1(7) = con_fun(q_current(7), qWrist.first, i, n);
+            qt1(8) = con_fun(q_current(8), qWrist.second, i, n);
             Motors_sendBuffer(qt1, qv_in, wrist_state);
         }
 
@@ -1277,18 +1285,20 @@ void PathManager::PathLoopTask()
         qWrist = qRL_fun(t_wrist_madi, t_now + t2);
         qt2(4) += qElbow.first;
         qt2(6) += qElbow.second;
-        qt2(7) = qWrist.first;
-        qt2(8) = qWrist.second;
         qv_in(4) = ((abs(qt2(4) - qt1(4)) / M_PI * 180) / t2); // [deg/s]
         qv_in(6) = ((abs(qt2(6) - qt1(6)) / M_PI * 180) / t2); // [deg/s]
+
         cout << "qt2 :\n"
              << qt2 << "\n";
         cout << "qv_in :\n"
              << qv_in << "\n";
+
         for (int i = 0; i < n; i++)
         {
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
-
+            // 손목부분은 cos함수로 연결 (위치제어)
+            qt2(7) = con_fun(qt1(7), qWrist.first, i, n);
+            qt2(8) = con_fun(qt1(8), qWrist.second, i, n);
             Motors_sendBuffer(qt2, qv_in, wrist_state);
         }
     }

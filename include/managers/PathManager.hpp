@@ -196,7 +196,7 @@ private:
     MatrixXd sts2wrist_fun(MatrixXd &AA, float v_wrist);
     MatrixXd sts2elbow_fun(MatrixXd &AA, float v_elbow);
     VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0);
-    float con_fun(float t_a, float t_b, float th_a, float th_b, float t_now);
+    float con_fun(float th_a, float th_b, int k, int n);
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
     pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);
