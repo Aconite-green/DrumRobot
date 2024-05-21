@@ -1,7 +1,7 @@
 #include "../include/tasks/DrumRobot.hpp"
 
 // For Qt
-// #include "../tasks/DrumRobot.hpp" 
+// #include "../tasks/DrumRobot.hpp"
 
 // DrumRobot 클래스의 생성자
 DrumRobot::DrumRobot(State &stateRef,
@@ -986,9 +986,11 @@ void DrumRobot::initializeMotors()
     motors["R_arm3"] = make_shared<TMotor>(0x04, "AK70_10");
     motors["L_arm2"] = make_shared<TMotor>(0x05, "AK70_10");
     motors["L_arm3"] = make_shared<TMotor>(0x06, "AK70_10");
-    motors["L_wrist"] = make_shared<MaxonMotor>(0x09);
-    motors["R_wrist"] = make_shared<MaxonMotor>(0x08);
-    motors["maxonForTest"] = make_shared<MaxonMotor>(0x0A);
+    motors["L_wrist"] = make_shared<MaxonMotor>(0x08);
+    motors["R_wrist"] = make_shared<MaxonMotor>(0x07);
+    motors["R_foot"] = make_shared<MaxonMotor>(0x09);
+    motors["L_foot"] = make_shared<MaxonMotor>(0x0A);
+    motors["maxonForTest"] = make_shared<MaxonMotor>(0x0B);
 
     for (auto &motor_pair : motors)
     {
@@ -1103,6 +1105,32 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_wrist";
+            }
+            else if (motor_pair.first == "R_foot")
+            {
+                maxonMotor->cwDir = 1.0f;
+                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
+                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->isHomed = false;
+                maxonMotor->txPdoIds[0] = 0x209; // Controlword
+                maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
+                maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
+                maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
+                maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
+                maxonMotor->myName = "R_foot";
+            }
+            else if (motor_pair.first == "L_foot")
+            {
+                maxonMotor->cwDir = 1.0f;
+                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
+                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->isHomed = false;
+                maxonMotor->txPdoIds[0] = 0x209; // Controlword
+                maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
+                maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
+                maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
+                maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
+                maxonMotor->myName = "L_foot";
             }
             else if (motor_pair.first == "maxonForTest")
             {
