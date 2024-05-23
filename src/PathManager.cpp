@@ -30,11 +30,14 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             MaxonData newData;
             newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir;
             if (entry.first == "R_wrist")
-                newData.WristState = Si.first;
+                newData.WristState = 0;
+                //newData.WristState = Si.first;
             else if (entry.first == "L_wrist")
-                newData.WristState = Si.second;
+                newData.WristState = 0;
+                //newData.WristState = Si.second;
             else if (entry.first == "maxonForTest")
-                newData.WristState = Si.second;
+                newData.WristState = 0;
+                //newData.WristState = Si.second;
 
             maxonMotor->commandBuffer.push(newData);
         }
