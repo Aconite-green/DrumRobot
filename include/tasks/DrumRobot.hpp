@@ -60,6 +60,8 @@ public:
     void sendLoopForThread();
     void recvLoopForThread();
 
+    // Qt Input
+    std::string m_Input;
 private:
     State &state;
     CanManager &canManager;
