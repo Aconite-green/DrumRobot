@@ -112,11 +112,13 @@ public:
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
-    float wrist_targetPos = M_PI / 18.0;
-    float wrist_hit_time = 0.1;
+    float wrist_targetPos = M_PI / 18.0;    // 타격 후 10도 들어올리기
+    float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
-    float wrist_backPos = M_PI / 6.0;
-    float wrist_back_time = 0.04;
+    float wrist_backPos = M_PI / 6.0;   // 타격 시 30도 들어올리기
+    float wrist_back_time = 0.04;       // 타격 후 들어올리는 궤적시간
+
+    float elbow_backPos = M_PI / 12.0;
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
@@ -125,6 +127,8 @@ private:
     State &state;                                                 ///< 시스템의 현재 상태입니다.
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
+
+    string score_path = "../include/managers/codeConfession copy.txt";
 
     // Functions for DrumRobot PathGenerating
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
@@ -192,7 +196,7 @@ private:
     MatrixXd sts2wrist_fun(MatrixXd &AA, float v_wrist);
     MatrixXd sts2elbow_fun(MatrixXd &AA, float v_elbow);
     VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0);
-    float con_fun(float t_a, float t_b, float th_a, float th_b, float t_now);
+    float con_fun(float th_a, float th_b, int k, int n);
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
     pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);

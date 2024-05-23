@@ -42,7 +42,7 @@ public:
     double Kd;
 
     float pre_spd = 0.0;
-    int32_t spd = 1000; // ERPM
+    int32_t spd = 500; // ERPM
     int32_t acl = 3000; // ERPA
 
     std::map<std::string, int> R_Ratio = {
