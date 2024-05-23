@@ -112,11 +112,11 @@ public:
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
-    float wrist_targetPos = M_PI / 18.0;
-    float wrist_hit_time = 0.1;
+    float wrist_targetPos = M_PI / 18.0;    // 타격 후 10도 들어올리기
+    float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
-    float wrist_backPos = M_PI / 6.0;
-    float wrist_back_time = 0.04;
+    float wrist_backPos = M_PI / 6.0;   // 타격 시 30도 들어올리기
+    float wrist_back_time = 0.04;       // 타격 후 들어올리는 궤적시간
 
     float elbow_backPos = M_PI / 12.0;
 

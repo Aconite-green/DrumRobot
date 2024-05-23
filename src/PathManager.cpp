@@ -1227,10 +1227,10 @@ void PathManager::PathLoopTask()
         qv_in(4) = ((abs(qt(4) - q_current(4)) / M_PI * 180) / t1); // [deg/s]
         qv_in(6) = ((abs(qt(6) - q_current(6)) / M_PI * 180) / t1); // [deg/s]
 
-        cout << "qt :\n"
+        /*cout << "qt :\n"
              << qt << "\n";
         cout << "qv_in :\n"
-             << qv_in << "\n";
+             << qv_in << "\n";*/
 
         float dt = 0.005;
         int n = t1 / dt;
@@ -1265,10 +1265,10 @@ void PathManager::PathLoopTask()
         qv_in(4) = ((abs(qt1(4) - q_current(4)) / M_PI * 180) / t2); // [deg/s]
         qv_in(6) = ((abs(qt1(6) - q_current(6)) / M_PI * 180) / t2); // [deg/s]
 
-        cout << "qt1 :\n"
+        /*cout << "qt1 :\n"
              << qt1 << "\n";
         cout << "qv_in :\n"
-             << qv_in << "\n";
+             << qv_in << "\n";*/
 
         float dt = 0.005;
         int n = t2 / dt;
@@ -1281,17 +1281,19 @@ void PathManager::PathLoopTask()
             Motors_sendBuffer(qt1, qv_in, wrist_state);
         }
 
-        qElbow = qRL_fun(t_elbow_madi, t_now + t2);
-        qWrist = qRL_fun(t_wrist_madi, t_now + t2);
+        t_now += t2;
+
+        qElbow = qRL_fun(t_elbow_madi, t_now);
+        qWrist = qRL_fun(t_wrist_madi, t_now);
         qt2(4) += qElbow.first;
         qt2(6) += qElbow.second;
         qv_in(4) = ((abs(qt2(4) - qt1(4)) / M_PI * 180) / t2); // [deg/s]
         qv_in(6) = ((abs(qt2(6) - qt1(6)) / M_PI * 180) / t2); // [deg/s]
 
-        cout << "qt2 :\n"
+        /*cout << "qt2 :\n"
              << qt2 << "\n";
         cout << "qv_in :\n"
-             << qv_in << "\n";
+             << qv_in << "\n";*/
 
         for (int i = 0; i < n; i++)
         {
