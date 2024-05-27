@@ -56,6 +56,7 @@ public:
     void MaxonEnable();
     void MaxonDisable();
 
+    std::string m_MotorName="";
 private:
     State &state;
     CanManager &canManager;
