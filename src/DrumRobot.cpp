@@ -88,9 +88,14 @@ void DrumRobot::stateMachine()
         }
         case Main::Test:
         {
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::SetSingleTuneParm || state.test == TestSub::StickTest || state.test == TestSub::SetServoTestParm)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
-                usleep(50000);
+                usleep(500000); // 500ms
+                canManager.checkAllMotors_Fixed();
+            }
+            else if (state.test == TestSub::SetSingleTuneParm || state.test == TestSub::SetServoTestParm)
+            {
+                usleep(500000); // 500ms
             }
             else
             {
@@ -185,7 +190,7 @@ void DrumRobot::sendLoopForThread()
         {
             save_to_txt_inputData("../../READ/Error_DrumData_in");
             sleep(2);
-            state.main = Main::Pause;
+            state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -256,7 +261,7 @@ void DrumRobot::recvLoopForThread()
         {
             parse_and_save_to_csv("../../READ/Error_DrumData_out");
             sleep(2);
-            state.main = Main::Pause;
+            state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -979,7 +984,7 @@ int DrumRobot::kbhit()
 
 void DrumRobot::initializeMotors()
 {
-    motors["waist"] = make_shared<TMotor>(0x07, "AK80_64");
+    motors["waist"] = make_shared<TMotor>(0x00, "AK80_64");
     motors["R_arm1"] = make_shared<TMotor>(0x01, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x02, "AK70_10");
     motors["R_arm2"] = make_shared<TMotor>(0x03, "AK70_10");
@@ -1080,20 +1085,20 @@ void DrumRobot::initializeMotors()
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
             // 각 모터 이름에 따른 멤버 변수 설정
-            if (motor_pair.first == "L_wrist")
+            if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -M_PI * 0.5f; // -90deg
                 maxonMotor->rMax = M_PI * 0.75f; // 135deg
                 maxonMotor->isHomed = false;
-                maxonMotor->txPdoIds[0] = 0x209; // Controlword
-                maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
-                maxonMotor->txPdoIds[2] = 0x409; // TargetVelocity
-                maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
-                maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->myName = "L_wrist";
+                maxonMotor->txPdoIds[0] = 0x207; // Controlword
+                maxonMotor->txPdoIds[1] = 0x307; // TargetPosition
+                maxonMotor->txPdoIds[2] = 0x407; // TargetVelocity
+                maxonMotor->txPdoIds[3] = 0x507; // TargetTorque
+                maxonMotor->rxPdoIds[0] = 0x187; // Statusword, ActualPosition, ActualTorque
+                maxonMotor->myName = "R_wrist";
             }
-            else if (motor_pair.first == "R_wrist")
+            else if (motor_pair.first == "L_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -M_PI * 0.5f; // -90deg
@@ -1104,7 +1109,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[2] = 0x408; // TargetVelocity
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
-                maxonMotor->myName = "R_wrist";
+                maxonMotor->myName = "L_wrist";
             }
             else if (motor_pair.first == "R_foot")
             {

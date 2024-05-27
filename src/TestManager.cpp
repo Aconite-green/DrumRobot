@@ -1,7 +1,7 @@
 #include "../include/managers/TestManager.hpp" // 적절한 경로로 변경하세요.
 
 // For  Qt
-// #include "../managers/TestManager.hpp" 
+// #include "../managers/TestManager.hpp"
 using namespace std;
 
 TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
@@ -66,7 +66,6 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetServoTestParm:
     {
-
         for (auto &motor_pair : motors)
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
@@ -218,6 +217,7 @@ void TestManager::SendTestProcess()
     case TestSub::SetQValue:
     {
         int userInput = 100;
+        vel = 500;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -248,6 +248,7 @@ void TestManager::SendTestProcess()
     case TestSub::SetXYZ:
     {
         int userInput = 100;
+        vel = 500;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -320,16 +321,13 @@ void TestManager::SendTestProcess()
         std::cout << "Selected Motor : " << selectedMotor << "\n"
                   << "Time : " << t << "\n"
                   << "Cycles : " << cycles << "\n"
-                  << "Amplitude : " << amp << "[radian]\n"
-                  << "Kp : " << kp << ",\tKd : " << kd << "\n"
-                  << "Kp for Fixed : " << Kp_for_Fixed << ",\tKd for Fixed : " << Kd_for_Fixed << "\n";
+                  << "Amplitude : " << amp << "[Radian]\n";
         std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
         std::cout << "\n[Commands]\n";
         std::cout << "[s] : Select Other Motor\n"
                   << "[t] : Time\t [c] : Cycles\n"
-                  << "[a] : Amplitude\t [p] : Kp\t [d] : Kd\n"
-                  << "[f] : Change Fixed Parameter\n"
+                  << "[a] : Amplitude\n"
                   << "[r] : run\t [e] : Exit\n";
         std::cout << "Enter Command : ";
         std::cin >> userInput;
@@ -345,8 +343,8 @@ void TestManager::SendTestProcess()
             std::cin >> selectedMotor;
         }
         else if (userInput == 't')
-        {
-            std::cout << "\nEnter Desire Time : ";
+        { // 한 주기 도는데 걸리는 시간
+            std::cout << "\nEnter Desire Time [s] : ";
             std::cin >> t;
         }
         else if (userInput == 'c')
@@ -356,25 +354,8 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 'a')
         {
-            std::cout << "\nEnter Desire Amplitude : ";
+            std::cout << "\nEnter Desire Amplitude [Radian] : ";
             std::cin >> amp;
-        }
-        else if (userInput == 'p')
-        {
-            std::cout << "\nEnter Desire Kp : ";
-            std::cin >> kp;
-        }
-        else if (userInput == 'd')
-        {
-            std::cout << "\nEnter Desire Kd : ";
-            std::cin >> kd;
-        }
-        else if (userInput == 'f')
-        {
-            std::cout << "\nEnter Desire Kp for Fixed : ";
-            std::cin >> Kp_for_Fixed;
-            std::cout << "\nEnter Desire Kd for Fixed : ";
-            std::cin >> Kd_for_Fixed;
         }
         else if (userInput == 'r')
         {
@@ -410,13 +391,13 @@ void TestManager::SendTestProcess()
         }
         else if (method == 3)
         {
-            startTest(selectedMotor, t, cycles, amp, kp, kd);
+            startTest(selectedMotor, t, cycles, amp);
         }
         else if (method == 7)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
             vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-            //vel = 327680;
+            // vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
         }
@@ -939,33 +920,28 @@ void TestManager::singleTestLoop()
     }
 }
 
-void TestManager::startTest(string selectedMotor, float t, int cycles, float amp, float kp, float kd)
+void TestManager::startTest(string selectedMotor, float t, int cycles, float amp)
 {
     std::cout << "Test Start!!\n";
     vector<float> Pos(9);
 
     float dt = 0.005;
-    int time = t / dt;
+    int time = (t / 2.0) / dt;
     for (auto &motor_pair : motors)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
             if (tMotor->myName == selectedMotor)
             {
-                tMotor->Kp = kp;
-                tMotor->Kd = kd;
-            }
-            else
-            {
-                tMotor->Kp = Kp_for_Fixed;
-                tMotor->Kd = Kd_for_Fixed;
+                tMotor->isfixed = false;
+                vel = ((amp / M_PI * 180) / (t / 2)) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360;
             }
         }
     }
 
     for (int c = 0; c < cycles; c++)
     {
-        for (int i = 1; i <= time; i++)
+        for (int i = 0; i < time; i++)
         {
             for (const auto &motor_pair : motors)
             {
@@ -974,18 +950,23 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                     TMotorData newData;
                     if (tMotor->myName == selectedMotor)
                     {
-                        float pos = tMotor->coordinatePos + (1 - cos(2.0 * M_PI * i / time)) / 2 * amp;
-
-                        newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
+                        newData.position = tMotor->currentPos + amp;
+                        newData.spd = vel * 1.5;
+                        newData.acl = tMotor->acl;
                         tMotor->commandBuffer.push(newData);
                     }
                     else
                     {
-                        newData.position = tMotor->currentPos;
+                        if (tMotor->isfixed == false)
+                        {
+                            tMotor->fixedPos = tMotor->currentPos;
+                            tMotor->isfixed = true;
+                        }
+                        newData.position = tMotor->fixedPos;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
                         tMotor->commandBuffer.push(newData);
                     }
-
-                    Pos[motor_mapping[tMotor->myName]] = newData.position;
                 }
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
@@ -993,8 +974,43 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                     newData.position = maxonMotor->currentPos;
                     newData.WristState = 0.0;
                     maxonMotor->commandBuffer.push(newData);
-
-                    Pos[motor_mapping[maxonMotor->myName]] = newData.position;
+                }
+            }
+            Input_pos.push_back(Pos);
+        }
+        for (int i = 0; i < time; i++)
+        {
+            for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    TMotorData newData;
+                    if (tMotor->myName == selectedMotor)
+                    {
+                        newData.position = tMotor->currentPos;
+                        newData.spd = vel * 1.5;
+                        newData.acl = tMotor->acl;
+                        tMotor->commandBuffer.push(newData);
+                    }
+                    else
+                    {
+                        if (tMotor->isfixed == false)
+                        {
+                            tMotor->fixedPos = tMotor->currentPos;
+                            tMotor->isfixed = true;
+                        }
+                        newData.position = tMotor->fixedPos;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
+                        tMotor->commandBuffer.push(newData);
+                    }
+                }
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    MaxonData newData;
+                    newData.position = maxonMotor->currentPos;
+                    newData.WristState = 0.0;
+                    maxonMotor->commandBuffer.push(newData);
                 }
             }
             Input_pos.push_back(Pos);
@@ -1924,6 +1940,8 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                         tMotor->isfixed = true;
                     }
                     newData.position = tMotor->fixedPos;
+                    newData.spd = tMotor->spd;
+                    newData.acl = tMotor->acl;
                     tMotor->commandBuffer.push(newData);
                 }
             }

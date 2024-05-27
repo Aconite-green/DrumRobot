@@ -107,7 +107,7 @@ private:
     float Kp_for_Fixed = 300;
     float Kd_for_Fixed = 3;
     void singleTestLoop();
-    void startTest(string selectedMotor, float t, int cycles, float amp, float kp, float kd);
+    void startTest(string selectedMotor, float t, int cycles, float amp);
     void save_to_txt_inputData(const string &csv_file_name);
 
     /*Multi Test Code*/
@@ -128,8 +128,8 @@ private:
     float time_servo = 1;
     float targetpos_des = 1.57;   // Radian
     float targetpos_coo;
-    int32_t vel = 1050;
-    int32_t acl = 1050;
+    float vel = 500;
+    float acl = 3000;
     float t_servo = 4.0;
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
