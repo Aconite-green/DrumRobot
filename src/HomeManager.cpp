@@ -1,6 +1,6 @@
 #include "../include/managers/HomeManager.hpp"
-//For Qt
-//#include "../managers/HomeManager.hpp"
+// For Qt
+// #include "../managers/HomeManager.hpp"
 HomeManager::HomeManager(State &stateRef,
                          CanManager &canManagerRef,
                          std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
@@ -311,7 +311,7 @@ void HomeManager::SendHomeProcess()
         }
         else if (motors.find(motorName) != motors.end() && !motors[motorName]->isHomed)
         {
-             for (const auto &motor_pair : motors)
+            for (const auto &motor_pair : motors)
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
@@ -319,7 +319,7 @@ void HomeManager::SendHomeProcess()
                     canManager.sendMotorFrame(tMotor);
                 }
             }
-            
+
             vector<shared_ptr<GenericMotor>> temp;
             temp.push_back(motors[motorName]);
             HomingMotorsArr.push_back(temp);
@@ -753,8 +753,17 @@ void HomeManager::HomeMaxon()
             {
                 if (shared_ptr<TMotor> motor = dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
+                    TMotorData newData;
+                    if (motor->isfixed == false)
+                    {
+                        motor->fixedPos = motor->currentPos;
+                        motor->isfixed = true;
+                    }
+                    newData.position = motor->fixedPos;
+                    newData.spd = motor->spd;
+                    newData.acl = motor->acl;
                     // 위치속도제어 모드로 변경
-                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, motor->currentPos, motor->spd, motor->acl);
+                    tmotorServocmd.comm_can_set_pos_spd(*motor, &motor->sendFrame, newData.position, newData.spd, newData.acl);
                     canManager.sendMotorFrame(motor);
                 }
             }

@@ -116,6 +116,7 @@ void DrumRobot::stateMachine()
         case Main::Error:
         {
             checkUserInput();
+            state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -359,8 +360,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
                         maxonMotor->positioning = true;
                         maxonMotor->hitting = false;
                     } /*
-                     else
-                         cout << "Read : Htting..\n";*/
+                    else
+                        cout << "Read : Htting..\n";*/
                     maxonMotor->checked = true;
                 }
             }
@@ -1438,8 +1439,8 @@ void DrumRobot::UnfixedMotor()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                                 Recive Thread Loop                         */
-///////////////////////////////////////////////////////////////////////////////
+/*                                 Recive Thread Loop                          */
+/////////////////////////////////////////////////////////////////////////////////
 
 void DrumRobot::parse_and_save_to_csv(const std::string &csv_file_name)
 {

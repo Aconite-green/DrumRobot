@@ -31,13 +31,13 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir;
             if (entry.first == "R_wrist")
                 newData.WristState = 0;
-                //newData.WristState = Si.first;
+            // newData.WristState = Si.first;
             else if (entry.first == "L_wrist")
                 newData.WristState = 0;
-                //newData.WristState = Si.second;
+            // newData.WristState = Si.second;
             else if (entry.first == "maxonForTest")
                 newData.WristState = 0;
-                //newData.WristState = Si.second;
+            // newData.WristState = Si.second;
 
             maxonMotor->commandBuffer.push(newData);
         }
@@ -1203,11 +1203,11 @@ void PathManager::PathLoopTask()
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
         {
-            q_current(motor_mapping[motor.first]) = tMotor->currentPos;
+            q_current(motor_mapping[motor.first]) = tMotor->coordinatePos;
         }
         else if (std::shared_ptr<MaxonMotor> mMotor = std::dynamic_pointer_cast<MaxonMotor>(motor.second))
         {
-            q_current(motor_mapping[motor.first]) = mMotor->currentPos;
+            q_current(motor_mapping[motor.first]) = mMotor->coordinatePos;
         }
     }
 
@@ -1270,6 +1270,8 @@ void PathManager::PathLoopTask()
 
         /*cout << "qt1 :\n"
              << qt1 << "\n";
+        cout << "q_current :\n"
+             << q_current << "\n";
         cout << "qv_in :\n"
              << qv_in << "\n";*/
 

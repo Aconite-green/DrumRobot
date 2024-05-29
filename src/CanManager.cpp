@@ -631,9 +631,9 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         float coordinationPos = (std::get<1>(parsedData) + tMotor->homeOffset) * tMotor->cwDir;
-        if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.2 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+        if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
         {
-            if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.2)
+            if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.4)
             {
                 std::cout << "Error For " << tMotor->myName << " (Pos Diff)\n";
                 cout << "Previous : " << tMotor->currentPos << "\nCrrent : " << std::get<1>(parsedData) << "\n";

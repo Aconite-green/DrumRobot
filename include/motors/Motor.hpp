@@ -43,7 +43,7 @@ public:
 
     float pre_spd = 0.0;
     int32_t spd = 300; // ERPM
-    int32_t acl = 327670; // ERPA
+    int32_t acl = 10000; // ERPA
 
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},
