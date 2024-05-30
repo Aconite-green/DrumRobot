@@ -1,6 +1,6 @@
 #include "../include/managers/CanManager.hpp"
 
-// For Qt 
+// For Qt
 // #include "../managers/CanManager.hpp"
 CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : motors(motorsRef)
@@ -156,7 +156,7 @@ void CanManager::activateCanPort(const char *port)
     int ret2 = system(command2);
     int ret3 = system(command3);
 
-    if (ret1 != 0 || ret2 != 0 || ret3 != 0  || ret4 != 0)
+    if (ret1 != 0 || ret2 != 0 || ret3 != 0 || ret4 != 0)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
     }
@@ -395,7 +395,6 @@ void CanManager::setMotorsSocket()
                     maxoncmd.getCheck(*maxonMotor, &frame);
                     txFrame(motor, frame);
                 }
-               
 
                 usleep(50000);
             }
@@ -410,7 +409,6 @@ void CanManager::setMotorsSocket()
             if (result > 0)
             {
                 tempFrames[socket_fd].push_back(frame);
-                
             }
             readCount++;
         }
@@ -445,7 +443,7 @@ void CanManager::setMotorsSocket()
         }
 
         tempFrames.clear();
-    } 
+    }
 
     // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 삭제
     for (auto it = motors.begin(); it != motors.end();)
@@ -618,7 +616,7 @@ void CanManager::setCANFrame()
             tMotor->commandBuffer.pop();
             Pos[motor_mapping[tMotor->myName]] = tData.position;
             tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
-            //tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+            // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
         }
     }
     Input_pos.push_back(Pos);
@@ -667,15 +665,9 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
         float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir;
-        if (/*abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4 || */maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+        if (/*abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
-            /*if (abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4)
-            {
-                std::cout << "Error For " << maxonMotor->myName << " (Pos Diff)\n";
-                cout << "Previous : " << maxonMotor->currentPos << "\nCurrent : " << std::get<1>(parsedData) << "\n";
-                cout << "Diff : " << abs(maxonMotor->currentPos - std::get<1>(parsedData)) / M_PI * 180 << "deg\n";
-            }
-            else */if (maxonMotor->rMin > coordinationPos)
+            if (maxonMotor->rMin > coordinationPos)
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Min)\n";
                 cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
@@ -686,7 +678,15 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
                 cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
 
-            isSafe = false;
+            if (maxonMotor->errorCnt > 10)
+            {
+                isSafe = false;
+            }
+            else
+            {
+                maxonMotor->errorCnt++;
+            }
+
             maxonMotor->isError = true;
             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);

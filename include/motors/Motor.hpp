@@ -126,7 +126,7 @@ public:
     unsigned char statusBit;
     double homeOffset = 0.0;
     double bumperLocation = 0.0;
-    
+    int errorCnt = 0;
 
     queue<MaxonData> commandBuffer;
     queue<double> wrist_BackArr;
