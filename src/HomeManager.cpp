@@ -565,26 +565,22 @@ void HomeManager::HomeTmotor()
     {
         for (long unsigned int i = 0; i < tMotors.size(); i++)
         {
-            midpoints.push_back(abs((secondPosition[i] - firstPosition[i]) / 2.0f) * (-1));
+            midpoints.push_back((secondPosition[i] - firstPosition[i]) / 2.0f);
             tMotors[i]->sensorLocation = ((secondPosition[i] + firstPosition[i]) / 2.0f);
             cout << tMotors[i]->myName << " midpoint position: " << midpoints[i] << endl;
             cout << tMotors[i]->myName << " Sensor location: " << tMotors[i]->sensorLocation << endl;
 
-            if (tMotors[i]->myName == "L_arm2" || tMotors[i]->myName == "R_arm2" || tMotors[i]->myName == "R_arm1") // (-)방향으로 이동하는 축
-            {
-                midpoints[i] = midpoints[i] * (-1);
-            }
-
+            float addPos = 0.0;
             if (tMotors[i]->myName == "R_arm1")
             {
-                midpoints[i] -= (M_PI * 0.25);
+                addPos = (-1) * (M_PI * 0.25) * tMotors[i]->cwDir;
             }
             else if (tMotors[i]->myName == "L_arm1")
             {
-                midpoints[i] += (M_PI * 0.25);
+                addPos = (M_PI * 0.25) * tMotors[i]->cwDir;
             }
 
-            targetRadians.push_back((midpoints[i]) * tMotors[i]->cwDir);
+            targetRadians.push_back(addPos - midpoints[i]);
         }
 
         for (auto &motor_pair : motors)
@@ -613,7 +609,7 @@ void HomeManager::HomeTmotor()
                     if (hMotoridx >= 0) // homing 진행중인 모터
                     {
                         motor->isfixed = false;
-                        newData.position = targetRadians[hMotoridx] + motor->currentPos;
+                        newData.position = motor->currentPos + targetRadians[hMotoridx];
                     }
                     else // homing 진행중이지 않은 모터
                     {

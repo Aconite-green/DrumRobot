@@ -69,6 +69,7 @@ void DrumRobot::stateMachine()
         {
             if (state.home == HomeSub::Done)
             {
+                usleep(500000); // 500ms
                 canManager.checkAllMotors_Fixed();
                 canManager.checkMaxon();
             }
@@ -489,7 +490,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
+                //cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
                 if (mData.WristState == 1)
                 {
                     des = cnt;
@@ -1054,7 +1055,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
-                tMotor->rMax = M_PI * 0.75f; // 135deg
+                tMotor->rMax = M_PI * 0.8f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 3000;
@@ -1076,7 +1077,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
-                tMotor->rMax = M_PI * 0.75f; // 135deg
+                tMotor->rMax = M_PI * 0.8f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 3000;

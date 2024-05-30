@@ -112,13 +112,13 @@ public:
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
-    float wrist_targetPos = M_PI / 18.0;    // 타격 후 10도 들어올리기
+    float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
     float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
-    float wrist_backPos = M_PI / 6.0;   // 타격 시 30도 들어올리기
+    float wrist_backPos = M_PI * 0.2;   // 타격 시 들어올리는 손목 각도
     float wrist_back_time = 0.04;       // 타격 후 들어올리는 궤적시간
 
-    float elbow_backPos = M_PI / 12.0;
+    float elbow_backPos = M_PI / 12.0;  // 타격 시 들어올리는 팔꿈치 각도
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
