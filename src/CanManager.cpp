@@ -667,15 +667,15 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
         float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir;
-        if (abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4 || maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+        if (/*abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4 || */maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
-            if (abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4)
+            /*if (abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4)
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Pos Diff)\n";
                 cout << "Previous : " << maxonMotor->currentPos << "\nCurrent : " << std::get<1>(parsedData) << "\n";
                 cout << "Diff : " << abs(maxonMotor->currentPos - std::get<1>(parsedData)) / M_PI * 180 << "deg\n";
             }
-            else if (maxonMotor->rMin > coordinationPos)
+            else */if (maxonMotor->rMin > coordinationPos)
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Min)\n";
                 cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
