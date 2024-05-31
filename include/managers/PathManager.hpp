@@ -142,6 +142,7 @@ private:
     MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right;
     VectorXd default_left;
+    VectorXd inst_00;
 
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
