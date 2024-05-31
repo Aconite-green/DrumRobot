@@ -681,13 +681,13 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
             if (maxonMotor->errorCnt > 10)
             {
                 isSafe = false;
+                maxonMotor->isError = true;
             }
             else
             {
                 maxonMotor->errorCnt++;
             }
 
-            maxonMotor->isError = true;
             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);
             usleep(5000);
