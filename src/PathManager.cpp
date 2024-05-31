@@ -361,7 +361,8 @@ void PathManager::itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, Matr
         }
     }
 
-    /* 일단 0=t2(1)에서부터 t2(4)까지 정의함 */
+    /* 일단 0=
+    (1)에서부터 t2(4)까지 정의함 */
     int j = 0;
     for (int k = 0; k < nn; ++k)
     {

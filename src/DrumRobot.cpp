@@ -69,7 +69,6 @@ void DrumRobot::stateMachine()
         {
             if (state.home == HomeSub::Done)
             {
-                usleep(500000); // 500ms
                 canManager.checkAllMotors_Fixed();
                 canManager.checkMaxon();
             }
@@ -1014,8 +1013,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
-                tMotor->spd = 1000;
-                tMotor->acl = 3000;
+                tMotor->spd = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "R_arm1")
             {
@@ -1025,8 +1024,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = M_PI * 0.8; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                tMotor->spd = 1000;
-                tMotor->acl = 3000;
+                tMotor->spd = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -1036,8 +1035,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = M_PI;     // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-                tMotor->spd = 1000;
-                tMotor->acl = 3000;
+                tMotor->spd = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -1048,7 +1047,7 @@ void DrumRobot::initializeMotors()
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
                 tMotor->spd = 3000;
-                tMotor->acl = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -1059,7 +1058,7 @@ void DrumRobot::initializeMotors()
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 3000;
-                tMotor->acl = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -1070,7 +1069,7 @@ void DrumRobot::initializeMotors()
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
                 tMotor->spd = 3000;
-                tMotor->acl = 3000;
+                tMotor->acl = 5000;
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -1081,7 +1080,7 @@ void DrumRobot::initializeMotors()
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 3000;
-                tMotor->acl = 3000;
+                tMotor->acl = 5000;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

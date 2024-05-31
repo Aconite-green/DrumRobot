@@ -608,8 +608,12 @@ void HomeManager::HomeTmotor()
                     TMotorData newData;
                     if (hMotoridx >= 0) // homing 진행중인 모터
                     {
-                        motor->isfixed = false;
                         newData.position = motor->currentPos + targetRadians[hMotoridx];
+                        if (motor->isfixed == false)
+                        {
+                            motor->fixedPos = newData.position;
+                            motor->isfixed = true;
+                        }
                     }
                     else // homing 진행중이지 않은 모터
                     {
