@@ -1046,7 +1046,7 @@ void PathManager::GetMusicSheet()
     inst_arr.resize(18, 1);
     inst_arr.block(0, 0, 9, 1) = default_right;
     inst_arr.block(9, 0, 9, 1) = default_left;
-    inst_00.resize(18z, 1);
+    inst_00.resize(18, 1);
     inst_00(0) = 0.0;
     inst_00.block(1, 0, 9, 1) = default_right;
     inst_00.block(10, 0, 9, 1) = default_right;
