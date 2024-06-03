@@ -254,7 +254,6 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Pause:
         {
-            canManager.checkAllMotors_Fixed();
             usleep(50000); // 50ms
             break;
         }
@@ -1089,7 +1088,7 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
+                maxonMotor->rMin = -M_PI * 0.6f; // -108deg
                 maxonMotor->rMax = M_PI * 0.75f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword
@@ -1102,7 +1101,7 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
+                maxonMotor->rMin = -M_PI * 0.6f; // -108deg
                 maxonMotor->rMax = M_PI * 0.75f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword
