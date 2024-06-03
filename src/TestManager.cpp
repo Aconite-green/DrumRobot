@@ -449,10 +449,16 @@ void TestManager::SendTestProcess()
     case TestSub::SendCANFrame:
     {
         bool needSync = false;
+        bool isWriteError = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            canManager.sendMotorFrame(motor);
+
+            if (!canManager.sendMotorFrame(motor))
+            {
+                isWriteError = true;
+            }
+
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
                 virtualMaxonMotor = maxonMotor;
@@ -463,9 +469,20 @@ void TestManager::SendTestProcess()
         if (needSync)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            canManager.sendMotorFrame(virtualMaxonMotor);
+            if (!canManager.sendMotorFrame(virtualMaxonMotor))
+            {
+                isWriteError = true;
+            }
         }
-        state.test = TestSub::CheckBuf;
+        if (isWriteError)
+        {
+            state.main = Main::Error;
+        }
+        else
+        {
+            state.test = TestSub::CheckBuf;
+        }
+
         break;
     }
     case TestSub::Done:

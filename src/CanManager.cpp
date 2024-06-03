@@ -399,14 +399,14 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
-        std::cout << "CAN write error " << motor->myName << "\n";
         errorCnt++;
-
         if (errorCnt > 5)
         {
             deactivateAllCanPorts();
+            std::cout << "Go to Error state by CAN write error " << motor->myName << "\n";
+            return false;
         }
-        return false;
+        
     }
     return true;
 }
@@ -438,7 +438,7 @@ void CanManager::setMotorsSocket()
     // 모든 소켓에 대해 Maxon 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
     {
-        // 모든 모터에 임의의 소켓값 할당 및 canframe 전송(Maxon 만)
+        
         int socket_fd = socketPair.second;
 
         for (auto &motor_pair : motors)
@@ -609,12 +609,16 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
         tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, tMotor->spd, tMotor->acl);
-        sendMotorFrame(tMotor);
+        if(!sendMotorFrame(tMotor)){
+            return false;
+        };
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
         maxoncmd.getSync(&maxonMotor->sendFrame);
-        sendMotorFrame(maxonMotor);
+        if(!sendMotorFrame(maxonMotor)){
+            return false;
+        };
     }
     return true;
 }
@@ -646,7 +650,9 @@ bool CanManager::checkAllMotors_Fixed()
         auto &motor = motorPair.second;
         if (!motor->isError)
         {
-            sendForCheck_Fixed(motor);
+            if(!sendForCheck_Fixed(motor)){
+                return false;
+            }
         }
     }
     return true;

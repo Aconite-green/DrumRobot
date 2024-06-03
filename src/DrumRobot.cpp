@@ -67,9 +67,13 @@ void DrumRobot::stateMachine()
         }
         case Main::Check:
         {
+            bool isWriteError = false;
             if (state.home == HomeSub::Done)
             {
-                canManager.checkAllMotors_Fixed();
+                if (!canManager.checkAllMotors_Fixed())
+                {
+                    isWriteError = true;
+                }
                 canManager.checkMaxon();
             }
             printCurrentPositions();
@@ -79,6 +83,11 @@ void DrumRobot::stateMachine()
                 state.main = Main::Ideal;
             }
 
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+                break;
+            }
             usleep(200000);
 
             int ret = system("clear");
@@ -88,10 +97,14 @@ void DrumRobot::stateMachine()
         }
         case Main::Test:
         {
+            bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
                 usleep(500000); // 500ms
-                canManager.checkAllMotors_Fixed();
+                if (!canManager.checkAllMotors_Fixed())
+                {
+                    isWriteError = true;
+                }
             }
             else if (state.test == TestSub::SetSingleTuneParm || state.test == TestSub::SetServoTestParm)
             {
@@ -100,6 +113,11 @@ void DrumRobot::stateMachine()
             else
             {
                 checkUserInput();
+            }
+
+            if (isWriteError)
+            {
+                state.main = Main::Error;
             }
             break;
         }
@@ -142,13 +160,23 @@ void DrumRobot::sendLoopForThread()
         case Main::Ideal:
         {
             usleep(500000); // 500ms
+            bool isWriteError = false;
             if (state.home == HomeSub::Done)
             {
-                canManager.checkAllMotors_Fixed();
+
+                if (!canManager.checkAllMotors_Fixed())
+                {
+                    isWriteError = true;
+                }
             }
             else
             {
                 canManager.checkMaxon();
+            }
+
+            if (isWriteError)
+            {
+                state.main = Main::Error;
             }
             break;
         }
@@ -183,7 +211,15 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Pause:
         {
-            canManager.checkAllMotors_Fixed();
+            bool isWriteError = false;
+            if (!canManager.checkAllMotors_Fixed())
+            {
+                isWriteError = true;
+            }
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+            }
             usleep(50000); // 50ms
             break;
         }
@@ -254,7 +290,15 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Pause:
         {
-            canManager.checkAllMotors_Fixed();
+            bool isWriteError = false;
+            if (!canManager.checkAllMotors_Fixed())
+            {
+                isWriteError = true;
+            }
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+            }
             usleep(50000); // 50ms
             break;
         }
@@ -489,7 +533,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 MaxonData mData = maxonMotor->commandBuffer.front();
                 maxonMotor->commandBuffer.pop();
-                //cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
+                // cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
                 if (mData.WristState == 1)
                 {
                     des = cnt;
@@ -610,17 +654,32 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SendCANFrame:
     {
+        bool isWriteError = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            canManager.sendMotorFrame(motor);
+            if (!canManager.sendMotorFrame(motor))
+            {
+                isWriteError = true;
+            }
         }
         if (maxonMotorCount != 0)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            canManager.sendMotorFrame(virtualMaxonMotor);
+            if (!canManager.sendMotorFrame(virtualMaxonMotor))
+            {
+                isWriteError = true;
+            }
         }
-        state.perform = PerformSub::TimeCheck;
+        if (isWriteError)
+        {
+            state.main = Main::Error;
+        }
+        else
+        {
+            state.perform = PerformSub::TimeCheck;
+        }
+
         break;
     }
     }
@@ -745,18 +804,36 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::SendCANFrame:
     {
+        bool isWriteError = false;
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            canManager.sendMotorFrame(motor);
+
+            if (!canManager.sendMotorFrame(motor))
+            {
+                isWriteError = true;
+            }
         }
 
         if (maxonMotorCount != 0)
         {
             maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            canManager.sendMotorFrame(virtualMaxonMotor);
+
+            if (!canManager.sendMotorFrame(virtualMaxonMotor))
+            {
+                isWriteError = true;
+            };
         }
-        state.addstance = AddStanceSub::TimeCheck;
+
+        if (isWriteError)
+        {
+            state.main = Main::Error;
+        }
+        else
+        {
+            state.addstance = AddStanceSub::TimeCheck;
+        }
+
         break;
     }
     }
@@ -901,6 +978,7 @@ void DrumRobot::idealStateRoutine()
 
 void DrumRobot::checkUserInput()
 {
+    bool isWriteError = false;
     if (kbhit())
     {
         char input = getchar();
@@ -909,7 +987,10 @@ void DrumRobot::checkUserInput()
             if (input == 'q')
             {
                 state.main = Main::Pause;
-                canManager.checkAllMotors_Fixed();
+
+                if(!canManager.checkAllMotors_Fixed()){
+                    isWriteError = true;
+                }
             }
             else if (input == 'e')
             {
@@ -949,6 +1030,9 @@ void DrumRobot::checkUserInput()
         }
     }
 
+if(isWriteError){
+    state.main = Main::Error;
+}
     usleep(500000);
 }
 
@@ -1054,7 +1138,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorBit = 5;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
-                tMotor->rMax = M_PI * 0.8f; // 144deg
+                tMotor->rMax = M_PI * 0.8f;  // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 1000;
@@ -1076,7 +1160,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 2;
                 tMotor->rMin = -M_PI / 6.0f; // -30 deg
-                tMotor->rMax = M_PI * 0.8f; // 144 deg
+                tMotor->rMax = M_PI * 0.8f;  // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
