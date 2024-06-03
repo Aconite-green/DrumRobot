@@ -105,6 +105,7 @@ public:
         {"maxonForTest", 8}};
 
         std::vector<std::string> ifnames;
+        int errorCnt=0;
 
 private:
     
@@ -118,6 +119,8 @@ private:
 
     bool getCanPortStatus(const char *port);
     void activateCanPort(const char *port);
+    void deactivateCanPort(const char *port);
+    void deactivateAllCanPorts();
     void list_and_activate_available_can_ports();
 
     int createSocket(const std::string &ifname);
