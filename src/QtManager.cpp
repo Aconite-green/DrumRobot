@@ -39,7 +39,7 @@ void QtManager::initializeServer()
     {
         perror("bind failed");
     }
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd, 1) < 0)
     {
         perror("listen");
     }
