@@ -162,6 +162,58 @@ void CanManager::activateCanPort(const char *port)
     }
 }
 
+void CanManager::deactivateCanPort(const char *port)
+{
+    char command[100];
+    snprintf(command, sizeof(command), "sudo ip link set %s down", port);
+
+    int ret = system(command);
+
+    if (ret != 0)
+    {
+        fprintf(stderr, "Failed to deactivate port: %s\n", port);
+    }
+}
+
+void CanManager::deactivateAllCanPorts()
+{
+    FILE *fp = popen("ip link show | grep can", "r");
+    if (fp == nullptr)
+    {
+        perror("No available CAN port");
+        return;
+    }
+
+    char output[1024];
+    while (fgets(output, sizeof(output) - 1, fp) != nullptr)
+    {
+        std::string line(output);
+        std::istringstream iss(line);
+        std::string skip, port;
+        iss >> skip >> port;
+
+        // 콜론 제거
+        if (!port.empty() && port.back() == ':')
+        {
+            port.pop_back();
+        }
+
+        // 포트 이름이 유효한지 확인
+        if (!port.empty() && port.find("can") == 0)
+        {
+            deactivateCanPort(port.c_str());
+        }
+    }
+
+    if (feof(fp) == 0)
+    {
+        perror("fgets failed");
+        printf("Errno: %d\n", errno);
+    }
+
+    pclose(fp);
+}
+
 void CanManager::list_and_activate_available_can_ports()
 {
     int portCount = 0; // CAN 포트 수를 세기 위한 변수
@@ -347,7 +399,13 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
     struct can_frame frame;
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
-        perror("CAN write error");
+        std::cout << "CAN write error " << motor->myName << "\n";
+        errorCnt++;
+
+        if (errorCnt > 5)
+        {
+            deactivateAllCanPorts();
+        }
         return false;
     }
     return true;

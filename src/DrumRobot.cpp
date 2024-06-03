@@ -1075,8 +1075,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 2;
-                tMotor->rMin = -M_PI / 6.0f; // -30deg
-                tMotor->rMax = M_PI * 0.8f; // 144deg
+                tMotor->rMin = -M_PI / 6.0f; // -30 deg
+                tMotor->rMax = M_PI * 0.8f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
