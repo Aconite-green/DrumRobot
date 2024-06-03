@@ -216,6 +216,20 @@ void PathManager::itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, M
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
+    if (round(T.block(1, 0, 9, 1).sum()) == 0)
+    {
+        float norm_val = inst_00.block(1, 0, 9, 1).norm();
+        MatrixXd block = inst_00.block(1, 0, 9, 1);
+        T.block(1, 0, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+    }
+
+    if (round(T.block(10, 0, 9, 1).sum()) == 0)
+    {
+        float norm_val = inst_00.block(10, 0, 9, 1).norm();
+        MatrixXd block = inst_00.block(10, 0, 9, 1);
+        T.block(10, 0, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+    }
+
     for (int k = 1; k < nn; ++k)
     {
         if (round(T.block(1, k, 9, 1).sum()) == 0)
@@ -1046,7 +1060,7 @@ void PathManager::GetMusicSheet()
     inst_arr.resize(18, 1);
     inst_arr.block(0, 0, 9, 1) = default_right;
     inst_arr.block(9, 0, 9, 1) = default_left;
-    inst_00.resize(18z, 1);
+    inst_00.resize(19, 1);
     inst_00(0) = 0.0;
     inst_00.block(1, 0, 9, 1) = default_right;
     inst_00.block(10, 0, 9, 1) = default_right;
