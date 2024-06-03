@@ -22,7 +22,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             TMotorData newData;
             newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
-            newData.acl = 327670;
+            newData.acl = 50000;
             tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -344,6 +344,20 @@ void PathManager::itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, Matr
     /* 빈 자리에 -0.5 집어넣기:  */
     int nn = T.cols();
 
+    if (round(T.block(1, 0, 9, 1).sum()) == 0)
+    {
+        float norm_val = inst_00.block(1, 0, 9, 1).norm();
+        MatrixXd block = inst_00.block(1, 0, 9, 1);
+        T.block(1, 0, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+    }
+
+    if (round(T.block(10, 0, 9, 1).sum()) == 0)
+    {
+        float norm_val = inst_00.block(10, 0, 9, 1).norm();
+        MatrixXd block = inst_00.block(10, 0, 9, 1);
+        T.block(10, 0, 9, 1) = -0.5 * block.cwiseAbs() / norm_val;
+    }
+
     for (int k = 1; k < nn; ++k)
     {
         if (round(T.block(1, k, 9, 1).sum()) == 0)
@@ -417,6 +431,8 @@ void PathManager::itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, Matr
             break;
         }
     }
+
+    inst_00 = T.col(1);
 }
 
 VectorXd PathManager::pos_madi_fun(VectorXd &A)
@@ -593,7 +609,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                 if (det_the1 < 1 && det_the1 > -1)
                 {
                     float the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < M_PI * 0.75) // the1 범위 : 0deg ~ 135deg
+                    if (the1 > 0 && the1 < M_PI * 0.8) // the1 범위 : 0deg ~ 144deg
                     {
                         float alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
                         float det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
@@ -609,7 +625,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                                 if (det_the2 < 1 && det_the2 > -1)
                                 {
                                     float the2 = acos(det_the2) - the0;
-                                    if (the2 > M_PI / 4.0 && the2 < M_PI) // the2 범위 : 45deg ~ 135deg
+                                    if (the2 > M_PI / 5.0 && the2 < M_PI) // the2 범위 : 36deg ~ 180deg
                                     {
                                         float Lp = sqrt(L * L + zeta * zeta);
                                         float det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
@@ -1013,7 +1029,7 @@ void PathManager::GetMusicSheet()
     /////////// 드럼로봇 악기정보 텍스트 -> 딕셔너리 변환
     map<string, int> instrument_mapping = {
         {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
-
+        // S        FT          MT      HT        HH        R           RC      LC          S           S       S           S           S           S
     default_right.resize(9);
     default_left.resize(9);
     default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
@@ -1030,6 +1046,10 @@ void PathManager::GetMusicSheet()
     inst_arr.resize(18, 1);
     inst_arr.block(0, 0, 9, 1) = default_right;
     inst_arr.block(9, 0, 9, 1) = default_left;
+    inst_00.resize(18z, 1);
+    inst_00(0) = 0.0;
+    inst_00.block(1, 0, 9, 1) = default_right;
+    inst_00.block(10, 0, 9, 1) = default_right;
     while (getline(file, row))
     {
         istringstream iss(row);
