@@ -28,6 +28,8 @@ public:
     // pos [rad]
     void comm_can_set_pos(TMotor &motor, struct can_frame *frame, float pos);
 
+    void comm_can_set_pos(TMotor &motor, struct can_frame *frame, float pos);
+
 private:
 };
 
