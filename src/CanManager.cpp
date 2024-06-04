@@ -372,7 +372,7 @@ bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
 
     if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
-        perror("CAN read error");
+        std::cout << "CAN read error: " << motor->myName << "\n";
         return false;
     }
     return true;
