@@ -31,7 +31,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 나가기, 7-Tmotor Servo Test) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기) : ";
         cin >> method;
 
         if (method == 1)
@@ -48,7 +48,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 4)
         {
-            multiTestLoop();
+            multiTestLoop(); // 예전에 사용하던 코드. 서보모드 적용 X
         }
         else if (method == 5)
         {
@@ -56,12 +56,171 @@ void TestManager::SendTestProcess()
         }
         else if (method == 6)
         {
-            state.main = Main::Ideal;
+            state.test = TestSub::SetServoTestParm;
         }
         else if (method == 7)
         {
-            state.test = TestSub::SetServoTestParm;
+            state.main = Main::Ideal;
         }
+        break;
+    }
+    case TestSub::SetQValue:
+    {
+        int userInput = 100;
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+        cout << "[ Current Q Values (Radian) ]\n";
+        for (int i = 0; i < 9; i++)
+        {
+            cout << "q[" << i << "] : " << q[i] << "\n";
+        }
+
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) : ";
+        cin >> userInput;
+
+        if (userInput == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (userInput < 9)
+        {
+            cout << "Enter q[" << userInput << "] Values (Radian) : ";
+            cin >> q[userInput];
+        }
+        else if (userInput == 9)
+        {
+            state.test = TestSub::FillBuf;
+        }
+        break;
+    }
+    case TestSub::SetXYZ:
+    {
+        int userInput = 100;
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+        cout << "[ Current x, y, z (meter) ]\n";
+        cout << "Right : ";
+        for (int i = 0; i < 3; i++)
+        {
+            cout << R_xyz[i] << ", ";
+        }
+        cout << "\nLeft : ";
+        for (int i = 0; i < 3; i++)
+        {
+            cout << L_xyz[i] << ", ";
+        }
+
+        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) / Start Test (3) / Exit (-1) : ";
+        cin >> userInput;
+
+        if (userInput == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (userInput == 1)
+        {
+            cout << "Enter x, y, z Values (meter) : ";
+            cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
+        }
+        else if (userInput == 2)
+        {
+            cout << "Enter x, y, z Values (meter) : ";
+            cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
+        }
+        else if (userInput == 3)
+        {
+            state.test = TestSub::FillBuf;
+        }
+        break;
+    }
+    case TestSub::SetSingleTuneParm:
+    {
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                tMotor->clearCommandBuffer();
+                tMotor->clearReceiveBuffer();
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                maxonMotor->clearCommandBuffer();
+                maxonMotor->clearReceiveBuffer();
+            }
+        }
+
+        char userInput = '0';
+        int ret = system("clear");
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+
+        std::cout << "< Current Position >\n";
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+                cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
+            }
+        }
+        std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
+        std::cout << "Selected Motor : " << selectedMotor << "\n"
+                  << "Time : " << t << "[s]\n"
+                  << "Cycles : " << cycles << "\n"
+                  << "Amplitude : " << amp << "[Radian]\n";
+        std::cout << "------------------------------------------------------------------------------------------------------------\n";
+
+        std::cout << "\n[Commands]\n";
+        std::cout << "[s] : Select Other Motor\n"
+                  << "[t] : Time\t [c] : Cycles\n"
+                  << "[a] : Amplitude\n"
+                  << "[r] : run\t [e] : Exit\n";
+        std::cout << "Enter Command : ";
+        std::cin >> userInput;
+
+        if (userInput == 's')
+        {
+            std::cout << "\nMotor List : \n";
+            for (auto &motor_pair : motors)
+            {
+                std::cout << motor_pair.first << "\n";
+            }
+            std::cout << "\nEnter Desire Motor : ";
+            std::cin >> selectedMotor;
+        }
+        else if (userInput == 't')
+        { // 한 주기 도는데 걸리는 시간
+            std::cout << "\nEnter Desire Time [s] : ";
+            std::cin >> t;
+        }
+        else if (userInput == 'c')
+        {
+            std::cout << "\nEnter Desire Cycles : ";
+            std::cin >> cycles;
+        }
+        else if (userInput == 'a')
+        {
+            std::cout << "\nEnter Desire Amplitude [Radian] : ";
+            std::cin >> amp;
+        }
+        else if (userInput == 'r')
+        {
+            state.test = TestSub::FillBuf;
+        }
+        else if (userInput == 'e')
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        break;
+    }
+    case TestSub::StickTest:
+    {
+        canManager.setSocketBlock();
+        TestStickLoop();
+        canManager.setSocketNonBlock();
+        state.test = TestSub::SelectParamByUser;
         break;
     }
     case TestSub::SetServoTestParm:
@@ -206,167 +365,6 @@ void TestManager::SendTestProcess()
         }
         break;
     }
-    case TestSub::StickTest:
-    {
-        canManager.setSocketBlock();
-        TestStickLoop();
-        canManager.setSocketNonBlock();
-        state.test = TestSub::SelectParamByUser;
-        break;
-    }
-    case TestSub::SetQValue:
-    {
-        int userInput = 100;
-        vel = 500;
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            cout << "q[" << i << "] : " << q[i] << "\n";
-        }
-
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) : ";
-        cin >> userInput;
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput < 9)
-        {
-            cout << "Enter q[" << userInput << "] Values (Radian) : ";
-            cin >> q[userInput];
-        }
-        else if (userInput == 9)
-        {
-            state.test = TestSub::FillBuf;
-        }
-        break;
-    }
-    case TestSub::SetXYZ:
-    {
-        int userInput = 100;
-        vel = 500;
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-        cout << "[ Current x, y, z (meter) ]\n";
-        cout << "Right : ";
-        for (int i = 0; i < 3; i++)
-        {
-            cout << R_xyz[i] << ", ";
-        }
-        cout << "\nLeft : ";
-        for (int i = 0; i < 3; i++)
-        {
-            cout << L_xyz[i] << ", ";
-        }
-
-        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) / Start Test (3) / Exit (-1) : ";
-        cin >> userInput;
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput == 1)
-        {
-            cout << "Enter x, y, z Values (meter) : ";
-            cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
-        }
-        else if (userInput == 2)
-        {
-            cout << "Enter x, y, z Values (meter) : ";
-            cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
-        }
-        else if (userInput == 3)
-        {
-            state.test = TestSub::FillBuf;
-        }
-        break;
-    }
-    case TestSub::SetSingleTuneParm:
-    {
-        for (auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                tMotor->clearCommandBuffer();
-                tMotor->clearReceiveBuffer();
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                maxonMotor->clearCommandBuffer();
-                maxonMotor->clearReceiveBuffer();
-            }
-        }
-
-        char userInput = '0';
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        std::cout << "< Current Position >\n";
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
-                cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
-            }
-        }
-        std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
-        std::cout << "Selected Motor : " << selectedMotor << "\n"
-                  << "Time : " << t << "\n"
-                  << "Cycles : " << cycles << "\n"
-                  << "Amplitude : " << amp << "[Radian]\n";
-        std::cout << "------------------------------------------------------------------------------------------------------------\n";
-
-        std::cout << "\n[Commands]\n";
-        std::cout << "[s] : Select Other Motor\n"
-                  << "[t] : Time\t [c] : Cycles\n"
-                  << "[a] : Amplitude\n"
-                  << "[r] : run\t [e] : Exit\n";
-        std::cout << "Enter Command : ";
-        std::cin >> userInput;
-
-        if (userInput == 's')
-        {
-            std::cout << "\nMotor List : \n";
-            for (auto &motor_pair : motors)
-            {
-                std::cout << motor_pair.first << "\n";
-            }
-            std::cout << "\nEnter Desire Motor : ";
-            std::cin >> selectedMotor;
-        }
-        else if (userInput == 't')
-        { // 한 주기 도는데 걸리는 시간
-            std::cout << "\nEnter Desire Time [s] : ";
-            std::cin >> t;
-        }
-        else if (userInput == 'c')
-        {
-            std::cout << "\nEnter Desire Cycles : ";
-            std::cin >> cycles;
-        }
-        else if (userInput == 'a')
-        {
-            std::cout << "\nEnter Desire Amplitude [Radian] : ";
-            std::cin >> amp;
-        }
-        else if (userInput == 'r')
-        {
-            state.test = TestSub::FillBuf;
-        }
-        else if (userInput == 'e')
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        break;
-    }
     case TestSub::FillBuf:
     {
         // Fill motors command Buffer
@@ -393,7 +391,7 @@ void TestManager::SendTestProcess()
         {
             startTest(selectedMotor, t, cycles, amp);
         }
-        else if (method == 7)
+        else if (method == 6)
         {
             std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
             vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
@@ -524,7 +522,7 @@ void TestManager::SendTestProcess()
         {
             // multiTestLoop(); State로 변경 시 state.test 값 변환으로 변경
         }
-        else if (method == 7)
+        else if (method == 6)
         {
             sleep(1);
             std::ostringstream oss;

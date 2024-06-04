@@ -508,7 +508,7 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, float v_wrist)
     {
         if (sts_L(0, i) == -1)
         {
-            theta_L(0, i) = wrist_backPos;
+            theta_L(0, i) = wrist_hitPos;
             /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_wrist;
             if (theta_L(0, i) > (M_PI / 2) * 0.8)
@@ -517,7 +517,7 @@ MatrixXd PathManager::sts2wrist_fun(MatrixXd &AA, float v_wrist)
 
         if (sts_R(0, i) == -1)
         {
-            theta_R(0, i) = wrist_backPos;
+            theta_R(0, i) = wrist_hitPos;
             /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_wrist;
             if (theta_R(0, i) > (M_PI / 2) * 0.8)
@@ -561,7 +561,7 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
     {
         if (sts_L(0, i) == -1)
         {
-            theta_L(0, i) = elbow_backPos;
+            theta_L(0, i) = elbow_hitPos;
             /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_L(0, i) = dt * v_elbow;
             if (theta_L(0, i) > (M_PI / 10))
@@ -570,7 +570,7 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA, float v_elbow)
 
         if (sts_R(0, i) == -1)
         {
-            theta_R(0, i) = elbow_backPos;
+            theta_R(0, i) = elbow_hitPos;
             /*float dt = t_madi(0, i + 1) - t_madi(0, i);
             theta_R(0, i) = dt * v_elbow;
             if (theta_R(0, i) > (M_PI / 10))

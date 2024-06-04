@@ -115,10 +115,12 @@ public:
     float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
     float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
-    float wrist_backPos = M_PI * 0.2;   // 타격 시 들어올리는 손목 각도
+    float wrist_backPos = M_PI / 18.0;  // 대기 시 들어올리는 손목 각도 (-0.5) : 10deg
+    float wrist_hitPos = M_PI / 9.0;    // 타격 시 들어올리는 손목 각도 (-1)   : 20deg
     float wrist_back_time = 0.04;       // 타격 후 들어올리는 궤적시간
 
-    float elbow_backPos = M_PI / 12.0;  // 타격 시 들어올리는 팔꿈치 각도
+    float elbow_backPos = M_PI / 36.0;  // 대기 시 들어올리는 팔꿈치 각도 (-0.5) : 5deg
+    float elbow_hitPos = M_PI / 15.0;   // 타격 시 들어올리는 팔꿈치 각도 (-1)   : 12deg
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
