@@ -615,6 +615,11 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
+        maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->currentPos);
+        if(!sendMotorFrame(maxonMotor)){
+            return false;
+        };
+        
         maxoncmd.getSync(&maxonMotor->sendFrame);
         if(!sendMotorFrame(maxonMotor)){
             return false;
