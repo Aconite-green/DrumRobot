@@ -372,7 +372,7 @@ bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
 
     if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
     {
-        perror("CAN read error");
+        std::cout << "CAN read error: " << motor->myName << "\n";
         return false;
     }
     return true;
@@ -615,6 +615,11 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
     }
     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
+        maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->currentPos);
+        if(!sendMotorFrame(maxonMotor)){
+            return false;
+        };
+        
         maxoncmd.getSync(&maxonMotor->sendFrame);
         if(!sendMotorFrame(maxonMotor)){
             return false;
