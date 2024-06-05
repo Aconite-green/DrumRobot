@@ -1,4 +1,4 @@
-#include "QtManager.hpp"
+#include "../include/managers/QtManager.hpp"
 
 QtManager::QtManager(State &stateRef,
                      CanManager &canManagerRef,

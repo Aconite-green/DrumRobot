@@ -45,13 +45,13 @@ int main(int argc, char *argv[])
     HomeManager homeManager(state, canManager, motors);
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors);
-    QtManager qtManager(state, canManager, motors);
+    //QtManager qtManager(state, canManager, motors);
     
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
     std::thread receiveThread(&DrumRobot::recvLoopForThread, &drumRobot);
-    std::thread guiThread(&QtManager::guiThread, &qtManager);
+    //std::thread guiThread(&QtManager::guiThread, &qtManager);
     
     // Threads Priority Settings
     if (!setThreadPriority(sendThread, 3))
@@ -69,16 +69,16 @@ int main(int argc, char *argv[])
         std::cerr << "Error setting priority for stateMachine" << std::endl;
         return -1;
     }
-    if (!setThreadPriority(guiThread, 1))
-    {
-        std::cerr << "Error setting priority for stateMachine" << std::endl;
-        return -1;
-    }
+    //if (!setThreadPriority(guiThread, 1))
+    //{
+    //    std::cerr << "Error setting priority for stateMachine" << std::endl;
+    //    return -1;
+    //}
 
 
     // Wait Threads
     stateThread.join();
     sendThread.join();
     receiveThread.join();
-    guiThread.join();
+    //guiThread.join();
 }

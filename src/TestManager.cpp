@@ -260,8 +260,6 @@ void TestManager::SendTestProcess()
         }
         std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
         std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
-                  /*<< "Velocity : " << vel << "[ERPM]\n"
-                  << "Acceleration : " << acl << "[ERPM / s]\n"*/
                   << "Time : " << time_servo << "[sec]\n"
                   << "Target coordinate Pos : " << targetpos_coo << " [Radian]\n"
                   << "Single Target Pos : " << targetpos_des << " [Radian]\n"
@@ -270,7 +268,6 @@ void TestManager::SendTestProcess()
 
         std::cout << "\n[Commands]\n";
         std::cout << "[s] : Select Other Motor\n"
-                  /*<< "[v] : Set Velocity\t [a] : Set Acceleration\n"*/
                   << "[t] : Set Time"
                   << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
                   << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
@@ -287,16 +284,6 @@ void TestManager::SendTestProcess()
             }
             std::cout << "\nEnter Desire Motor : ";
             std::cin >> selectedMotor_servo;
-        }
-        else if (userInput == 'v')
-        {
-            std::cout << "\nEnter Desire Velocity [ERPM] : ";
-            std::cin >> vel;
-        }
-        else if (userInput == 'a')
-        {
-            std::cout << "\nEnter Desire Acceleration [ERPM / s] : ";
-            std::cin >> acl;
         }
         else if (userInput == 't')
         {
@@ -950,6 +937,13 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
             {
                 tMotor->isfixed = false;
                 vel = ((amp / M_PI * 180) / (t / 2)) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360;
+            }
+        }
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+        {
+            if (maxonMotor->myName == selectedMotor)
+            {
+                maxonMotor->isfixed = false;
             }
         }
     }
@@ -1962,8 +1956,13 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
             }
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
+                if (maxonMotor->isfixed == false)
+                {
+                    maxonMotor->fixedPos = maxonMotor->currentPos;
+                    maxonMotor->isfixed = true;
+                }
                 MaxonData newData;
-                newData.position = maxonMotor->currentPos;
+                newData.position = maxonMotor->fixedPos;
                 newData.WristState = 0.0;
                 maxonMotor->commandBuffer.push(newData);
             }
