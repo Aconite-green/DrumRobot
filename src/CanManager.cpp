@@ -14,6 +14,7 @@ CanManager::~CanManager()
     {
         if (socketPair.second >= 0)
         {
+            flushCanBuffer(socketPair.second);
             close(socketPair.second);
         }
     }
@@ -40,6 +41,19 @@ void CanManager::initializeCAN()
         isConnected[ifname] = true;
         std::cout << "Socket created for " << ifname << ": " << hsocket << std::endl;
     }
+}
+
+void CanManager::flushCanBuffer(int socket)
+{
+    // 버퍼 초기화 (필터 설정으로 모든 패킷 필터링)
+    struct can_filter filter = {0};
+    setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(filter));
+}
+
+void CanManager::resetCanFilter(int socket)
+{
+    // 기본 상태로 CAN 필터 재설정
+    setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
 }
 
 void CanManager::setSocketsTimeout(int sec, int usec)
@@ -406,7 +420,6 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
             std::cout << "Go to Error state by CAN write error " << motor->myName << "\n";
             return false;
         }
-        
     }
     return true;
 }
@@ -438,7 +451,7 @@ void CanManager::setMotorsSocket()
     // 모든 소켓에 대해 Maxon 모터에 명령을 보내고 응답을 확인
     for (const auto &socketPair : sockets)
     {
-        
+
         int socket_fd = socketPair.second;
 
         for (auto &motor_pair : motors)
@@ -609,7 +622,8 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
         tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, tMotor->spd, tMotor->acl);
-        if(!sendMotorFrame(tMotor)){
+        if (!sendMotorFrame(tMotor))
+        {
             return false;
         };
     }
@@ -622,12 +636,14 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         }
 
         maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->fixedPos);
-        if(!sendMotorFrame(maxonMotor)){
+        if (!sendMotorFrame(maxonMotor))
+        {
             return false;
         };
-        
+
         maxoncmd.getSync(&maxonMotor->sendFrame);
-        if(!sendMotorFrame(maxonMotor)){
+        if (!sendMotorFrame(maxonMotor))
+        {
             return false;
         };
     }
@@ -661,7 +677,8 @@ bool CanManager::checkAllMotors_Fixed()
         auto &motor = motorPair.second;
         if (!motor->isError)
         {
-            if(!sendForCheck_Fixed(motor)){
+            if (!sendForCheck_Fixed(motor))
+            {
                 return false;
             }
         }
