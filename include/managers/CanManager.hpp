@@ -24,7 +24,6 @@
 #include <queue>
 #include <memory>
 
-
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
@@ -51,7 +50,8 @@ public:
     void initializeCAN();
 
     void setSocketsTimeout(int sec, int usec);
-
+    void flushCanBuffer(int socket);
+     void resetCanFilter(int socket);
     void checkCanPortsStatus();
 
     void setMotorsSocket();
@@ -84,7 +84,7 @@ public:
     void setSocketBlock();
     std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
     std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
-    int maxonCnt=0;
+    int maxonCnt = 0;
     // Functions for Thread Case
 
     void setCANFrame();
@@ -104,11 +104,10 @@ public:
         {"L_wrist", 8},
         {"maxonForTest", 8}};
 
-        std::vector<std::string> ifnames;
-        int errorCnt=0;
+    std::vector<std::string> ifnames;
+    int errorCnt = 0;
 
 private:
-    
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     TMotorCommandParser tmotorcmd;
