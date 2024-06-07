@@ -27,6 +27,7 @@ void TestManager::SendTestProcess()
         cout << "[ Current Q Values (Ladian) ]\n";
         for (int i = 0; i < 9; i++)
         {
+            q[i] = c_MotorAngle[i];
             cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
