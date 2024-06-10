@@ -1,4 +1,4 @@
-#include "QtManager.hpp"
+#include "../include/managers/QtManager.hpp"
 
 QtManager::QtManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : state(stateRef), canManager(canManagerRef), motors(motorsRef) {}
@@ -54,7 +54,7 @@ std::string QtManager::receiveMessage() {
 }
 
 void QtManager::guiThread() {
-    int addrlen = sizeof(clientAddr);
+    
 
     while (state.main != Main::Shutdown) {
         switch (state.main.load()) {
