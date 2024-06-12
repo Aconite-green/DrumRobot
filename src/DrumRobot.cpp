@@ -95,7 +95,7 @@ void DrumRobot::stateMachine()
                 std::cout << "system clear error" << endl;
             break;
         }
-        case Main::Test: 
+        case Main::Test:
         {
             bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
@@ -171,7 +171,7 @@ void DrumRobot::sendLoopForThread()
             }
             else
             {
-                //canManager.checkMaxon();
+                // canManager.checkMaxon();
             }
 
             if (isWriteError)
@@ -988,7 +988,8 @@ void DrumRobot::checkUserInput()
             {
                 state.main = Main::Pause;
 
-                if(!canManager.checkAllMotors_Fixed()){
+                if (!canManager.checkAllMotors_Fixed())
+                {
                     isWriteError = true;
                 }
             }
@@ -1030,9 +1031,10 @@ void DrumRobot::checkUserInput()
         }
     }
 
-if(isWriteError){
-    state.main = Main::Error;
-}
+    if (isWriteError)
+    {
+        state.main = Main::Error;
+    }
     usleep(500000);
 }
 
@@ -1104,7 +1106,7 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 3;
-                tMotor->rMin = 0.0f;       // 0deg
+                tMotor->rMin = 0.0f;               // 0deg
                 tMotor->rMax = M_PI * (5.0 / 6.0); // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
@@ -1116,7 +1118,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorBit = 0;
                 tMotor->rMin = M_PI / 6.0; // 30deg
-                tMotor->rMax = M_PI;     // 180deg
+                tMotor->rMax = M_PI;       // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
                 tMotor->spd = 1000;
@@ -1244,6 +1246,7 @@ void DrumRobot::initializecanManager()
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
     canManager.setMotorsSocket();
+    canManager.initializeGPIO();
 }
 
 void DrumRobot::DeactivateControlTask()
