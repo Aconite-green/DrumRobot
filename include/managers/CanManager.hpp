@@ -23,12 +23,13 @@
 #include <map>
 #include <queue>
 #include <memory>
+#include <gpiod.h>
 
-
+#define GPIO_CHIP "/dev/gpiochip0"
+#define GPIO_OUTPUT_LINE 0 // 지속적으로 1 값을 유지할 GPIO 핀 번호 (GPIO0)
 
 #include "Motor.hpp"
 #include "CommandParser.hpp"
-
 
 using namespace std;
 
@@ -102,6 +103,14 @@ public:
     std::vector<std::string> ifnames;
     int errorCnt = 0;
 
+    // GPIO
+    bool gpioConnected = false;
+    struct gpiod_chip *chip;
+    struct gpiod_line *output_line;
+
+    void initializeGPIO();
+    void setGPIOVal(bool val);
+
 private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     TMotorCommandParser tmotorcmd;
@@ -119,8 +128,6 @@ private:
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
     void clearCanBuffer(int canSocket);
-
-
 };
 
 #endif // CAN_SOCKET_UTILS_H

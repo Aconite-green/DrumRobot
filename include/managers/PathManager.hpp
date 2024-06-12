@@ -54,47 +54,18 @@ class PathManager
 {
 
 public:
-    /**
-     * @brief PathManager 클래스의 생성자입니다.
-     * @param systemStateRef 시스템 상태에 대한 참조입니다.
-     * @param canManagerRef CAN 통신 관리자에 대한 참조입니다.
-     * @param motorsRef 모터 객체에 대한 참조를 매핑합니다.
-     */
+    
     PathManager(State &stateRef,
                 CanManager &canManagerRef,
                 std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
-    // 드럼 위치 확인
-    /**
-     * @brief 각 모터의 각도값을 불러와 스틱 끝 좌표를 계산하는 Foward Kinematics을 진행합니다.
-     * @return vector<float> 왼팔 / 오른팔의 스틱 끝 좌표를 나타내는 벡터입니다.
-     */
+   
     vector<float> fkfun();
 
-    /**
-     * @brief rT.txtㅇ에 저장되어 있는 드럼의 위치정보를 불러옵니다.
-     */
     void GetDrumPositoin();
-
-    /**
-     * @brief codeConfession.txtㅇ에 저장되어 있는 악보 정보를 불러옵니다.
-     */
     void GetMusicSheet();
-
-    /**
-     * @brief 원하는 준비 동작에 따라 준비동작 각도를 추출합니다.
-     */
     void SetReadyAng();
-
-    /**
-     * @brief 연주를 진행하고 있는 line에 대한 연주 경로를 생성합니다.
-     */
     void PathLoopTask();
-
-    /**
-     * @brief 현재 위치부터 원하는 위치까지 이동시키는 경로를 생성합니다.
-     * @param arr 이동하고자하는 위치 정보값입니다.
-     */
     void GetArr(vector<float> &arr);
 
     void Get_wrist_BackArr(string MotorName, float &A, float &B, float t);
@@ -168,24 +139,11 @@ private:
         {"L_wrist", 8},
         {"maxonForTest", 8}};
 
-    /**
-     * @brief 두 위치를 (1-cos)함수로 연결합니다.
-     * @param Q1 현재 위치 벡터입니다.
-     * @param Q2 이동하려는 위치 벡터입니다.
-     * @param k 벡터의 인덱스 값입니다.
-     * @param n 연결하는데 사용되는 총 벡터 수입니다.
-     * @return vector<float> 총 n개의 벡터 중 k번째 벡터를 나타냅니다.
-     */
+
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);
 
-    /**
-     * @brief 각 모터의 현재위치 값을 불러옵니다.
-     */
     void getMotorPos();
 
-    /**
-     * @brief 생성한 경로를 각 모터의 버퍼에 쌓아줍니다.
-     */
     void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si);
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
