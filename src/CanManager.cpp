@@ -27,7 +27,6 @@ CanManager::~CanManager()
 
 void CanManager::initializeCAN()
 {
-
     list_and_activate_available_can_ports();
     for (const auto &ifname : this->ifnames)
     {

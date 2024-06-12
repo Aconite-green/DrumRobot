@@ -34,6 +34,8 @@ private:
     struct sockaddr_in serverAddr, clientAddr;
     char buffer[BUF_SIZE];
 
+
+
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;

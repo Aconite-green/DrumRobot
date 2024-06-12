@@ -24,16 +24,11 @@
 #include <queue>
 #include <memory>
 
+
+
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
-// For Qt
-/*
-#include "../motors/Motor.hpp"
-#include "../motors/CommandParser.hpp"
-#include <QDebug>
-#include <sys/types.h>
-*/
 
 using namespace std;
 
@@ -51,7 +46,7 @@ public:
 
     void setSocketsTimeout(int sec, int usec);
     void flushCanBuffer(int socket);
-     void resetCanFilter(int socket);
+    void resetCanFilter(int socket);
     void checkCanPortsStatus();
 
     void setMotorsSocket();
@@ -109,7 +104,6 @@ public:
 
 private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     TMotorServoCommandParser tservocmd;
@@ -124,8 +118,9 @@ private:
 
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
-
     void clearCanBuffer(int canSocket);
+
+
 };
 
 #endif // CAN_SOCKET_UTILS_H
