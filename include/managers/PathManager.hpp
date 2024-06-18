@@ -83,6 +83,7 @@ public:
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
 
+    /*하이브리드 제어때 사용됨*/
     float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
     float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 

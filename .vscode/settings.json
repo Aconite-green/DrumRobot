@@ -77,7 +77,8 @@
         "typeindex": "cpp",
         "valarray": "cpp",
         "hash_map": "cpp",
-        "alignedvector3": "cpp"
+        "alignedvector3": "cpp",
+        "openglsupport": "cpp"
     },
     "makefile.launchConfigurations": [
         {
