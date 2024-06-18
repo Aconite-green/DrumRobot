@@ -27,13 +27,7 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
-// For Qt
-/*
-#include "../motors/Motor.hpp"
-#include "../motors/CommandParser.hpp"
-#include <QDebug>
-#include <sys/types.h>
-*/
+
 
 using namespace std;
 
