@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <arpa/inet.h>
+#include <cstring>
 #include <unistd.h>
 #include <string>
 #include <vector>
@@ -13,9 +15,11 @@
 #include "CanManager.hpp"
 #include "Motor.hpp"
 
+#define PORT 8080
+#define BUF_SIZE 1024
+
 class QtManager {
 public:
-
     QtManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
     ~QtManager();
 
@@ -26,9 +30,11 @@ public:
     void guiThread();
 
 private:
-    int server_fd;
-    int client_socket;
-    struct sockaddr_un address;
+    int sockfd;
+    struct sockaddr_in serverAddr, clientAddr;
+    char buffer[BUF_SIZE];
+
+
 
     State &state;
     CanManager &canManager;

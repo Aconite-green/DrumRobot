@@ -19,6 +19,7 @@ CanManager::~CanManager()
         }
     }
     sockets.clear();
+    gpiod_chip_close(chip);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,6 @@ CanManager::~CanManager()
 
 void CanManager::initializeCAN()
 {
-
     list_and_activate_available_can_ports();
     for (const auto &ifname : this->ifnames)
     {
@@ -789,4 +789,40 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     }
 
     return isSafe;
+}
+
+void CanManager::initializeGPIO()
+{
+    // GPIO 칩 열기
+    chip = gpiod_chip_open(GPIO_CHIP);
+    if (!chip)
+    {
+        std::cerr << "Failed to open GPIO chip: " << GPIO_CHIP << std::endl;
+    }else{
+        gpioConnected = true;
+    }
+
+    // GPIO 출력 라인 얻기
+    output_line = gpiod_chip_get_line(chip, GPIO_OUTPUT_LINE);
+    if (!output_line)
+    {
+        std::cerr << "Failed to get GPIO output line: " << GPIO_OUTPUT_LINE << std::endl;
+        gpiod_chip_close(chip);
+    }
+
+    // GPIO 출력 라인을 출력으로 설정
+    if (gpiod_line_request_output(output_line, "example", 0) == -1)
+    {
+        std::cerr << "Failed to request GPIO output line as output" << std::endl;
+        gpiod_chip_close(chip);
+    }
+}
+
+void CanManager::setGPIOVal(bool val)
+{
+    if (gpiod_line_set_value(output_line, val) == -1)
+    {
+        std::cerr << "Failed to set GPIO output line value" << std::endl;
+        gpiod_chip_close(chip);
+    }
 }
