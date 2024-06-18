@@ -791,7 +791,7 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     return isSafe;
 }
 
-void CanManager::initializeGPIO()
+void CanManager::initializeGPIO(int outport_num)
 {
     // GPIO 칩 열기
     chip = gpiod_chip_open(GPIO_CHIP);
@@ -803,10 +803,10 @@ void CanManager::initializeGPIO()
     }
 
     // GPIO 출력 라인 얻기
-    output_line = gpiod_chip_get_line(chip, GPIO_OUTPUT_LINE);
+    output_line = gpiod_chip_get_line(chip, outport_num);
     if (!output_line)
     {
-        std::cerr << "Failed to get GPIO output line: " << GPIO_OUTPUT_LINE << std::endl;
+        std::cerr << "Failed to get GPIO output line: " << outport_num << std::endl;
         gpiod_chip_close(chip);
     }
 

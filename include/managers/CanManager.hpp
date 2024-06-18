@@ -108,7 +108,7 @@ public:
     struct gpiod_chip *chip;
     struct gpiod_line *output_line;
 
-    void initializeGPIO();
+    void initializeGPIO(int outport_num);
     void setGPIOVal(bool val);
 
 private:
