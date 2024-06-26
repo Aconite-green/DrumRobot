@@ -1246,7 +1246,6 @@ void DrumRobot::initializecanManager()
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
     canManager.setMotorsSocket();
-    canManager.initializeGPIO();
 }
 
 void DrumRobot::DeactivateControlTask()
