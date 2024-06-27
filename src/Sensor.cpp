@@ -12,11 +12,15 @@ Sensor::~Sensor()
 
 DWORD Sensor::ReadVal()
 {
-    
-
     USBIO_DI_ReadValue(DevNum, &DIValue);
 
     return DIValue;
+}
+
+
+void Sensor::writeVal(int channel, bool status){
+    
+    USBIO_DO_WriteValueToChannel(DevNum, channel, status);
 }
 
 bool Sensor::OpenDeviceUntilSuccess()
