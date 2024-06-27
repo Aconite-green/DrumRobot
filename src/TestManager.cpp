@@ -65,7 +65,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 8)
         {
-            testSerial();
+            
         }
         break;
     }
@@ -482,8 +482,6 @@ void TestManager::SendTestProcess()
         usleep(5000);
         if (method == 1)
         {
-            parse_and_save_to_csv("../../READ/test_0625");
-
             state.test = TestSub::SetQValue;
         }
         else if (method == 2)
