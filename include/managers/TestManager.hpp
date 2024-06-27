@@ -128,4 +128,6 @@ private:
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
+    int testSerial();
+    void breakOn();
 };

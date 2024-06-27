@@ -63,6 +63,10 @@ void TestManager::SendTestProcess()
         {
             state.main = Main::Ideal;
         }
+        else if (method == 8)
+        {
+            testSerial();
+        }
         break;
     }
     case TestSub::SetQValue:
@@ -358,6 +362,8 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
+            canManager.clearReadBuffers();
+
             GetArr(q);
         }
         else if (method == 2)
@@ -476,6 +482,8 @@ void TestManager::SendTestProcess()
         usleep(5000);
         if (method == 1)
         {
+            parse_and_save_to_csv("../../READ/test_0625");
+
             state.test = TestSub::SetQValue;
         }
         else if (method == 2)
@@ -492,7 +500,7 @@ void TestManager::SendTestProcess()
                        << "_Kd" << kd
                        << "_in";
             std::string fileName = fileNameIn.str();
-            save_to_txt_inputData(fileName);
+            //save_to_txt_inputData(fileName);
 
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
@@ -707,7 +715,9 @@ void TestManager::GetArr(float arr[])
                 TMotorData newData;
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                 newData.spd = tmotor->spd;
+                //newData.spd = 32767;
                 newData.acl = tmotor->acl;
+                //newData.acl = 32767;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1969,4 +1979,117 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
             }
         }
     }
+}
+
+int TestManager::testSerial()
+{
+    char data_to_send; // 시리얼 포트로 전송할 문자
+    int serial_input;
+
+    while (true) {
+
+        cout << "serial communication (1 - ON, 0 - OFF, n - n번 반복, -1 - 나가기) : ";
+        cin >> serial_input;
+
+        if (serial_input == 1)
+        {
+            // 데이터 전송
+            data_to_send = '1';
+            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+            usleep(100000);
+
+            // 데이터 수신
+            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+            if (!received_data.empty()) {
+                std::cout << "Received data: " << received_data << std::endl;
+            }
+
+            usleep(100000);
+        }
+        else if(serial_input == 0)
+        {
+            data_to_send = '0';
+            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+            usleep(100000);
+
+            // 데이터 수신
+            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+            if (!received_data.empty()) {
+                std::cout << "Received data: " << received_data << std::endl;
+            }
+
+            usleep(100000);
+        }
+        else if(serial_input == -1)
+        {
+            break;
+        }
+        else
+        {
+            for(int i = 0;i<serial_input;i++)
+            {
+                // 데이터 전송
+                data_to_send = '1';
+                canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+                usleep(100000);
+
+                // 데이터 수신
+                std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+                if (!received_data.empty()) {
+                    std::cout << "Received data: " << received_data << std::endl;
+                }
+
+                // 1초 대기
+                sleep(1);
+
+                data_to_send = '0';
+                canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+                usleep(100000);
+
+                // 데이터 수신
+                received_data = canManager.read_char_from_serial(canManager.serial_fd);
+                if (!received_data.empty()) {
+                    std::cout << "Received data: " << received_data << std::endl;
+                }
+
+                // 1초 대기
+                sleep(1);
+            }
+        }
+    }
+
+    return 0;
+}
+
+void TestManager::breakOn()
+{
+    char data_to_send = '1'; // 시리얼 포트로 전송할 문자
+    canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+    usleep(100000);
+
+    // 데이터 수신
+    std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+    if (!received_data.empty()) {
+        std::cout << "Received data: " << received_data << std::endl;
+    }
+
+    sleep(1);
+
+    data_to_send = '0'; // 시리얼 포트로 전송할 문자
+    canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+    usleep(100000);
+
+    // 데이터 수신
+    std::string received_data_ = canManager.read_char_from_serial(canManager.serial_fd);
+    if (!received_data.empty()) {
+        std::cout << "Received data: " << received_data_ << std::endl;
+    }
+
+    return;
 }
