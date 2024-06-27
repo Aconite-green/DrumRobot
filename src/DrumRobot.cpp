@@ -1252,11 +1252,6 @@ void DrumRobot::initializecanManager()
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
     canManager.setMotorsSocket();
-    //canManager.initializeGPIO(0);
-    canManager.serial_fd = canManager.setup_serial_port();
-    if (canManager.serial_fd == -1) {
-        cout << "Serial error" << endl;
-    }
 }
 
 void DrumRobot::DeactivateControlTask()
