@@ -113,16 +113,6 @@ public:
     std::vector<std::string> ifnames;
     int errorCnt = 0;
 
-    // GPIO
-     // GPIO
-    bool chipConnected = false;
-    bool gpioConnected[GPIO_OUTPUT_LINES] = {false};
-    struct gpiod_chip *chip;
-    struct gpiod_line *output_lines[GPIO_OUTPUT_LINES];
-
-    void initializeGPIO(unsigned int outport_num);
-    void setGPIOVal(unsigned int outport_num, bool val);
-
     int serial_fd;
     int setup_serial_port();
     void send_char_to_serial(int fd, char data);
