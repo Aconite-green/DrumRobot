@@ -128,4 +128,7 @@ private:
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
+
+     /*GPIO Test Function*/
+     void GPIOTest();
 };

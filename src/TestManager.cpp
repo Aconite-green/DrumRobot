@@ -32,7 +32,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - GPIO) : ";
         cin >> method;
 
         if (method == 1)
@@ -62,6 +62,10 @@ void TestManager::SendTestProcess()
         else if (method == 7)
         {
             state.main = Main::Ideal;
+        }
+        else if (method == 8)
+        {
+            GPIOTest();
         }
         break;
     }
@@ -1968,5 +1972,57 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 maxonMotor->commandBuffer.push(newData);
             }
         }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 GPIO Test Mode                           */
+///////////////////////////////////////////////////////////////////////////////
+
+void TestManager::GPIOTest()
+{
+
+    const int numPorts = 8;
+    bool portValues[numPorts] = {0}; // 초기 값은 모두 0
+
+    // 모든 포트를 초기화
+    for (unsigned int i = 0; i < numPorts; ++i) {
+        canManager.initializeGPIO(i);
+    }
+
+    while (true) {
+        // 현재 포트 상태 출력
+        std::cout << "Current GPIO port states:\n";
+        for (int i = 0; i < numPorts; ++i) {
+            std::cout << "Port " << i << ": " << portValues[i] << "\n";
+        }
+
+        // 사용자로부터 포트 번호 입력 받기
+        int portNum;
+        std::cout << "Enter port number to change (0-7, -1 to exit): ";
+        std::cin >> portNum;
+
+        if (portNum == -1) {
+            break; // 사용자가 -1을 입력하면 루프 종료
+        }
+
+        if (portNum < 0 || portNum >= numPorts) {
+            std::cerr << "Invalid port number. Please enter a number between 0 and 7.\n";
+            continue;
+        }
+
+        // 사용자로부터 값 입력 받기
+        int value;
+        std::cout << "Enter value for port " << portNum << " (0 or 1): ";
+        std::cin >> value;
+
+        if (value != 0 && value != 1) {
+            std::cerr << "Invalid value. Please enter 0 or 1.\n";
+            continue;
+        }
+
+        // 포트 값 설정
+        portValues[portNum] = value;
+        canManager.setGPIOVal(portNum, value);
     }
 }

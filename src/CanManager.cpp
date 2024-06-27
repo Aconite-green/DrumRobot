@@ -19,7 +19,7 @@ CanManager::~CanManager()
         }
     }
     sockets.clear();
-    gpiod_chip_close(chip);
+    // gpiod_chip_close(chip);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -791,38 +791,55 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     return isSafe;
 }
 
-void CanManager::initializeGPIO(int outport_num)
+void CanManager::initializeGPIO(unsigned int outport_num)
 {
-    // GPIO 칩 열기
-    chip = gpiod_chip_open(GPIO_CHIP);
-    if (!chip)
+    if (outport_num >= GPIO_OUTPUT_LINES)
     {
-        std::cerr << "Failed to open GPIO chip: " << GPIO_CHIP << std::endl;
-    }else{
-        gpioConnected = true;
+        std::cerr << "Invalid GPIO output line number: " << outport_num << std::endl;
+        return;
+    }
+
+    if (!chipConnected)
+    {
+        // GPIO 칩 열기
+        chip = gpiod_chip_open(GPIO_CHIP);
+        if (!chip)
+        {
+            std::cerr << "Failed to open GPIO chip: " << GPIO_CHIP << std::endl;
+            return;
+        }
+        else
+        {
+            chipConnected = true;
+        }
     }
 
     // GPIO 출력 라인 얻기
-    output_line = gpiod_chip_get_line(chip, outport_num);
-    if (!output_line)
+    output_lines[outport_num] = gpiod_chip_get_line(chip, outport_num);
+    if (!output_lines[outport_num])
     {
         std::cerr << "Failed to get GPIO output line: " << outport_num << std::endl;
-        gpiod_chip_close(chip);
+        return;
     }
 
     // GPIO 출력 라인을 출력으로 설정
-    if (gpiod_line_request_output(output_line, "example", 0) == -1)
+    if (gpiod_line_request_output(output_lines[outport_num], "example", 0) == -1)
     {
         std::cerr << "Failed to request GPIO output line as output" << std::endl;
-        gpiod_chip_close(chip);
+        return;
     }
 }
 
-void CanManager::setGPIOVal(bool val)
+void CanManager::setGPIOVal(unsigned int outport_num, bool val)
 {
-    if (gpiod_line_set_value(output_line, val) == -1)
+    if (outport_num >= GPIO_OUTPUT_LINES)
+    {
+        std::cerr << "Invalid GPIO output line number: " << outport_num << std::endl;
+        return;
+    }
+
+    if (gpiod_line_set_value(output_lines[outport_num], val) == -1)
     {
         std::cerr << "Failed to set GPIO output line value" << std::endl;
-        gpiod_chip_close(chip);
     }
 }

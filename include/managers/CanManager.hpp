@@ -26,8 +26,7 @@
 #include <gpiod.h>
 
 #define GPIO_CHIP "/dev/gpiochip0"
-#define GPIO_OUTPUT_LINE 0 // 지속적으로 1 값을 유지할 GPIO 핀 번호 (GPIO0)
-
+#define GPIO_OUTPUT_LINES 8 // 사용할 GPIO 핀 개수
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
@@ -104,12 +103,14 @@ public:
     int errorCnt = 0;
 
     // GPIO
-    bool gpioConnected = false;
+     // GPIO
+    bool chipConnected = false;
+    bool gpioConnected[GPIO_OUTPUT_LINES] = {false};
     struct gpiod_chip *chip;
-    struct gpiod_line *output_line;
+    struct gpiod_line *output_lines[GPIO_OUTPUT_LINES];
 
-    void initializeGPIO(int outport_num);
-    void setGPIOVal(bool val);
+    void initializeGPIO(unsigned int outport_num);
+    void setGPIOVal(unsigned int outport_num, bool val);
 
 private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
