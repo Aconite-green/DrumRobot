@@ -1026,6 +1026,10 @@ void DrumRobot::checkUserInput()
                 state.main = Main::AddStance;
                 pathManager.line = 0;
             }
+            else if (input == 'b')
+            {
+                breakOn();
+            }
             else if (input == 's')
                 state.main = Main::Shutdown;
         }
@@ -1143,8 +1147,10 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = M_PI * 0.8f;  // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                tMotor->spd = 1000;
-                tMotor->acl = 3000;
+                //tMotor->spd = 1000;
+                //tMotor->acl = 3000;
+                tMotor->spd = 32767;
+                tMotor->acl = 32767;
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -1608,4 +1614,42 @@ bool DrumRobot::dct_fun(float positions[], float vel_th)
         return true;
     else
         return false;
+}
+
+void DrumRobot::breakOn()
+{
+    static bool isBreak = false;
+
+    if(isBreak)
+    {
+        char data_to_send = '0'; // 시리얼 포트로 전송할 문자
+        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+        usleep(100000);
+
+        // 데이터 수신
+        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+        if (!received_data.empty()) {
+            std::cout << "Received data: " << received_data << std::endl;
+        }
+
+        isBreak = false;
+    }
+    else
+    {
+        char data_to_send = '1'; // 시리얼 포트로 전송할 문자
+        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+    
+        usleep(100000);
+
+        // 데이터 수신
+        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+        if (!received_data.empty()) {
+            std::cout << "Received data: " << received_data << std::endl;
+        }
+
+        isBreak = true;
+    }
+    
+    return;
 }

@@ -30,6 +30,17 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
+// serial to Arduino
+//#include <sys/ioctl.h> // For TIOCINQ
+//#include <fcntl.h>
+//#include <unistd.h>
+//#include <termios.h>
+#include <cstring> // For memset
+#include <errno.h> // For errno
+
+#define SERIAL_PORT "/dev/ttyACM1"
+#define BAUD_RATE B9600
+
 using namespace std;
 
 class CanManager
@@ -111,6 +122,11 @@ public:
 
     void initializeGPIO(unsigned int outport_num);
     void setGPIOVal(unsigned int outport_num, bool val);
+
+    int serial_fd;
+    int setup_serial_port();
+    void send_char_to_serial(int fd, char data);
+    std::string read_char_from_serial(int fd);
 
 private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;

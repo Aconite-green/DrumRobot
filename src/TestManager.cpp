@@ -65,7 +65,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 8)
         {
-            GPIOTest();
+            testSerial();
         }
         break;
     }
@@ -362,6 +362,8 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
+            canManager.clearReadBuffers();
+
             GetArr(q);
         }
         else if (method == 2)
@@ -480,6 +482,8 @@ void TestManager::SendTestProcess()
         usleep(5000);
         if (method == 1)
         {
+            parse_and_save_to_csv("../../READ/test_0625");
+
             state.test = TestSub::SetQValue;
         }
         else if (method == 2)
@@ -496,7 +500,7 @@ void TestManager::SendTestProcess()
                        << "_Kd" << kd
                        << "_in";
             std::string fileName = fileNameIn.str();
-            save_to_txt_inputData(fileName);
+            //save_to_txt_inputData(fileName);
 
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
@@ -711,7 +715,9 @@ void TestManager::GetArr(float arr[])
                 TMotorData newData;
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                 newData.spd = tmotor->spd;
+                //newData.spd = 32767;
                 newData.acl = tmotor->acl;
+                //newData.acl = 32767;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1972,57 +1978,5 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 maxonMotor->commandBuffer.push(newData);
             }
         }
-    }
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 GPIO Test Mode                           */
-///////////////////////////////////////////////////////////////////////////////
-
-void TestManager::GPIOTest()
-{
-
-    const int numPorts = 8;
-    bool portValues[numPorts] = {0}; // 초기 값은 모두 0
-
-    // 모든 포트를 초기화
-    for (unsigned int i = 0; i < numPorts; ++i) {
-        canManager.initializeGPIO(i);
-    }
-
-    while (true) {
-        // 현재 포트 상태 출력
-        std::cout << "Current GPIO port states:\n";
-        for (int i = 0; i < numPorts; ++i) {
-            std::cout << "Port " << i << ": " << portValues[i] << "\n";
-        }
-
-        // 사용자로부터 포트 번호 입력 받기
-        int portNum;
-        std::cout << "Enter port number to change (0-7, -1 to exit): ";
-        std::cin >> portNum;
-
-        if (portNum == -1) {
-            break; // 사용자가 -1을 입력하면 루프 종료
-        }
-
-        if (portNum < 0 || portNum >= numPorts) {
-            std::cerr << "Invalid port number. Please enter a number between 0 and 7.\n";
-            continue;
-        }
-
-        // 사용자로부터 값 입력 받기
-        int value;
-        std::cout << "Enter value for port " << portNum << " (0 or 1): ";
-        std::cin >> value;
-
-        if (value != 0 && value != 1) {
-            std::cerr << "Invalid value. Please enter 0 or 1.\n";
-            continue;
-        }
-
-        // 포트 값 설정
-        portValues[portNum] = value;
-        canManager.setGPIOVal(portNum, value);
     }
 }
