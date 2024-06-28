@@ -1167,7 +1167,7 @@ void DrumRobot::initializeMotors()
                 //tMotor->acl = 3000;
                 tMotor->spd = 32767;
                 tMotor->acl = 32767;
-                tMotor->sensorWriteBit = 0;
+                tMotor->sensorWriteBit = 1;
             }
             else if (motor_pair.first == "L_arm2")
             {

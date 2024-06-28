@@ -19,6 +19,7 @@ public:
     void closeDevice();
     void connect();
     void writeVal(std::shared_ptr<TMotor> tMotor, bool status);
+    void writeValTest(int num, bool status);
 
     bool connected = false;
 

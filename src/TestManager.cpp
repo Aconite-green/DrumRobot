@@ -63,6 +63,10 @@ void TestManager::SendTestProcess()
         {
             state.main = Main::Ideal;
         }
+        else if (method == 8)
+        {
+            testBreak();
+        }
         break;
     }
     case TestSub::SetQValue:
@@ -389,6 +393,8 @@ void TestManager::SendTestProcess()
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
         }
+
+        sensor.OpenDeviceUntilSuccess();
         state.test = TestSub::CheckBuf;
         break;
     }
@@ -449,7 +455,7 @@ void TestManager::SendTestProcess()
 
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                sensor.writeVal(tMotor, false);
+                sensor.writeVal(tMotor, true);
             }
 
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -481,6 +487,9 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
+
+        allBreakOff();
+        sensor.closeDevice();
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
@@ -1981,6 +1990,34 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                 newData.WristState = 0.0;
                 maxonMotor->commandBuffer.push(newData);
             }
+        }
+    }
+}
+
+void TestManager::testBreak()
+{
+    int num, val;
+
+    if(sensor.OpenDeviceUntilSuccess())
+    {
+        cout << "\nSelect num : ";
+        cin >> num;
+        cout << "\nSelect val : ";
+        cin >> val;
+
+        sensor.writeValTest(num, val);
+    }
+
+    sensor.closeDevice();
+}
+
+void TestManager::allBreakOff()
+{
+    for (auto &motor_pair : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        {
+            sensor.writeVal(tMotor, false);
         }
     }
 }

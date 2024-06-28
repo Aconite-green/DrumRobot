@@ -23,6 +23,11 @@ void Sensor::writeVal(std::shared_ptr<TMotor> tMotor, bool status)
     USBIO_DO_WriteValueToChannel(DevNum, tMotor->sensorWriteBit, status);
 }
 
+void Sensor::writeValTest(int num, bool status)
+{
+    USBIO_DO_WriteValueToChannel(DevNum, num, status);
+}
+
 bool Sensor::OpenDeviceUntilSuccess()
 {
     printf("USB I/O Library Version : %s\n", USBIO_GetLibraryVersion());
