@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     Sensor sensor(motors);
     CanManager canManager(motors);
     PathManager pathManager(state, canManager, motors);
-    TestManager testManager(state, canManager, motors);
+    TestManager testManager(state, canManager, motors, sensor);
     HomeManager homeManager(state, canManager, motors, sensor);
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);

@@ -4,8 +4,8 @@
 // #include "../managers/TestManager.hpp"
 using namespace std;
 
-TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
+TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef),  sensor(sensorRef)
 {
 }
 
@@ -445,6 +445,11 @@ void TestManager::SendTestProcess()
             if (!canManager.sendMotorFrame(motor))
             {
                 isWriteError = true;
+            }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                sensor.writeVal(tMotor, false);
             }
 
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))

@@ -6,6 +6,7 @@
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
+#include "../include/usbio/SenSor.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -33,7 +34,7 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef);
 
     void SendTestProcess();
     void MaxonEnable();
@@ -47,6 +48,8 @@ private:
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+
+    Sensor &sensor;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
