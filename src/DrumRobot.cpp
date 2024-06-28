@@ -9,13 +9,15 @@ DrumRobot::DrumRobot(State &stateRef,
                      PathManager &pathManagerRef,
                      HomeManager &homeManagerRef,
                      TestManager &testManagerRef,
-                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+                     std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                     Sensor &sensorRef)
     : state(stateRef),
       canManager(canManagerRef),
       pathManager(pathManagerRef),
       homeManager(homeManagerRef),
       testManager(testManagerRef),
-      motors(motorsRef)
+      motors(motorsRef),
+      sensor(sensorRef)
 {
     ReadStandard = chrono::system_clock::now();
     SendStandard = chrono::system_clock::now();
@@ -1105,44 +1107,48 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "waist";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorBit = 3;
+                tMotor->sensorReadBit = 3;
                 tMotor->rMin = 0.0f;               // 0deg
                 tMotor->rMax = M_PI * (5.0 / 6.0); // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "L_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorBit = 0;
+                tMotor->sensorReadBit = 0;
                 tMotor->rMin = M_PI / 6.0; // 30deg
                 tMotor->rMax = M_PI;       // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm2")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->sensorBit = 4;
+                tMotor->sensorReadBit = 4;
                 tMotor->rMin = -M_PI / 3.0f; // -60deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm3")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->sensorBit = 5;
+                tMotor->sensorReadBit = 5;
                 tMotor->rMin = -M_PI / 6.0f; // -30deg
                 tMotor->rMax = M_PI * 0.8f;  // 144deg
                 tMotor->isHomed = false;
@@ -1151,28 +1157,31 @@ void DrumRobot::initializeMotors()
                 //tMotor->acl = 3000;
                 tMotor->spd = 32767;
                 tMotor->acl = 32767;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "L_arm2")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorBit = 1;
+                tMotor->sensorReadBit = 1;
                 tMotor->rMin = -M_PI / 3.0f; // -60deg
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "L_arm3")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorBit = 2;
+                tMotor->sensorReadBit = 2;
                 tMotor->rMin = -M_PI / 6.0f; // -30 deg
                 tMotor->rMax = M_PI * 0.8f;  // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
+                tMotor->sensorWriteBit = 0;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -1356,7 +1365,6 @@ void DrumRobot::setMaxonMode(std::string targetMode)
 
 void DrumRobot::motorSettingCmd()
 {
-
     // Count Maxon Motors
     for (const auto &motor_pair : motors)
     {

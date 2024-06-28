@@ -81,7 +81,7 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
-    int sensorBit;
+    int sensorReadBit, sensorWriteBit;
     double homeOffset = 0.0;
     double sensorLocation = 0.0;
 
