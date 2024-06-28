@@ -3,13 +3,14 @@
 #include "Global.hpp"
 #include <stdio.h>
 #include <time.h>
-
+#include "../motors/Motor.hpp"
+#include <memory>
 using namespace std;
 
 class Sensor
 {
 public:
-    Sensor();
+    Sensor(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     ~Sensor();
 
@@ -17,15 +18,15 @@ public:
     bool OpenDeviceUntilSuccess();
     void closeDevice();
     void connect();
-    void writeVal(int channel, bool status);
+    void writeVal(std::shared_ptr<TMotor> tMotor, bool status);
 
     bool connected = false;
 
-
-
-
 private:
-    //int DeviceID = USB2051_32;
+    
+    std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+
+    // int DeviceID = USB2051_32;
     int DeviceID = USB2055_32;
     BYTE BoardID = 0x02;
     BYTE total_di;

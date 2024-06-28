@@ -2,7 +2,8 @@
 
 // For Qt
 // #include "../usbio/SenSor.hpp"
-Sensor::Sensor()
+Sensor::Sensor(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
+    : motors(motorsRef)
 {
 }
 
@@ -17,10 +18,9 @@ DWORD Sensor::ReadVal()
     return DIValue;
 }
 
-
-void Sensor::writeVal(int channel, bool status){
-    
-    USBIO_DO_WriteValueToChannel(DevNum, channel, status);
+void Sensor::writeVal(std::shared_ptr<TMotor> tMotor, bool status)
+{
+    USBIO_DO_WriteValueToChannel(DevNum, tMotor->sensorWriteBit, status);
 }
 
 bool Sensor::OpenDeviceUntilSuccess()
