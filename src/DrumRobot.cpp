@@ -646,6 +646,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 tMotor->commandBuffer.pop();
                 Pos[motor_mapping[tMotor->myName]] = tData.position;
                 tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+                tMotor->break_state = tData.isBreak;
             }
         }
         Input_pos.push_back(Pos);
@@ -667,7 +668,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
 
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                sensor.writeVal(tMotor, false);
+                sensor.writeVal(tMotor, tMotor->break_state);
             }
         }
         if (maxonMotorCount != 0)
@@ -823,7 +824,7 @@ void DrumRobot::SendAddStanceProcess()
 
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                sensor.writeVal(tMotor, false);
+                sensor.writeVal(tMotor, tMotor->break_state);
             }
         }
 

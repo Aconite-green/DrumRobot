@@ -455,7 +455,7 @@ void TestManager::SendTestProcess()
 
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                sensor.writeVal(tMotor, true);
+                sensor.writeVal(tMotor, tMotor->break_state);
             }
 
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -725,6 +725,14 @@ void TestManager::GetArr(float arr[])
                 newData.spd = tmotor->spd;
                 newData.acl = tmotor->acl;
                 newData.isBreak = false;
+                //if (k < n/16)
+                //{
+                //    newData.isBreak = true;
+                //}
+                //else
+                //{
+                //    newData.isBreak = false;
+                //}
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

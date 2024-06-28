@@ -145,7 +145,7 @@ private:
 
     void getMotorPos();
 
-    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si);
+    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool break_state);
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**

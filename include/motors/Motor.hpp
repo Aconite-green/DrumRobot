@@ -84,6 +84,7 @@ public:
     int sensorReadBit, sensorWriteBit;
     double homeOffset = 0.0;
     double sensorLocation = 0.0;
+    bool break_state;
 
     // For Homing Session
     bool atFirstSensor, atSecondSensor, atZeroPosition;
