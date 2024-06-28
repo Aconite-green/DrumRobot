@@ -664,6 +664,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 isWriteError = true;
             }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                sensor.writeVal(tMotor, false);
+            }
         }
         if (maxonMotorCount != 0)
         {
@@ -814,6 +819,11 @@ void DrumRobot::SendAddStanceProcess()
             if (!canManager.sendMotorFrame(motor))
             {
                 isWriteError = true;
+            }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                sensor.writeVal(tMotor, false);
             }
         }
 
