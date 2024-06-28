@@ -709,9 +709,8 @@ void TestManager::GetArr(float arr[])
                 TMotorData newData;
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                 newData.spd = tmotor->spd;
-                //newData.spd = 32767;
                 newData.acl = tmotor->acl;
-                //newData.acl = 32767;
+                newData.isBreak = false;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -967,6 +966,7 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                         newData.position = tMotor->currentPos + amp;
                         newData.spd = vel * 1.5;
                         newData.acl = tMotor->acl;
+                        newData.isBreak = false;
                         tMotor->commandBuffer.push(newData);
                     }
                     else
@@ -979,6 +979,7 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                         newData.position = tMotor->fixedPos;
                         newData.spd = tMotor->spd;
                         newData.acl = tMotor->acl;
+                        newData.isBreak = false;
                         tMotor->commandBuffer.push(newData);
                     }
                 }
@@ -1004,6 +1005,7 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                         newData.position = tMotor->currentPos;
                         newData.spd = vel * 1.5;
                         newData.acl = tMotor->acl;
+                        newData.isBreak = false;
                         tMotor->commandBuffer.push(newData);
                     }
                     else
@@ -1016,6 +1018,7 @@ void TestManager::startTest(string selectedMotor, float t, int cycles, float amp
                         newData.position = tMotor->fixedPos;
                         newData.spd = tMotor->spd;
                         newData.acl = tMotor->acl;
+                        newData.isBreak = false;
                         tMotor->commandBuffer.push(newData);
                     }
                 }
@@ -1944,6 +1947,7 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                     newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
                     newData.spd = vel;
                     newData.acl = acl;
+                    newData.isBreak = false;
                     tMotor->commandBuffer.push(newData);
                 }
                 else
@@ -1956,6 +1960,7 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
                     newData.position = tMotor->fixedPos;
                     newData.spd = tMotor->spd;
                     newData.acl = tMotor->acl;
+                    newData.isBreak = false;
                     tMotor->commandBuffer.push(newData);
                 }
             }

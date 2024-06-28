@@ -72,7 +72,7 @@ struct TMotorData
     float position;
     int32_t spd;
     int32_t acl;
-    bool solbreak;
+    bool isBreak;
 };
 
 class TMotor : public GenericMotor

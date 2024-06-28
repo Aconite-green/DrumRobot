@@ -23,6 +23,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
             newData.acl = 50000;
+            newData.isBreak = false;
             tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1372,6 +1373,7 @@ void PathManager::GetArr(vector<float> &arr)
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                 newData.spd = tmotor->spd;
                 newData.acl = tmotor->acl;
+                newData.isBreak = false;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))

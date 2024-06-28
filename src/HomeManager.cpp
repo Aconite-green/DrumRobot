@@ -626,6 +626,7 @@ void HomeManager::HomeTmotor()
                     }
                     newData.spd = motor->spd;
                     newData.acl = motor->acl;
+                    newData.isBreak = false;
                     motor->commandBuffer.push(newData);
                 }
             }
