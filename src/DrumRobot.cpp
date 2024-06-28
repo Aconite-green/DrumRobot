@@ -660,7 +660,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         for (auto &motor_pair : motors)
         {
             shared_ptr<GenericMotor> motor = motor_pair.second;
-            if (!canManager.sendMotorFrame())
+            if (!canManager.sendMotorFrame(motor))
             {
                 isWriteError = true;
             }
