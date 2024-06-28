@@ -17,11 +17,16 @@ public:
     bool OpenDeviceUntilSuccess();
     void closeDevice();
     void connect();
+    void writeVal(int channel, bool status);
 
     bool connected = false;
 
+
+
+
 private:
-    int DeviceID = USB2051_32;
+    //int DeviceID = USB2051_32;
+    int DeviceID = USB2055_32;
     BYTE BoardID = 0x02;
     BYTE total_di;
     int DevNum, res;
