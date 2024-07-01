@@ -485,10 +485,9 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
-
+        
         allBreakOff();
-        sensor.closeDevice();
-
+        
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
@@ -2004,32 +2003,85 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
 void TestManager::testBreak()
 {
     int num, val;
+    char data_to_send; // 시리얼 포트로 전송할 문자
 
-    if(sensor.OpenDeviceUntilSuccess())
+    if(useArduino)
     {
+        canManager.serial_fd = canManager.setup_serial_port();
+        if (canManager.serial_fd == -1) {
+            cout << "Serial error";
+            return;
+        }
+
         while(true)
         {
             cout << "\n나가기 : -1";
-            cout << "\nSelect num : ";
-            cin >> num;
-            if (num == -1) break;
             cout << "\nSelect val : ";
             cin >> val;
 
-            sensor.writeValTest(num, val);
+            if (val == 0)
+            {
+                data_to_send = '0';
+            }
+            else if (val == -1)
+            {
+                break;
+            }
+            else
+            {
+                data_to_send = '1';
+            }
+
+            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+            usleep(100000);
+
+            // 데이터 수신
+            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+            if (!received_data.empty()) {
+                std::cout << "Received data: " << received_data << std::endl;
+            }
+        }
+
+        close(canManager.serial_fd);
+    }
+    else
+    {
+        if(sensor.OpenDeviceUntilSuccess())
+        {
+            while(true)
+            {
+                cout << "\n나가기 : -1";
+                cout << "\nSelect num : ";
+                cin >> num;
+                if (num == -1) break;
+                cout << "\nSelect val : ";
+                cin >> val;
+
+                sensor.writeValTest(num, val);
+            }
         }
     }
-
+    
     sensor.closeDevice();
 }
 
 void TestManager::allBreakOff()
 {
-    for (auto &motor_pair : motors)
+    if (useArduino)
     {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+        return;
+    }
+    else
+    {
+        for (auto &motor_pair : motors)
         {
-            sensor.writeVal(tMotor, false);
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                sensor.writeVal(tMotor, false);
+            }
         }
+
+        sensor.closeDevice();
     }
 }

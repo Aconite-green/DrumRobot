@@ -1152,8 +1152,10 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = M_PI / 2.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-                tMotor->spd = 1000;
-                tMotor->acl = 3000;
+                //tMotor->spd = 1000;
+                //tMotor->acl = 3000;
+                tMotor->spd = 32767;
+                tMotor->acl = 32767;
                 tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm3")
