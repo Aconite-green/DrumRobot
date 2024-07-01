@@ -39,7 +39,7 @@
 #include <errno.h> // For errno
 
 #define SERIAL_PORT "/dev/ttyACM0"
-#define BAUD_RATE B9600
+#define BAUD_RATE B1000000
 
 using namespace std;
 
