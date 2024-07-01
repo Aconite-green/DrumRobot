@@ -362,8 +362,6 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
-            canManager.clearReadBuffers();
-
             GetArr(q);
         }
         else if (method == 2)
@@ -490,6 +488,7 @@ void TestManager::SendTestProcess()
 
         allBreakOff();
         sensor.closeDevice();
+
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
@@ -2008,12 +2007,17 @@ void TestManager::testBreak()
 
     if(sensor.OpenDeviceUntilSuccess())
     {
-        cout << "\nSelect num : ";
-        cin >> num;
-        cout << "\nSelect val : ";
-        cin >> val;
+        while(true)
+        {
+            cout << "\n나가기 : -1";
+            cout << "\nSelect num : ";
+            cin >> num;
+            if (num == -1) break;
+            cout << "\nSelect val : ";
+            cin >> val;
 
-        sensor.writeValTest(num, val);
+            sensor.writeValTest(num, val);
+        }
     }
 
     sensor.closeDevice();
