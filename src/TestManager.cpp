@@ -392,7 +392,20 @@ void TestManager::SendTestProcess()
             startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
         }
 
-        sensor.OpenDeviceUntilSuccess();
+        // break를 위한 통신 초기화
+        if (useArduino)
+        {
+            canManager.serial_fd = canManager.setup_serial_port();
+            if (canManager.serial_fd == -1) {
+                cout << "Serial error";
+                return;
+            }
+        }
+        else
+        {
+            sensor.OpenDeviceUntilSuccess();
+        }
+        
         state.test = TestSub::CheckBuf;
         break;
     }
@@ -453,7 +466,33 @@ void TestManager::SendTestProcess()
 
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                sensor.writeVal(tMotor, tMotor->break_state);
+                if (useArduino)
+                {
+                    char data_to_send; // 시리얼 포트로 전송할 문자
+                    
+                    if (tMotor->break_state)
+                    {
+                        data_to_send = '1';
+                    }
+                    else
+                    {
+                        data_to_send = '0';
+                    }
+
+                    canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+                    usleep(10);
+
+                    // 데이터 수신
+                    std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+                    if (!received_data.empty()) {
+                        std::cout << "Received data: " << received_data << std::endl;
+                    }
+                }
+                else
+                {
+                    sensor.writeVal(tMotor, tMotor->break_state);
+                }
             }
 
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -723,14 +762,6 @@ void TestManager::GetArr(float arr[])
                 newData.spd = tmotor->spd;
                 newData.acl = tmotor->acl;
                 newData.isBreak = false;
-                //if (k < n/16)
-                //{
-                //    newData.isBreak = true;
-                //}
-                //else
-                //{
-                //    newData.isBreak = false;
-                //}
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -2061,16 +2092,28 @@ void TestManager::testBreak()
                 sensor.writeValTest(num, val);
             }
         }
+
+        sensor.closeDevice();
     }
-    
-    sensor.closeDevice();
 }
 
 void TestManager::allBreakOff()
 {
     if (useArduino)
     {
-        return;
+        char data_to_send = '0'; // 시리얼 포트로 전송할 문자
+
+        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+        usleep(100000);
+
+        // 데이터 수신
+        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+        if (!received_data.empty()) {
+            std::cout << "Received data: " << received_data << std::endl;
+        }
+
+        close(canManager.serial_fd);
     }
     else
     {
