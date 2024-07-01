@@ -32,7 +32,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - break test) : ";
         cin >> method;
 
         if (method == 1)
@@ -362,8 +362,6 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
-            canManager.clearReadBuffers();
-
             GetArr(q);
         }
         else if (method == 2)
@@ -490,6 +488,7 @@ void TestManager::SendTestProcess()
 
         allBreakOff();
         sensor.closeDevice();
+
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
@@ -2008,12 +2007,17 @@ void TestManager::testBreak()
 
     if(sensor.OpenDeviceUntilSuccess())
     {
-        cout << "\nSelect num : ";
-        cin >> num;
-        cout << "\nSelect val : ";
-        cin >> val;
+        while(true)
+        {
+            cout << "\n나가기 : -1";
+            cout << "\nSelect num : ";
+            cin >> num;
+            if (num == -1) break;
+            cout << "\nSelect val : ";
+            cin >> val;
 
-        sensor.writeValTest(num, val);
+            sensor.writeValTest(num, val);
+        }
     }
 
     sensor.closeDevice();
