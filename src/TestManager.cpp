@@ -80,8 +80,9 @@ void TestManager::SendTestProcess()
         {
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
+        cout << "time : " << t << "s\n";
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) : ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) : ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -96,6 +97,11 @@ void TestManager::SendTestProcess()
         else if (userInput == 9)
         {
             state.test = TestSub::FillBuf;
+        }
+        else if (userInput == 10)
+        {
+            cout << "time : ";
+            cin >> t;
         }
         break;
     }
@@ -745,7 +751,8 @@ void TestManager::GetArr(float arr[])
 
     getMotorPos(c_MotorAngle);
 
-    int n = 800; // 4초동안 실행
+    //int n = 800; // 4초동안 실행
+    int n = (int)1000*t/5;
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
