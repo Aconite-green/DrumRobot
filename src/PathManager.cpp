@@ -1350,6 +1350,10 @@ void PathManager::PathLoopTask()
 void PathManager::GetArr(vector<float> &arr)
 {
     cout << "Get Array...\n";
+    for (int k = 0; k < 9; k++)
+    {
+        cout << arr[k] << endl;
+    }
 
     vector<float> Qi;
     // vector<vector<float>> q_setting;
