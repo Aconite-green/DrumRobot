@@ -90,6 +90,7 @@ private:
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
+    float speed_test = 1000;
    
     /* Single Test Code */
     string selectedMotor = "waist";
@@ -134,5 +135,5 @@ private:
     void testBreak();
     void allBreakOff();
 
-    bool useArduino = false;
+    bool useArduino = true;
 };

@@ -1350,6 +1350,10 @@ void PathManager::PathLoopTask()
 void PathManager::GetArr(vector<float> &arr)
 {
     cout << "Get Array...\n";
+    for (int k = 0; k < 9; k++)
+    {
+        cout << arr[k] << endl;
+    }
 
     vector<float> Qi;
     // vector<vector<float>> q_setting;
@@ -1357,7 +1361,7 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = 0.005;
-    float t = 3;
+    float t = 4;
     int n = t / dt; // 4초동안 실행
     for (int k = 1; k <= n; ++k)
     {

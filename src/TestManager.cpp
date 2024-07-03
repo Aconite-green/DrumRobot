@@ -81,8 +81,9 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
         cout << "time : " << t << "s\n";
+        cout << "spd : " << speed_test << "erpm\n";
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) : ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / 확인 (11) / speed (12): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -102,6 +103,24 @@ void TestManager::SendTestProcess()
         {
             cout << "time : ";
             cin >> t;
+        }
+        else if (userInput == 11)
+        {
+            float c_MotorAngle[9];
+            getMotorPos(c_MotorAngle);
+
+            cout << "[ Current Q Values (Ladian) ]\n";
+            for (int i = 0; i < 9; i++)
+            {
+                
+                cout << "Q[" << i << "] : " << q[i] << "\t " << "C_M[" << i << "] : " << c_MotorAngle[i] << "\n";
+            }
+            cin >> userInput;
+        }
+        else if (userInput == 12)
+        {
+            cout << "speed (0~32767) : ";
+            cin >> speed_test;
         }
         break;
     }
@@ -766,8 +785,10 @@ void TestManager::GetArr(float arr[])
             {
                 TMotorData newData;
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.spd = tmotor->spd;
-                newData.acl = tmotor->acl;
+                //newData.spd = tmotor->spd;
+                //newData.acl = tmotor->acl;
+                newData.spd = speed_test;
+                newData.acl = 32767;
                 newData.isBreak = false;
                 tmotor->commandBuffer.push(newData);
             }

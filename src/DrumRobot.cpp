@@ -1112,8 +1112,8 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "waist")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->rMin = -M_PI / 2.0f; // -90deg
-                tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->rMin = -90.0f * M_PI / 180.0f; // -90deg
+                tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
                 tMotor->spd = 1000;
@@ -1124,8 +1124,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorReadBit = 3;
-                tMotor->rMin = 0.0f;               // 0deg
-                tMotor->rMax = M_PI * (5.0 / 6.0); // 150deg
+                tMotor->rMin = 0.0f * M_PI / 180.0f;   // 0deg
+                tMotor->rMax = 150.0f * M_PI / 180.0f; // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
                 tMotor->spd = 1000;
@@ -1136,8 +1136,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorReadBit = 0;
-                tMotor->rMin = M_PI / 6.0; // 30deg
-                tMotor->rMax = M_PI;       // 180deg
+                tMotor->rMin = 30.0f * M_PI / 180.0f;  // 30deg
+                tMotor->rMax = 180.0f * M_PI / 180.0f; // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
                 tMotor->spd = 1000;
@@ -1148,8 +1148,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorReadBit = 4;
-                tMotor->rMin = -M_PI / 3.0f; // -60deg
-                tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
+                tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
                 tMotor->spd = 1000;
@@ -1160,8 +1160,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorReadBit = 5;
-                tMotor->rMin = -M_PI / 6.0f; // -30deg
-                tMotor->rMax = M_PI * 0.8f;  // 144deg
+                tMotor->rMin = -30.0f * M_PI / 180.0f;  // -30deg
+                tMotor->rMax = 144.0f * M_PI / 180.0f;  // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 1000;
@@ -1172,8 +1172,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorReadBit = 1;
-                tMotor->rMin = -M_PI / 3.0f; // -60deg
-                tMotor->rMax = M_PI / 2.0f;  // 90deg
+                tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
+                tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
                 tMotor->spd = 1000;
@@ -1184,8 +1184,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorReadBit = 2;
-                tMotor->rMin = -M_PI / 6.0f; // -30 deg
-                tMotor->rMax = M_PI * 0.8f;  // 144 deg
+                tMotor->rMin = -30.0f * M_PI / 180.0f; // -30 deg
+                tMotor->rMax = 144.0f * M_PI / 180.0f;  // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
@@ -1199,8 +1199,8 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.6f; // -108deg
-                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->rMin = -108.0f * M_PI / 180.0f; // -108deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword
                 maxonMotor->txPdoIds[1] = 0x307; // TargetPosition
@@ -1212,8 +1212,8 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.6f; // -108deg
-                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->rMin = -108.0f * M_PI / 180.0f; // -108deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword
                 maxonMotor->txPdoIds[1] = 0x308; // TargetPosition
@@ -1225,8 +1225,8 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_foot")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
-                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->rMin = -90.0f * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x209; // Controlword
                 maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
@@ -1238,8 +1238,8 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_foot")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
-                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->rMin = -90.0f * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x20A; // Controlword
                 maxonMotor->txPdoIds[1] = 0x30A; // TargetPosition
@@ -1251,8 +1251,8 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "maxonForTest")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = -M_PI * 0.5f; // -90deg
-                maxonMotor->rMax = M_PI * 0.75f; // 135deg
+                maxonMotor->rMin = -90.0f * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x20B; // Controlword
                 maxonMotor->txPdoIds[1] = 0x30B; // TargetPosition
