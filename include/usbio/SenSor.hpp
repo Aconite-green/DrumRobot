@@ -12,6 +12,7 @@ public:
     Sensor();
 
     ~Sensor();
+    
 
     DWORD ReadVal();
     bool OpenDeviceUntilSuccess();

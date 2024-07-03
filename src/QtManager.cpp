@@ -39,7 +39,7 @@ bool QtManager::sendMessage(const std::string &message) {
     return true;
 }
 
-std::string QtManager::receiveMessage() {
+    std::string QtManager::receiveMessage() {
     socklen_t clientLen = sizeof(clientAddr);
 
     // 클라이언트로부터 데이터 수신
