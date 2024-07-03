@@ -15,6 +15,7 @@
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
 #include "../include/managers/QtManager.hpp"
+#include "../include/usbio/SenSor.hpp"
 
 using namespace std;
 
@@ -38,13 +39,14 @@ int main(int argc, char *argv[])
     // Create Share Resource
     State state;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
-
+    
+    Sensor sensor(motors);
     CanManager canManager(motors);
     PathManager pathManager(state, canManager, motors);
-    TestManager testManager(state, canManager, motors);
-    HomeManager homeManager(state, canManager, motors);
+    TestManager testManager(state, canManager, motors, sensor);
+    HomeManager homeManager(state, canManager, motors, sensor);
 
-    DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors);
+    DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
     //QtManager qtManager(state, canManager, motors);
     
     // Create Threads

@@ -43,7 +43,8 @@ public:
               PathManager &pathManagerRef,
               HomeManager &homeManagerRef,
               TestManager &testManagerRef,
-              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+              std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+              Sensor &sensorRef);
 
     void stateMachine();
     void sendLoopForThread();
@@ -51,6 +52,8 @@ public:
 
     // Qt Input
     std::string m_Input;
+
+    void breakOn();
 private:
     State &state;
     CanManager &canManager;
@@ -58,11 +61,11 @@ private:
     HomeManager &homeManager;
     TestManager &testManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+    Sensor &sensor;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     TMotorServoCommandParser tservocmd;
-    Sensor sensor;
 
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;

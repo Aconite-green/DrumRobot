@@ -3,8 +3,10 @@
 // #include "../managers/HomeManager.hpp"
 HomeManager::HomeManager(State &stateRef,
                          CanManager &canManagerRef,
-                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
+                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                         Sensor &sensorRef
+                         )
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef), sensor(sensorRef)
 {
 }
 
@@ -435,7 +437,7 @@ void HomeManager::HomeTmotor()
                 tMotors.push_back(dynamic_pointer_cast<TMotor>(currentMotors[i]));
                 std::cout << "<< Homing for " << tMotors[i]->myName << " >>\n";
 
-                sensorsBit.push_back(tMotors[i]->sensorBit);
+                sensorsBit.push_back(tMotors[i]->sensorReadBit);
                 firstPosition.push_back(0.0f);
                 secondPosition.push_back(0.0f);
                 firstSensorTriggered.push_back(false);
@@ -626,6 +628,7 @@ void HomeManager::HomeTmotor()
                     }
                     newData.spd = motor->spd;
                     newData.acl = motor->acl;
+                    newData.isBreak = false;
                     motor->commandBuffer.push(newData);
                 }
             }

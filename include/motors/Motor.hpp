@@ -72,7 +72,7 @@ struct TMotorData
     float position;
     int32_t spd;
     int32_t acl;
-    bool solbreak;
+    bool isBreak;
 };
 
 class TMotor : public GenericMotor
@@ -81,9 +81,10 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
-    int sensorBit;
+    int sensorReadBit, sensorWriteBit;
     double homeOffset = 0.0;
     double sensorLocation = 0.0;
+    bool break_state;
 
     // For Homing Session
     bool atFirstSensor, atSecondSensor, atZeroPosition;

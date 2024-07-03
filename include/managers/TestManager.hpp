@@ -6,6 +6,7 @@
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
+#include "../include/usbio/SenSor.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -33,7 +34,7 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef);
 
     void SendTestProcess();
     void MaxonEnable();
@@ -47,6 +48,8 @@ private:
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+
+    Sensor &sensor;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -87,6 +90,7 @@ private:
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
+    float speed_test = 1000;
    
     /* Single Test Code */
     string selectedMotor = "waist";
@@ -128,4 +132,8 @@ private:
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
+    void testBreak();
+    void allBreakOff();
+
+    bool useArduino = true;
 };

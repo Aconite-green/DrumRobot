@@ -49,7 +49,9 @@ class HomeManager
 public:
     HomeManager(State &stateRef,
                 CanManager &canManagerRef,
-                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                Sensor &sensorRef
+                );
 
     void SendHomeProcess();
     void setMaxonMode(std::string targetMode);
@@ -61,11 +63,11 @@ private:
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+    Sensor &sensor;
 
     TMotorServoCommandParser tmotorServocmd;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
-    Sensor sensor;
 
     std::string motorName;
     vector<vector<string>> Priority = {

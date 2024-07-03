@@ -13,7 +13,7 @@ PathManager::PathManager(State &stateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool break_state)
 {
     for (auto &entry : motors)
     {
@@ -23,6 +23,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
             newData.acl = 50000;
+            newData.isBreak = break_state;
             tMotor->commandBuffer.push(newData);
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
@@ -1277,7 +1278,7 @@ void PathManager::PathLoopTask()
             // 손목부분은 cos함수로 연결 (위치제어)
             qt(7) = con_fun(q_current(7), qWrist.first, i, n);
             qt(8) = con_fun(q_current(8), qWrist.second, i, n);
-            Motors_sendBuffer(qt, qv_in, wrist_state);
+            Motors_sendBuffer(qt, qv_in, wrist_state, false);
         }
     }
     else // 쪼개진 경우
@@ -1317,7 +1318,7 @@ void PathManager::PathLoopTask()
             // 손목부분은 cos함수로 연결 (위치제어)
             qt1(7) = con_fun(q_current(7), qWrist.first, i, n);
             qt1(8) = con_fun(q_current(8), qWrist.second, i, n);
-            Motors_sendBuffer(qt1, qv_in, wrist_state);
+            Motors_sendBuffer(qt1, qv_in, wrist_state, false);
         }
 
         t_now += t2;
@@ -1340,7 +1341,7 @@ void PathManager::PathLoopTask()
             // 손목부분은 cos함수로 연결 (위치제어)
             qt2(7) = con_fun(qt1(7), qWrist.first, i, n);
             qt2(8) = con_fun(qt1(8), qWrist.second, i, n);
-            Motors_sendBuffer(qt2, qv_in, wrist_state);
+            Motors_sendBuffer(qt2, qv_in, wrist_state, false);
         }
     }
 }
@@ -1349,6 +1350,10 @@ void PathManager::PathLoopTask()
 void PathManager::GetArr(vector<float> &arr)
 {
     cout << "Get Array...\n";
+    for (int k = 0; k < 9; k++)
+    {
+        cout << arr[k] << endl;
+    }
 
     vector<float> Qi;
     // vector<vector<float>> q_setting;
@@ -1356,7 +1361,7 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = 0.005;
-    float t = 3;
+    float t = 4;
     int n = t / dt; // 4초동안 실행
     for (int k = 1; k <= n; ++k)
     {
@@ -1372,6 +1377,7 @@ void PathManager::GetArr(vector<float> &arr)
                 newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                 newData.spd = tmotor->spd;
                 newData.acl = tmotor->acl;
+                newData.isBreak = false;
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
