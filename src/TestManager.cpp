@@ -81,9 +81,10 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
         cout << "time : " << t << "s\n";
+        cout << "break start time : " << break_start_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / 확인 (11) / speed (12): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / 확인 (11) / speed (12) / break (13) : ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -121,6 +122,11 @@ void TestManager::SendTestProcess()
         {
             cout << "speed (0~32767) : ";
             cin >> speed_test;
+        }
+        else if (userInput == 13)
+        {
+            cout << "break start time (0~" << t << ") : ";
+            cin >> break_start_time;
         }
         break;
     }
@@ -549,7 +555,8 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
-        
+
+        usleep(50000);
         allBreakOff();
         
         if (method == 1)
@@ -771,7 +778,8 @@ void TestManager::GetArr(float arr[])
     getMotorPos(c_MotorAngle);
 
     //int n = 800; // 4초동안 실행
-    int n = (int)1000*t/5;
+    int n = (int)(1000*t/5);
+    int n_break = (int)(1000*break_start_time/5);
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
@@ -789,7 +797,14 @@ void TestManager::GetArr(float arr[])
                 //newData.acl = tmotor->acl;
                 newData.spd = speed_test;
                 newData.acl = 32767;
-                newData.isBreak = false;
+                if (k < n_break)
+                {
+                    newData.isBreak = false;
+                }
+                else
+                {
+                    newData.isBreak = true;
+                }
                 tmotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
