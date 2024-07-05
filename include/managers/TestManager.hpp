@@ -131,11 +131,15 @@ private:
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
     float current_servo;
+
+    /*flag_box*/
+
+    int repeat_flag = 0;
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
     void testBreak();
     void allBreakOff();
 
-    bool useArduino = true;
+    bool useArduino = false;
 };

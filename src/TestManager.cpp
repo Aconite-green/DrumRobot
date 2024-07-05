@@ -132,6 +132,17 @@ void TestManager::SendTestProcess()
             cout << "break end time (" << break_start_time << "~" << t << ") : ";
             cin >> break_end_time;
         }
+        else if (userInput == 14)
+        {
+            if(repeat_flag ==1)
+                repeat_flag=0;
+            else
+                repeat_flag =1;
+
+            cout << "chang repeat flag to " << repeat_flag << endl;
+        }
+        
+        
         break;
     }
     case TestSub::SetXYZ:
@@ -397,6 +408,11 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
+            if(repeat_flag == 1)
+            {
+
+            }
+            else 
             GetArr(q);
         }
         else if (method == 2)
@@ -824,6 +840,45 @@ void TestManager::GetArr(float arr[])
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+    if(repeat_flag ==1)
+    {
+        for (int k = 0; k < n; ++k)
+        {
+            // Make GetBack Array
+            Qi = connect(arr, c_MotorAngle, k, n);
+            q_setting.push_back(Qi);
+
+            // Send to Buffer
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    TMotorData newData;
+                    newData.position = c_MotorAngle[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                    //newData.spd = tmotor->spd;
+                    //newData.acl = tmotor->acl;
+                    newData.spd = speed_test;
+                    newData.acl = 32767;
+                    if (k < n_break || k > 800)
+                    {
+                        newData.isBreak = false;
+                    }
+                    else
+                    {
+                        newData.isBreak = true;
+                    }
+                    tmotor->commandBuffer.push(newData);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+                {
+                    MaxonData newData;
+                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                    newData.WristState = 0.5;
+                    maxonMotor->commandBuffer.push(newData);
+                }
             }
         }
     }
