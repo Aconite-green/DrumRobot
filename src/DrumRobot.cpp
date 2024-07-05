@@ -102,7 +102,7 @@ void DrumRobot::stateMachine()
             bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
-                usleep(500000); // 500ms
+                usleep(5000); // 500ms
                 if (!canManager.checkAllMotors_Fixed())
                 {
                     isWriteError = true;
@@ -1270,6 +1270,12 @@ void DrumRobot::initializecanManager()
     canManager.initializeCAN();
     canManager.checkCanPortsStatus();
     canManager.setMotorsSocket();
+
+    canManager.serial_fd = canManager.setup_serial_port();
+    if (canManager.serial_fd == -1) {
+        cout << "Serial error";
+        return;
+    }
 }
 
 void DrumRobot::DeactivateControlTask()
