@@ -82,9 +82,10 @@ void TestManager::SendTestProcess()
         }
         cout << "time : " << t << "s\n";
         cout << "break start time : " << break_start_time << "s\n";
+        cout << "break end time : " << break_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / 확인 (11) / speed (12) / break (13) : ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / q 확인 (11) / speed (12) / break time (13) : ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -127,6 +128,9 @@ void TestManager::SendTestProcess()
         {
             cout << "break start time (0~" << t << ") : ";
             cin >> break_start_time;
+
+            cout << "break end time (" << break_start_time << "~" << t << ") : ";
+            cin >> break_end_time;
         }
         break;
     }
@@ -394,8 +398,6 @@ void TestManager::SendTestProcess()
         if (method == 1)
         {
             GetArr(q);
-
-            canManager.clearReadBuffers();
         }
         else if (method == 2)
         {

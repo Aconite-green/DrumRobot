@@ -92,6 +92,7 @@ private:
     void GetArr(float arr[]);
     float speed_test = 1000;
     float break_start_time = 4.0;
+    float break_end_time = 4.0;
    
     /* Single Test Code */
     string selectedMotor = "waist";
