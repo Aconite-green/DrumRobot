@@ -394,6 +394,8 @@ void TestManager::SendTestProcess()
         if (method == 1)
         {
             GetArr(q);
+
+            canManager.clearReadBuffers();
         }
         else if (method == 2)
         {
@@ -426,11 +428,11 @@ void TestManager::SendTestProcess()
         // break를 위한 통신 초기화
         if (useArduino)
         {
-            canManager.serial_fd = canManager.setup_serial_port();
-            if (canManager.serial_fd == -1) {
-                cout << "Serial error";
-                return;
-            }
+            //canManager.serial_fd = canManager.setup_serial_port();
+            //if (canManager.serial_fd == -1) {
+            //    cout << "Serial error";
+            //    return;
+            //}
         }
         else
         {
@@ -556,12 +558,19 @@ void TestManager::SendTestProcess()
     {
         usleep(5000);
 
-        usleep(50000);
         allBreakOff();
         
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
+
+            std::ostringstream fileNameOut;
+            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            fileNameOut << "../../READ/Test_0704_P" << q[5]
+                        << "_spd" << speed_test
+                        << "_BreakTime" << break_start_time;
+            std::string fileName = fileNameOut.str();
+            parse_and_save_to_csv(fileName);
         }
         else if (method == 2)
         {
@@ -577,7 +586,7 @@ void TestManager::SendTestProcess()
                        << "_Kd" << kd
                        << "_in";
             std::string fileName = fileNameIn.str();
-            //save_to_txt_inputData(fileName);
+            save_to_txt_inputData(fileName);
 
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
@@ -797,7 +806,7 @@ void TestManager::GetArr(float arr[])
                 //newData.acl = tmotor->acl;
                 newData.spd = speed_test;
                 newData.acl = 32767;
-                if (k < n_break)
+                if (k < n_break || k > 800)
                 {
                     newData.isBreak = false;
                 }
@@ -2117,7 +2126,7 @@ void TestManager::testBreak()
             }
         }
 
-        close(canManager.serial_fd);
+        //close(canManager.serial_fd);
     }
     else
     {
@@ -2156,7 +2165,7 @@ void TestManager::allBreakOff()
             std::cout << "Received data: " << received_data << std::endl;
         }
 
-        close(canManager.serial_fd);
+        //close(canManager.serial_fd);
     }
     else
     {

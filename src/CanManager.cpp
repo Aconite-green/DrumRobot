@@ -621,7 +621,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, tMotor->spd, tMotor->acl);
+        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 0, 0);//tMotor->spd, tMotor->acl);
         if (!sendMotorFrame(tMotor))
         {
             return false;
