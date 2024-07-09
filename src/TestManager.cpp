@@ -86,7 +86,7 @@ void TestManager::SendTestProcess()
         cout << "spd : " << speed_test << "erpm\n";
         cout << "chang repeat flag to " << repeat_flag << endl;
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / q 확인 (11) / speed (12) / break time (13) : ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / speed (12) / break time (13) / repeat (14) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -130,7 +130,7 @@ void TestManager::SendTestProcess()
             cout << "break start time (0~" << t << ") : ";
             cin >> break_start_time;
 
-            cout << "break end time (" << break_start_time << "~" << 2*t << ") : ";
+            cout << "break end time (" << t << "~" << 2*t << ") : ";
             cin >> break_end_time;
         }
         else if (userInput == 14)
@@ -800,7 +800,7 @@ void TestManager::GetArr(float arr[])
     getMotorPos(c_MotorAngle);
 
     //int n = 800; // 4초동안 실행
-    int n = (int)(1000*t/5);
+    int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
     for (int k = 0; k < n; ++k)
