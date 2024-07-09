@@ -84,6 +84,7 @@ void TestManager::SendTestProcess()
         cout << "break start time : " << break_start_time << "s\n";
         cout << "break end time : " << break_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
+        cout << "chang repeat flag to " << repeat_flag << endl;
 
         cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Exit (-1) / Time (10) / q 확인 (11) / speed (12) / break time (13) : ";
         cin >> userInput;
@@ -129,7 +130,7 @@ void TestManager::SendTestProcess()
             cout << "break start time (0~" << t << ") : ";
             cin >> break_start_time;
 
-            cout << "break end time (" << break_start_time << "~" << t << ") : ";
+            cout << "break end time (" << break_start_time << "~" << 2*t << ") : ";
             cin >> break_end_time;
         }
         else if (userInput == 14)
@@ -138,8 +139,7 @@ void TestManager::SendTestProcess()
                 repeat_flag=0;
             else
                 repeat_flag =1;
-
-            cout << "chang repeat flag to " << repeat_flag << endl;
+   
         }
         
         
@@ -408,11 +408,6 @@ void TestManager::SendTestProcess()
         // Fill motors command Buffer
         if (method == 1)
         {
-            if(repeat_flag == 1)
-            {
-
-            }
-            else 
             GetArr(q);
         }
         else if (method == 2)
@@ -807,6 +802,7 @@ void TestManager::GetArr(float arr[])
     //int n = 800; // 4초동안 실행
     int n = (int)(1000*t/5);
     int n_break = (int)(1000*break_start_time/5);
+    int n_break_end = (int)(1000*break_end_time/5) - n;
     for (int k = 0; k < n; ++k)
     {
         // Make GetBack Array
@@ -824,7 +820,7 @@ void TestManager::GetArr(float arr[])
                 //newData.acl = tmotor->acl;
                 newData.spd = speed_test;
                 newData.acl = 32767;
-                if (k < n_break || k > 800)
+                if (k < n_break)
                 {
                     newData.isBreak = false;
                 }
@@ -862,13 +858,13 @@ void TestManager::GetArr(float arr[])
                     //newData.acl = tmotor->acl;
                     newData.spd = speed_test;
                     newData.acl = 32767;
-                    if (k < n_break || k > 800)
+                    if (k < n_break_end)
                     {
-                        newData.isBreak = false;
+                        newData.isBreak = true;
                     }
                     else
                     {
-                        newData.isBreak = true;
+                        newData.isBreak = false;
                     }
                     tmotor->commandBuffer.push(newData);
                 }

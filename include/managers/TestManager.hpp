@@ -141,5 +141,5 @@ private:
     void testBreak();
     void allBreakOff();
 
-    bool useArduino = false;
+    bool useArduino = true;
 };

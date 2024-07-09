@@ -27,8 +27,8 @@ private:
     
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
-    //int DeviceID = USB2051_32;
-    int DeviceID = USB2055_32;
+    int DeviceID = USB2051_32;
+    //int DeviceID = USB2055_32;
     BYTE BoardID = 0x02;
     BYTE total_di;
     int DevNum, res;
