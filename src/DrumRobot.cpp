@@ -1160,8 +1160,8 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = 1.0f;
                 tMotor->sensorReadBit = 5;
-                tMotor->rMin = -30.0f * M_PI / 180.0f;  // -30deg
-                tMotor->rMax = 144.0f * M_PI / 180.0f;  // 144deg
+                tMotor->rMin = -30.0f * M_PI / 180.0f; // -30deg
+                tMotor->rMax = 144.0f * M_PI / 180.0f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 1000;
@@ -1185,7 +1185,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->sensorReadBit = 2;
                 tMotor->rMin = -30.0f * M_PI / 180.0f; // -30 deg
-                tMotor->rMax = 144.0f * M_PI / 180.0f;  // 144 deg
+                tMotor->rMax = 144.0f * M_PI / 180.0f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
@@ -1200,7 +1200,7 @@ void DrumRobot::initializeMotors()
             {
                 maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -108.0f * M_PI / 180.0f; // -108deg
-                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f;  // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword
                 maxonMotor->txPdoIds[1] = 0x307; // TargetPosition
@@ -1213,7 +1213,7 @@ void DrumRobot::initializeMotors()
             {
                 maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = -108.0f * M_PI / 180.0f; // -108deg
-                maxonMotor->rMax = 135.0f * M_PI / 180.0f; // 135deg
+                maxonMotor->rMax = 135.0f * M_PI / 180.0f;  // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword
                 maxonMotor->txPdoIds[1] = 0x308; // TargetPosition
@@ -1272,7 +1272,8 @@ void DrumRobot::initializecanManager()
     canManager.setMotorsSocket();
 
     canManager.serial_fd = canManager.setup_serial_port();
-    if (canManager.serial_fd == -1) {
+    if (canManager.serial_fd == -1)
+    {
         cout << "Serial error";
         return;
     }
@@ -1643,7 +1644,7 @@ void DrumRobot::breakOn()
 {
     static bool isBreak = false;
 
-    if(isBreak)
+    if (isBreak)
     {
         char data_to_send = '0'; // 시리얼 포트로 전송할 문자
         canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
@@ -1652,7 +1653,8 @@ void DrumRobot::breakOn()
 
         // 데이터 수신
         std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty()) {
+        if (!received_data.empty())
+        {
             std::cout << "Received data: " << received_data << std::endl;
         }
 
@@ -1662,17 +1664,18 @@ void DrumRobot::breakOn()
     {
         char data_to_send = '1'; // 시리얼 포트로 전송할 문자
         canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-    
+
         usleep(100000);
 
         // 데이터 수신
         std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty()) {
+        if (!received_data.empty())
+        {
             std::cout << "Received data: " << received_data << std::endl;
         }
 
         isBreak = true;
     }
-    
+
     return;
 }
