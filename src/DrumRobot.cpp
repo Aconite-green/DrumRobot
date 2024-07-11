@@ -1108,7 +1108,7 @@ void DrumRobot::initializeMotors()
         auto &motor = motor_pair.second;
 
         // 타입에 따라 적절한 캐스팅과 초기화 수행
-        if (std::<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
             // 각 모터 이름에 따른 멤버 변수 설정
             if (motor_pair.first == "waist")
