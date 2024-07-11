@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     //QtManager qtManager(state, canManager, motors);
     
     // Measure the start time
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);

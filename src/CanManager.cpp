@@ -412,6 +412,9 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
+
+    appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
+
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
