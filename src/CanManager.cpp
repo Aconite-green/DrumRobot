@@ -412,6 +412,9 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
+
+    appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
+
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
@@ -712,6 +715,8 @@ void CanManager::setCANFrame()
             tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
             // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
             tMotor->break_state = tData.isBreak;
+
+            appendToCSV_CM("TIME_DESIRED.txt", tData.position, tMotor->currentPos);
         }
     }
     Input_pos.push_back(Pos);
@@ -896,6 +901,41 @@ void CanManager::appendToCSV_CM(const std::string& filename, float fixed_positio
         // 데이터 추가
         file << elapsed.count() << "," << fixed_position << "," << current_position << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
        
+        // 파일 닫기
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << fullPath << std::endl;
+    }
+}
+
+// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+void CanManager::appendToCSV_CAN(const std::string& filename, can_frame& c_frame) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - start;
+    std::ofstream file;
+    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+
+    // 파일이 이미 존재하는지 확인
+    bool fileExists = std::ifstream(fullPath).good();
+
+    // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
+    if (!fileExists) {
+        file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
+    } else {
+        file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
+    }
+    // 파일이 제대로 열렸는지 확인
+
+    if (file.is_open()) {
+        // 데이터 추가
+        file << elapsed.count(); // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+       
+       // can_frame의 data 배열을 CSV 형식으로 저장
+        for (int i = 0; i < 8; ++i) {
+            file << "," << static_cast<int>(c_frame.data[i]);
+        }
+        file << "\n";
+
         // 파일 닫기
         file.close();
     } else {

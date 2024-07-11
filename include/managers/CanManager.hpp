@@ -125,6 +125,7 @@ public:
     const std::string basePath = "../../READ/";  // 기본 경로
     // 변수를 CSV 파일에 한 줄씩 저장하는 함수
     void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
+    void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
 
 private:
