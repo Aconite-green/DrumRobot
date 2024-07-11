@@ -5,6 +5,7 @@
 CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : motors(motorsRef)
 {
+        start_CM = std::chrono::high_resolution_clock::now(); 
 }
 
 CanManager::~CanManager()
@@ -621,8 +622,8 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        /*여기*/
-        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 0, 0);//20000, 300000);//tMotor->spd, tMotor->acl);
+        appendToCSV_CM("TIME_FIXED_CURRENT", motor->fixedPos, tMotor->currentPos);
+        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
         if (!sendMotorFrame(tMotor))
         {
             return false;
@@ -842,5 +843,37 @@ std::string CanManager::read_char_from_serial(int fd) {
     } else {
         buffer[n] = '\0';
         return std::string(buffer);
+    }
+}
+
+const std::string basePath_TM = "../../READ/";  // 기본 경로
+
+
+// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+void CanManager::appendToCSV_CM(const std::string& filename, float fixed_position, float current_position) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - start_CM;
+    std::ofstream file;
+    std::string fullPath = basePath_TM + filename;  // 기본 경로와 파일 이름을 결합
+
+    // 파일이 이미 존재하는지 확인
+    bool fileExists = std::ifstream(fullPath).good();
+
+    // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
+    if (!fileExists) {
+        file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
+    } else {
+        file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
+    }
+    // 파일이 제대로 열렸는지 확인
+
+    if (file.is_open()) {
+        // 데이터 추가
+        file << elapsed.count() << "," << fixed_position << "," << current_position << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+       
+        // 파일 닫기
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << fullPath << std::endl;
     }
 }
