@@ -24,6 +24,8 @@
 #include <queue>
 #include <memory>
 #include <gpiod.h>
+#include <chrono>
+#include <fstream>
 
 #define GPIO_CHIP "/dev/gpiochip0"
 #define GPIO_OUTPUT_LINES 8 // 사용할 GPIO 핀 개수
@@ -119,6 +121,9 @@ public:
     std::string read_char_from_serial(int fd);
 
 private:
+
+    std::chrono::high_resolution_clock::time_point start_CM;  
+
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -135,6 +140,11 @@ private:
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
     void clearCanBuffer(int canSocket);
+
+    /*save csv file*/
+    // 변수를 CSV 파일에 한 줄씩 저장하는 함수
+    void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
+
 };
 
 #endif // CAN_SOCKET_UTILS_H
