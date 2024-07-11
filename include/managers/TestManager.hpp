@@ -47,7 +47,7 @@ public:
 
 private:
 
-    std::chrono::high_resolution_clock::time_point start_TM;  // 프로그램 시작 시간
+    // std::chrono::high_resolution_clock::time_point start_TM;  // 프로그램 시작 시간
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
@@ -148,6 +148,6 @@ private:
 
     /*save csv file*/
     // 변수를 CSV 파일에 한 줄씩 저장하는 함수
-    void appendToCSV_TM(const std::string& filename);
+    // void appendToCSV_TM(const std::string& filename);
 
 };

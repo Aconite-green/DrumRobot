@@ -120,9 +120,14 @@ public:
     void send_char_to_serial(int fd, char data);
     std::string read_char_from_serial(int fd);
 
-private:
+    /*save csv file*/
+    std::chrono::high_resolution_clock::time_point start;  
+    const std::string basePath = "../../READ/";  // 기본 경로
+    // 변수를 CSV 파일에 한 줄씩 저장하는 함수
+    void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
+    void appendToCSV_time(const std::string& filename);
 
-    std::chrono::high_resolution_clock::time_point start_CM;  
+private:
 
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     TMotorCommandParser tmotorcmd;
@@ -140,11 +145,6 @@ private:
     int createSocket(const std::string &ifname);
     int setSocketTimeout(int socket, int sec, int usec);
     void clearCanBuffer(int canSocket);
-
-    /*save csv file*/
-    // 변수를 CSV 파일에 한 줄씩 저장하는 함수
-    void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
-
 };
 
 #endif // CAN_SOCKET_UTILS_H
