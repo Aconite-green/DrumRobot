@@ -35,7 +35,7 @@ void TestManager::SendTestProcess()
 
         cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - Break, 9 - Test) : ";
         cin >> method;
-
+        //
         if (method == 1)
         {
             state.test = TestSub::SetQValue;
