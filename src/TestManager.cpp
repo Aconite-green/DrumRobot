@@ -7,6 +7,7 @@ using namespace std;
 TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef)
     : state(stateRef), canManager(canManagerRef), motors(motorsRef), sensor(sensorRef)
 {
+
 }
 
 void TestManager::SendTestProcess()
@@ -32,7 +33,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - Command , 7 - 나가기, 8 - Break) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - Break, 9 - Test) : ";
         cin >> method;
 
         if (method == 1)
@@ -69,8 +70,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 9)
         {
-            // 이 라인 실행하면 cin 이 안됨
-            //state.test = TestSub::SetCommand;
+            state.test = TestSub::SetCommand;
         }
 
         break;
@@ -123,7 +123,7 @@ void TestManager::SendTestProcess()
             cout << "[ Current Q Values (Ladian) ]\n";
             for (int i = 0; i < 9; i++)
             {
-
+                
                 cout << "Q[" << i << "] : " << q[i] << "\t " << "C_M[" << i << "] : " << c_MotorAngle[i] << "\n";
             }
             cin >> userInput;
@@ -138,15 +138,16 @@ void TestManager::SendTestProcess()
             cout << "break start time (0~" << t << ") : ";
             cin >> break_start_time;
 
-            cout << "break end time (" << t << "~" << 2 * t << ") : ";
+            cout << "break end time (" << t << "~" << 2*t << ") : ";
             cin >> break_end_time;
         }
         else if (userInput == 14)
         {
-            if (repeat_flag == 1)
-                repeat_flag = 0;
+            if(repeat_flag ==1)
+                repeat_flag=0;
             else
-                repeat_flag = 1;
+                repeat_flag =1;
+   
         }
         else if (userInput == 15)
         {
@@ -158,7 +159,7 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 16)
         {
-            if (buffer_test_flag)
+            if(buffer_test_flag)
             {
                 buffer_test_flag = false;
             }
@@ -167,7 +168,7 @@ void TestManager::SendTestProcess()
                 buffer_test_flag = true;
             }
         }
-
+        
         break;
     }
     case TestSub::SetXYZ:
@@ -301,221 +302,131 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetServoTestParm:
     {
-        // for (auto &motor_pair : motors)
-        // {
-        //     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-        //     {
-        //         tMotor->clearCommandBuffer();
-        //         tMotor->clearReceiveBuffer();
-        //     }
-        //     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        //     {
-        //         maxonMotor->clearCommandBuffer();
-        //         maxonMotor->clearReceiveBuffer();
-        //     }
-        //     Input_pos.clear();
-        // }
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                tMotor->clearCommandBuffer();
+                tMotor->clearReceiveBuffer();
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            {
+                maxonMotor->clearCommandBuffer();
+                maxonMotor->clearReceiveBuffer();
+            }
+            Input_pos.clear();
+        }
 
-        // char userInput = '0';
-        // int ret = system("clear");
-        // if (ret == -1)
-        //     std::cout << "system clear error" << endl;
-
-        // std::cout << "< Current Position >\n";
-        // for (auto &entry : motors)
-        // {
-        //     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        //     {
-        //         tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
-        //         cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
-        //         if (tMotor->myName == selectedMotor_servo)
-        //         {
-        //             targetpos_coo = tMotor->coordinatePos;
-        //         }
-        //     }
-        // }
-        // std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
-        // std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
-        //           << "Time : " << time_servo << "[sec]\n"
-        //           << "Target coordinate Pos : " << targetpos_coo << " [Radian]\n"
-        //           << "Single Target Pos : " << targetpos_des << " [Radian]\n"
-        //           << "Current Break Val : " << current_servo << "[A]\n";
-        // std::cout << "------------------------------------------------------------------------------------------------------------\n";
-
-        // std::cout << "\n[Commands]\n";
-        // std::cout << "[s] : Select Other Motor\n"
-        //           << "[t] : Set Time"
-        //           << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
-        //           << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
-        //           << "[r] : run\t [e] : Exit\n";
-        // std::cout << "Enter Command : ";
-        // std::cin >> userInput;
-
-        // if (userInput == 's')
-        // {
-        //     std::cout << "\nMotor List : \n";
-        //     for (auto &motor_pair : motors)
-        //     {
-        //         std::cout << motor_pair.first << "\n";
-        //     }
-        //     std::cout << "\nEnter Desire Motor : ";
-        //     std::cin >> selectedMotor_servo;
-        // }
-        // else if (userInput == 't')
-        // {
-        //     std::cout << "\nEnter Desire Time [sec] : ";
-        //     std::cin >> time_servo;
-        // }
-        // else if (userInput == 'p')
-        // {
-        //     std::cout << "\nEnter Desire Target Position [Degree] : ";
-        //     std::cin >> targetpos_des;
-        // }
-        // else if (userInput == 'd')
-        // {
-        //     std::cout << "\nEnter Desire Current : ";
-        //     std::cin >> current_servo;
-        // }
-        // else if (userInput == 'f')
-        // {
-        //     for (auto &entry : motors)
-        //     {
-        //         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        //         {
-        //             if (tMotor->myName == selectedMotor_servo)
-        //             {
-        //                 tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-        //                 canManager.sendMotorFrame(tMotor);
-        //             }
-        //         }
-        //     }
-        // }
-        // else if (userInput == 'g')
-        // {
-        //     for (auto &entry : motors)
-        //     {
-        //         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        //         {
-        //             if (tMotor->myName == selectedMotor_servo)
-        //             {
-        //                 tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, current_servo);
-        //                 canManager.sendMotorFrame(tMotor);
-        //             }
-        //         }
-        //     }
-        // }
-        // else if (userInput == 'h')
-        // {
-        //     for (auto &entry : motors)
-        //     {
-        //         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        //         {
-        //             if (tMotor->myName == selectedMotor_servo)
-        //             {
-        //                 tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
-        //                 canManager.sendMotorFrame(tMotor);
-        //             }
-        //         }
-        //     }
-        // }
-        // else if (userInput == 'r')
-        // {
-        //     state.test = TestSub::FillBuf;
-        // }
-        // else if (userInput == 'e')
-        // {
-        //     state.test = TestSub::SelectParamByUser;
-        // }
-
-        int userInput = 100;
-        bool run_flag = false;
+        char userInput = '0';
         int ret = system("clear");
-
-        // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        static int mode = 1;
-        static float test_spd = 0.0;
-        static float test_pos = 0.0;
-
-        float c_MotorAngle[9];
-        getMotorPos(c_MotorAngle);
-
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            cout << "q[" << i << "] : " << c_MotorAngle[i] << "\n";
-            q[i] = c_MotorAngle[i];
-        }
 
-        if (mode == 1)
+        std::cout << "< Current Position >\n";
+        for (auto &entry : motors)
         {
-            cout << "speed mode" << "\n";
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+                cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
+                if (tMotor->myName == selectedMotor_servo)
+                {
+                    targetpos_coo = tMotor->coordinatePos;
+                }
+            }
         }
-        else if (mode == 2)
-        {
-            cout << "position mode" << "\n";
-        }
-        else if (mode == 3)
-        {
-            cout << "position speed mode" << "\n";
-        }
+        std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
+        std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
+                  << "Time : " << time_servo << "[sec]\n"
+                  << "Target coordinate Pos : " << targetpos_coo << " [Radian]\n"
+                  << "Single Target Pos : " << targetpos_des << " [Radian]\n"
+                  << "Current Break Val : " << current_servo << "[A]\n";
+        std::cout << "------------------------------------------------------------------------------------------------------------\n";
 
-        cout << "pos : " << test_pos << "rad\n";
-        cout << "spd : " << test_spd << "erpm\n";
+        std::cout << "\n[Commands]\n";
+        std::cout << "[s] : Select Other Motor\n"
+                  << "[t] : Set Time"
+                  << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
+                  << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
+                  << "[r] : run\t [e] : Exit\n";
+        std::cout << "Enter Command : ";
+        std::cin >> userInput;
 
-        cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
-        cin >> userInput;
-
-        if (userInput == -1)
+        if (userInput == 's')
         {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput == 1)
-        {
-            cout << "\nspeed mode (1) / position mode (2) / position speed mode (3): ";
-            cin >> mode;
-        }
-        else if (userInput == 2)
-        {
-            cout << "pos : ";
-            cin >> test_pos;
-            cout << "spd : ";
-            cin >> test_spd;
-        }
-        else if (userInput == 0)
-        {
-            run_flag = true;
-        }
-
-        if (run_flag)
-        {
+            std::cout << "\nMotor List : \n";
             for (auto &motor_pair : motors)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                std::cout << motor_pair.first << "\n";
+            }
+            std::cout << "\nEnter Desire Motor : ";
+            std::cin >> selectedMotor_servo;
+        }
+        else if (userInput == 't')
+        {
+            std::cout << "\nEnter Desire Time [sec] : ";
+            std::cin >> time_servo;
+        }
+        else if (userInput == 'p')
+        {
+            std::cout << "\nEnter Desire Target Position [Degree] : ";
+            std::cin >> targetpos_des;
+        }
+        else if (userInput == 'd')
+        {
+            std::cout << "\nEnter Desire Current : ";
+            std::cin >> current_servo;
+        }
+        else if (userInput == 'f')
+        {
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
-                    float test_pos2 = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
-                    // test_spd = tMotor->spd;
-                    float test_acl = tMotor->acl;
-
-                    if (mode == 1)
+                    if (tMotor->myName == selectedMotor_servo)
                     {
-                        tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
-                    }
-                    else if (mode == 2)
-                    {
-                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
-                    }
-                    else if (mode == 3)
-                    {
-                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
                     }
                 }
             }
-
-            usleep(10000);
         }
-
+        else if (userInput == 'g')
+        {
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    if (tMotor->myName == selectedMotor_servo)
+                    {
+                        tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, current_servo);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                }
+            }
+        }
+        else if (userInput == 'h')
+        {
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    if (tMotor->myName == selectedMotor_servo)
+                    {
+                        tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                }
+            }
+        }
+        else if (userInput == 'r')
+        {
+            state.test = TestSub::FillBuf;
+        }
+        else if (userInput == 'e')
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
         break;
     }
     case TestSub::SetCommand:
@@ -525,9 +436,9 @@ void TestManager::SendTestProcess()
         bool run_flag = false;
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        static int mode = 1;
-        static float test_spd = 0.0;
-        static float test_pos = 0.0;
+        int mode = 1;
+        float test_spd = 0.0;
+        float test_pos = 0.0;
 
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
@@ -601,6 +512,7 @@ void TestManager::SendTestProcess()
                     float test_pos2 = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
                     // test_spd = tMotor->spd;
                     float test_acl = tMotor->acl;
+                    
 
                     if (mode == 1)
                     {
@@ -617,7 +529,7 @@ void TestManager::SendTestProcess()
                 }
             }
         }
-
+        
         break;
     }
     case TestSub::FillBuf:
@@ -659,8 +571,7 @@ void TestManager::SendTestProcess()
         if (useArduino)
         {
             canManager.serial_fd = canManager.setup_serial_port();
-            if (canManager.serial_fd == -1)
-            {
+            if (canManager.serial_fd == -1) {
                 cout << "Serial error";
                 return;
             }
@@ -669,7 +580,7 @@ void TestManager::SendTestProcess()
         {
             sensor.OpenDeviceUntilSuccess();
         }
-
+        
         state.test = TestSub::CheckBuf;
         break;
     }
@@ -733,7 +644,7 @@ void TestManager::SendTestProcess()
                 if (useArduino)
                 {
                     char data_to_send; // 시리얼 포트로 전송할 문자
-
+                    
                     if (tMotor->break_state)
                     {
                         data_to_send = '1';
@@ -749,8 +660,7 @@ void TestManager::SendTestProcess()
 
                     // 데이터 수신
                     std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-                    if (!received_data.empty())
-                    {
+                    if (!received_data.empty()) {
                         std::cout << "Received data: " << received_data << std::endl;
                     }
                 }
@@ -792,12 +702,12 @@ void TestManager::SendTestProcess()
         usleep(5000);
 
         allBreakOff();
-
+        
         if (method == 1)
         {
             if (buffer_test_flag && repeat_num == 0)
             {
-                repeat_num++;
+                repeat_num ++;
                 for (int i = 1; i < 9; i++)
                 {
                     q[i] += 3.0;
@@ -809,14 +719,14 @@ void TestManager::SendTestProcess()
                 repeat_num = 0;
                 state.test = TestSub::SetQValue;
             }
-
+            
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
             fileNameOut << "../../READ/Test_0704_P" << q[5]
                         << "_spd" << speed_test
                         << "_BreakTime" << break_start_time;
             std::string fileName = fileNameOut.str();
-            // parse_and_save_to_csv(fileName);
+            //parse_and_save_to_csv(fileName);
         }
         else if (method == 2)
         {
@@ -1033,13 +943,13 @@ void TestManager::GetArr(float arr[])
 
     getMotorPos(c_MotorAngle);
 
-    // int n = 800; // 4초동안 실행
-    int n = (int)(1000 * t / 5); // t초동안 실행
-    int n_break = (int)(1000 * break_start_time / 5);
-    int n_break_end = (int)(1000 * break_end_time / 5) - n;
+    //int n = 800; // 4초동안 실행
+    int n = (int)(1000*t/5);    // t초동안 실행
+    int n_break = (int)(1000*break_start_time/5);
+    int n_break_end = (int)(1000*break_end_time/5) - n;
     int nn = 1;
-
-    for (int i = 0; i < nn; i++)
+    
+    for(int i = 0; i < nn; i++)
     {
         for (int k = 0; k < n; ++k)
         {
@@ -1054,8 +964,8 @@ void TestManager::GetArr(float arr[])
                 {
                     TMotorData newData;
                     newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                    // newData.spd = tmotor->spd;
-                    // newData.acl = tmotor->acl;
+                    //newData.spd = tmotor->spd;
+                    //newData.acl = tmotor->acl;
                     newData.spd = speed_test;
                     newData.acl = 32767;
                     if (k < n_break)
@@ -1077,7 +987,7 @@ void TestManager::GetArr(float arr[])
                 }
             }
         }
-        if (repeat_flag == 1)
+        if(repeat_flag ==1)
         {
             for (int k = 0; k < n; ++k)
             {
@@ -1092,8 +1002,8 @@ void TestManager::GetArr(float arr[])
                     {
                         TMotorData newData;
                         newData.position = c_MotorAngle[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                        // newData.spd = tmotor->spd;
-                        // newData.acl = tmotor->acl;
+                        //newData.spd = tmotor->spd;
+                        //newData.acl = tmotor->acl;
                         newData.spd = speed_test;
                         newData.acl = 32767;
                         if (k < n_break_end)
@@ -2380,16 +2290,15 @@ void TestManager::testBreak()
     int num, val;
     char data_to_send; // 시리얼 포트로 전송할 문자
 
-    if (useArduino)
+    if(useArduino)
     {
         canManager.serial_fd = canManager.setup_serial_port();
-        if (canManager.serial_fd == -1)
-        {
+        if (canManager.serial_fd == -1) {
             cout << "Serial error";
             return;
         }
 
-        while (true)
+        while(true)
         {
             cout << "\n나가기 : -1";
             cout << "\nSelect val : ";
@@ -2414,25 +2323,23 @@ void TestManager::testBreak()
 
             // 데이터 수신
             std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-            if (!received_data.empty())
-            {
+            if (!received_data.empty()) {
                 std::cout << "Received data: " << received_data << std::endl;
             }
         }
 
-        // close(canManager.serial_fd);
+        //close(canManager.serial_fd);
     }
     else
     {
-        if (sensor.OpenDeviceUntilSuccess())
+        if(sensor.OpenDeviceUntilSuccess())
         {
-            while (true)
+            while(true)
             {
                 cout << "\n나가기 : -1";
                 cout << "\nSelect num : ";
                 cin >> num;
-                if (num == -1)
-                    break;
+                if (num == -1) break;
                 cout << "\nSelect val : ";
                 cin >> val;
 
@@ -2456,12 +2363,11 @@ void TestManager::allBreakOff()
 
         // 데이터 수신
         std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty())
-        {
+        if (!received_data.empty()) {
             std::cout << "Received data: " << received_data << std::endl;
         }
 
-        // close(canManager.serial_fd);
+        //close(canManager.serial_fd);
     }
     else
     {
