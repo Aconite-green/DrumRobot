@@ -435,14 +435,15 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
 
-        if (mode == 0)
-        {
-            cout << ""
-        }
-        else if (mode == 1)
-        {
+    // 여기
+        // if (mode == 0)
+        // {
+        //     cout << ""
+        // }
+        // else if (mode == 1)
+        // {
 
-        }
+        // }
 
         cout << "time : " << t << "s\n";
         cout << "break start time : " << break_start_time << "s\n";
