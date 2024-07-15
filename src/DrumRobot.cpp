@@ -31,6 +31,12 @@ void DrumRobot::stateMachine()
 {
     while (state.main != Main::Shutdown)
     {
+
+
+        canManager.appendToCSV_time("ReadProcess10000_stateMachine.txt");
+
+
+        
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -244,6 +250,14 @@ void DrumRobot::recvLoopForThread()
 
     while (state.main != Main::Shutdown)
     {
+        static int n_txt = 0;
+        n_txt++;
+        if (n_txt > 10000)
+        {
+            n_txt = 0;
+            canManager.appendToCSV_time("ReadProcess10000_while.txt");
+        }
+
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -276,7 +290,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Check:
         {
-            ReadProcess(5000); // 200ms
+            ReadProcess(5000);
             break;
         }
         case Main::Test:
@@ -335,6 +349,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+
+        canManager.appendToCSV_time("ReadCANFrame.txt");
         break;
     case ReadSub::UpdateMotorInfo:
     {
