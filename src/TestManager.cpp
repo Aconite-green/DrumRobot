@@ -7,7 +7,7 @@ using namespace std;
 TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef)
     : state(stateRef), canManager(canManagerRef), motors(motorsRef), sensor(sensorRef)
 {
-    // start_TM = std::chrono::high_resolution_clock::now();  // 생성자에서 시작 시간 기록
+
 }
 
 void TestManager::SendTestProcess()
@@ -2236,37 +2236,3 @@ void TestManager::allBreakOff()
         sensor.closeDevice();
     }
 }
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 save csv fiel                              */
-///////////////////////////////////////////////////////////////////////////////
-
-// const std::string basePath_TM = "../../READ/";  // 기본 경로
-
-
-// // 변수를 CSV 파일에 한 줄씩 저장하는 함수
-// void TestManager::appendToCSV_TM(const std::string& filename) {
-//     auto now = std::chrono::high_resolution_clock::now();
-//     std::chrono::duration<float> elapsed = now - start_TM;
-//     std::ofstream file;
-//     std::string fullPath = basePath_TM + filename;  // 기본 경로와 파일 이름을 결합
-
-//     // 파일이 이미 존재하는지 확인
-//     bool fileExists = std::ifstream(fullPath).good();
-
-//     // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
-//     if (!fileExists) {
-//         file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
-//     } else {
-//         file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
-//     }
-//     // 파일이 제대로 열렸는지 확인
-//     if (file.is_open()) {
-//         // 데이터 추가
-//         file << elapsed.count() << "\n";
-//         // 파일 닫기
-//         file.close();
-//     } else {
-//         std::cerr << "Unable to open file: " << fullPath << std::endl;
-//     }
-// }

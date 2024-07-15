@@ -80,7 +80,6 @@ private:
 
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
-    // std::chrono::high_resolution_clock::time_point start_DR; 
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
     // State Utility 메소드들
@@ -142,6 +141,4 @@ private:
     void ReadProcess(int periodMicroSec);
     bool dct_fun(float positions[], float vel_th);
 
-    // 변수를 CSV 파일에 한 줄씩 저장하는 함수
-    // void appendToCSV_DR(const std::string& filename);
 };

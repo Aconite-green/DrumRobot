@@ -49,9 +49,6 @@ int main(int argc, char *argv[])
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
     //QtManager qtManager(state, canManager, motors);
     
-    // Measure the start time
-    // auto start = std::chrono::high_resolution_clock::now();
-    
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
