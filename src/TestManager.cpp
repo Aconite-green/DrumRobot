@@ -424,7 +424,7 @@ void TestManager::SendTestProcess()
         int userInput = 100;
         int ret = system("clear");
 
-        // mode : 0(pos mode), 1(pos spd mode)
+        // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
         int mode = 0;
 
         if (ret == -1)
@@ -435,15 +435,18 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
 
-    // 여기
-        // if (mode == 0)
-        // {
-        //     cout << ""
-        // }
-        // else if (mode == 1)
-        // {
-
-        // }
+        if (mode == 0)
+        {
+            cout << "speed mode" << "\n";
+        }
+        else if (mode == 1)
+        {
+            cout << "position mode" << "\n";
+        }
+        else if (mode == 2)
+        {
+            cout << "position speed mode" << "\n";
+        }
 
         cout << "time : " << t << "s\n";
         cout << "break start time : " << break_start_time << "s\n";
