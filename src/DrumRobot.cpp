@@ -54,7 +54,8 @@ void DrumRobot::stateMachine()
         {
             if (state.home == HomeSub::SelectMotorByUser)
             {
-                usleep(50000);
+                //usleep 50000 -> 5000
+                usleep(5000);
             }
             else
             {
@@ -223,7 +224,8 @@ void DrumRobot::sendLoopForThread()
             {
                 state.main = Main::Error;
             }
-            usleep(50000); // 50ms
+            // usleep 50000 -> 500000
+            usleep(500000); // 50ms
             break;
         }
         case Main::Error:
@@ -310,7 +312,8 @@ void DrumRobot::recvLoopForThread()
             {
                 state.main = Main::Error;
             }
-            usleep(50000); // 50ms
+            //usleep 50000 -> 500000
+            usleep(500000); // 50ms
             break;
         }
         case Main::Error:
@@ -1300,7 +1303,7 @@ void DrumRobot::DeactivateControlTask()
 {
     struct can_frame frame;
 
-    canManager.setSocketsTimeout(0, 50000);
+    canManager.setSocketsTimeout(0, 500000);
 
     for (auto &motorPair : motors)
     {
