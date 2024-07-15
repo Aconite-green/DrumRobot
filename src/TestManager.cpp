@@ -560,24 +560,27 @@ void TestManager::SendTestProcess()
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
-                TMotorData newData;
-                newData.position = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
-                //newData.spd = tmotor->spd;
-                //newData.acl = tmotor->acl;
-                newData.spd = speed_test;
-                newData.acl = 32767;
+                // TMotorData newData;
+                // newData.position = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
+                // newData.spd = tmotor->spd;
+                // newData.acl = tmotor->acl;
+                // newData.spd = speed_test;
+                // newData.acl = 32767;
+                float test_pos = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
+                float test_spd = tMotor->spd;
+                float test_acl = tMotor->acl;
 
                 if (mode == 1)
                 {
-                    tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, speed_test);
+                    tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
                 }
                 else if (mode == 2)
                 {
-                    tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, newData.position);
+                    tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos);
                 }
                 else if (mode == 3)
                 {
-                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, newData.position, speed_test, 32767);
+                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos, test_spd, test_acl);
                 }
                 tMotor->break_state = newData.isBreak;
             }
