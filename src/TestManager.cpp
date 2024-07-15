@@ -600,9 +600,9 @@ void TestManager::SendTestProcess()
         bool run_flag = false;
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        int mode = 1;
-        float test_spd = 0.0;
-        float test_pos = 0.0;
+        static int mode = 1;
+        static float test_spd = 0.0;
+        static float test_pos = 0.0;
 
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
