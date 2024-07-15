@@ -579,6 +579,8 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
                     tMotor->recieveBuffer.push(frame);
+
+                    appendToCSV_CM("TIME_RECIEVE.txt", tMotor->currentPos, 0);
                 }
             }
         }

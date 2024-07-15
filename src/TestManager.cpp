@@ -89,7 +89,7 @@ void TestManager::SendTestProcess()
         cout << "spd : " << speed_test << "erpm\n";
         cout << "chang repeat flag to " << repeat_flag << endl;
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / speed (12) / break time (13) / repeat (14) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -143,6 +143,17 @@ void TestManager::SendTestProcess()
             else
                 repeat_flag =1;
    
+        }
+        else if (userInput == 15)
+        {
+            int num;
+            cin >> num;
+
+            std::ostringstream fileNameOut;
+            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            fileNameOut << "../../READ/Test_0712_" << num;
+            std::string fileName = fileNameOut.str();
+            parse_and_save_to_csv(fileName);
         }
         
         
@@ -444,11 +455,11 @@ void TestManager::SendTestProcess()
         // break를 위한 통신 초기화
         if (useArduino)
         {
-            //canManager.serial_fd = canManager.setup_serial_port();
-            //if (canManager.serial_fd == -1) {
-            //    cout << "Serial error";
-            //    return;
-            //}
+            canManager.serial_fd = canManager.setup_serial_port();
+            if (canManager.serial_fd == -1) {
+                cout << "Serial error";
+                return;
+            }
         }
         else
         {
@@ -574,7 +585,8 @@ void TestManager::SendTestProcess()
     {
         usleep(5000);
 
-        allBreakOff();
+        // 아두이노 끄기
+        // allBreakOff();
         
         if (method == 1)
         {
@@ -754,6 +766,7 @@ void TestManager::fkfun(float theta[])
 /*                                 Values Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
+// 여기1
 void TestManager::getMotorPos(float c_MotorAngle[])
 {
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
@@ -806,48 +819,23 @@ void TestManager::GetArr(float arr[])
     int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
-    for (int k = 0; k < n; ++k)
-    {
-        // Make GetBack Array
-        Qi = connect(c_MotorAngle, arr, k, n);
-        q_setting.push_back(Qi);
+    int nn;
 
-        // Send to Buffer
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                TMotorData newData;
-                newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                //newData.spd = tmotor->spd;
-                //newData.acl = tmotor->acl;
-                newData.spd = speed_test;
-                newData.acl = 32767;
-                if (k < n_break)
-                {
-                    newData.isBreak = false;
-                }
-                else
-                {
-                    newData.isBreak = true;
-                }
-                tmotor->commandBuffer.push(newData);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-            {
-                MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
-                newData.WristState = 0.5;
-                maxonMotor->commandBuffer.push(newData);
-            }
-        }
+    if (repeat_flag == 1)
+    {
+        nn = 1;
     }
-    if(repeat_flag ==1)
+    else
+    {
+        nn = 1;
+    }
+    
+    for(int i = 0; i < nn; i++)
     {
         for (int k = 0; k < n; ++k)
         {
             // Make GetBack Array
-            Qi = connect(arr, c_MotorAngle, k, n);
+            Qi = connect(c_MotorAngle, arr, k, n);
             q_setting.push_back(Qi);
 
             // Send to Buffer
@@ -856,18 +844,18 @@ void TestManager::GetArr(float arr[])
                 if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
                     TMotorData newData;
-                    newData.position = c_MotorAngle[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                    newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
                     //newData.spd = tmotor->spd;
                     //newData.acl = tmotor->acl;
                     newData.spd = speed_test;
                     newData.acl = 32767;
-                    if (k < n_break_end)
+                    if (k < n_break)
                     {
-                        newData.isBreak = true;
+                        newData.isBreak = false;
                     }
                     else
                     {
-                        newData.isBreak = false;
+                        newData.isBreak = true;
                     }
                     tmotor->commandBuffer.push(newData);
                 }
@@ -877,6 +865,45 @@ void TestManager::GetArr(float arr[])
                     newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                     newData.WristState = 0.5;
                     maxonMotor->commandBuffer.push(newData);
+                }
+            }
+        }
+        if(repeat_flag ==1)
+        {
+            for (int k = 0; k < n; ++k)
+            {
+                // Make GetBack Array
+                Qi = connect(arr, c_MotorAngle, k, n);
+                q_setting.push_back(Qi);
+
+                // Send to Buffer
+                for (auto &entry : motors)
+                {
+                    if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                    {
+                        TMotorData newData;
+                        newData.position = c_MotorAngle[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
+                        //newData.spd = tmotor->spd;
+                        //newData.acl = tmotor->acl;
+                        newData.spd = speed_test;
+                        newData.acl = 32767;
+                        if (k < n_break_end)
+                        {
+                            newData.isBreak = true;
+                        }
+                        else
+                        {
+                            newData.isBreak = false;
+                        }
+                        tmotor->commandBuffer.push(newData);
+                    }
+                    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+                    {
+                        MaxonData newData;
+                        newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                        newData.WristState = 0.5;
+                        maxonMotor->commandBuffer.push(newData);
+                    }
                 }
             }
         }
