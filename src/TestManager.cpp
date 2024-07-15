@@ -431,23 +431,29 @@ void TestManager::SendTestProcess()
     case TestSub::SetCommand:
     {
         int userInput = 100;
+        bool run_flag = false;
         int ret = system("clear");
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
         int mode = 1;
+        float test_spd = 0.0;
+        float test_pos = 0.0;
+
+        float c_MotorAngle[9];
+        getMotorPos(c_MotorAngle);
 
         if (ret == -1)
             std::cout << "system clear error" << endl;
         cout << "[ Current Q Values (Radian) ]\n";
         for (int i = 0; i < 9; i++)
         {
-            cout << "q[" << i << "] : " << q[i] << "\n";
+            cout << "q[" << i << "] : " << c_MotorAngle[i] << "\n";
+            q[i] = c_MotorAngle[i];
         }
 
         if (mode == 1)
         {
             cout << "speed mode" << "\n";
-            cout << "speed : " << t << "s\n";
         }
         else if (mode == 2)
         {
@@ -458,131 +464,60 @@ void TestManager::SendTestProcess()
             cout << "position speed mode" << "\n";
         }
 
-        cout << "\nSelect Mode to Change Value (speed mode (1), position mode (2), position speed mode (3)) / Run(0) / Exit (-1): ";
-        cin >> mode;
+        cout << "pos : " << test_pos << "rad\n";
+        cout << "spd : " << test_spd << "erpm\n";
 
-        if (mode == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (mode == 1)
-        {
-            
-        }
-        else if (mode == 2)
-        {
-            
-        }
-        else if (mode == 3)
-        {
-            
-        }
-        else if (mode == 0)
-        {
-            
-        }
-        else
-        {
-            mode = 1;
-        }
-
-        cout << "time : " << t << "s\n";
-        cout << "break start time : " << break_start_time << "s\n";
-        cout << "break end time : " << break_end_time << "s\n";
-        cout << "spd : " << speed_test << "erpm\n";
-        cout << "chang repeat flag to " << repeat_flag << endl;
-
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Exit (-1): ";
+        cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
         {
             state.test = TestSub::SelectParamByUser;
         }
-        else if (userInput < 9)
+        else if (userInput == 1)
         {
-            cout << "Enter q[" << userInput << "] Values (Radian) : ";
-            cin >> q[userInput];
+            cout << "\nspeed mode (1) / position mode (2) / position speed mode (3): ";
+            cin >> mode;
         }
-        else if (userInput == 9)
+        else if (userInput == 2)
         {
-            state.test = TestSub::FillBuf;
+            cout << "pos : ";
+            cin >> test_pos;
+            cout << "spd : ";
+            cin >> test_spd;
         }
-        else if (userInput == 10)
+        else if (userInput == 0)
         {
-            cout << "time : ";
-            cin >> t;
+            run_flag = true;
         }
-        else if (userInput == 11)
-        {
-            float c_MotorAngle[9];
-            getMotorPos(c_MotorAngle);
 
-            cout << "[ Current Q Values (Ladian) ]\n";
-            for (int i = 0; i < 9; i++)
+        if (run_flag)
+        {
+            for (auto &motor_pair : motors)
             {
-                
-                cout << "Q[" << i << "] : " << q[i] << "\t " << "C_M[" << i << "] : " << c_MotorAngle[i] << "\n";
-            }
-            cin >> userInput;
-        }
-        else if (userInput == 12)
-        {
-            cout << "speed (0~32767) : ";
-            cin >> speed_test;
-        }
-        else if (userInput == 13)
-        {
-            cout << "break start time (0~" << t << ") : ";
-            cin >> break_start_time;
-
-            cout << "break end time (" << t << "~" << 2*t << ") : ";
-            cin >> break_end_time;
-        }
-        else if (userInput == 14)
-        {
-            if(repeat_flag ==1)
-                repeat_flag=0;
-            else
-                repeat_flag =1;
-   
-        }
-        else if (userInput == 15)
-        {
-            std::ostringstream fileNameOut;
-            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0715";
-            std::string fileName = fileNameOut.str();
-            parse_and_save_to_csv(fileName);
-        }
-
-        for (auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                // TMotorData newData;
-                // newData.position = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
-                // newData.spd = tmotor->spd;
-                // newData.acl = tmotor->acl;
-                // newData.spd = speed_test;
-                // newData.acl = 32767;
-                float test_pos = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
-                float test_spd = tMotor->spd;
-                float test_acl = tMotor->acl;
-
-                if (mode == 1)
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
-                }
-                else if (mode == 2)
-                {
-                    tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos);
-                }
-                else if (mode == 3)
-                {
-                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos, test_spd, test_acl);
+                    float test_pos = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
+                    // test_spd = tMotor->spd;
+                    float test_acl = tMotor->acl;
+                    
+
+                    if (mode == 1)
+                    {
+                        tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
+                    }
+                    else if (mode == 2)
+                    {
+                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos);
+                    }
+                    else if (mode == 3)
+                    {
+                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos, test_spd, test_acl);
+                    }
                 }
             }
+
+            usleep(10000);
         }
         
         break;
