@@ -72,6 +72,7 @@ void TestManager::SendTestProcess()
         {
             state.test = TestSub::SetCommand;
         }
+
         break;
     }
     case TestSub::SetQValue:
@@ -430,9 +431,9 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetCommand:
     {
+
         int userInput = 100;
         bool run_flag = false;
-        int ret = system("clear");
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
         int mode = 1;
@@ -442,8 +443,10 @@ void TestManager::SendTestProcess()
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
+        int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
+
         cout << "[ Current Q Values (Radian) ]\n";
         for (int i = 0; i < 9; i++)
         {
@@ -468,7 +471,16 @@ void TestManager::SendTestProcess()
         cout << "spd : " << test_spd << "erpm\n";
 
         cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
+
         cin >> userInput;
+
+        // if (!cin)
+        // {
+        //     cin.clear();     // 상태 플래그를 초기화
+        //     cin.ignore(numeric_limits<streamsize>::max(), '\n');    // 버퍼를 비움
+        //     cout << "cin error" << endl;
+        //     std::cin >> userInput;
+        // }
 
         if (userInput == -1)
         {
@@ -497,7 +509,7 @@ void TestManager::SendTestProcess()
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    float test_pos = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
+                    float test_pos2 = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
                     // test_spd = tMotor->spd;
                     float test_acl = tMotor->acl;
                     
@@ -508,16 +520,14 @@ void TestManager::SendTestProcess()
                     }
                     else if (mode == 2)
                     {
-                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos);
+                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
                     }
                     else if (mode == 3)
                     {
-                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos, test_spd, test_acl);
+                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
                     }
                 }
             }
-
-            usleep(10000);
         }
         
         break;
