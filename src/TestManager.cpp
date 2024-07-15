@@ -566,6 +566,7 @@ void TestManager::SendTestProcess()
                 //newData.acl = tmotor->acl;
                 newData.spd = speed_test;
                 newData.acl = 32767;
+                newData.isBreak = false;
 
                 if (mode == 1)
                 {
@@ -579,7 +580,7 @@ void TestManager::SendTestProcess()
                 {
                     tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, newData.position, speed_test, 32767);
                 }
-                tMotor->break_state = newData.isBreak;
+                // tMotor->break_state = newData.isBreak;
             }
         }
         
@@ -751,23 +752,25 @@ void TestManager::SendTestProcess()
     }
     case TestSub::Done:
     {
+        static int repeat_num = 0;
         usleep(5000);
 
         allBreakOff();
         
         if (method == 1)
         {
-            if (buffer_test_flag)
+            if (buffer_test_flag && repeat_num == 0)
             {
-                buffer_test_flag = false;
+                repeat_num ++;
                 for (int i = 1; i < 9; i++)
                 {
-                    q[i] += 1.0;
+                    q[i] += 3.0;
                 }
                 state.test = TestSub::FillBuf;
             }
             else
             {
+                repeat_num = 0;
                 state.test = TestSub::SetQValue;
             }
             
