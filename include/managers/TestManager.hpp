@@ -137,6 +137,7 @@ private:
     /*flag_box*/
 
     int repeat_flag = 0;
+    bool buffer_test_flag = false;
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
