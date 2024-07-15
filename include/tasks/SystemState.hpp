@@ -88,7 +88,7 @@ enum class TestSub
     Done,
     StickTest,
     SetServoTestParm,
-    SetCommand_taehwang
+    SetCommand
 };
 
 
