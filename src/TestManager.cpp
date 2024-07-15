@@ -90,9 +90,10 @@ void TestManager::SendTestProcess()
         cout << "break start time : " << break_start_time << "s\n";
         cout << "break end time : " << break_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
-        cout << "chang repeat flag to " << repeat_flag << endl;
+        cout << "repeat flag to " << repeat_flag << endl;
+        cout << "buffer test flag to " << buffer_test_flag << "\n";
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer (16) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -149,14 +150,22 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 15)
         {
-            int num;
-            cin >> num;
-
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0712_" << num;
+            fileNameOut << "../../READ/Test_0715";
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
+        }
+        else if (userInput == 16)
+        {
+            if(buffer_test_flag)
+            {
+                buffer_test_flag = false;
+            }
+            else
+            {
+                buffer_test_flag = true;
+            }
         }
         
         break;
@@ -425,7 +434,7 @@ void TestManager::SendTestProcess()
         int ret = system("clear");
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        int mode = 0;
+        int mode = 1;
 
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -435,17 +444,46 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
 
-        if (mode == 0)
+        if (mode == 1)
         {
             cout << "speed mode" << "\n";
-        }
-        else if (mode == 1)
-        {
-            cout << "position mode" << "\n";
+            cout << "speed : " << t << "s\n";
         }
         else if (mode == 2)
         {
+            cout << "position mode" << "\n";
+        }
+        else if (mode == 3)
+        {
             cout << "position speed mode" << "\n";
+        }
+
+        cout << "\nSelect Mode to Change Value (speed mode (1), position mode (2), position speed mode (3)) / Run(0) / Exit (-1): ";
+        cin >> mode;
+
+        if (mode == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (mode == 1)
+        {
+            
+        }
+        else if (mode == 2)
+        {
+            
+        }
+        else if (mode == 3)
+        {
+            
+        }
+        else if (mode == 0)
+        {
+            
+        }
+        else
+        {
+            mode = 1;
         }
 
         cout << "time : " << t << "s\n";
@@ -511,14 +549,38 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 15)
         {
-            int num;
-            cin >> num;
-
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0712_" << num;
+            fileNameOut << "../../READ/Test_0715";
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
+        }
+
+        for (auto &motor_pair : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                TMotorData newData;
+                newData.position = q[motor_mapping[motor_pair.first]] * tMotor->cwDir - tMotor->homeOffset;
+                //newData.spd = tmotor->spd;
+                //newData.acl = tmotor->acl;
+                newData.spd = speed_test;
+                newData.acl = 32767;
+
+                if (mode == 1)
+                {
+                    tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, speed_test);
+                }
+                else if (mode == 2)
+                {
+                    tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, newData.position);
+                }
+                else if (mode == 3)
+                {
+                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, newData.position, speed_test, 32767);
+                }
+                tMotor->break_state = newData.isBreak;
+            }
         }
         
         break;
@@ -691,13 +753,24 @@ void TestManager::SendTestProcess()
     {
         usleep(5000);
 
-        // 아두이노 끄기
-        // allBreakOff();
+        allBreakOff();
         
         if (method == 1)
         {
-            state.test = TestSub::SetQValue;
-
+            if (buffer_test_flag)
+            {
+                buffer_test_flag = false;
+                for (int i = 1; i < 9; i++)
+                {
+                    q[i] += 1.0;
+                }
+                state.test = TestSub::FillBuf;
+            }
+            else
+            {
+                state.test = TestSub::SetQValue;
+            }
+            
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
             fileNameOut << "../../READ/Test_0704_P" << q[5]
@@ -925,16 +998,7 @@ void TestManager::GetArr(float arr[])
     int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
-    int nn;
-
-    if (repeat_flag == 1)
-    {
-        nn = 1;
-    }
-    else
-    {
-        nn = 1;
-    }
+    int nn = 1;
     
     for(int i = 0; i < nn; i++)
     {
