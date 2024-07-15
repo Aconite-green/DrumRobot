@@ -31,12 +31,6 @@ void DrumRobot::stateMachine()
 {
     while (state.main != Main::Shutdown)
     {
-
-
-        canManager.appendToCSV_time("ReadProcess10000_stateMachine.txt");
-
-
-        
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -383,6 +377,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
             state.read = ReadSub::CheckMaxonControl;
         }
+
+        canManager.appendToCSV_time("UpdateMotorInfo.txt");
         break;
     }
     case ReadSub::CheckMaxonControl:
@@ -430,6 +426,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
         state.read = ReadSub::CheckMaxonControl;
+
+        canManager.appendToCSV_time("CheckMaxonControl.txt");
         break;
     case ReadSub::CheckReachedPosition:
         for (auto &motor_pair : motors)
@@ -452,6 +450,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
         state.read = ReadSub::CheckMaxonControl;
+
+        canManager.appendToCSV_time("CheckReachedPosition.txt");
         break;
     }
 }

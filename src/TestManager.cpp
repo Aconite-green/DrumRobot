@@ -33,7 +33,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - break test) : ";
+        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - 서보모드 테스트, 7 - 나가기, 8 - Break, 9 - Test) : ";
         cin >> method;
 
         if (method == 1)
@@ -68,13 +68,16 @@ void TestManager::SendTestProcess()
         {
             testBreak();
         }
+        else if (method == 9)
+        {
+            state.test = TestSub::SetCommand;
+        }
         break;
     }
     case TestSub::SetQValue:
     {
         int userInput = 100;
         int ret = system("clear");
-        canManager.appendToCSV_time("setQInTime.txt");
 
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -155,7 +158,6 @@ void TestManager::SendTestProcess()
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
         }
-        
         
         break;
     }
@@ -415,6 +417,106 @@ void TestManager::SendTestProcess()
         {
             state.test = TestSub::SelectParamByUser;
         }
+        break;
+    }
+    case TestSub::SetCommand:
+    {
+        int userInput = 100;
+        int ret = system("clear");
+
+        // mode : 0(pos mode), 1(pos spd mode)
+        int mode = 0;
+
+        if (ret == -1)
+            std::cout << "system clear error" << endl;
+        cout << "[ Current Q Values (Radian) ]\n";
+        for (int i = 0; i < 9; i++)
+        {
+            cout << "q[" << i << "] : " << q[i] << "\n";
+        }
+
+        if (mode == 0)
+        {
+            cout << ""
+        }
+        else if (mode == 1)
+        {
+
+        }
+
+        cout << "time : " << t << "s\n";
+        cout << "break start time : " << break_start_time << "s\n";
+        cout << "break end time : " << break_end_time << "s\n";
+        cout << "spd : " << speed_test << "erpm\n";
+        cout << "chang repeat flag to " << repeat_flag << endl;
+
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Exit (-1): ";
+        cin >> userInput;
+
+        if (userInput == -1)
+        {
+            state.test = TestSub::SelectParamByUser;
+        }
+        else if (userInput < 9)
+        {
+            cout << "Enter q[" << userInput << "] Values (Radian) : ";
+            cin >> q[userInput];
+        }
+        else if (userInput == 9)
+        {
+            state.test = TestSub::FillBuf;
+        }
+        else if (userInput == 10)
+        {
+            cout << "time : ";
+            cin >> t;
+        }
+        else if (userInput == 11)
+        {
+            float c_MotorAngle[9];
+            getMotorPos(c_MotorAngle);
+
+            cout << "[ Current Q Values (Ladian) ]\n";
+            for (int i = 0; i < 9; i++)
+            {
+                
+                cout << "Q[" << i << "] : " << q[i] << "\t " << "C_M[" << i << "] : " << c_MotorAngle[i] << "\n";
+            }
+            cin >> userInput;
+        }
+        else if (userInput == 12)
+        {
+            cout << "speed (0~32767) : ";
+            cin >> speed_test;
+        }
+        else if (userInput == 13)
+        {
+            cout << "break start time (0~" << t << ") : ";
+            cin >> break_start_time;
+
+            cout << "break end time (" << t << "~" << 2*t << ") : ";
+            cin >> break_end_time;
+        }
+        else if (userInput == 14)
+        {
+            if(repeat_flag ==1)
+                repeat_flag=0;
+            else
+                repeat_flag =1;
+   
+        }
+        else if (userInput == 15)
+        {
+            int num;
+            cin >> num;
+
+            std::ostringstream fileNameOut;
+            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            fileNameOut << "../../READ/Test_0712_" << num;
+            std::string fileName = fileNameOut.str();
+            parse_and_save_to_csv(fileName);
+        }
+        
         break;
     }
     case TestSub::FillBuf:
