@@ -665,7 +665,19 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 TMotorData tData = tMotor->commandBuffer.front();
                 tMotor->commandBuffer.pop();
                 Pos[motor_mapping[tMotor->myName]] = tData.position;
-                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+
+                if (pathManager.tMotor_control_mode == POS_LOOP)
+                {
+                    tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+                }
+                else if (pathManager.tMotor_control_mode == POS_SPD_LOOP)
+                {
+                    tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+                }
+                else
+                {
+                    cout << "tMotor control mode ERROR\n";
+                }
                 tMotor->break_state = tData.isBreak;
             }
         }
@@ -1492,12 +1504,12 @@ void DrumRobot::motorSettingCmd()
                 canManager.sendAndRecv(motor, frame);
             }
         }
-        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
-            if (tmotor->myName == "waist")
+            if (tMotor->myName == "waist")
             {
-                tservocmd.comm_can_set_origin(*tmotor, &tmotor->sendFrame, 0);
-                canManager.sendMotorFrame(tmotor);
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
             }
         }
     }
@@ -1561,9 +1573,9 @@ void DrumRobot::clearMotorsCommandBuffer()
         {
             maxonMotor->clearCommandBuffer();
         }
-        else if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
         {
-            tmotor->clearCommandBuffer();
+            tMotor->clearCommandBuffer();
         }
     }
 }

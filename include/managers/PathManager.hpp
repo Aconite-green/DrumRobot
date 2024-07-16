@@ -38,7 +38,8 @@
 #include "../tasks/SystemState.hpp"
 */
 
-
+#define POS_LOOP 0
+#define POS_SPD_LOOP 1
 
 using namespace std;
 using namespace Eigen;
@@ -94,6 +95,9 @@ public:
     float elbow_backPos = M_PI / 36.0;  // 대기 시 들어올리는 팔꿈치 각도 (-0.5) : 5deg
     float elbow_hitPos = M_PI / 15.0;   // 타격 시 들어올리는 팔꿈치 각도 (-1)   : 12deg
 
+    // tMotor 제어 모드 결정
+    int tMotor_control_mode = POS_SPD_LOOP;
+
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
@@ -139,8 +143,7 @@ private:
         {"R_wrist", 7},
         {"L_wrist", 8},
         {"maxonForTest", 8}};
-
-
+    
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);
 
     void getMotorPos();
@@ -162,5 +165,5 @@ private:
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
     pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);
-    void SetTargetPos(MatrixXd &State, MatrixXd &t_madi);
+    // void SetTargetPos(MatrixXd &State, MatrixXd &t_madi);
 };
