@@ -715,8 +715,19 @@ void CanManager::setCANFrame()
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
             Pos[motor_mapping[tMotor->myName]] = tData.position;
-            tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
-            // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+
+            if (tMotor_control_mode == POS_LOOP)
+            {
+                tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+            }
+            else if (tMotor_control_mode == POS_SPD_LOOP)
+            {
+                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+            }
+            else
+            {
+                cout << "tMotor control mode ERROR\n";
+            }
             tMotor->break_state = tData.isBreak;
 
             appendToCSV_CM("TIME_DESIRED.txt", tData.position, tMotor->currentPos);

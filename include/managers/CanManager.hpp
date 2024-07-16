@@ -43,6 +43,9 @@
 #define SERIAL_PORT "/dev/ttyACM1"
 #define BAUD_RATE B1000000
 
+#define POS_LOOP 0
+#define POS_SPD_LOOP 1
+
 using namespace std;
 
 class CanManager
@@ -127,6 +130,9 @@ public:
     void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
+
+    // tMotor 제어 모드 결정
+    int tMotor_control_mode = POS_SPD_LOOP;
 
 private:
 
