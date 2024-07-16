@@ -1103,7 +1103,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 
     for (int i = 0; i < 9; i++)
     {
-        float acceleration = 10;
+        float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
         float T_0 = 0;   
         float Vmax;
 
@@ -1159,7 +1159,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
             // 등속
             if (T_0 < S / Vmax)
             {
-                Qi[i] = Q1[i] + sign * 0.5 * Vmax * Vmax / acceleration + Vmax * (k - Vmax / acceleration); 
+                Qi[i] = Q1[i] + sign * 0.5 * Vmax * Vmax / acceleration + sign * Vmax * (k - Vmax / acceleration); 
             }
             // 감속
             if (T_0 < Vmax / acceleration + S / Vmax)
