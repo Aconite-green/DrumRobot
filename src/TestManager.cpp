@@ -1124,12 +1124,11 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 
     vector<float> Qi;
     float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
-    float T_0 = 0;  
     int sign;
     for (int i = 0; i < 9; i++)
     { 
         float Vmax = 0;
-        float S = Q1[i] - Q2[i];
+        float S = Q2[i] - Q1[i];
 
         if (S < 0)
         {
@@ -1167,11 +1166,6 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
             {
                 Vmax = Vmax2;
             }
-            else
-            {
-                //std::cout << "No real solution for Vmax." << std::endl;
-                Qi.push_back(Q1[i]); // 실수 해가 없을 경우
-            }
 
             //std::cout << "Calculated Vmax: " << Vmax << std::endl;
         }
@@ -1184,17 +1178,17 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         else if ((Vmax * Vmax / acceleration) < S)
         {
             // 가속
-            if (T_0 < Vmax / acceleration)
+            if (k < (Vmax / acceleration))
             {
                 Qi.push_back(Q1[i] + sign * 0.5 * acceleration * k * k);
             }
             // 등속
-            else if (T_0 < S / Vmax)
+            else if (k < (S / Vmax))
             {
                 Qi.push_back(Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration))); 
             }
             // 감속
-            else if (T_0 < Vmax / acceleration + S / Vmax)
+            else if (k < (Vmax / acceleration + S / Vmax))
             {
                 Qi.push_back(Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k));
             }
