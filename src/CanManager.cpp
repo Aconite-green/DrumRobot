@@ -413,7 +413,7 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
 
-    appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
+    // appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
 
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
@@ -580,7 +580,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentTor = std::get<3>(parsedData);
                     tMotor->recieveBuffer.push(frame);
 
-                    appendToCSV_CM("TIME_RECIEVE.txt", tMotor->currentPos, 0);
+                    appendToCSV_CM("motor_receive(actual_0).txt", tMotor->currentPos, 0);
                 }
             }
         }
@@ -627,7 +627,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        appendToCSV_CM("TIME_FIXED_CURRENT.txt", motor->fixedPos, tMotor->currentPos);
+        appendToCSV_CM("sendForCheck_Fixed(desired_actial).txt", motor->fixedPos, tMotor->currentPos);
         // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
         tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
         if (!sendMotorFrame(tMotor))
@@ -730,7 +730,7 @@ void CanManager::setCANFrame()
             }
             tMotor->break_state = tData.isBreak;
 
-            appendToCSV_CM("TIME_DESIRED.txt", tData.position, tMotor->currentPos);
+            appendToCSV_CM("setCANFrame(desired_actial).txt", tData.position, tMotor->currentPos);
         }
     }
     Input_pos.push_back(Pos);

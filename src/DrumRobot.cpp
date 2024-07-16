@@ -103,7 +103,7 @@ void DrumRobot::stateMachine()
             bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
-                canManager.appendToCSV_time("FIXED_POS.txt");
+                // canManager.appendToCSV_time("FIXED_POS.txt");
                 usleep(5000); // 5ms
                 if (!canManager.checkAllMotors_Fixed())
                 {
@@ -246,13 +246,13 @@ void DrumRobot::recvLoopForThread()
 
     while (state.main != Main::Shutdown)
     {
-        static int n_txt = 0;
-        n_txt++;
-        if (n_txt > 10000)
-        {
-            n_txt = 0;
-            canManager.appendToCSV_time("ReadProcess10000_while.txt");
-        }
+        // static int n_txt = 0;
+        // n_txt++;
+        // if (n_txt > 10000)
+        // {
+        //     n_txt = 0;
+        //     canManager.appendToCSV_time("ReadProcess10000_while.txt");
+        // }
 
         switch (state.main.load())
         {
@@ -347,7 +347,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
 
-        canManager.appendToCSV_time("ReadCANFrame.txt");
         break;
     case ReadSub::UpdateMotorInfo:
     {
@@ -380,8 +379,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
             state.read = ReadSub::CheckMaxonControl;
         }
-
-        canManager.appendToCSV_time("UpdateMotorInfo.txt");
         break;
     }
     case ReadSub::CheckMaxonControl:
@@ -429,8 +426,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
         state.read = ReadSub::CheckMaxonControl;
-
-        canManager.appendToCSV_time("CheckMaxonControl.txt");
         break;
     case ReadSub::CheckReachedPosition:
         for (auto &motor_pair : motors)
@@ -453,8 +448,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
         state.read = ReadSub::CheckMaxonControl;
-
-        canManager.appendToCSV_time("CheckReachedPosition.txt");
         break;
     }
 }
