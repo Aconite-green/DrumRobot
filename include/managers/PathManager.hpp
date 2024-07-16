@@ -38,9 +38,6 @@
 #include "../tasks/SystemState.hpp"
 */
 
-#define POS_LOOP 0
-#define POS_SPD_LOOP 1
-
 using namespace std;
 using namespace Eigen;
 
@@ -94,9 +91,6 @@ public:
 
     float elbow_backPos = M_PI / 36.0;  // 대기 시 들어올리는 팔꿈치 각도 (-0.5) : 5deg
     float elbow_hitPos = M_PI / 15.0;   // 타격 시 들어올리는 팔꿈치 각도 (-1)   : 12deg
-
-    // tMotor 제어 모드 결정
-    int tMotor_control_mode = POS_SPD_LOOP;
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.

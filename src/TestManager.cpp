@@ -1097,6 +1097,19 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
     return Qi;
 }
 
+vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
+{
+    vector<float> Qi;
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val = 0.0;
+        Qi.push_back(val);
+    }
+
+    return Qi;
+}
+
 void TestManager::GetArr(float arr[])
 {
     cout << "Get Array...\n";
@@ -1104,6 +1117,7 @@ void TestManager::GetArr(float arr[])
     vector<float> Qi;
     vector<vector<float>> q_setting;
     float c_MotorAngle[9];
+    vector<float> Q_control_mode_test;
 
     getMotorPos(c_MotorAngle);
 
@@ -1111,14 +1125,63 @@ void TestManager::GetArr(float arr[])
     int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
-    int nn = 1;
     
-    for(int i = 0; i < nn; i++)
+    for (int k = 0; k < n; ++k)
+    {
+        // Make GetBack Array
+        Qi = connect(c_MotorAngle, arr, k, n);
+        q_setting.push_back(Qi);
+
+        Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+
+                if (canManager.tMotor_control_mode == POS_LOOP)
+                {
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                {
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else
+                {
+                    cout << "tMotor control mode ERROR\n";
+                }
+                //newData.spd = tMotor->spd;
+                //newData.acl = tMotor->acl;
+                newData.spd = speed_test;
+                newData.acl = 32767;
+                if (k < n_break)
+                {
+                    newData.isBreak = false;
+                }
+                else
+                {
+                    newData.isBreak = true;
+                }
+                tMotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.WristState = 0.5;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+    if(repeat_flag ==1)
     {
         for (int k = 0; k < n; ++k)
         {
             // Make GetBack Array
-            Qi = connect(c_MotorAngle, arr, k, n);
+            Qi = connect(arr, c_MotorAngle, k, n);
             q_setting.push_back(Qi);
 
             // Send to Buffer
@@ -1127,18 +1190,18 @@ void TestManager::GetArr(float arr[])
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
                     TMotorData newData;
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = c_MotorAngle[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                     //newData.spd = tMotor->spd;
                     //newData.acl = tMotor->acl;
                     newData.spd = speed_test;
                     newData.acl = 32767;
-                    if (k < n_break)
+                    if (k < n_break_end)
                     {
-                        newData.isBreak = false;
+                        newData.isBreak = true;
                     }
                     else
                     {
-                        newData.isBreak = true;
+                        newData.isBreak = false;
                     }
                     tMotor->commandBuffer.push(newData);
                 }
@@ -1148,45 +1211,6 @@ void TestManager::GetArr(float arr[])
                     newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                     newData.WristState = 0.5;
                     maxonMotor->commandBuffer.push(newData);
-                }
-            }
-        }
-        if(repeat_flag ==1)
-        {
-            for (int k = 0; k < n; ++k)
-            {
-                // Make GetBack Array
-                Qi = connect(arr, c_MotorAngle, k, n);
-                q_setting.push_back(Qi);
-
-                // Send to Buffer
-                for (auto &entry : motors)
-                {
-                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                    {
-                        TMotorData newData;
-                        newData.position = c_MotorAngle[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        //newData.spd = tMotor->spd;
-                        //newData.acl = tMotor->acl;
-                        newData.spd = speed_test;
-                        newData.acl = 32767;
-                        if (k < n_break_end)
-                        {
-                            newData.isBreak = true;
-                        }
-                        else
-                        {
-                            newData.isBreak = false;
-                        }
-                        tMotor->commandBuffer.push(newData);
-                    }
-                    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-                    {
-                        MaxonData newData;
-                        newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
-                        newData.WristState = 0.5;
-                        maxonMotor->commandBuffer.push(newData);
-                    }
                 }
             }
         }
