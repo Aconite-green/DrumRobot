@@ -685,6 +685,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         // }
         // Input_pos.push_back(Pos);
 
+        canManager.tMotor_control_mode == POS_SPD_LOOP;
         canManager.setCANFrame();
         state.perform = PerformSub::SendCANFrame;
         break;
