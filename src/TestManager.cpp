@@ -432,6 +432,8 @@ void TestManager::SendTestProcess()
 
         int userInput = 100;
         bool run_flag = false;
+        static int nn = 1;
+        static int delay = 5;
 
         // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
         static int mode = 1;
@@ -467,6 +469,8 @@ void TestManager::SendTestProcess()
 
         cout << "pos : " << test_pos << "rad\n";
         cout << "spd : " << test_spd << "erpm\n";
+        cout << "n : " << nn << "\n";
+        cout << "delay : " << delay << "ms\n";
 
         cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
 
@@ -495,6 +499,10 @@ void TestManager::SendTestProcess()
             cin >> test_pos;
             cout << "spd : ";
             cin >> test_spd;
+            cout << "n : ";
+            cin >> nn;
+            cout << "delay : ";
+            cin >> delay;
         }
         else if (userInput == 0)
         {
@@ -503,90 +511,103 @@ void TestManager::SendTestProcess()
 
         if (run_flag)
         {
-            for (auto &motor_pair : motors)
+            for (int i = 0; i < nn ; i++)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                // float c_MotorAngle[9];
+                // getMotorPos(c_MotorAngle);
+                // for (int i = 0; i < 9; i++)
+                // {
+                //     q[i] = c_MotorAngle[i];
+                // }
+
+
+                for (auto &motor_pair : motors)
                 {
-                    float test_pos2 = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
-                    // test_spd = tMotor->spd;
-                    float test_acl = tMotor->acl;
-                    
-
-                    if (mode == 1)
+                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                     {
-                        tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
-                    }
-                    else if (mode == 2)
-                    {
-                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
-                    }
-                    else if (mode == 3)
-                    {
-                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
-                    }
-                }
-            }
-
-            bool needSync = false;
-            bool isWriteError = false;
-            for (auto &motor_pair : motors)
-            {
-                shared_ptr<GenericMotor> motor = motor_pair.second;
-
-                if (!canManager.sendMotorFrame(motor))
-                {
-                    isWriteError = true;
-                }
-
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-                {
-                    if (useArduino)
-                    {
-                        char data_to_send; // 시리얼 포트로 전송할 문자
+                        float test_pos2 = (q[motor_mapping[motor_pair.first]] + i * test_pos) * tMotor->cwDir - tMotor->homeOffset;
+                        // test_spd = tMotor->spd;
+                        float test_acl = tMotor->acl;
                         
-                        if (tMotor->break_state)
+
+                        if (mode == 1)
                         {
-                            data_to_send = '1';
+                            tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
+                        }
+                        else if (mode == 2)
+                        {
+                            tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
+                        }
+                        else if (mode == 3)
+                        {
+                            tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
+                        }
+                    }
+                }
+
+                bool needSync = false;
+                bool isWriteError = false;
+                for (auto &motor_pair : motors)
+                {
+                    shared_ptr<GenericMotor> motor = motor_pair.second;
+
+                    if (!canManager.sendMotorFrame(motor))
+                    {
+                        isWriteError = true;
+                    }
+
+                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                    {
+                        if (useArduino)
+                        {
+                            char data_to_send; // 시리얼 포트로 전송할 문자
+                            
+                            if (tMotor->break_state)
+                            {
+                                data_to_send = '1';
+                            }
+                            else
+                            {
+                                data_to_send = '0';
+                            }
+
+                            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
+
+                            usleep(10);
+
+                            // 데이터 수신
+                            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
+                            if (!received_data.empty()) {
+                                std::cout << "Received data: " << received_data << std::endl;
+                            }
                         }
                         else
                         {
-                            data_to_send = '0';
-                        }
-
-                        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-                        usleep(10);
-
-                        // 데이터 수신
-                        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-                        if (!received_data.empty()) {
-                            std::cout << "Received data: " << received_data << std::endl;
+                            sensor.writeVal(tMotor, tMotor->break_state);
                         }
                     }
-                    else
+
+                    if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                     {
-                        sensor.writeVal(tMotor, tMotor->break_state);
+                        virtualMaxonMotor = maxonMotor;
+                        needSync = true;
                     }
                 }
 
-                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                if (needSync)
                 {
-                    virtualMaxonMotor = maxonMotor;
-                    needSync = true;
+                    maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+                    if (!canManager.sendMotorFrame(virtualMaxonMotor))
+                    {
+                        isWriteError = true;
+                    }
                 }
-            }
+                if (isWriteError)
+                {
+                    state.main = Main::Error;
+                }
 
-            if (needSync)
-            {
-                maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-                if (!canManager.sendMotorFrame(virtualMaxonMotor))
-                {
-                    isWriteError = true;
-                }
-            }
-            if (isWriteError)
-            {
-                state.main = Main::Error;
+                usleep(delay*1000);
             }
         }
         
@@ -1099,13 +1120,15 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
 
 vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
+
+
     vector<float> Qi;
     float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
     float T_0 = 0;  
     int sign;
     for (int i = 0; i < 9; i++)
     { 
-        float Vmax;
+        float Vmax = 0;
         float S = Q1[i] - Q2[i];
 
         if (S < 0)
@@ -1122,7 +1145,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         float a = 1.0 / acceleration;
         float b = -n;
         float c = S;
-        float discriminant = b * b - 4 * a * c;
+        float discriminant = (b * b) - (4 * a * c);
 
         if (discriminant < 0)
         {
@@ -1188,12 +1211,15 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 
 void TestManager::GetArr(float arr[])
 {
+
     cout << "Get Array...\n";
 
     vector<float> Qi;
     vector<vector<float>> q_setting;
     float c_MotorAngle[9];
     vector<float> Q_control_mode_test;
+    vector<float> Q_control_mode_test_past;
+    std::vector<float> differences;
 
     getMotorPos(c_MotorAngle);
 
@@ -1209,7 +1235,7 @@ void TestManager::GetArr(float arr[])
         q_setting.push_back(Qi);
 
         Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
-
+        canManager.appendToCSV_CM("Q_contorol_mode_test", Q_control_mode_test[3], 0);
         // Send to Buffer
         for (auto &entry : motors)
         {
@@ -1219,7 +1245,7 @@ void TestManager::GetArr(float arr[])
 
                 if (canManager.tMotor_control_mode == POS_LOOP)
                 {
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
                 else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
