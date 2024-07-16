@@ -772,7 +772,7 @@ void TestManager::SendTestProcess()
     case TestSub::CheckBuf:
     {
         bool allBuffersEmpty = true;
-        canManager.appendToCSV_time("CHECKBUF.txt");
+        // canManager.appendToCSV_time("CHECKBUF.txt");
         for (const auto &motor_pair : motors)
         {
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
@@ -1120,16 +1120,17 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
 
 vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
-
-
     vector<float> Qi;
-    float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
-    float T_0 = 0;  
+    float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2 
     int sign;
+    float Vmax = 0;
+    float S;
+
     for (int i = 0; i < 9; i++)
-    { 
-        float Vmax = 0;
-        float S = Q1[i] - Q2[i];
+    {
+        float val;
+
+        S = Q1[i] - Q2[i];
 
         if (S < 0)
         {
@@ -1140,7 +1141,6 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         {
             sign = 1;
         }
-  
         // 2차 방정식의 계수들
         float a = 1.0 / acceleration;
         float b = -n;
@@ -1150,7 +1150,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         if (discriminant < 0)
         {
             //std::cout << "No real solution for Vmax." << std::endl;
-            Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
+            val = -1;   //Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
         }
         else
         {
@@ -1170,7 +1170,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
             else
             {
                 //std::cout << "No real solution for Vmax." << std::endl;
-                Qi.push_back(Q1[i]); // 실수 해가 없을 경우
+                val = -1;   //Qi.push_back(-2); // 실수 해가 없을 경우
             }
 
             //std::cout << "Calculated Vmax: " << Vmax << std::endl;
@@ -1179,30 +1179,32 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         if (S == 0)
         {
             // 정지
-            Qi.push_back(Q1[i]);
+            val = Q1[i];
         }
-        else if ((Vmax * Vmax / acceleration) < S)
+        else// if ((Vmax * Vmax / acceleration) < S)
         {
             // 가속
-            if (T_0 < Vmax / acceleration)
+            if (k < Vmax / acceleration)
             {
-                Qi.push_back(Q1[i] + sign * 0.5 * acceleration * k * k);
+                val = Q1[i] + sign * 0.5 * acceleration * k * k;
             }
             // 등속
-            else if (T_0 < S / Vmax)
+            else if (k < S / Vmax)
             {
-                Qi.push_back(Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration))); 
+                val = Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration)); 
             }
             // 감속
-            else if (T_0 < Vmax / acceleration + S / Vmax)
+            else if (k < Vmax / acceleration + S / Vmax)
             {
-                Qi.push_back(Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k));
-            }
+                val = Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k);
+            }           
             else 
             {
-                Qi.push_back(Q2[i]);
+                val = Q2[i];
             }
         }
+
+        Qi.push_back(val);
 
     }
 
@@ -1235,7 +1237,7 @@ void TestManager::GetArr(float arr[])
         q_setting.push_back(Qi);
 
         Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
-        canManager.appendToCSV_CM("Q_contorol_mode_test", Q_control_mode_test[3], 0);
+
         // Send to Buffer
         for (auto &entry : motors)
         {
