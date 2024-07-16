@@ -1100,15 +1100,14 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
 vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
     vector<float> Qi;
-
+    float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
+    float T_0 = 0;  
+    int sign;
     for (int i = 0; i < 9; i++)
-    {
-        float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2
-        float T_0 = 0;   
+    { 
         float Vmax;
-
         float S = Q1[i] - Q2[i];
-        int sign;
+
         if (S < 0)
         {
             S = -1 * S;
@@ -1118,9 +1117,7 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         {
             sign = 1;
         }
-
-        float totalTime = n - T_0;
-        
+  
         // 2차 방정식의 계수들
         float a = 1.0 / acceleration;
         float b = -n;
@@ -1129,8 +1126,8 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 
         if (discriminant < 0)
         {
-            std::cout << "No real solution for Vmax." << std::endl;
-            Qi[i] = -1; // 실수 해가 없을 경우 -1 반환
+            //std::cout << "No real solution for Vmax." << std::endl;
+            Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
         }
         else
         {
@@ -1139,38 +1136,51 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
             float Vmax2 = (-b - std::sqrt(discriminant)) / (2 * a);
 
             // 두 해 중 양수인 해 선택
-            Vmax = (Vmax1 > 0) ? Vmax1 : Vmax2;
+            if (Vmax1 > 0 && Vmax1 < 0.5*n*acceleration)
+            {
+                Vmax = Vmax1;
+            }
+            else if (Vmax2 > 0 && Vmax2 < 0.5*n*acceleration)
+            {
+                Vmax = Vmax2;
+            }
+            else
+            {
+                //std::cout << "No real solution for Vmax." << std::endl;
+                Qi.push_back(Q1[i]); // 실수 해가 없을 경우
+            }
 
-            std::cout << "Calculated Vmax: " << Vmax << std::endl;
+            //std::cout << "Calculated Vmax: " << Vmax << std::endl;
         }
 
         if (S == 0)
         {
             // 정지
-            Qi[i] = Q1[i];
+            Qi.push_back(Q1[i]);
         }
-        else if (Vmax * Vmax / acceleration < S)
+        else if ((Vmax * Vmax / acceleration) < S)
         {
             // 가속
             if (T_0 < Vmax / acceleration)
             {
-                Qi[i] = Q1[i] + sign * 0.5 * acceleration * k * k;
+                Qi.push_back(Q1[i] + sign * 0.5 * acceleration * k * k);
             }
             // 등속
-            if (T_0 < S / Vmax)
+            else if (T_0 < S / Vmax)
             {
-                Qi[i] = Q1[i] + sign * 0.5 * Vmax * Vmax / acceleration + sign * Vmax * (k - Vmax / acceleration); 
+                Qi.push_back(Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration))); 
             }
             // 감속
-            if (T_0 < Vmax / acceleration + S / Vmax)
+            else if (T_0 < Vmax / acceleration + S / Vmax)
             {
-                Qi[i] = Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k);
+                Qi.push_back(Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k));
             }
             else 
             {
-                Qi[i] = Q2[i];
+                Qi.push_back(Q2[i]);
             }
         }
+
     }
 
     return Qi;
@@ -1209,7 +1219,7 @@ void TestManager::GetArr(float arr[])
 
                 if (canManager.tMotor_control_mode == POS_LOOP)
                 {
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
                 else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
