@@ -89,7 +89,7 @@ private:
     /*Value Test Code*/
     void getMotorPos(float c_MotorAngle[]);
     vector<float> connect(float Q1[], float Q2[], int k, int n);
-    vector<float> makeProfile(float Q1[], float Q2[], int k, int n);
+    vector<float> makeProfile(float Q1[], float Q2[], float k, float n);
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);

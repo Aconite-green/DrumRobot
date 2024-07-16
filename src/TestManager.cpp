@@ -1097,7 +1097,7 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
     return Qi;
 }
 
-vector<float> TestManager::makeProfile(float Q1[], float Q2[], int k, int n)
+vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
     vector<float> Qi;
 
@@ -1117,6 +1117,7 @@ void TestManager::GetArr(float arr[])
     vector<float> Qi;
     vector<vector<float>> q_setting;
     float c_MotorAngle[9];
+    vector<float> Q_control_mode_test;
 
     getMotorPos(c_MotorAngle);
 
@@ -1131,13 +1132,27 @@ void TestManager::GetArr(float arr[])
         Qi = connect(c_MotorAngle, arr, k, n);
         q_setting.push_back(Qi);
 
+        Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+
         // Send to Buffer
         for (auto &entry : motors)
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+
+                if (canManager.tMotor_control_mode == POS_LOOP)
+                {
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                {
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else
+                {
+                    cout << "tMotor control mode ERROR\n";
+                }
                 //newData.spd = tMotor->spd;
                 //newData.acl = tMotor->acl;
                 newData.spd = speed_test;
