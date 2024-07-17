@@ -1118,6 +1118,63 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
     return Qi;
 }
 
+vector<float> TestManager::cal_Vmax(float q0[], float q1[], float t1)
+{
+    vector<float> Vmax;
+    const float acc = 100.0;    // rad/s^2
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val;
+        float S = q1[i] - q0[i];
+
+
+        cout << i << "번쨰 q0 : " << q0[i] << "rad, q1 : " << q1[i] << "rad\n";
+        cout << "S : " << S << "rad, t1 : " << t1 << "s\n";
+
+        // 부호 확인
+        if (S < 0)
+        {
+            S = -1 * S;
+        }
+
+        if (S > t1*t1*acc/4)
+        {
+            // 최대가속도로 도달 불가능
+            // -1 반환
+            val = -1;
+        }
+        else
+        {
+            float A = 1/acc;
+            float B = -1*t1;
+            float C = S;
+
+            float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
+            float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
+
+            if (sol1 >= 0 && sol1 <= acc*t1/2)
+            {
+                val = sol1;
+            }
+            else if (sol2 >= 0 && sol2 <= acc*t1/2)
+            {
+                val = sol2;
+            }
+            else
+            {
+                val = -2;
+            }
+        }
+
+        Vmax.push_back(val);
+
+        cout << "Vmax_" << i << " : " << val << "rad/s\n";
+    }
+
+    return Vmax;
+}
+
 vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
     vector<float> Qi;
@@ -1229,6 +1286,8 @@ void TestManager::GetArr(float arr[])
     int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
+
+    cal_Vmax(c_MotorAngle, arr, t);
     
     for (int k = 0; k < n; ++k)
     {
