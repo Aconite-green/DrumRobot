@@ -154,7 +154,7 @@ void TestManager::SendTestProcess()
         {
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0715";
+            fileNameOut << "../../READ/Test_0717";
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
         }

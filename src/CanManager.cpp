@@ -627,7 +627,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        appendToCSV_CM("sendForCheck_Fixed(desired_actial).txt", motor->fixedPos, tMotor->currentPos);
+        appendToCSV_CM("Fixed(desired_actial).txt", motor->fixedPos, tMotor->currentPos);
         // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
         tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
         if (!sendMotorFrame(tMotor))
