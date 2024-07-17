@@ -94,8 +94,16 @@ void TestManager::SendTestProcess()
         cout << "spd : " << speed_test << "erpm\n";
         cout << "repeat flag to " << repeat_flag << endl;
         cout << "buffer test flag to " << buffer_test_flag << "\n";
+        if (profile_flag)
+        {
+            cout << "make profile\n";
+        }
+        else
+        {
+            cout << "sin profile\n";
+        }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer (16) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer (16) / profile (17) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -167,6 +175,17 @@ void TestManager::SendTestProcess()
             else
             {
                 buffer_test_flag = true;
+            }
+        }
+        else if (userInput == 17)
+        {
+            if (profile_flag)
+            {
+                profile_flag = false;
+            }
+            else
+            {
+                profile_flag = true;
             }
         }
         
@@ -1294,6 +1313,25 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
     return Qi;
 }
 
+vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
+{
+    vector<float> Qi;
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val;
+        
+        float A = q2[i] - q1[i];
+        float w = 2.0*M_PI/t2;
+        
+        val = A * sin(w*t) + q1[i];
+
+        Qi.push_back(val);
+    }
+
+    return Qi;
+}
+
 void TestManager::GetArr(float arr[])
 {
 
@@ -1321,7 +1359,16 @@ void TestManager::GetArr(float arr[])
         // Qi = connect(c_MotorAngle, arr, k, n);
         // q_setting.push_back(Qi);
 
-        Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+        if (profile_flag)
+        {
+            Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+        }
+        else
+        {
+            Q_control_mode_test = sinProfile(c_MotorAngle, arr, t*k/n, t);
+
+            repeat_flag = 0;
+        }
 
         // Send to Buffer
         for (auto &entry : motors)

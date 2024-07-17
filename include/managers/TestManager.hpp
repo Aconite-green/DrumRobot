@@ -91,12 +91,14 @@ private:
     vector<float> connect(float Q1[], float Q2[], int k, int n);
     vector<float> makeProfile(float Q1[], float Q2[], float k, float n);
     vector<float> cal_Vmax(float q0[], float q1[], float t1);
+    vector<float> sinProfile(float q1[], float q2[], float t, float t2);
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     float speed_test = 1000;
     float break_start_time = 4.0;
     float break_end_time = 4.0;
+    bool profile_flag = true;   // true : 사다리꼴, false : 삼각파
    
     /* Single Test Code */
     string selectedMotor = "waist";
