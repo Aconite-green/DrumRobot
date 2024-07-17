@@ -1121,16 +1121,17 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
 vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 {
     vector<float> Qi;
-    float acceleration = 300000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2 
+    float acceleration = 100; //320000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2 
     int sign;
     float Vmax = 0;
     float S;
+    static int loop_count =0;
 
     for (int i = 0; i < 9; i++)
     {
         float val;
 
-        S = Q1[i] - Q2[i];
+        S = Q2[i] - Q1[i];
 
         if (S < 0)
         {
@@ -1149,30 +1150,38 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
 
         if (discriminant < 0)
         {
-            //std::cout << "No real solution for Vmax." << std::endl;
+            // if(i ==4)
+            // {
+            // std::cout << "No real solution for Vmax." << std::endl;
+            // sleep(1);
+            // }
             val = -1;   //Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
+            Qi.push_back(val);
+            continue;
         }
         else
         {
             // 2차 방정식의 해 구하기
             float Vmax1 = (-b + std::sqrt(discriminant)) / (2 * a);
             float Vmax2 = (-b - std::sqrt(discriminant)) / (2 * a);
-
+            
             // 두 해 중 양수인 해 선택
             if (Vmax1 > 0 && Vmax1 < 0.5*n*acceleration)
             {
                 Vmax = Vmax1;
+
             }
             else if (Vmax2 > 0 && Vmax2 < 0.5*n*acceleration)
             {
                 Vmax = Vmax2;
+
             }
             else
             {
                 //std::cout << "No real solution for Vmax." << std::endl;
                 Qi.push_back(Q1[i]); // 실수 해가 없을 경우
+                continue;
             }
-
             //std::cout << "Calculated Vmax: " << Vmax << std::endl;
         }
 
@@ -1187,27 +1196,44 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
             if (k < Vmax / acceleration)
             {
                 val = Q1[i] + sign * 0.5 * acceleration * k * k;
+                // if(i==4)
+                // {
+                // std::cout <<"가속 : " <<val<< std::endl;
+                // }
             }
             // 등속
             else if (k < S / Vmax)
             {
                 val = Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration)); 
+            //    if(i==4)
+            //     {
+            //     std::cout <<"등속 : " <<val<< std::endl;
+            //     }            
             }
             // 감속
             else if (k < Vmax / acceleration + S / Vmax)
             {
                 val = Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k);
+                // if(i ==4)
+                // {
+                // std::cout <<"감속 : " <<val<< std::endl;
+                // }               
             }           
             else 
             {
                 val = Q2[i];
+                // if(i ==4)                
+                // {
+                // std::cout <<"else : " <<val<< std::endl;
+                // }                   
             }
         }
 
         Qi.push_back(val);
 
     }
-
+    loop_count ++;
+    // cout << " Qi[3] : "<< Qi[3] << " Qi[4] : "<< Qi[4] <<endl;
     return Qi;
 }
 
@@ -1247,10 +1273,10 @@ void TestManager::GetArr(float arr[])
 
                 if (canManager.tMotor_control_mode == POS_LOOP)
                 {
-                    float val;
-                    val = (arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]])/n;
-                    newData.position = (k * val + c_MotorAngle[motor_mapping[entry.first]]) * tMotor->cwDir - tMotor->homeOffset;
-                    // newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    // float val;
+                    // val = (arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]])/n;
+                    // newData.position = (k * val + c_MotorAngle[motor_mapping[entry.first]]) * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
                 else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
@@ -1291,15 +1317,29 @@ void TestManager::GetArr(float arr[])
             Qi = connect(arr, c_MotorAngle, k, n);
             q_setting.push_back(Qi);
 
+            Q_control_mode_test = makeProfile(arr, c_MotorAngle,  t*k/n, t);
+
             // Send to Buffer
             for (auto &entry : motors)
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
                     TMotorData newData;
-                    newData.position = c_MotorAngle[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    //newData.spd = tMotor->spd;
-                    //newData.acl = tMotor->acl;
+                    if (canManager.tMotor_control_mode == POS_LOOP)
+                    {
+                        // float val;
+                        // val = (arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]])/n;
+                        // newData.position = (k * val + c_MotorAngle[motor_mapping[entry.first]]) * tMotor->cwDir - tMotor->homeOffset;
+                        newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    }
+                    else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                    {
+                        newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    }
+                    else
+                    {
+                        cout << "tMotor control mode ERROR\n";
+                    }
                     newData.spd = speed_test;
                     newData.acl = 32767;
                     if (k < n_break_end)

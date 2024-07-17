@@ -40,7 +40,7 @@
 #include <cstring> // For memset
 #include <errno.h> // For errno
 
-#define SERIAL_PORT "/dev/ttyACM1"
+#define SERIAL_PORT "/dev/ttyACM0"
 #define BAUD_RATE B1000000
 
 #define POS_LOOP 0
