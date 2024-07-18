@@ -132,7 +132,7 @@ public:
     void appendToCSV_time(const std::string& filename);
 
     // tMotor 제어 모드 결정
-    int tMotor_control_mode = POS_LOOP;
+    int tMotor_control_mode = POS_SPD_LOOP;
 
 private:
 

@@ -541,7 +541,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::SetCANFrame:
     {
-        // 나중에 txt 파일 찍어보면서 확인
+        // WristState가 항상 0으로 저장되면 setCANFrame 함수 사용하는 것과 같음
+        canManager.tMotor_control_mode = POS_SPD_LOOP;
+        canManager.setCANFrame();
 
         // vector<float> Pos(9);
         // for (auto &motor_pair : motors)
@@ -678,8 +680,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         // }
         // Input_pos.push_back(Pos);
 
-        canManager.tMotor_control_mode = POS_SPD_LOOP;
-        canManager.setCANFrame();
         state.perform = PerformSub::SendCANFrame;
         break;
     }
