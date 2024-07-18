@@ -545,6 +545,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         canManager.tMotor_control_mode = POS_SPD_LOOP;
         canManager.setCANFrame();
 
+        // 토크 제어
         // vector<float> Pos(9);
         // for (auto &motor_pair : motors)
         // {
