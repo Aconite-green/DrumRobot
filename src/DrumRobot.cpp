@@ -835,6 +835,7 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::SetCANFrame:
     {
+        canManager.tMotor_control_mode = POS_SPD_LOOP;
         canManager.setCANFrame();
         state.addstance = AddStanceSub::SendCANFrame;
         break;

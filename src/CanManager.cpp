@@ -552,7 +552,7 @@ void CanManager::readFramesFromAllSockets()
     }
 }
 
-bool CanManager::distributeFramesToMotors(bool setlimit)
+    bool CanManager::distributeFramesToMotors(bool setlimit)
 {
     for (auto &motor_pair : motors)
     {

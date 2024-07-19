@@ -1351,13 +1351,13 @@ void TestManager::GetArr(float arr[])
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
 
-    cal_Vmax(c_MotorAngle, arr, t);
+    // cal_Vmax(c_MotorAngle, arr, t);
     
     for (int k = 0; k < n; ++k)
     {
-        // // Make GetBack Array
-        // Qi = connect(c_MotorAngle, arr, k, n);
-        // q_setting.push_back(Qi);
+        // Make GetBack Array
+        Qi = connect(c_MotorAngle, arr, k, n);
+        q_setting.push_back(Qi);
 
         if (profile_flag)
         {
