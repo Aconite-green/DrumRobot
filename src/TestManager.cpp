@@ -102,8 +102,16 @@ void TestManager::SendTestProcess()
         {
             cout << "sin profile\n";
         }
+        if (canManager.tMotor_control_mode == POS_LOOP)
+        {
+            cout << "position loop mode\n";
+        }
+        else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+        {
+            cout << "position speed loop mode\n";
+        }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer (16) / profile (17) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer test (16) / profile (17) / Loop mode (18) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -186,6 +194,17 @@ void TestManager::SendTestProcess()
             else
             {
                 profile_flag = true;
+            }
+        }
+        else if (userInput == 18)
+        {
+            if (canManager.tMotor_control_mode == POS_LOOP)
+            {
+                canManager.tMotor_control_mode = POS_SPD_LOOP;
+            }
+            else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+            {
+                canManager.tMotor_control_mode = POS_LOOP;
             }
         }
         
