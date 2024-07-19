@@ -46,6 +46,9 @@
 #define POS_LOOP 0
 #define POS_SPD_LOOP 1
 
+// position loop control mode 에서 step input 제한
+#define POS_DIFF_LIMIT 0.5
+
 using namespace std;
 
 class CanManager
@@ -98,7 +101,7 @@ public:
     int maxonCnt = 0;
     // Functions for Thread Case
 
-    void setCANFrame();
+    bool setCANFrame();
     bool safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData);
     bool safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, unsigned char> parsedData);
 
@@ -132,7 +135,7 @@ public:
     void appendToCSV_time(const std::string& filename);
 
     // tMotor 제어 모드 결정
-    int tMotor_control_mode = POS_LOOP;
+    int tMotor_control_mode = POS_SPD_LOOP;
 
 private:
 

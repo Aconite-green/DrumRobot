@@ -552,7 +552,7 @@ void CanManager::readFramesFromAllSockets()
     }
 }
 
-    bool CanManager::distributeFramesToMotors(bool setlimit)
+bool CanManager::distributeFramesToMotors(bool setlimit)
 {
     for (auto &motor_pair : motors)
     {
@@ -632,8 +632,17 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         std::string motor_ID = tMotor->myName;
         std::string file_name = "Fixed(desired_actial).txt";
         appendToCSV_CM(motor_ID + file_name, motor->fixedPos, tMotor->currentPos);
+
+        // safety check
         // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
+        float diff_angle = motor->fixedPos - tMotor->currentPos;
+        if (abs(diff_angle) > POS_DIFF_LIMIT)
+        {
+            std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+            return false;
+        }
         tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
+
         if (!sendMotorFrame(tMotor))
         {
             return false;
@@ -702,7 +711,7 @@ bool CanManager::checkAllMotors_Fixed()
 /*                                Functions for Thread Case                                      */
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-void CanManager::setCANFrame()
+bool CanManager::setCANFrame()
 {
     vector<float> Pos(9);
     for (auto &motor_pair : motors)
@@ -722,6 +731,13 @@ void CanManager::setCANFrame()
 
             if (tMotor_control_mode == POS_LOOP)
             {
+                // safety check
+                float diff_angle = tData.position - tMotor->currentPos;
+                if (abs(diff_angle) > POS_DIFF_LIMIT)
+                {
+                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+                    return false;
+                }
                 tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
             }
             else if (tMotor_control_mode == POS_SPD_LOOP)
@@ -740,6 +756,7 @@ void CanManager::setCANFrame()
         }
     }
     Input_pos.push_back(Pos);
+    return true;
 }
 
 bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData)
