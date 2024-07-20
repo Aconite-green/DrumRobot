@@ -14,7 +14,7 @@
 #include "../include/managers/HomeManager.hpp"
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
-#include "../include/managers/QtManager.hpp"
+#include "../include/managers/GuiManager.hpp"
 #include "../include/usbio/SenSor.hpp"
 
 using namespace std;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
     std::thread receiveThread(&DrumRobot::recvLoopForThread, &drumRobot);
-    //std::thread guiThread(&QtManager::guiThread, &qtManager);
+    //std::thread guiThread(&GuiManager::guiThread, &qtManager);
     
     // Threads Priority Settings
     if (!setThreadPriority(sendThread, 3))
