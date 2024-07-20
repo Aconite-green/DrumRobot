@@ -24,6 +24,8 @@
 #include <queue>
 #include <memory>
 #include <gpiod.h>
+#include <chrono>
+#include <fstream>
 
 #define GPIO_CHIP "/dev/gpiochip0"
 #define GPIO_OUTPUT_LINES 8 // 사용할 GPIO 핀 개수
@@ -40,6 +42,12 @@
 
 #define SERIAL_PORT "/dev/ttyACM0"
 #define BAUD_RATE B1000000
+
+#define POS_LOOP 0
+#define POS_SPD_LOOP 1
+
+// position loop control mode 에서 step input 제한
+#define POS_DIFF_LIMIT 0.5
 
 using namespace std;
 
@@ -93,7 +101,7 @@ public:
     int maxonCnt = 0;
     // Functions for Thread Case
 
-    void setCANFrame();
+    bool setCANFrame();
     bool safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData);
     bool safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, unsigned char> parsedData);
 
@@ -118,7 +126,19 @@ public:
     void send_char_to_serial(int fd, char data);
     std::string read_char_from_serial(int fd);
 
+    /*save csv file*/
+    std::chrono::high_resolution_clock::time_point start;  
+    const std::string basePath = "../../READ/";  // 기본 경로
+    // 변수를 CSV 파일에 한 줄씩 저장하는 함수
+    void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
+    void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
+    void appendToCSV_time(const std::string& filename);
+
+    // tMotor 제어 모드 결정
+    int tMotor_control_mode = POS_SPD_LOOP;
+
 private:
+
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;

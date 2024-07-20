@@ -36,6 +36,7 @@ class TestManager
 public:
     TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef);
 
+
     void SendTestProcess();
     void MaxonEnable();
     void setMaxonMode(std::string targetMode);
@@ -45,6 +46,7 @@ public:
     vector<vector<float>> Input_pos;
 
 private:
+
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
@@ -87,10 +89,16 @@ private:
     /*Value Test Code*/
     void getMotorPos(float c_MotorAngle[]);
     vector<float> connect(float Q1[], float Q2[], int k, int n);
+    vector<float> makeProfile(float Q1[], float Q2[], float k, float n);
+    vector<float> cal_Vmax(float q0[], float q1[], float t1);
+    vector<float> sinProfile(float q1[], float q2[], float t, float t2);
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     float speed_test = 1000;
+    float break_start_time = 4.0;
+    float break_end_time = 4.0;
+    bool profile_flag = true;   // true : 사다리꼴, false : 삼각파
    
     /* Single Test Code */
     string selectedMotor = "waist";
@@ -129,6 +137,11 @@ private:
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
     float current_servo;
+
+    /*flag_box*/
+
+    int repeat_flag = 0;
+    bool buffer_test_flag = false;
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
@@ -136,4 +149,5 @@ private:
     void allBreakOff();
 
     bool useArduino = true;
+
 };

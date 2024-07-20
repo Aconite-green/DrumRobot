@@ -129,4 +129,5 @@ private:
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void ReadProcess(int periodMicroSec);
     bool dct_fun(float positions[], float vel_th);
+
 };

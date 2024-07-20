@@ -5,6 +5,7 @@
 CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : motors(motorsRef)
 {
+        start = std::chrono::high_resolution_clock::now(); 
 }
 
 CanManager::~CanManager()
@@ -411,6 +412,9 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
+
+    // appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
+
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
@@ -575,6 +579,10 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);
                     tMotor->recieveBuffer.push(frame);
+
+                    std::string motor_ID = tMotor->myName;
+                    std::string file_name = "motor_receive(actual_0).txt";
+                    appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, 0);
                 }
             }
         }
@@ -621,7 +629,20 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, tMotor->spd, tMotor->acl);
+        std::string motor_ID = tMotor->myName;
+        std::string file_name = "Fixed(desired_actial).txt";
+        appendToCSV_CM(motor_ID + file_name, motor->fixedPos, tMotor->currentPos);
+
+        // safety check
+        // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
+        float diff_angle = motor->fixedPos - tMotor->currentPos;
+        if (abs(diff_angle) > POS_DIFF_LIMIT)
+        {
+            std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+            return false;
+        }
+        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
+
         if (!sendMotorFrame(tMotor))
         {
             return false;
@@ -690,7 +711,7 @@ bool CanManager::checkAllMotors_Fixed()
 /*                                Functions for Thread Case                                      */
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-void CanManager::setCANFrame()
+bool CanManager::setCANFrame()
 {
     vector<float> Pos(9);
     for (auto &motor_pair : motors)
@@ -707,12 +728,35 @@ void CanManager::setCANFrame()
             TMotorData tData = tMotor->commandBuffer.front();
             tMotor->commandBuffer.pop();
             Pos[motor_mapping[tMotor->myName]] = tData.position;
-            tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
-            // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+
+            if (tMotor_control_mode == POS_LOOP)
+            {
+                // safety check
+                float diff_angle = tData.position - tMotor->currentPos;
+                if (abs(diff_angle) > POS_DIFF_LIMIT)
+                {
+                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+                    return false;
+                }
+                tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+            }
+            else if (tMotor_control_mode == POS_SPD_LOOP)
+            {
+                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+            }
+            else
+            {
+                cout << "tMotor control mode ERROR\n";
+            }
             tMotor->break_state = tData.isBreak;
+
+            std::string motor_ID = tMotor->myName;
+            std::string file_name = "setCANFrame(desired_actial).txt";
+            appendToCSV_CM(motor_ID + file_name, tData.position, tMotor->currentPos);
         }
     }
     Input_pos.push_back(Pos);
+    return true;
 }
 
 bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData)
@@ -841,5 +885,97 @@ std::string CanManager::read_char_from_serial(int fd) {
     } else {
         buffer[n] = '\0';
         return std::string(buffer);
+    }
+}
+
+// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+void CanManager::appendToCSV_time(const std::string& filename) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - start;
+    std::ofstream file;
+    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+
+    // 파일이 이미 존재하는지 확인
+    bool fileExists = std::ifstream(fullPath).good();
+
+    // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
+    if (!fileExists) {
+        file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
+    } else {
+        file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
+    }
+    // 파일이 제대로 열렸는지 확인
+    if (file.is_open()) {
+        // 데이터 추가
+        file << elapsed.count() << "\n";
+        // 파일 닫기
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << fullPath << std::endl;
+    }
+}
+
+
+// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+void CanManager::appendToCSV_CM(const std::string& filename, float fixed_position, float current_position) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - start;
+    std::ofstream file;
+    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+
+    // 파일이 이미 존재하는지 확인
+    bool fileExists = std::ifstream(fullPath).good();
+
+    // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
+    if (!fileExists) {
+        file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
+    } else {
+        file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
+    }
+    // 파일이 제대로 열렸는지 확인
+
+    if (file.is_open()) {
+        // 데이터 추가
+        file << elapsed.count() << "," << fixed_position << "," << current_position << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+       
+        // 파일 닫기
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << fullPath << std::endl;
+    }
+}
+
+// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+void CanManager::appendToCSV_CAN(const std::string& filename, can_frame& c_frame) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = now - start;
+    std::ofstream file;
+    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+
+    // 파일이 이미 존재하는지 확인
+    bool fileExists = std::ifstream(fullPath).good();
+
+    // 파일을 열 때 새로 덮어쓰기 모드로 열거나, 이미 존재할 경우 append 모드로 열기
+    if (!fileExists) {
+        file.open(fullPath, std::ios::out | std::ios::trunc);  // 처음 실행 시 덮어쓰기 모드로 열기
+    } else {
+        file.open(fullPath, std::ios::app);  // 이미 파일이 존재하면 append 모드로 열기
+    }
+    // 파일이 제대로 열렸는지 확인
+
+    if (file.is_open()) {
+        // 데이터 추가
+        file << elapsed.count(); // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+       
+       // can_frame의 data 배열을 CSV 형식으로 저장
+        for (int i = 0; i < 8; ++i) {
+            file << "," << static_cast<int>(c_frame.data[i]);
+        }
+        file << "\n";
+
+        // 파일 닫기
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << fullPath << std::endl;
     }
 }

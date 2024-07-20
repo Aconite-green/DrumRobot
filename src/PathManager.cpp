@@ -1346,6 +1346,9 @@ void PathManager::PathLoopTask()
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+/*                                                                            */
+///////////////////////////////////////////////////////////////////////////////
 
 void PathManager::GetArr(vector<float> &arr)
 {
@@ -1371,14 +1374,14 @@ void PathManager::GetArr(vector<float> &arr)
         // Send to Buffer
         for (auto &entry : motors)
         {
-            if (std::shared_ptr<TMotor> tmotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = arr[motor_mapping[entry.first]] * tmotor->cwDir - tmotor->homeOffset;
-                newData.spd = tmotor->spd;
-                newData.acl = tmotor->acl;
+                newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                newData.spd = tMotor->spd;
+                newData.acl = tMotor->acl;
                 newData.isBreak = false;
-                tmotor->commandBuffer.push(newData);
+                tMotor->commandBuffer.push(newData);
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
