@@ -845,7 +845,12 @@ void TestManager::SendTestProcess()
     }
     case TestSub::SetCANFrame:
     {
-        canManager.setCANFrame();
+        bool isSafe;
+        isSafe = canManager.setCANFrame();
+        if (!isSafe)
+        {
+            state.main = Main::Error;
+        }
         state.test = TestSub::SendCANFrame;
         break;
     }
