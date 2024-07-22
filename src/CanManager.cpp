@@ -304,6 +304,8 @@ void CanManager::clearCanBuffer(int canSocket)
     timeout.tv_sec = 0;
     timeout.tv_usec = 0; // 즉시 반환
 
+    std::cout << " clearCanbuffer" << std::endl;
+
     while (true)
     {
         FD_ZERO(&readSet);
