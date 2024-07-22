@@ -321,6 +321,15 @@ void CanManager::clearCanBuffer(int canSocket)
             {
                 // 읽기 실패하거나 더 이상 읽을 데이터가 없음
                 break;
+            }else {
+                // 읽은 데이터를 실제로 처리하지 않고 버립니다
+                std::cout << "Flushed frame with ID: " << frame.can_id 
+                          << ", data length: " << frame.can_dlc 
+                          << ", data: ";
+                for (int i = 0; i < frame.can_dlc; ++i) {
+                    std::cout << std::hex << static_cast<int>(frame.data[i]) << " ";
+                }
+                std::cout << std::dec << std::endl;
             }
         }
         else
@@ -746,7 +755,7 @@ bool CanManager::setCANFrame()
             }
             else
             {
-                cout << "tMotor control mode ERROR\n";
+                std::cout << "tMotor control mode ERROR\n";
             }
             tMotor->break_state = tData.isBreak;
 
@@ -771,18 +780,18 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
             if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.4)
             {
                 std::cout << "Error For " << tMotor->myName << " (Pos Diff)\n";
-                cout << "Previous : " << tMotor->currentPos << "\nCrrent : " << std::get<1>(parsedData) << "\n";
-                cout << "Diff : " << abs(tMotor->currentPos - std::get<1>(parsedData)) / M_PI * 180 << "deg\n";
+                std::cout << "Previous : " << tMotor->currentPos << "\nCrrent : " << std::get<1>(parsedData) << "\n";
+                std::cout << "Diff : " << abs(tMotor->currentPos - std::get<1>(parsedData)) / M_PI * 180 << "deg\n";
             }
             else if (tMotor->rMin > coordinationPos)
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Min)\n";
-                cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
             else
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Max)\n";
-                cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
 
             isSafe = false;
@@ -807,12 +816,12 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
             if (maxonMotor->rMin > coordinationPos)
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Min)\n";
-                cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
             else
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Max)\n";
-                cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
 
             if (maxonMotor->errorCnt > 10)
