@@ -167,10 +167,12 @@ void CanManager::activateCanPort(const char *port)
     snprintf(command3, sizeof(command3), "sudo ifconfig %s txqueuelen 1000", port);
 
     int ret4 = system(command4);
+    clearOneCanBuffers(port);
     int ret1 = system(command1);
-    int ret2 = system(command2);
+    int ret2 = system(command2);    // UP PORT 해줄 때 잔여 명령 실행
     int ret3 = system(command3);
 
+    
     if (ret1 != 0 || ret2 != 0 || ret3 != 0 || ret4 != 0)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
@@ -285,6 +287,31 @@ void CanManager::list_and_activate_available_can_ports()
     }
 }
 
+void CanManager::clearOneCanBuffers(const char *port)
+{
+    int fd = open(port, O_RDWR);
+    if(fd < 0)
+    {
+        perror("Error opening Can port");
+        return;
+    }
+
+    struct can_frame frame;
+    ssize_t bytesRead;
+    while((bytesRead = read(fd, &frame, sizeof(frame))) >0)
+    {
+
+    }
+
+    if(bytesRead < 0)
+    {
+        perror("Error reading Can port");
+    }
+
+    close(fd);
+
+}
+
 void CanManager::clearReadBuffers()
 {
     for (const auto &socketPair : sockets)
@@ -293,6 +320,8 @@ void CanManager::clearReadBuffers()
         clearCanBuffer(socket_fd);
     }
 }
+
+
 
 void CanManager::clearCanBuffer(int canSocket)
 {
@@ -313,26 +342,11 @@ void CanManager::clearCanBuffer(int canSocket)
 
         // 소켓에서 읽을 데이터가 있는지 확인
         int selectRes = select(canSocket + 1, &readSet, NULL, NULL, &timeout);
-
+        // std::cout << "clearcanbuf" << std::endl;
         if (selectRes > 0)
         {
             // 수신 버퍼에서 데이터 읽기
             ssize_t nbytes = read(canSocket, &frame, sizeof(struct can_frame));
-
-            if (nbytes <= 0)
-            {
-                // 읽기 실패하거나 더 이상 읽을 데이터가 없음
-                break;
-            }else {
-                // 읽은 데이터를 실제로 처리하지 않고 버립니다
-                std::cout << "Flushed frame with ID: " << frame.can_id 
-                          << ", data length: " << frame.can_dlc 
-                          << ", data: ";
-                for (int i = 0; i < frame.can_dlc; ++i) {
-                    std::cout << std::hex << static_cast<int>(frame.data[i]) << " ";
-                }
-                std::cout << std::dec << std::endl;
-            }
         }
         else
         {

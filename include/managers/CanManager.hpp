@@ -40,13 +40,13 @@
 #include <cstring> // For memset
 #include <errno.h> // For errno
 
-#define SERIAL_PORT "/dev/ttyACM1"
+#define SERIAL_PORT "/dev/ttyACM0"
 #define BAUD_RATE B1000000
 
 #define POS_LOOP 0
 #define POS_SPD_LOOP 1
 
-// position loop control mode 에서 step input 제한
+// position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 0.5
 
 using namespace std;
@@ -91,6 +91,8 @@ public:
     void readFramesFromAllSockets();
 
     bool distributeFramesToMotors(bool setlimit);
+
+    void clearOneCanBuffers(const char *port);
 
     void clearReadBuffers();
 
