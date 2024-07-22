@@ -32,17 +32,6 @@
 #include "../include/managers/TestManager.hpp"
 #include "../include/managers/HomeManager.hpp"
 
-//For Qt
-/*
-#include "SystemState.hpp"
-#include "../usbio/SenSor.hpp"
-#include "../managers/CanManager.hpp"
-#include "../managers/PathManager.hpp"
-#include "../motors/CommandParser.hpp"
-#include "../motors/Motor.hpp"
-#include "../managers/TestManager.hpp"
-#include "../managers/HomeManager.hpp"
-*/
 
 using namespace std;
 

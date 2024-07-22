@@ -13,6 +13,7 @@ public:
     Sensor(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     ~Sensor();
+    
 
     DWORD ReadVal();
     bool OpenDeviceUntilSuccess();
