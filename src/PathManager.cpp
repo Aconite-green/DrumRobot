@@ -71,6 +71,123 @@ vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, 
     return Qi;
 }
 
+vector<float> PathManager::cal_Vmax(vector<float> &q1, vector<float> &q2, float acc, float t2)
+{
+    vector<float> Vmax;
+
+    for (int i = 0; i < q1.size(); i++)
+    {
+        float val;
+        float S = q2[i] - q1[i];
+
+        // 이동거리 양수로 변경
+        if (S < 0)
+        {
+            S = -1 * S;
+        }
+
+        if (S > t2*t2*acc/4)
+        {
+            // 가속도로 도달 불가능
+            // -1 반환
+            val = -1;
+        }
+        else
+        {
+            // 2차 방정식 계수
+            float A = 1/acc;
+            float B = -1*t2;
+            float C = S;
+
+            float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
+            float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
+
+            if (sol1 >= 0 && sol1 <= acc*t2/2)
+            {
+                val = sol1;
+            }
+            else if (sol2 >= 0 && sol2 <= acc*t2/2)
+            {
+                val = sol2;
+            }
+            else
+            {
+                // 해가 범위 안에 없음
+                // -2 반환
+                val = -2;
+            }
+        }
+
+        Vmax.push_back(val);
+
+        cout << "Vmax_" << i << " : " << val << "rad/s\n";
+    }
+
+    return Vmax;
+}
+
+vector<float> PathManager::makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2)
+{
+    vector<float> Qi;
+    const float acc_max = 100.0;    // rad/s^2
+    int sign;
+
+    for(long unsigned int i = 0; i < q1.size(); i++)
+    {
+        float val, S;
+
+        S = q2[i] - q1[i];
+        
+        // 부호 확인
+        if (S < 0)
+        {
+            S = -1 * S;
+            sign = -1;
+        }
+        else
+        {
+            sign = 1;
+        }
+
+
+        // 궤적 생성
+        if (S == 0)
+        {
+            // 정지
+            val = q1[i];
+        }
+        else if (Vmax[i] < 0)
+        {
+            // 삼각형 프로파일
+        }
+        else
+        {
+            // 사다리꼴 프로파일
+            if (t < Vmax[i] / acc)
+            {
+                // 가속
+                val = q1[i] + sign * 0.5 * acc * t * t;
+            }
+            else if (t < S / Vmax[i])
+            {
+                // 등속
+                val = q1[i] + (sign * 0.5 * Vmax[i] * Vmax[i] / acc) + (sign * Vmax[i] * (t - Vmax[i] / acc));          
+            }
+            else if (t < Vmax[i] / acc + S / Vmax[i])
+            {
+                // 감속
+                val = q2[i] - sign * 0.5 * acc * (S / Vmax[i] + Vmax[i] / acc - t) * (S / Vmax[i] + Vmax[i] / acc - t);              
+            }
+            else 
+            {
+                val = q2[i];              
+            }
+        }
+
+        Qi.push_back(val);
+    }
+}
+
 void PathManager::getMotorPos()
 {
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
@@ -1352,24 +1469,30 @@ void PathManager::PathLoopTask()
 
 void PathManager::GetArr(vector<float> &arr)
 {
+    const float acc_max = 100.0;    // rad/s^2
+    vector<float> Qi;
+    vector<float> Vmax;
+    // vector<vector<float>> q_setting;
+
     cout << "Get Array...\n";
     for (int k = 0; k < 9; k++)
     {
         cout << arr[k] << endl;
     }
 
-    vector<float> Qi;
-    // vector<vector<float>> q_setting;
-
     getMotorPos();
 
     float dt = 0.005;
-    float t = 4;
+    float t = 4.0;
     int n = t / dt; // 4초동안 실행
+
+    Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+
     for (int k = 1; k <= n; ++k)
     {
         // Make GetBack Array
-        Qi = connect(c_MotorAngle, arr, k, n);
+        // Qi = connect(c_MotorAngle, arr, k, n);
+        Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
 
         // Send to Buffer
         for (auto &entry : motors)
@@ -1377,7 +1500,20 @@ void PathManager::GetArr(vector<float> &arr)
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
             {
                 TMotorData newData;
-                newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+
+                if (canManager.tMotor_control_mode == POS_LOOP)
+                {
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                {
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                }
+                else
+                {
+                    cout << "tMotor control mode ERROR\n";
+                }
+
                 newData.spd = tMotor->spd;
                 newData.acl = tMotor->acl;
                 newData.isBreak = false;

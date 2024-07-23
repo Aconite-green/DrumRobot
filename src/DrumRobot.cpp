@@ -459,271 +459,271 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
 
     switch (state.perform.load())
     {
-    case PerformSub::TimeCheck:
-    {
-        if (elapsed_time.count() >= periodMicroSec)
+        case PerformSub::TimeCheck:
         {
-            cnt++;
-            state.perform = PerformSub::CheckBuf; // 주기가 되면 ReadCANFrame 상태로 진입
-            SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
-        }
-        break;
-    }
-    case PerformSub::CheckBuf:
-    {
-        for (const auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            if (elapsed_time.count() >= periodMicroSec)
             {
-                if (tMotor->commandBuffer.size() < 10)
-                    state.perform = PerformSub::GeneratePath;
-                else
-                    state.perform = PerformSub::SetCANFrame;
+                cnt++;
+                state.perform = PerformSub::CheckBuf; // 주기가 되면 ReadCANFrame 상태로 진입
+                SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
             }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                if (maxonMotor->commandBuffer.size() < 10)
-                    state.perform = PerformSub::GeneratePath;
-                else
-                    state.perform = PerformSub::SetCANFrame;
-            }
+            break;
         }
-        break;
-    }
-    case PerformSub::GeneratePath:
-    {
-        if (pathManager.line < pathManager.total)
+        case PerformSub::CheckBuf:
         {
-            std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
-            pathManager.PathLoopTask();
-            pathManager.line++;
-            state.perform = PerformSub::CheckBuf;
-        }
-        else
-        {
-            bool allBuffersEmpty = true;
             for (const auto &motor_pair : motors)
             {
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    if (!tMotor->commandBuffer.empty())
-                    {
-                        allBuffersEmpty = false;
-                        break;
-                    }
+                    if (tMotor->commandBuffer.size() < 10)
+                        state.perform = PerformSub::GeneratePath;
+                    else
+                        state.perform = PerformSub::SetCANFrame;
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
-                    if (!maxonMotor->commandBuffer.empty())
-                    {
-                        allBuffersEmpty = false;
-                        break;
-                    }
+                    if (maxonMotor->commandBuffer.size() < 10)
+                        state.perform = PerformSub::GeneratePath;
+                    else
+                        state.perform = PerformSub::SetCANFrame;
                 }
             }
-
-            if (allBuffersEmpty)
+            break;
+        }
+        case PerformSub::GeneratePath:
+        {
+            if (pathManager.line < pathManager.total)
             {
-                std::cout << "Performance is Over\n";
-                save_to_txt_inputData("../../READ/DrumData_in");
-                parse_and_save_to_csv("../../READ/DrumData_out");
-                state.main = Main::AddStance;
-                isReady = false;
-                getReady = false;
-                getBack = true;
-                isBack = false;
-                pathManager.line = 0;
+                std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
+                pathManager.PathLoopTask();
+                pathManager.line++;
+                state.perform = PerformSub::CheckBuf;
             }
             else
-                state.perform = PerformSub::SetCANFrame;
-        }
-        break;
-    }
-    case PerformSub::SetCANFrame:
-    {
-        // WristState가 항상 0으로 저장되면 setCANFrame 함수 사용하는 것과 같음
-        bool isSafe;
-        canManager.tMotor_control_mode = POS_SPD_LOOP;
-        isSafe = canManager.setCANFrame();
-        if (!isSafe)
-        {
-            state.main = Main::Error;
-        }
-
-        // 토크 제어
-        // vector<float> Pos(9);
-        // for (auto &motor_pair : motors)
-        // {
-        //     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        //     {
-        //         MaxonData mData = maxonMotor->commandBuffer.front();
-        //         maxonMotor->commandBuffer.pop();
-        //         // cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
-        //         if (mData.WristState == 1)
-        //         {
-        //             des = cnt;
-        //         }
-        //         if (mData.WristState == 2)
-        //         { // Stay Before Torque Mode
-        //             maxonMotor->stay = true;
-        //             maxonMotor->hitting = false;
-        //             maxonMotor->positioning = false;
-        //             maxonMotor->atPosition = false;
-        //             if (!maxonMotor->isPositionMode)
-        //             {
-        //                 cout << "Change to Position Mode!!!!!!!!\n";
-        //                 maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
-        //                 maxonMotor->isPositionMode = true;
-        //             }
-        //         }
-        //         else if (mData.WristState == -1) // Get to Torque Mode
-        //         {
-        //             cout << "\n================== Hit Time Diff >> " << (act - des) * 5 << "ms ================\n\n";
-        //             maxonMotor->stay = false;
-        //             maxonMotor->hitting = true;
-        //             maxonMotor->positioning = false;
-        //             maxonMotor->atPosition = false;
-        //             maxonMotor->clearWrist_BackArr();
-
-        //             if (maxonMotor->isPositionMode)
-        //             {
-        //                 cout << "Change to Torque Mode!!!!!!!!\n";
-        //                 maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
-        //                 maxonMotor->isPositionMode = false;
-        //             }
-        //         }
-        //         else if (mData.WristState == -0.5) // In Position Mode
-        //         {
-        //             maxonMotor->stay = false;
-        //             maxonMotor->hitting = false;
-        //             maxonMotor->positioning = false;
-        //             maxonMotor->atPosition = false;
-        //             if (!maxonMotor->isPositionMode)
-        //             {
-        //                 cout << "\n================== Hit Time Diff >> " << (act - des) * 5 << "ms ================\n\n";
-        //                 cout << "Change to Position Mode!!!!!!!!\n";
-        //                 maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
-        //                 maxonMotor->isPositionMode = true;
-        //             }
-        //         }
-        //         else
-        //         {
-        //             if (maxonMotor->hitting)
-        //             {
-        //                 maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 500 * maxonMotor->cwDir * (-1));
-        //             }
-        //             else if (maxonMotor->positioning)
-        //             {
-        //                 maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 10 * maxonMotor->cwDir);
-        //             }
-        //             else if (maxonMotor->stay)
-        //             {
-        //                 if (!maxonMotor->isPositionMode)
-        //                 {
-        //                     cout << "Change to Position Mode!!!!!!!!\n";
-        //                     maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
-        //                     maxonMotor->isPositionMode = true;
-        //                 }
-        //                 else
-        //                 {
-        //                     mData.position = pathManager.wrist_backPos;
-        //                     cout << "Stay Hold!!\n";
-        //                     Pos[motor_mapping[maxonMotor->myName]] = pathManager.wrist_backPos;
-        //                     maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, pathManager.wrist_backPos);
-        //                 }
-        //             }
-        //             else if (maxonMotor->atPosition)
-        //             {
-        //                 if (!maxonMotor->isPositionMode)
-        //                 {
-        //                     cout << "Change to Position Mode!!!!!!!!\n";
-        //                     maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
-        //                     maxonMotor->isPositionMode = true;
-
-        //                     float coordinationPos = (maxonMotor->currentPos + M_PI / 18) * maxonMotor->cwDir;
-        //                     pathManager.Get_wrist_BackArr(maxonMotor->myName, coordinationPos, pathManager.wrist_backPos, pathManager.wrist_back_time);
-        //                 }
-        //                 else
-        //                 {
-        //                     float data = pathManager.wrist_backPos;
-        //                     if (!maxonMotor->wrist_BackArr.empty())
-        //                     {
-        //                         data = maxonMotor->wrist_BackArr.front();
-        //                         maxonMotor->wrist_BackArr.pop();
-        //                     }
-        //                     cout << "Stay Hold!!\n";
-        //                     Pos[motor_mapping[maxonMotor->myName]] = data;
-        //                     maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, data);
-        //                 }
-        //             }
-        //             else // !hitting, !positioning, !atPosition, !stay
-        //             {
-        //                 Pos[motor_mapping[maxonMotor->myName]] = mData.position;
-        //                 maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
-        //             }
-        //         }
-        //     }
-        //     else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-        //     {
-        //         TMotorData tData = tMotor->commandBuffer.front();
-        //         tMotor->commandBuffer.pop();
-        //         Pos[motor_mapping[tMotor->myName]] = tData.position;
-
-        //         if (canManager.tMotor_control_mode == POS_LOOP)
-        //         {
-        //             tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
-        //         }
-        //         else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-        //         {
-        //             tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
-        //         }
-        //         else
-        //         {
-        //             cout << "tMotor control mode ERROR\n";
-        //         }
-        //         tMotor->break_state = tData.isBreak;
-        //     }
-        // }
-        // Input_pos.push_back(Pos);
-
-        state.perform = PerformSub::SendCANFrame;
-        break;
-    }
-    case PerformSub::SendCANFrame:
-    {
-        bool isWriteError = false;
-        for (auto &motor_pair : motors)
-        {
-            shared_ptr<GenericMotor> motor = motor_pair.second;
-            if (!canManager.sendMotorFrame(motor))
             {
-                isWriteError = true;
+                bool allBuffersEmpty = true;
+                for (const auto &motor_pair : motors)
+                {
+                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                    {
+                        if (!tMotor->commandBuffer.empty())
+                        {
+                            allBuffersEmpty = false;
+                            break;
+                        }
+                    }
+                    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                    {
+                        if (!maxonMotor->commandBuffer.empty())
+                        {
+                            allBuffersEmpty = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (allBuffersEmpty)
+                {
+                    std::cout << "Performance is Over\n";
+                    save_to_txt_inputData("../../READ/DrumData_in");
+                    parse_and_save_to_csv("../../READ/DrumData_out");
+                    state.main = Main::AddStance;
+                    isReady = false;
+                    getReady = false;
+                    getBack = true;
+                    isBack = false;
+                    pathManager.line = 0;
+                }
+                else
+                    state.perform = PerformSub::SetCANFrame;
+            }
+            break;
+        }
+        case PerformSub::SetCANFrame:
+        {
+            // WristState가 항상 0으로 저장되면 setCANFrame 함수 사용하는 것과 같음
+            bool isSafe;
+            canManager.tMotor_control_mode = POS_SPD_LOOP;
+            isSafe = canManager.setCANFrame();
+            if (!isSafe)
+            {
+                state.main = Main::Error;
             }
 
-            // if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            // 토크 제어
+            // vector<float> Pos(9);
+            // for (auto &motor_pair : motors)
             // {
-            //     sensor.writeVal(tMotor, tMotor->break_state);
-            // }
-        }
-        if (maxonMotorCount != 0)
-        {
-            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            if (!canManager.sendMotorFrame(virtualMaxonMotor))
-            {
-                isWriteError = true;
-            }
-        }
-        if (isWriteError)
-        {
-            state.main = Main::Error;
-        }
-        else
-        {
-            state.perform = PerformSub::TimeCheck;
-        }
+            //     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+            //     {
+            //         MaxonData mData = maxonMotor->commandBuffer.front();
+            //         maxonMotor->commandBuffer.pop();
+            //         // cout << "< " << maxonMotor->myName << " >\nPosition : " << mData.position << ",\t\tState : " << mData.WristState << "\n";
+            //         if (mData.WristState == 1)
+            //         {
+            //             des = cnt;
+            //         }
+            //         if (mData.WristState == 2)
+            //         { // Stay Before Torque Mode
+            //             maxonMotor->stay = true;
+            //             maxonMotor->hitting = false;
+            //             maxonMotor->positioning = false;
+            //             maxonMotor->atPosition = false;
+            //             if (!maxonMotor->isPositionMode)
+            //             {
+            //                 cout << "Change to Position Mode!!!!!!!!\n";
+            //                 maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+            //                 maxonMotor->isPositionMode = true;
+            //             }
+            //         }
+            //         else if (mData.WristState == -1) // Get to Torque Mode
+            //         {
+            //             cout << "\n================== Hit Time Diff >> " << (act - des) * 5 << "ms ================\n\n";
+            //             maxonMotor->stay = false;
+            //             maxonMotor->hitting = true;
+            //             maxonMotor->positioning = false;
+            //             maxonMotor->atPosition = false;
+            //             maxonMotor->clearWrist_BackArr();
 
-        break;
-    }
+            //             if (maxonMotor->isPositionMode)
+            //             {
+            //                 cout << "Change to Torque Mode!!!!!!!!\n";
+            //                 maxoncmd.getCSTMode(*maxonMotor, &maxonMotor->sendFrame);
+            //                 maxonMotor->isPositionMode = false;
+            //             }
+            //         }
+            //         else if (mData.WristState == -0.5) // In Position Mode
+            //         {
+            //             maxonMotor->stay = false;
+            //             maxonMotor->hitting = false;
+            //             maxonMotor->positioning = false;
+            //             maxonMotor->atPosition = false;
+            //             if (!maxonMotor->isPositionMode)
+            //             {
+            //                 cout << "\n================== Hit Time Diff >> " << (act - des) * 5 << "ms ================\n\n";
+            //                 cout << "Change to Position Mode!!!!!!!!\n";
+            //                 maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+            //                 maxonMotor->isPositionMode = true;
+            //             }
+            //         }
+            //         else
+            //         {
+            //             if (maxonMotor->hitting)
+            //             {
+            //                 maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 500 * maxonMotor->cwDir * (-1));
+            //             }
+            //             else if (maxonMotor->positioning)
+            //             {
+            //                 maxoncmd.getTargetTorque(*maxonMotor, &maxonMotor->sendFrame, 10 * maxonMotor->cwDir);
+            //             }
+            //             else if (maxonMotor->stay)
+            //             {
+            //                 if (!maxonMotor->isPositionMode)
+            //                 {
+            //                     cout << "Change to Position Mode!!!!!!!!\n";
+            //                     maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+            //                     maxonMotor->isPositionMode = true;
+            //                 }
+            //                 else
+            //                 {
+            //                     mData.position = pathManager.wrist_backPos;
+            //                     cout << "Stay Hold!!\n";
+            //                     Pos[motor_mapping[maxonMotor->myName]] = pathManager.wrist_backPos;
+            //                     maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, pathManager.wrist_backPos);
+            //                 }
+            //             }
+            //             else if (maxonMotor->atPosition)
+            //             {
+            //                 if (!maxonMotor->isPositionMode)
+            //                 {
+            //                     cout << "Change to Position Mode!!!!!!!!\n";
+            //                     maxoncmd.getCSPMode(*maxonMotor, &maxonMotor->sendFrame);
+            //                     maxonMotor->isPositionMode = true;
+
+            //                     float coordinationPos = (maxonMotor->currentPos + M_PI / 18) * maxonMotor->cwDir;
+            //                     pathManager.Get_wrist_BackArr(maxonMotor->myName, coordinationPos, pathManager.wrist_backPos, pathManager.wrist_back_time);
+            //                 }
+            //                 else
+            //                 {
+            //                     float data = pathManager.wrist_backPos;
+            //                     if (!maxonMotor->wrist_BackArr.empty())
+            //                     {
+            //                         data = maxonMotor->wrist_BackArr.front();
+            //                         maxonMotor->wrist_BackArr.pop();
+            //                     }
+            //                     cout << "Stay Hold!!\n";
+            //                     Pos[motor_mapping[maxonMotor->myName]] = data;
+            //                     maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, data);
+            //                 }
+            //             }
+            //             else // !hitting, !positioning, !atPosition, !stay
+            //             {
+            //                 Pos[motor_mapping[maxonMotor->myName]] = mData.position;
+            //                 maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+            //             }
+            //         }
+            //     }
+            //     else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            //     {
+            //         TMotorData tData = tMotor->commandBuffer.front();
+            //         tMotor->commandBuffer.pop();
+            //         Pos[motor_mapping[tMotor->myName]] = tData.position;
+
+            //         if (canManager.tMotor_control_mode == POS_LOOP)
+            //         {
+            //             tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+            //         }
+            //         else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+            //         {
+            //             tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+            //         }
+            //         else
+            //         {
+            //             cout << "tMotor control mode ERROR\n";
+            //         }
+            //         tMotor->break_state = tData.isBreak;
+            //     }
+            // }
+            // Input_pos.push_back(Pos);
+
+            state.perform = PerformSub::SendCANFrame;
+            break;
+        }
+        case PerformSub::SendCANFrame:
+        {
+            bool isWriteError = false;
+            for (auto &motor_pair : motors)
+            {
+                shared_ptr<GenericMotor> motor = motor_pair.second;
+                if (!canManager.sendMotorFrame(motor))
+                {
+                    isWriteError = true;
+                }
+
+                // if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                // {
+                //     sensor.writeVal(tMotor, tMotor->break_state);
+                // }
+            }
+            if (maxonMotorCount != 0)
+            {
+                maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+                if (!canManager.sendMotorFrame(virtualMaxonMotor))
+                {
+                    isWriteError = true;
+                }
+            }
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+            }
+            else
+            {
+                state.perform = PerformSub::TimeCheck;
+            }
+
+            break;
+        }
     }
 }
 
@@ -731,164 +731,164 @@ void DrumRobot::SendAddStanceProcess()
 {
     switch (state.addstance.load())
     {
-    case AddStanceSub::CheckCommand:
-    {
-        if (getReady)
-        {
-            ClearBufferforRecord();
-            std::cout << "Get Ready...\n";
-            clearMotorsCommandBuffer();
-            state.addstance = AddStanceSub::FillBuf;
-        }
-        else if (getBack)
-        {
-            ClearBufferforRecord();
-            std::cout << "Get Back...\n";
-            clearMotorsCommandBuffer();
-            state.addstance = AddStanceSub::FillBuf;
-        }
-        else
-        {
-            save_to_txt_inputData("../../READ/AddStance_in");
-            parse_and_save_to_csv("../../READ/AddStance_out");
-            state.main = Main::Ideal;
-        }
-        break;
-    }
-    case AddStanceSub::FillBuf:
-    {
-        if (getReady || getBack)
-        {
-            pathManager.GetArr(pathManager.standby);
-        }
-        else if (isReady)
-        {
-            pathManager.GetArr(pathManager.readyarr);
-        }
-        else if (isBack)
-        {
-            pathManager.GetArr(pathManager.backarr);
-        }
-
-        state.addstance = AddStanceSub::TimeCheck;
-        break;
-    }
-    case AddStanceSub::TimeCheck:
-    {
-        usleep(5000);
-        state.addstance = AddStanceSub::CheckBuf;
-        break;
-    }
-    case AddStanceSub::CheckBuf:
-    {
-        bool allBuffersEmpty = true;
-
-        for (const auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                if (!maxonMotor->commandBuffer.empty())
-                {
-                    allBuffersEmpty = false;
-                    break;
-                }
-            }
-            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                if (!tMotor->commandBuffer.empty())
-                {
-                    allBuffersEmpty = false;
-                    break;
-                }
-            }
-        }
-
-        if (!allBuffersEmpty)
-        {
-            state.addstance = AddStanceSub::SetCANFrame;
-        }
-        else
+        case AddStanceSub::CheckCommand:
         {
             if (getReady)
             {
+                ClearBufferforRecord();
+                std::cout << "Get Ready...\n";
+                clearMotorsCommandBuffer();
                 state.addstance = AddStanceSub::FillBuf;
-                isReady = true;
-                getReady = false;
-                isBack = false;
-                getBack = false;
             }
             else if (getBack)
             {
+                ClearBufferforRecord();
+                std::cout << "Get Back...\n";
+                clearMotorsCommandBuffer();
                 state.addstance = AddStanceSub::FillBuf;
-                isBack = true;
-                getBack = false;
-                isReady = false;
-                getReady = false;
+            }
+            else
+            {
+                save_to_txt_inputData("../../READ/AddStance_in");
+                parse_and_save_to_csv("../../READ/AddStance_out");
+                state.main = Main::Ideal;
+            }
+            break;
+        }
+        case AddStanceSub::FillBuf:
+        {
+            if (getReady || getBack)
+            {
+                pathManager.GetArr(pathManager.standby);
             }
             else if (isReady)
             {
-                state.addstance = AddStanceSub::CheckCommand;
-                canManager.clearReadBuffers();
+                pathManager.GetArr(pathManager.readyarr);
             }
             else if (isBack)
             {
-                state.addstance = AddStanceSub::CheckCommand;
-                canManager.clearReadBuffers();
-            }
-        }
-        break;
-    }
-    case AddStanceSub::SetCANFrame:
-    {
-        bool isSafe;
-        canManager.tMotor_control_mode = POS_SPD_LOOP;
-        isSafe = canManager.setCANFrame();
-        if (!isSafe)
-        {
-            state.main = Main::Error;
-        }
-        state.addstance = AddStanceSub::SendCANFrame;
-        break;
-    }
-    case AddStanceSub::SendCANFrame:
-    {
-        bool isWriteError = false;
-        for (auto &motor_pair : motors)
-        {
-            shared_ptr<GenericMotor> motor = motor_pair.second;
-
-            if (!canManager.sendMotorFrame(motor))
-            {
-                isWriteError = true;
+                pathManager.GetArr(pathManager.backarr);
             }
 
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                sensor.writeVal(tMotor, tMotor->break_state);
-            }
-        }
-
-        if (maxonMotorCount != 0)
-        {
-            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-
-            if (!canManager.sendMotorFrame(virtualMaxonMotor))
-            {
-                isWriteError = true;
-            };
-        }
-
-        if (isWriteError)
-        {
-            state.main = Main::Error;
-        }
-        else
-        {
             state.addstance = AddStanceSub::TimeCheck;
+            break;
         }
+        case AddStanceSub::TimeCheck:
+        {
+            usleep(5000);
+            state.addstance = AddStanceSub::CheckBuf;
+            break;
+        }
+        case AddStanceSub::CheckBuf:
+        {
+            bool allBuffersEmpty = true;
 
-        break;
-    }
+            for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    if (!maxonMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
+                }
+                else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    if (!tMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!allBuffersEmpty)
+            {
+                state.addstance = AddStanceSub::SetCANFrame;
+            }
+            else
+            {
+                if (getReady)
+                {
+                    state.addstance = AddStanceSub::FillBuf;
+                    isReady = true;
+                    getReady = false;
+                    isBack = false;
+                    getBack = false;
+                }
+                else if (getBack)
+                {
+                    state.addstance = AddStanceSub::FillBuf;
+                    isBack = true;
+                    getBack = false;
+                    isReady = false;
+                    getReady = false;
+                }
+                else if (isReady)
+                {
+                    state.addstance = AddStanceSub::CheckCommand;
+                    canManager.clearReadBuffers();
+                }
+                else if (isBack)
+                {
+                    state.addstance = AddStanceSub::CheckCommand;
+                    canManager.clearReadBuffers();
+                }
+            }
+            break;
+        }
+        case AddStanceSub::SetCANFrame:
+        {
+            bool isSafe;
+            canManager.tMotor_control_mode = POS_SPD_LOOP;
+            isSafe = canManager.setCANFrame();
+            if (!isSafe)
+            {
+                state.main = Main::Error;
+            }
+            state.addstance = AddStanceSub::SendCANFrame;
+            break;
+        }
+        case AddStanceSub::SendCANFrame:
+        {
+            bool isWriteError = false;
+            for (auto &motor_pair : motors)
+            {
+                shared_ptr<GenericMotor> motor = motor_pair.second;
+
+                if (!canManager.sendMotorFrame(motor))
+                {
+                    isWriteError = true;
+                }
+
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    sensor.writeVal(tMotor, tMotor->break_state);
+                }
+            }
+
+            if (maxonMotorCount != 0)
+            {
+                maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+
+                if (!canManager.sendMotorFrame(virtualMaxonMotor))
+                {
+                    isWriteError = true;
+                };
+            }
+
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+            }
+            else
+            {
+                state.addstance = AddStanceSub::TimeCheck;
+            }
+
+            break;
+        }
     }
 }
 
