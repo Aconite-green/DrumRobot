@@ -161,6 +161,8 @@ void CanManager::activateCanPort(const char *port)
 {
     char command1[100], command2[100], command3[100], command4[100];
 
+
+
     snprintf(command4, sizeof(command4), "sudo ip link set %s down", port);
     snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 restart-ms 100", port);
     snprintf(command2, sizeof(command2), "sudo ip link set %s up", port);
@@ -305,8 +307,6 @@ void CanManager::clearCanBuffer(int canSocket)
     // 수신 대기 시간 설정
     timeout.tv_sec = 0;
     timeout.tv_usec = 0; // 즉시 반환
-
-    std::cout << " clearCanbuffer" << std::endl;
 
     while (true)
     {

@@ -247,6 +247,8 @@ void DrumRobot::recvLoopForThread()
     while (state.main != Main::Shutdown)
     {
         static int n_txt = 0;
+        static int test_count = 0;
+        test_count++;
         n_txt++;
         if (n_txt > 1000)
         {
@@ -310,7 +312,12 @@ void DrumRobot::recvLoopForThread()
                 }
                 else
                 {
-                    canManager.appendToCSV_time("Test_아래꺼.txt");
+                    if (test_count > 1000)
+                    {
+                        test_count = 0;
+                        canManager.appendToCSV_time("test_under.txt");
+                    }
+
                     ReadProcess(5000);
                 }
                 break;
