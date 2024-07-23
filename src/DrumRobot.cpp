@@ -565,7 +565,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         {
             // WristState가 항상 0으로 저장되면 setCANFrame 함수 사용하는 것과 같음
             bool isSafe;
-            canManager.tMotor_control_mode = POS_SPD_LOOP;
             isSafe = canManager.setCANFrame();
             if (!isSafe)
             {
@@ -863,7 +862,6 @@ void DrumRobot::SendAddStanceProcess()
         case AddStanceSub::SetCANFrame:
         {
             bool isSafe;
-            canManager.tMotor_control_mode = POS_SPD_LOOP;
             isSafe = canManager.setCANFrame();
             if (!isSafe)
             {
