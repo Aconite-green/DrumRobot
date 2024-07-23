@@ -746,6 +746,7 @@ bool CanManager::setCANFrame()
             else
             {
                 std::cout << "tMotor control mode ERROR\n";
+                return false;
             }
             tMotor->break_state = tData.isBreak;
 

@@ -1415,6 +1415,7 @@ void TestManager::GetArr(float arr[])
                 else
                 {
                     cout << "tMotor control mode ERROR\n";
+                    state.main = Main::Error;
                 }
                 //newData.spd = tMotor->spd;
                 //newData.acl = tMotor->acl;
@@ -1469,6 +1470,7 @@ void TestManager::GetArr(float arr[])
                     else
                     {
                         cout << "tMotor control mode ERROR\n";
+                        state.main = Main::Error;
                     }
                     newData.spd = speed_test;
                     newData.acl = 32767;
