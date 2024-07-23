@@ -140,6 +140,9 @@ private:
     
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);
 
+    vector<float> cal_Vmax(vector<float> &q1, vector<float> &q2, float acc, float t2);
+    vector<float> makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);
+
     void getMotorPos();
 
     void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool break_state);

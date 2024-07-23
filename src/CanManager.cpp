@@ -167,7 +167,6 @@ void CanManager::activateCanPort(const char *port)
     snprintf(command3, sizeof(command3), "sudo ifconfig %s txqueuelen 1000", port);
 
     int ret4 = system(command4);
-    clearOneCanBuffers(port);
     int ret1 = system(command1);
     int ret2 = system(command2);    // UP PORT 해줄 때 잔여 명령 실행
     int ret3 = system(command3);
@@ -287,31 +286,6 @@ void CanManager::list_and_activate_available_can_ports()
     }
 }
 
-void CanManager::clearOneCanBuffers(const char *port)
-{
-    int fd = open(port, O_RDWR);
-    if(fd < 0)
-    {
-        perror("Error opening Can port");
-        return;
-    }
-
-    struct can_frame frame;
-    ssize_t bytesRead;
-    while((bytesRead = read(fd, &frame, sizeof(frame))) >0)
-    {
-
-    }
-
-    if(bytesRead < 0)
-    {
-        perror("Error reading Can port");
-    }
-
-    close(fd);
-
-}
-
 void CanManager::clearReadBuffers()
 {
     for (const auto &socketPair : sockets)
@@ -320,7 +294,6 @@ void CanManager::clearReadBuffers()
         clearCanBuffer(socket_fd);
     }
 }
-
 
 
 void CanManager::clearCanBuffer(int canSocket)
@@ -332,6 +305,8 @@ void CanManager::clearCanBuffer(int canSocket)
     // 수신 대기 시간 설정
     timeout.tv_sec = 0;
     timeout.tv_usec = 0; // 즉시 반환
+
+    std::cout << " clearCanbuffer" << std::endl;
 
     while (true)
     {
@@ -938,7 +913,6 @@ void CanManager::appendToCSV_time(const std::string& filename) {
         std::cerr << "Unable to open file: " << fullPath << std::endl;
     }
 }
-
 
 // 변수를 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_CM(const std::string& filename, float fixed_position, float current_position) {

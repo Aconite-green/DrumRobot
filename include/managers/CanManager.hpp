@@ -92,8 +92,6 @@ public:
 
     bool distributeFramesToMotors(bool setlimit);
 
-    void clearOneCanBuffers(const char *port);
-
     void clearReadBuffers();
 
     void setSocketNonBlock();
