@@ -47,7 +47,7 @@
 #define POS_SPD_LOOP 1
 
 // position loop mode 에서 step input 각도 제한
-#define POS_DIFF_LIMIT 0.5
+#define POS_DIFF_LIMIT 1
 
 using namespace std;
 

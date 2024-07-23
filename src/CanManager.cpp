@@ -605,6 +605,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
 
                     std::string motor_ID = tMotor->myName;
                     std::string file_name = "motor_receive(actual_0).txt";
+                    
                     appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, 0);
                 }
             }

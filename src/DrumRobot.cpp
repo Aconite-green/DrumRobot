@@ -246,85 +246,101 @@ void DrumRobot::recvLoopForThread()
 
     while (state.main != Main::Shutdown)
     {
-        // static int n_txt = 0;
-        // n_txt++;
-        // if (n_txt > 10000)
-        // {
-        //     n_txt = 0;
-        //     canManager.appendToCSV_time("ReadProcess10000_while.txt");
-        // }
+        static int n_txt = 0;
+        n_txt++;
+        if (n_txt > 1000)
+        {
+            n_txt = 0;
+            canManager.appendToCSV_time("ReadProcess10000_while.txt");
+        }
 
         switch (state.main.load())
         {
-        case Main::SystemInit:
-        {
-            usleep(500000);
-            break;
-        }
-        case Main::Ideal:
-        {
-            ReadProcess(5000); /*5ms*/
-            break;
-        }
-        case Main::Homing:
-        {
-            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
+            case Main::SystemInit:
+            {
+                canManager.appendToCSV_time("SystemInit.txt");
+                usleep(500000);//500ms
+                break;
+            }
+            case Main::Ideal:
+            {
+                canManager.appendToCSV_time("Ideal.txt");
+                ReadProcess(5000); /*5ms*/
+                break;
+            }
+            case Main::Homing:
+            {
+                if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
+                {    
+                    canManager.appendToCSV_time("Homing_if위에꺼.txt");
+                    ReadProcess(5000);
+                }
+                else
+                {
+                    canManager.appendToCSV_time("Homing_if아래꺼.txt");
+                    usleep(5000);//5msec
+                }
+
+                break;
+            }
+            case Main::Perform:
+            {
+                canManager.appendToCSV_time("Perform.txt");
                 ReadProcess(5000);
-            else
-                usleep(5000);
-            break;
-        }
-        case Main::Perform:
-        {
-            ReadProcess(5000);
-            break;
-        }
-        case Main::AddStance:
-        {
-            ReadProcess(5000);
-            break;
-        }
-        case Main::Check:
-        {
-            ReadProcess(5000);
-            break;
-        }
-        case Main::Test:
-        {
-            if (state.test == TestSub::StickTest)
-            {
-                usleep(500000);
+                break;
             }
-            else
+            case Main::AddStance:
             {
+                canManager.appendToCSV_time("AddStance.txt");
                 ReadProcess(5000);
+                break;
             }
-            break;
-        }
-        case Main::Pause:
-        {
-            bool isWriteError = false;
-            if (!canManager.checkAllMotors_Fixed())
+            case Main::Check:
             {
-                isWriteError = true;
+                canManager.appendToCSV_time("Check.txt");
+                ReadProcess(5000);
+                break;
             }
-            if (isWriteError)
+            case Main::Test:
             {
-                state.main = Main::Error;
+                if (state.test == TestSub::StickTest)
+                {
+                    canManager.appendToCSV_time("Test_StickTest.txt");
+                    usleep(500000); //500msec
+                }
+                else
+                {
+                    canManager.appendToCSV_time("Test_아래꺼.txt");
+                    ReadProcess(5000);
+                }
+                break;
             }
-            //usleep 50000 -> 500000
-            usleep(500000); // 50ms
-            break;
-        }
-        case Main::Error:
-        {
-            parse_and_save_to_csv("../../READ/Error_DrumData_out");
-            sleep(2);
-            state.main = Main::Shutdown;
-            break;
-        }
-        case Main::Shutdown:
-            break;
+            case Main::Pause:
+            {
+                bool isWriteError = false;
+                if (!canManager.checkAllMotors_Fixed())
+                {
+                    isWriteError = true;
+                }
+                if (isWriteError)
+                {
+                    state.main = Main::Error;
+                }
+                //usleep 50000 -> 500000
+                usleep(500000); // 500ms
+                break;
+            }
+            case Main::Error:
+            {
+                parse_and_save_to_csv("../../READ/Error_DrumData_out");
+                sleep(2);
+                state.main = Main::Shutdown;
+                break;
+            }
+            case Main::Shutdown:
+            {
+                break;
+            }
         }
     }
 }
@@ -346,7 +362,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
-
         break;
     case ReadSub::UpdateMotorInfo:
     {
