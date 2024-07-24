@@ -253,20 +253,20 @@ void DrumRobot::recvLoopForThread()
         if (n_txt > 1000)
         {
             n_txt = 0;
-            canManager.appendToCSV_time("ReadProcess10000_while.txt");
+            // canManager.appendToCSV_time("ReadProcess10000_while.txt");
         }
 
         switch (state.main.load())
         {
             case Main::SystemInit:
             {
-                canManager.appendToCSV_time("SystemInit.txt");
+                // canManager.appendToCSV_time("SystemInit.txt");
                 usleep(500000);//500ms
                 break;
             }
             case Main::Ideal:
             {
-                canManager.appendToCSV_time("Ideal.txt");
+                // canManager.appendToCSV_time("Ideal.txt");
                 ReadProcess(5000); /*5ms*/
                 break;
             }
@@ -274,12 +274,12 @@ void DrumRobot::recvLoopForThread()
             {
                 if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
                 {    
-                    canManager.appendToCSV_time("Homing_if위에꺼.txt");
+                    // canManager.appendToCSV_time("Homing_if위에꺼.txt");
                     ReadProcess(5000);
                 }
                 else
                 {
-                    canManager.appendToCSV_time("Homing_if아래꺼.txt");
+                    // canManager.appendToCSV_time("Homing_if아래꺼.txt");
                     usleep(5000);//5msec
                 }
 
@@ -287,19 +287,19 @@ void DrumRobot::recvLoopForThread()
             }
             case Main::Perform:
             {
-                canManager.appendToCSV_time("Perform.txt");
+                // canManager.appendToCSV_time("Perform.txt");
                 ReadProcess(5000);
                 break;
             }
             case Main::AddStance:
             {
-                canManager.appendToCSV_time("AddStance.txt");
+                // canManager.appendToCSV_time("AddStance.txt");
                 ReadProcess(5000);
                 break;
             }
             case Main::Check:
             {
-                canManager.appendToCSV_time("Check.txt");
+                // canManager.appendToCSV_time("Check.txt");
                 ReadProcess(5000);
                 break;
             }
@@ -307,7 +307,7 @@ void DrumRobot::recvLoopForThread()
             {
                 if (state.test == TestSub::StickTest)
                 {
-                    canManager.appendToCSV_time("Test_StickTest.txt");
+                    // canManager.appendToCSV_time("Test_StickTest.txt");
                     usleep(500000); //500msec
                 }
                 else
@@ -315,7 +315,7 @@ void DrumRobot::recvLoopForThread()
                     if (test_count > 1000)
                     {
                         test_count = 0;
-                        canManager.appendToCSV_time("test_under.txt");
+                        // canManager.appendToCSV_time("test_under.txt");
                     }
 
                     ReadProcess(5000);
