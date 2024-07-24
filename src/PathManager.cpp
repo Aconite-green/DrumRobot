@@ -1550,14 +1550,14 @@ void PathManager::PathLoopTask()
         float t = p2(0) - p1(0);
         int n = t / dt;
 
-        Vmax = cal_Vmax_cngntnwjd(q_current, qk2_06, acc_max, t);
+        Vmax = cal_Vmax_cngntnwjd(qk1_06, qk2_06, acc_max, t);
 
         for (int i = 0; i < n; i++)
         {
             float t_step = dt*(i+1);
             VectorXd qi = VectorXd::Zero(7);
             
-            qi = makeProfile_cngntnwjd(q_current, qk2_06, Vmax, acc_max, t_step, t);
+            qi = makeProfile_cngntnwjd(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
 
             for (int m = 0; m < 7; m++)
             {
@@ -1567,8 +1567,8 @@ void PathManager::PathLoopTask()
             pair<float, float> qElbow = q78_fun(t_elbow_madi, t_step);
             pair<float, float> qWrist = q78_fun(t_wrist_madi, t_step);
             
-            // qt(4) = qt(4) + qElbow.first;
-            // qt(6) = qt(6) + qElbow.second;
+            qt(4) = qt(4) + qElbow.first;
+            qt(6) = qt(6) + qElbow.second;
             qt(7) = qWrist.first;
             qt(8) = qWrist.second;
 
@@ -1578,7 +1578,12 @@ void PathManager::PathLoopTask()
             VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
 
-            canManager.appendToCSV_CM("sssss", t_elbow_madi(0,0), t_elbow_madi(0,1));
+            for (int m = 0; m < 9; m++)
+            {
+                std::string motor_ID = std::to_string(m);
+                std::string file_name = "_desired_Path.txt";
+                canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
+            }
         }
     }
     else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
