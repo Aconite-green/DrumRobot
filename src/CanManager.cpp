@@ -813,8 +813,7 @@ bool CanManager::setCANFrame()
                     std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
                     return false;
                 }
-                // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
-                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
+                tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
             }
             else if (tMotor_control_mode == POS_SPD_LOOP)
             {

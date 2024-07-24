@@ -1103,16 +1103,19 @@ pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
     VectorXd q8_madi = t_madi.row(2);
     float t1 = time_madi(1) - time_madi(0);
     float t2 = time_madi(2) - time_madi(1);
+    float t_i;
 
     if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
-        qR_t = con_fun_cngntnwjd(q7_madi(0), q7_madi(1), t_now, t1);
-        qL_t = con_fun_cngntnwjd(q8_madi(0), q8_madi(1), t_now, t1);
+        t_i = t_now - time_madi(0);
+        qR_t = con_fun_cngntnwjd(q7_madi(0), q7_madi(1), t_i, t1);
+        qL_t = con_fun_cngntnwjd(q8_madi(0), q8_madi(1), t_i, t1);
     }
     else if (t_now >= time_madi(1) && t_now < time_madi(2))
     {
-        qR_t = con_fun_cngntnwjd(q7_madi(1), q7_madi(2), t_now - t1, t2);
-        qL_t = con_fun_cngntnwjd(q8_madi(1), q8_madi(2), t_now - t1, t2);
+        t_i = t_now - time_madi(1);
+        qR_t = con_fun_cngntnwjd(q7_madi(1), q7_madi(2), t_i, t2);
+        qL_t = con_fun_cngntnwjd(q8_madi(1), q8_madi(2), t_i, t2);
     }
     else
     {
@@ -1564,6 +1567,9 @@ void PathManager::PathLoopTask()
         float t = p2(0) - p1(0);
         int n = t / dt;
 
+        pair<float, float> qElbow;
+        pair<float, float> qWrist;
+
         Vmax = cal_Vmax_cngntnwjd(qk1_06, qk2_06, acc_max, t);
 
         for (int i = 0; i < n; i++)
@@ -1578,13 +1584,14 @@ void PathManager::PathLoopTask()
                 qt(m) = qi(m);
             }
 
-            pair<float, float> qElbow = q78_fun(t_elbow_madi, t_step);
-            pair<float, float> qWrist = q78_fun(t_wrist_madi, t_step);
+            qElbow = q78_fun(t_elbow_madi, t_step + p1(0));
+            qWrist = q78_fun(t_wrist_madi, t_step + p1(0));
             
             qt(4) = qt(4) + qElbow.first;
             qt(6) = qt(6) + qElbow.second;
             qt(7) = qWrist.first;
             qt(8) = qWrist.second;
+
 
             // 손목 토크 제어 시 필요
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
@@ -1729,8 +1736,8 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = 0.005;
-    float t = 4.0;
-    int n = t / dt; // 4초동안 실행
+    float t = 5.0; // 5초동안 실행
+    int n = t / dt;
 
     Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
 

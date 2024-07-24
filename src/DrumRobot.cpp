@@ -712,6 +712,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         }
         case PerformSub::SendCANFrame:
         {
+            // 테스트용 주석 처리
             bool isWriteError = false;
             for (auto &motor_pair : motors)
             {
@@ -742,6 +743,9 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 state.perform = PerformSub::TimeCheck;
             }
+
+            // 테스트용
+            // state.perform = PerformSub::TimeCheck;
 
             break;
         }
