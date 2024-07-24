@@ -1013,6 +1013,15 @@ float PathManager::con_fun(float th_a, float th_b, int k, int n)
     return (A * cos(M_PI * k / n) + B);
 }
 
+float PathManager::con_fun_cngntnwjd(float th_a, float th_b, float k, float n)
+{
+    float A, B;
+    A = 0.5 * (th_a - th_b);
+    B = 0.5 * (th_a + th_b);
+
+    return (A * cos(M_PI * k / n) + B);
+}
+
 pair<float, float> PathManager::iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t)
 {
     float p_out, v_out /*, V1_out*/;
@@ -1097,13 +1106,13 @@ pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
 
     if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
-        qR_t = con_fun(q7_madi(0), q7_madi(1), t_now, t1);
-        qL_t = con_fun(q8_madi(0), q8_madi(1), t_now, t1);
+        qR_t = con_fun_cngntnwjd(q7_madi(0), q7_madi(1), t_now, t1);
+        qL_t = con_fun_cngntnwjd(q8_madi(0), q8_madi(1), t_now, t1);
     }
     else if (t_now >= time_madi(1) && t_now < time_madi(2))
     {
-        qR_t = con_fun(q7_madi(1), q7_madi(2), t_now - t1, t2);
-        qL_t = con_fun(q8_madi(1), q8_madi(2), t_now - t1, t2);
+        qR_t = con_fun_cngntnwjd(q7_madi(1), q7_madi(2), t_now - t1, t2);
+        qL_t = con_fun_cngntnwjd(q8_madi(1), q8_madi(2), t_now - t1, t2);
     }
     else
     {
@@ -1578,6 +1587,7 @@ void PathManager::PathLoopTask()
             VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
 
+            // 데이터 기록
             for (int m = 0; m < 9; m++)
             {
                 std::string motor_ID = std::to_string(m);

@@ -145,6 +145,7 @@ private:
     vector<float> makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
+    float con_fun_cngntnwjd(float th_a, float th_b, float k, float n);
 
     void getMotorPos();
 
