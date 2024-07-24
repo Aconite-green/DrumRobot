@@ -230,6 +230,8 @@ void CanManager::activateCanPort(const char *port)
     {
         fprintf(stderr, "Failed to activate port: %s\n", port);
     }
+
+    sleep(2);
 }
 
 void CanManager::deactivateCanPort(const char *port)

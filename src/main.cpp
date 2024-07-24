@@ -54,6 +54,10 @@ int main(int argc, char *argv[])
     cout << "Enter the computer number to set // main_robot -> 1 test_com -> 2 //: ";
     cin >> com_number;
 
+    // Clear error flags and ignore remaining input
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
     // 포트를 비활성화하고 다시 활성화
     canManager.restCanPort(com_number);
 
