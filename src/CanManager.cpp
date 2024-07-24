@@ -26,6 +26,26 @@ CanManager::~CanManager()
 ////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                Settign Functions [Public]                                 */
 //////////////////////////////////////////////////////////////////////////////////////////////
+int CanManager::get_com_number_by_hostname() {
+    char hostname[1024];
+    
+    // 호스트 이름을 가져오기
+    if (gethostname(hostname, sizeof(hostname)) != 0) {
+        perror("gethostname");
+        exit(1);
+    }
+    hostname[1023] = '\0';
+
+    // 호스트 이름에 따라 값을 반환
+    if (strcmp(hostname, "shy-desktop") == 0) {
+        return 1;
+    } else if (strcmp(hostname, "shy-MINIPC-VC66-C2") == 0) {
+        return 2;
+    } else {
+        std::cerr << "Unrecognized hostname: " << hostname << std::endl;
+        exit(1);
+    }
+}
 
 void CanManager::restCanPort(int com_number)
 {
