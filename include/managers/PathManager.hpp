@@ -144,6 +144,7 @@ private:
     VectorXd cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
     vector<float> makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
 
     void getMotorPos();
 

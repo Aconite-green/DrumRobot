@@ -27,28 +27,50 @@ CanManager::~CanManager()
 /*                                Settign Functions [Public]                                 */
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-void CanManager::restCanPort()
+void CanManager::restCanPort(int com_number)
 {
     char can1_on[100], can2_on[100], can3_on[100], can1_off[100], can2_off[100], can3_off[100];
 
-    snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-2 -p 1 -a off");
-    snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-2 -p 2 -a off");
-    snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-2 -p 3 -a off");
+    // Reset the commands based on com_number
+    if (com_number == 1) {
+        // com_number_1
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-2 -p 1 -a off");
+        snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-2 -p 2 -a off");
+        snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-2 -p 3 -a off");
 
-    snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-2 -p 1 -a on");
-    snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-2 -p 2 -a on");
-    snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-2 -p 3 -a on");
+        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-2 -p 1 -a on");
+        snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-2 -p 2 -a on");
+        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-2 -p 3 -a on");
+    } else if (com_number == 2) {
+        // com_number_2
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-5.1 -p 1 -a off");
+        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-2 -p 1 -a on");
 
+        // For com_number_2, we only have can1_off and can1_on
+        snprintf(can2_off, sizeof(can2_off), ""); // Empty command
+        snprintf(can3_off, sizeof(can3_off), ""); // Empty command
+        snprintf(can2_on, sizeof(can2_on), "");  // Empty command
+        snprintf(can3_on, sizeof(can3_on), "");  // Empty command
+    } else {
+        fprintf(stderr, "Invalid com_number: %d\n", com_number);
+        return;
+    }
     //만든 명령줄 실행시키기 
-    int ret1 = system(can1_on);
-    int ret2 = system(can2_on);
-    int ret3 = system(can3_on);
+    int ret1 = system(can1_off);
+    std::cout << std::endl;
+    int ret2 = system(can2_off);
+    std::cout << std::endl;
+    int ret3 = system(can3_off);
+    std::cout << std::endl;
 
     sleep(2);
 
-    int ret4 = system(can1_off);
-    int ret5 = system(can2_off);
-    int ret6 = system(can3_off);
+    int ret4 = system(can1_on);
+    std::cout << std::endl;
+    int ret5 = system(can2_on);
+    std::cout << std::endl;
+    int ret6 = system(can3_on);
+    std::cout << std::endl;
 
     
     if (ret1 != 0 || ret2 != 0 || ret3 != 0 || ret4 != 0 || ret5 != 0 || ret6 != 0)
@@ -190,6 +212,8 @@ int CanManager::createSocket(const std::string &ifname)
 void CanManager::activateCanPort(const char *port)
 {
     char command1[100], command2[100], command3[100], command4[100];
+
+
 
     snprintf(command4, sizeof(command4), "sudo ip link set %s down", port);
     snprintf(command1, sizeof(command1), "sudo ip link set %s type can bitrate 1000000 restart-ms 100", port);
@@ -335,8 +359,6 @@ void CanManager::clearCanBuffer(int canSocket)
     // 수신 대기 시간 설정
     timeout.tv_sec = 0;
     timeout.tv_usec = 0; // 즉시 반환
-
-    std::cout << " clearCanbuffer" << std::endl;
 
     while (true)
     {
@@ -767,7 +789,8 @@ bool CanManager::setCANFrame()
                     std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
                     return false;
                 }
-                tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+                // tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
+                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
             }
             else if (tMotor_control_mode == POS_SPD_LOOP)
             {

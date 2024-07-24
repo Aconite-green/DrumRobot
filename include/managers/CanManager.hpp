@@ -47,7 +47,7 @@
 #define POS_SPD_LOOP 1
 
 // position loop mode 에서 step input 각도 제한
-#define POS_DIFF_LIMIT 1
+#define POS_DIFF_LIMIT 1000
 
 using namespace std;
 
@@ -135,11 +135,9 @@ public:
     void appendToCSV_time(const std::string& filename);
 
     // tMotor 제어 모드 결정
-    int tMotor_control_mode = POS_SPD_LOOP;
-    
-    //Can통신 초기화
-    void restCanPort();
+    int tMotor_control_mode = POS_LOOP;
 
+    void restCanPort(int com_number);
 
 private:
 

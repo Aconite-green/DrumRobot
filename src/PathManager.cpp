@@ -130,9 +130,9 @@ vector<float> PathManager::cal_Vmax(vector<float> &q1, vector<float> &q2, float 
 
 VectorXd PathManager::cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, float t2)
 {
-    vector<float> Vmax;
+    VectorXd Vmax = VectorXd::Zero(7);
 
-    for (long unsigned int i = 0; i < q1.size(); i++)
+    for (int i = 0; i < 7; i++)
     {
         float val;
         float S = q2[i] - q1[i];
@@ -175,7 +175,7 @@ VectorXd PathManager::cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, 
             }
         }
 
-        Vmax.push_back(val);
+        Vmax(i) = val;
 
         cout << "Vmax_" << i << " : " << val << "rad/s\n";
     }
@@ -256,13 +256,15 @@ vector<float> PathManager::makeProfile(vector<float> &q1, vector<float> &q2, vec
 
         Qi.push_back(val);
     }
+
+    return Qi;
 }
 
 VectorXd PathManager::makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
 {
-    vector<float> Qi;
+    VectorXd Qi = VectorXd::Zero(7);
 
-    for(long unsigned int i = 0; i < q1.size(); i++)
+    for(int i = 0; i < 7; i++)
     {
         float val, S;
         int sign;
@@ -285,7 +287,7 @@ VectorXd PathManager::makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd
         if (S == 0)
         {
             // 정지
-            val = q1[i];
+            val = q1(i);
         }
         else if (Vmax[i] < 0)
         {
@@ -329,8 +331,10 @@ VectorXd PathManager::makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd
             }
         }
 
-        Qi.push_back(val);
+        Qi(i) = val;
     }
+
+    return  Qi;
 }
 
 void PathManager::getMotorPos()
@@ -1082,6 +1086,34 @@ pair<float, float> PathManager::qRL_fun(MatrixXd &t_madi, float t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
+pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
+{
+    float qR_t, qL_t;
+    VectorXd time_madi = t_madi.row(0);
+    VectorXd q7_madi = t_madi.row(1);
+    VectorXd q8_madi = t_madi.row(2);
+    float t1 = time_madi(1) - time_madi(0);
+    float t2 = time_madi(2) - time_madi(1);
+
+    if (t_now >= time_madi(0) && t_now < time_madi(1))
+    {
+        qR_t = con_fun(q7_madi(0), q7_madi(1), t_now, t1);
+        qL_t = con_fun(q8_madi(0), q8_madi(1), t_now, t1);
+    }
+    else if (t_now >= time_madi(1) && t_now < time_madi(2))
+    {
+        qR_t = con_fun(q7_madi(1), q7_madi(2), t_now - t1, t2);
+        qL_t = con_fun(q8_madi(1), q8_madi(2), t_now - t1, t2);
+    }
+    else
+    {
+        qR_t = q7_madi(2);
+        qL_t = q8_madi(2);
+    }
+
+    return std::make_pair(qR_t, qL_t);
+}
+
 pair<float, float> PathManager::SetTorqFlag(MatrixXd &State, float t_now)
 {
     float q7_isTorq = 10.0;
@@ -1518,37 +1550,35 @@ void PathManager::PathLoopTask()
         float t = p2(0) - p1(0);
         int n = t / dt;
 
-
-
-        for (int m = 0; m < 7; m++)
-        {
-            qt(m) = qk2_06(m);
-        }
-
-        pair<float, float> qElbow = qRL_fun(t_elbow_madi, t_now);
-        pair<float, float> qWrist = qRL_fun(t_wrist_madi, t_now);
-        qt(4) += qElbow.first;
-        qt(6) += qElbow.second;
-
-        Vmax = cal_Vmax_cngntnwjd(c_MotorAngle, arr, acc_max, t);
+        Vmax = cal_Vmax_cngntnwjd(q_current, qk2_06, acc_max, t);
 
         for (int i = 0; i < n; i++)
         {
-            VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
+            float t_step = dt*(i+1);
+            VectorXd qi = VectorXd::Zero(7);
             
-            for (int m = 1; m < 7; m++)
+            qi = makeProfile_cngntnwjd(q_current, qk2_06, Vmax, acc_max, t_step, t);
+
+            for (int m = 0; m < 7; m++)
             {
-                qt(m) = makeProfile_cngntnwjd(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+                qt(m) = qi(m);
             }
 
-            qt(7) = con_fun(q_current(7), qWrist.first, i, n);
-            qt(8) = con_fun(q_current(8), qWrist.second, i, n);
+            pair<float, float> qElbow = q78_fun(t_elbow_madi, t_step);
+            pair<float, float> qWrist = q78_fun(t_wrist_madi, t_step);
             
+            // qt(4) = qt(4) + qElbow.first;
+            // qt(6) = qt(6) + qElbow.second;
+            qt(7) = qWrist.first;
+            qt(8) = qWrist.second;
 
             // 손목 토크 제어 시 필요
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
 
+            VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
+
+            canManager.appendToCSV_CM("sssss", t_elbow_madi(0,0), t_elbow_madi(0,1));
         }
     }
     else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
