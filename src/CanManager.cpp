@@ -77,6 +77,8 @@ void CanManager::restCanPort(int com_number)
     {
         fprintf(stderr, "Failed to reset port");
     }
+
+    sleep(2);
 }
 
 void CanManager::initializeCAN()
