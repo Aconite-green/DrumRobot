@@ -1536,6 +1536,11 @@ void PathManager::PathLoopTask()
     cout << "p2 :\n"
          << p2 << "\n";
 
+    cout << "qk1_06 :\n"
+         << qk1_06 << "\n";
+    cout << "qk2_06 :\n"
+         << qk2_06 << "\n";
+
     VectorXd q_current(9);
     for (auto &motor : motors)
     {
