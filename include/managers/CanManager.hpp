@@ -136,6 +136,10 @@ public:
 
     // tMotor 제어 모드 결정
     int tMotor_control_mode = POS_SPD_LOOP;
+    
+    //Can통신 초기화
+    void restCanPort();
+
 
 private:
 

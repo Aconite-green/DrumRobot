@@ -27,6 +27,36 @@ CanManager::~CanManager()
 /*                                Settign Functions [Public]                                 */
 //////////////////////////////////////////////////////////////////////////////////////////////
 
+void CanManager::restCanPort()
+{
+    char can1_on[100], can2_on[100], can3_on[100], can1_off[100], can2_off[100], can3_off[100];
+
+    snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-2 -p 1 -a off");
+    snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-2 -p 2 -a off");
+    snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-2 -p 3 -a off");
+
+    snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-2 -p 1 -a on");
+    snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-2 -p 2 -a on");
+    snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-2 -p 3 -a on");
+
+    //만든 명령줄 실행시키기 
+    int ret1 = system(can1_on);
+    int ret2 = system(can2_on);
+    int ret3 = system(can3_on);
+
+    sleep(2);
+
+    int ret4 = system(can1_off);
+    int ret5 = system(can2_off);
+    int ret6 = system(can3_off);
+
+    
+    if (ret1 != 0 || ret2 != 0 || ret3 != 0 || ret4 != 0 || ret5 != 0 || ret6 != 0)
+    {
+        fprintf(stderr, "Failed to reset port");
+    }
+}
+
 void CanManager::initializeCAN()
 {
     list_and_activate_available_can_ports();
