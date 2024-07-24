@@ -48,7 +48,15 @@ int main(int argc, char *argv[])
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
     //QtManager qtManager(state, canManager, motors);
-    
+
+
+    int com_number;
+    cout << "Enter the computer number to set // main_robot -> 1 test_com -> 2 //: ";
+    cin >> com_number;
+
+    // 포트를 비활성화하고 다시 활성화
+    canManager.restCanPort(com_number);
+
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);

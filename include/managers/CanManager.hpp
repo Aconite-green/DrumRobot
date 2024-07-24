@@ -137,6 +137,8 @@ public:
     // tMotor 제어 모드 결정
     int tMotor_control_mode = POS_LOOP;
 
+    void restCanPort(int com_number);
+
 private:
 
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
