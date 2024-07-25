@@ -647,7 +647,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                         {
                             return false;
                         }
-                        tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+                        tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;  // 이거 이 위치가 맞나??
                     }
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
