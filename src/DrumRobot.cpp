@@ -372,7 +372,12 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         break;
     case ReadSub::UpdateMotorInfo:
     {
-        if (state.home != HomeSub::Done || state.main == Main::Test)
+        // if (state.home != HomeSub::Done || state.main == Main::Test)
+        // {
+        //     canManager.distributeFramesToMotors(false);
+        // }
+        // test 모드에서 에러 검출
+        if (state.home != HomeSub::Done)
         {
             canManager.distributeFramesToMotors(false);
         }
@@ -990,13 +995,19 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "m" && !(state.home == HomeSub::Done))
         {
-
             for (auto &entry : motors)
             {
                 entry.second->isHomed = true;
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
-                    tMotor->homeOffset = -(tMotor->currentPos);
+                    if (entry.first == "R_arm1")
+                    {
+                        tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
+                    }
+                    else
+                    {
+                        tMotor->homeOffset = -(tMotor->currentPos);
+                    }
                 }
             }
             homeManager.MaxonEnable();
