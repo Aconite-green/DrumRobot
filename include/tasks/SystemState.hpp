@@ -13,7 +13,8 @@ enum class Main
     Shutdown,
     Pause,
     AddStance,
-    Error
+    Error,
+    SelfHome
 };
 
 enum class HomeSub

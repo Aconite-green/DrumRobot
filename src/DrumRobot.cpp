@@ -930,6 +930,7 @@ void DrumRobot::displayAvailableCommands() const
         {
             std::cout << "- h : Start Homing Mode\n";
             std::cout << "- x : Make home state by user\n";
+            std::cout << "- m : Make SelfHome state by user\n";
         }
         else
         {
@@ -984,6 +985,23 @@ bool DrumRobot::processInput(const std::string &input)
             }
             homeManager.MaxonEnable();
             homeManager.setMaxonMode("CSP");
+            state.home = HomeSub::Done;
+            return true;
+        }
+        else if (input == "m" && !(state.home == HomeSub::Done))
+        {
+
+            for (auto &entry : motors)
+            {
+                entry.second->isHomed = true;
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    tMotor->homeOffset = -(tMotor->currentPos);
+                }
+            }
+            homeManager.MaxonEnable();
+            homeManager.setMaxonMode("CSP");
+
             state.home = HomeSub::Done;
             return true;
         }
