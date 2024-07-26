@@ -54,13 +54,13 @@ void CanManager::restCanPort(int com_number)
     // Reset the commands based on com_number
     if (com_number == 1) {
         // com_number_1
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-2 -p 1 -a off");
-        snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-2 -p 2 -a off");
-        snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-2 -p 3 -a off");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-3 -p 1 -a off");
+        snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-3 -p 2 -a off");
+        snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-3 -p 3 -a off");
 
-        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-2 -p 1 -a on");
-        snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-2 -p 2 -a on");
-        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-2 -p 3 -a on");
+        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-3 -p 1 -a on");
+        snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-3 -p 2 -a on");
+        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-3 -p 3 -a on");
     } else if (com_number == 2) {
         // com_number_2
         snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-5.1 -p 1 -a off");

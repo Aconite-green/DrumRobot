@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
     //QtManager qtManager(state, canManager, motors);
+
     //shy-desktop -> 1반환
     //shy-MINIPC-VC66-C2 -> 2반환
-
     int com_number = canManager.get_com_number_by_hostname();
     // 포트를 비활성화하고 다시 활성화
     canManager.restCanPort(com_number);
