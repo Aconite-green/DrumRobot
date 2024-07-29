@@ -31,6 +31,8 @@ void DrumRobot::stateMachine()
 {
     while (state.main != Main::Shutdown)
     {
+        canManager.appendToCSV_time("TIME_stateMachine");
+
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -154,6 +156,14 @@ void DrumRobot::sendLoopForThread()
     initializePathManager();
     while (state.main != Main::Shutdown)
     {
+        static int cnt_send = 0;
+        cnt_send++;
+        if (cnt_send > 10000)
+        {
+            cnt_send = 0;
+            canManager.appendToCSV_time("TIME_sendLoopForThread");
+        }
+
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -243,17 +253,17 @@ void DrumRobot::sendLoopForThread()
 
 void DrumRobot::recvLoopForThread()
 {
-
     while (state.main != Main::Shutdown)
     {
-        static int n_txt = 0;
         static int test_count = 0;
         test_count++;
-        n_txt++;
-        if (n_txt > 1000)
+
+        static int cnt_receive = 0;
+        cnt_receive++;
+        if (cnt_receive > 10000)
         {
-            n_txt = 0;
-            // canManager.appendToCSV_time("ReadProcess10000_while.txt");
+            cnt_receive = 0;
+            canManager.appendToCSV_time("TIME_recvLoopForThread");
         }
 
         switch (state.main.load())

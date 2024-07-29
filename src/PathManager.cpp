@@ -1736,7 +1736,7 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = 0.005;
-    float t = 5.0; // 5초동안 실행
+    float t = 4.0; // 4초동안 실행
     int n = t / dt;
 
     Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
