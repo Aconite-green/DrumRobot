@@ -50,17 +50,22 @@ bool GuiManager::send()
     return true;
 }
 
-bool GuiManager::receive()
-{
-    socklen_t clientLen = sizeof(clientAddr);
-
+bool GuiManager::receive() {
     // 클라이언트로부터 데이터 수신
-    int recvBytes = recvfrom(sockfd, &receiveMessage, BUF_SIZE, 0, (struct sockaddr *)&clientAddr, &clientLen);
-    if (recvBytes == -1)
-    {
-        // perror("recvfrom failed");
+    int n = recvfrom(sockfd, &receiveMessage, sizeof(receiveMessage), 0, (struct sockaddr*)&clientAddr, &clientLen);
+    if (n < 0) {
+        std::cerr << "Error receiving data from client" << std::endl;
         return false;
     }
+
+    // 받은 메시지를 출력
+    std::cout << "Received message from client:" << std::endl;
+    std::cout << "stateDemand: " << receiveMessage.stateDemand << std::endl;
+    std::cout << "shutdown: " << receiveMessage.shutdown << std::endl;
+    std::cout << "allHome: " << receiveMessage.allHome << std::endl;
+    std::cout << "axisHome: " << receiveMessage.axisHome << std::endl;
+    std::cout << "musicPath: " << receiveMessage.musicPath << std::endl;
+
     return true;
 }
 
@@ -93,7 +98,7 @@ void GuiManager::guiThread()
             {
                 if (receive())
                 {
-                    send();
+                    //send();
                     usleep(3000000); //300ms
                 }
                 else
