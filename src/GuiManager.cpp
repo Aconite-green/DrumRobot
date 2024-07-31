@@ -25,7 +25,7 @@ void GuiManager::initializeServer()
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddr.sin_port = htons(PORT);
+    serverAddr.sin_port = htons(8888);
 
     // 소켓에 주소 바인딩
     if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
@@ -52,20 +52,31 @@ bool GuiManager::send()
 
 bool GuiManager::receive()
 {
-    socklen_t clientLen = sizeof(clientAddr);
-
     // 클라이언트로부터 데이터 수신
-    int recvBytes = recvfrom(sockfd, &receiveMessage, BUF_SIZE, 0, (struct sockaddr *)&clientAddr, &clientLen);
-    if (recvBytes == -1)
+    int n = recvfrom(sockfd, &receiveMessage, sizeof(receiveMessage), 0, (struct sockaddr *)&clientAddr, &clientLen);
+    if (n < 0)
     {
-        // perror("recvfrom failed");
+        std::cerr << "Error receiving data from client" << std::endl;
         return false;
     }
+    else
+    {
+        std::cout << "Received message from client:" << std::endl;
+        std::cout << "stateDemand: " << receiveMessage.stateDemand << std::endl;
+        std::cout << "shutdown: " << receiveMessage.shutdown << std::endl;
+        std::cout << "allHome: " << receiveMessage.allHome << std::endl;
+        std::cout << "axisHome: " << receiveMessage.axisHome << std::endl;
+        std::cout << "musicPath: " << receiveMessage.musicPath << std::endl;
+    }
+
+    // 받은 메시지를 출력
+
     return true;
 }
 
 void GuiManager::guiThread()
 {
+    bool testInit = false;
 
     while (state.main != Main::Shutdown)
     {
@@ -73,11 +84,16 @@ void GuiManager::guiThread()
         {
         case Main::SystemInit:
         {
-            initializeServer();
+            usleep(50000);
             break;
         }
         case Main::Ideal:
         {
+            if (!testInit)
+            {
+                initializeServer();
+                testInit = true;
+            }
             if (!guiConnected)
             { // 연결이 안된 상태일 때
                 if (receive())
@@ -86,21 +102,22 @@ void GuiManager::guiThread()
                 }
                 else
                 {
-                    usleep(10000); // 10ms
+                    usleep(100000); // 10ms
                 }
             }
             else // 연결이 된 상태
             {
                 if (receive())
                 {
-                    send();
-                    usleep(3000000); //300ms
+                    // send();
+                    usleep(3000000); // 300ms
                 }
                 else
                 {
                     guiConnected = false;
                 }
             }
+            usleep(100000);
             break;
         }
         case Main::Homing:

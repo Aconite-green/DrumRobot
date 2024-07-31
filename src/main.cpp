@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     HomeManager homeManager(state, canManager, motors, sensor);
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
-    //QtManager qtManager(state, canManager, motors);
+    GuiManager guiManager(state, canManager, motors);
 
     //shy-desktop -> 1반환
     //shy-MINIPC-VC66-C2 -> 2반환
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);
     std::thread sendThread(&DrumRobot::sendLoopForThread, &drumRobot);
     std::thread receiveThread(&DrumRobot::recvLoopForThread, &drumRobot);
-    //std::thread guiThread(&GuiManager::guiThread, &qtManager);
+    //std::thread guiThread(&GuiManager::guiThread, &guiManager);
     
     // Threads Priority Settings
     if (!setThreadPriority(sendThread, 3))
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         std::cerr << "Error setting priority for stateMachine" << std::endl;
         return -1;
     }
-    //if (!setThreadPriority(guiThread, 1))
+    //if (!setThreadPriority(guiThread, 4))
     //{
     //    std::cerr << "Error setting priority for stateMachine" << std::endl;
     //    return -1;
