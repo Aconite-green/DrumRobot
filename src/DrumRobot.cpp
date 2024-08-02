@@ -32,6 +32,7 @@ void DrumRobot::stateMachine()
     while (state.main != Main::Shutdown)
     {
         canManager.appendToCSV_time("TIME_stateMachine.txt");
+        usleep(100);
 
         switch (state.main.load())
         {
@@ -50,7 +51,6 @@ void DrumRobot::stateMachine()
         {
             ClearBufferforRecord();
             idealStateRoutine();
-            // canManager.appendToCSV_time("TIME_stateMachine_Ideal.txt");
             break;
         }
         case Main::Homing:
@@ -159,11 +159,12 @@ void DrumRobot::sendLoopForThread()
     {
         static int cnt_send = 0;
         cnt_send++;
-        if (cnt_send > 00100)
+        if (cnt_send > 10)
         {
             cnt_send = 0;
             canManager.appendToCSV_time("TIME_sendLoopForThread.txt");
         }
+        usleep(100);
 
         switch (state.main.load())
         {
@@ -174,7 +175,6 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Ideal:
         {
-            // canManager.appendToCSV_time("TIME_sendLoopForThread_Ideal.txt");
             usleep(500000); // 500ms
             bool isWriteError = false;
             if (state.home == HomeSub::Done)
@@ -261,11 +261,12 @@ void DrumRobot::recvLoopForThread()
 
         static int cnt_receive = 0;
         cnt_receive++;
-        if (cnt_receive > 00100)
+        if (cnt_receive > 0)
         {
             cnt_receive = 0;
             canManager.appendToCSV_time("TIME_recvLoopForThread.txt");
         }
+        usleep(100);
 
         switch (state.main.load())
         {
@@ -277,7 +278,6 @@ void DrumRobot::recvLoopForThread()
         case Main::Ideal:
         {
             ReadProcess(5000); /*5ms*/
-            // canManager.appendToCSV_time("TIME_recvLoopForThread_Ideal.txt");
             break;
         }
         case Main::Homing:

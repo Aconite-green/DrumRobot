@@ -63,8 +63,8 @@ void CanManager::restCanPort(int com_number)
         snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-3 -p 3 -a on");
     } else if (com_number == 2) {
         // com_number_2
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-5.1 -p 1 -a off");
-        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-5.1 -p 1 -a on");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-6.1 -p 1 -a off");
+        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-6.1 -p 1 -a on");
 
         // For com_number_2, we only have can1_off and can1_on
         snprintf(can2_off, sizeof(can2_off), ""); // Empty command
