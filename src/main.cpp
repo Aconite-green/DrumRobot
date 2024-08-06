@@ -16,12 +16,11 @@
 #include "../include/tasks/SystemState.hpp"
 #include "../include/managers/GuiManager.hpp"
 #include "../include/usbio/SenSor.hpp"
-#include "../include/gpio/Susi4.h"
 
 using namespace std;
 
 // 스레드 우선순위 설정 함수
-bool setThreadPriority(std69::thread &th, int priority, int policy = SCHED_FIFO)
+bool setThreadPriority(std::thread &th, int priority, int policy = SCHED_FIFO)
 {
     sched_param sch_params;
     sch_params.sched_priority = priority;
