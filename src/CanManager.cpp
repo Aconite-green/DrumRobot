@@ -5,7 +5,8 @@
 CanManager::CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
     : motors(motorsRef)
 {
-        start = std::chrono::high_resolution_clock::now(); 
+    // 파일 저장 시각 계산
+    start = std::chrono::high_resolution_clock::now(); 
 }
 
 CanManager::~CanManager()
@@ -487,8 +488,6 @@ bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
 
-    // appendToCSV_CAN("CANFRAME.txt", motor->sendFrame);
-
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
@@ -655,7 +654,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->recieveBuffer.push(frame);
 
                     std::string motor_ID = tMotor->myName;
-                    std::string file_name = "motor_receive(actual_0).txt";
+                    std::string file_name = "motor_receive(actual_0)";
                     
                     appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, 0);
                 }
@@ -705,7 +704,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
         std::string motor_ID = tMotor->myName;
-        std::string file_name = "Fixed(desired_actial).txt";
+        std::string file_name = "Fixed(desired_actial)";
         appendToCSV_CM(motor_ID + file_name, motor->fixedPos, tMotor->currentPos);
 
         // safety check
@@ -827,7 +826,7 @@ bool CanManager::setCANFrame()
             tMotor->break_state = tData.isBreak;
 
             std::string motor_ID = tMotor->myName;
-            std::string file_name = "setCANFrame(desired_actial).txt";
+            std::string file_name = "setCANFrame(desired_actial)";
             appendToCSV_CM(motor_ID + file_name, tData.position, tMotor->currentPos);
         }
     }
@@ -964,12 +963,12 @@ std::string CanManager::read_char_from_serial(int fd) {
     }
 }
 
-// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+// 시간를 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_time(const std::string& filename) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
     std::ofstream file;
-    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+    std::string fullPath = basePath + filename + ".txt";  // 기본 경로와 파일 이름을 결합
 
     // 파일이 이미 존재하는지 확인
     bool fileExists = std::ifstream(fullPath).good();
@@ -991,12 +990,12 @@ void CanManager::appendToCSV_time(const std::string& filename) {
     }
 }
 
-// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+// 시간과 변수를 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_CM(const std::string& filename, float fixed_position, float current_position) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
     std::ofstream file;
-    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+    std::string fullPath = basePath + filename + ".txt";  // 기본 경로와 파일 이름을 결합
 
     // 파일이 이미 존재하는지 확인
     bool fileExists = std::ifstream(fullPath).good();
@@ -1020,12 +1019,12 @@ void CanManager::appendToCSV_CM(const std::string& filename, float fixed_positio
     }
 }
 
-// 변수를 CSV 파일에 한 줄씩 저장하는 함수
+// 시간과 CAN Feame을 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_CAN(const std::string& filename, can_frame& c_frame) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
     std::ofstream file;
-    std::string fullPath = basePath + filename;  // 기본 경로와 파일 이름을 결합
+    std::string fullPath = basePath + filename + ".txt";  // 기본 경로와 파일 이름을 결합
 
     // 파일이 이미 존재하는지 확인
     bool fileExists = std::ifstream(fullPath).good();

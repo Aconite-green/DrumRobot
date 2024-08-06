@@ -1603,7 +1603,7 @@ void PathManager::PathLoopTask()
             // for (int m = 0; m < 9; m++)
             // {
             //     std::string motor_ID = std::to_string(m);
-            //     std::string file_name = "_desired_Path.txt";
+            //     std::string file_name = "_desired_Path";
             //     canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
             // }
         }

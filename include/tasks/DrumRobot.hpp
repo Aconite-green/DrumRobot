@@ -35,8 +35,8 @@
 
 using namespace std;
 
+// 쓰레드 루프 주기
 #define PERIOD_WHILE 100
-
 
 class DrumRobot
 {
@@ -74,8 +74,10 @@ private:
     chrono::system_clock::time_point SendStandard;
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
+    // 쓰레드 루프 주기
     std::chrono::_V2::steady_clock::time_point send_time_point;
     std::chrono::_V2::steady_clock::time_point recv_time_point;
+    std::chrono::_V2::steady_clock::time_point state_time_point;
 
     // State Utility 메소드들
     void displayAvailableCommands() const;
