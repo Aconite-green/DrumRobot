@@ -68,10 +68,10 @@ void CanManager::restCanPort(int com_number)
         snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-6.1 -p 1 -a on");
 
         // For com_number_2, we only have can1_off and can1_on
-        snprintf(can2_off, sizeof(can2_off), ""); // Empty command
-        snprintf(can3_off, sizeof(can3_off), ""); // Empty command
-        snprintf(can2_on, sizeof(can2_on), "");  // Empty command
-        snprintf(can3_on, sizeof(can3_on), "");  // Empty command
+        snprintf(can2_off, sizeof(can2_off), " "); // Empty command
+        snprintf(can3_off, sizeof(can3_off), " "); // Empty command
+        snprintf(can2_on, sizeof(can2_on), " ");  // Empty command
+        snprintf(can3_on, sizeof(can3_on), " ");  // Empty command
     } else {
         fprintf(stderr, "Invalid com_number: %d\n", com_number);
         return;
@@ -707,8 +707,9 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         std::string file_name = "Fixed(desired_actial)";
         appendToCSV_CM(motor_ID + file_name, motor->fixedPos, tMotor->currentPos);
 
-        // safety check
         // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
+
+        // safety check
         float diff_angle = motor->fixedPos - tMotor->currentPos;
         if (abs(diff_angle) > POS_DIFF_LIMIT)
         {

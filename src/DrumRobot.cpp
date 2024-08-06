@@ -28,6 +28,14 @@ DrumRobot::DrumRobot(State &stateRef,
 
 }
 
+/*
+DrumRobot - checkUserInput, idealStateRoutine, AddStanceSub::TimeCheck 에서 usleep() 함수 존재
+100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함
+CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
+TestManager, HomeManager 에서 usleep() 함수 다수 존재
+*/
+
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,8 +70,7 @@ void DrumRobot::stateMachine()
         {
             if (state.home == HomeSub::SelectMotorByUser)
             {
-                // usleep 50000 -> 5000
-                usleep(5000);
+                // usleep(50000);   // sleep_until()
             }
             else
             {
@@ -99,7 +106,7 @@ void DrumRobot::stateMachine()
                 state.main = Main::Error;
                 break;
             }
-            usleep(200000);
+            // usleep(200000);  // sleep_until()
 
             int ret = system("clear");
             if (ret == -1)
@@ -111,7 +118,7 @@ void DrumRobot::stateMachine()
             bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
             {
-                usleep(5000); // 5ms
+                // usleep(5000);    // sleep_until()
                 if (!canManager.checkAllMotors_Fixed())
                 {
                     isWriteError = true;
@@ -119,7 +126,7 @@ void DrumRobot::stateMachine()
             }
             else if (state.test == TestSub::SetSingleTuneParm || state.test == TestSub::SetServoTestParm)
             {
-                usleep(500000); // 500ms
+                // usleep(500000);  // sleep_until()
             }
             else
             {
@@ -144,7 +151,9 @@ void DrumRobot::stateMachine()
         }
         case Main::Error:
         {
-            checkUserInput();
+            // checkUserInput();
+            parse_and_save_to_csv("../../READ/Error_DrumData_out");
+            save_to_txt_inputData("../../READ/Error_DrumData_in");
             state.main = Main::Shutdown;
             break;
         }
@@ -171,29 +180,29 @@ void DrumRobot::sendLoopForThread()
         {
         case Main::SystemInit:
         {
-            // usleep(5000);
+            // usleep(5000);    // sleep_until()
             break;
         }
         case Main::Ideal:
         {
-            // usleep(500000); // 500ms
-            bool isWriteError = false;
-            if (state.home == HomeSub::Done)
-            {
-               if (!canManager.checkAllMotors_Fixed())
-               {
-                   isWriteError = true;
-               }
-            }
-            else
-            {
-               // canManager.checkMaxon();
-            }
+            // usleep(500000);  // sleep_until()
+            // bool isWriteError = false;
+            // if (state.home == HomeSub::Done)
+            // {
+            //    if (!canManager.checkAllMotors_Fixed())
+            //    {
+            //        isWriteError = true;
+            //    }
+            // }
+            // else
+            // {
+            //    canManager.checkMaxon();
+            // }
             
-            if (isWriteError)
-            {
-               state.main = Main::Error;
-            }
+            // if (isWriteError)
+            // {
+            //    state.main = Main::Error;
+            // }
             break;
         }
         case Main::Homing:
@@ -216,7 +225,7 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Check:
         {
-            usleep(500000);
+            // usleep(500000);  // sleep_until()
             break;
         }
         case Main::Test:
@@ -236,15 +245,14 @@ void DrumRobot::sendLoopForThread()
             {
                 state.main = Main::Error;
             }
-            // usleep 50000 -> 500000
-            usleep(500000); // 50ms
+            // usleep(50000);  // sleep_until()
             break;
         }
         case Main::Error:
         {
-            save_to_txt_inputData("../../READ/Error_DrumData_in");
-            sleep(2);
-            state.main = Main::Shutdown;
+            // save_to_txt_inputData("../../READ/Error_DrumData_in");
+            // sleep(2);    // sleep_until()
+            // state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -267,7 +275,7 @@ void DrumRobot::recvLoopForThread()
         {
         case Main::SystemInit:
         {
-            usleep(500000); // 500ms
+            // usleep(500000);  // sleep_until()
             break;
         }
         case Main::Ideal:
@@ -281,10 +289,10 @@ void DrumRobot::recvLoopForThread()
             {
                 ReadProcess(5000);
             }
-            else
-            {
-                usleep(5000); // 5msec
-            }
+            // else // sleep_until()
+            // {
+            //     usleep(5000); // 5msec
+            // }
 
             break;
         }
@@ -307,7 +315,7 @@ void DrumRobot::recvLoopForThread()
         {
             if (state.test == TestSub::StickTest)
             {
-                usleep(500000); // 500msec
+                // usleep(500000); // sleep_until()
             }
             else
             {
@@ -326,15 +334,14 @@ void DrumRobot::recvLoopForThread()
             {
                 state.main = Main::Error;
             }
-            // usleep 50000 -> 500000
-            usleep(500000); // 500ms
+            // usleep(50000); // sleep_until()
             break;
         }
         case Main::Error:
         {
-            parse_and_save_to_csv("../../READ/Error_DrumData_out");
-            sleep(2);
-            state.main = Main::Shutdown;
+            // parse_and_save_to_csv("../../READ/Error_DrumData_out");
+            // sleep(2);    // sleep_until()
+            // state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -1128,10 +1135,6 @@ void DrumRobot::checkUserInput()
                 state.main = Main::AddStance;
                 pathManager.line = 0;
             }
-            else if (input == 'b')
-            {
-                breakOn();
-            }
             else if (input == 's')
                 state.main = Main::Shutdown;
         }
@@ -1141,7 +1144,7 @@ void DrumRobot::checkUserInput()
     {
         state.main = Main::Error;
     }
-    usleep(5000);
+    usleep(5000); 
 }
 
 int DrumRobot::kbhit()
@@ -1727,44 +1730,4 @@ bool DrumRobot::dct_fun(float positions[], float vel_th)
         return true;
     else
         return false;
-}
-
-void DrumRobot::breakOn()
-{
-    static bool isBreak = false;
-
-    if (isBreak)
-    {
-        char data_to_send = '0'; // 시리얼 포트로 전송할 문자
-        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-        usleep(100000);
-
-        // 데이터 수신
-        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty())
-        {
-            std::cout << "Received data: " << received_data << std::endl;
-        }
-
-        isBreak = false;
-    }
-    else
-    {
-        char data_to_send = '1'; // 시리얼 포트로 전송할 문자
-        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-        usleep(100000);
-
-        // 데이터 수신
-        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty())
-        {
-            std::cout << "Received data: " << received_data << std::endl;
-        }
-
-        isBreak = true;
-    }
-
-    return;
 }

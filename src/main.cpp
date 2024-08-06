@@ -36,7 +36,6 @@ bool setThreadPriority(std69::thread &th, int priority, int policy = SCHED_FIFO)
 
 int main(int argc, char *argv[])
 {
-
     // Create Share Resource
     State state;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;

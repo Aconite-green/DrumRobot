@@ -56,7 +56,6 @@ public:
     // Qt Input
     std::string m_Input;
 
-    void breakOn();
 private:
     State &state;
     CanManager &canManager;
