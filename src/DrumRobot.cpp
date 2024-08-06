@@ -21,6 +21,9 @@ DrumRobot::DrumRobot(State &stateRef,
 {
     ReadStandard = chrono::system_clock::now();
     SendStandard = chrono::system_clock::now();
+
+    send_time_point = std::chrono::steady_clock::now();
+    recv_time_point = std::chrono::steady_clock::now();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -31,9 +34,6 @@ void DrumRobot::stateMachine()
 {
     while (state.main != Main::Shutdown)
     {
-        canManager.appendToCSV_time("TIME_stateMachine.txt");
-        usleep(100);
-
         switch (state.main.load())
         {
         case Main::SystemInit:
@@ -147,6 +147,8 @@ void DrumRobot::stateMachine()
         case Main::Shutdown:
             break;
         }
+
+        canManager.appendToCSV_time("TIME_stateMachine.txt");
     }
     canManager.setSocketBlock();
     DeactivateControlTask();
@@ -157,14 +159,8 @@ void DrumRobot::sendLoopForThread()
     initializePathManager();
     while (state.main != Main::Shutdown)
     {
-        static int cnt_send = 0;
-        cnt_send++;
-        if (cnt_send > 10)
-        {
-            cnt_send = 0;
-            canManager.appendToCSV_time("TIME_sendLoopForThread.txt");
-        }
-        usleep(100);
+        send_time_point = std::chrono::steady_clock::now();
+        send_time_point += std::chrono::microseconds(PERIOD_WHILE);
 
         switch (state.main.load())
         {
@@ -249,6 +245,9 @@ void DrumRobot::sendLoopForThread()
         case Main::Shutdown:
             break;
         }
+
+        canManager.appendToCSV_time("TIME_sendLoopForThread.txt");
+        std::this_thread::sleep_until(send_time_point);
     }
 }
 
@@ -256,17 +255,8 @@ void DrumRobot::recvLoopForThread()
 {
     while (state.main != Main::Shutdown)
     {
-        static int test_count = 0;
-        test_count++;
-
-        static int cnt_receive = 0;
-        cnt_receive++;
-        if (cnt_receive > 0)
-        {
-            cnt_receive = 0;
-            canManager.appendToCSV_time("TIME_recvLoopForThread.txt");
-        }
-        usleep(100);
+        recv_time_point = std::chrono::steady_clock::now();
+        recv_time_point += std::chrono::microseconds(PERIOD_WHILE);
 
         switch (state.main.load())
         {
@@ -316,11 +306,6 @@ void DrumRobot::recvLoopForThread()
             }
             else
             {
-                if (test_count > 1000)
-                {
-                    test_count = 0;
-                }
-
                 ReadProcess(5000);
             }
             break;
@@ -352,6 +337,9 @@ void DrumRobot::recvLoopForThread()
             break;
         }
         }
+
+        canManager.appendToCSV_time("TIME_recvLoopForThread.txt");
+        std::this_thread::sleep_until(recv_time_point);
     }
 }
 
