@@ -1754,18 +1754,13 @@ void PathManager::GetArr(vector<float> &arr)
             {
                 TMotorData newData;
 
-                if (canManager.tMotor_control_mode == POS_LOOP)
-                {
-                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                }
-                else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
                     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
-                else
+                else    // POS_LOOP, SPD_LOOP
                 {
-                    cout << "tMotor control mode ERROR\n";
-                    state.main = Main::Error;
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
 
                 newData.spd = tMotor->spd;

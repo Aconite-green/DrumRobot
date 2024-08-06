@@ -35,8 +35,6 @@
 
 using namespace std;
 
-// 쓰레드 루프 주기
-#define PERIOD_WHILE 100
 
 class DrumRobot
 {
@@ -69,8 +67,10 @@ private:
     MaxonCommandParser maxoncmd;
     TMotorServoCommandParser tservocmd;
 
+    // 제어 주기
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
+    chrono::system_clock::time_point addStandard;
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
     // 쓰레드 루프 주기
@@ -107,7 +107,7 @@ private:
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
-    void SendAddStanceProcess();
+    void SendAddStanceProcess(int periodMicroSec);
     void SendFixProcess();
     void UnfixedMotor();
     void clearMotorsCommandBuffer();

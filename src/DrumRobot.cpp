@@ -21,6 +21,7 @@ DrumRobot::DrumRobot(State &stateRef,
 {
     ReadStandard = chrono::system_clock::now();
     SendStandard = chrono::system_clock::now();
+    addStandard = chrono::system_clock::now();
 
     send_time_point = std::chrono::steady_clock::now();
     recv_time_point = std::chrono::steady_clock::now();
@@ -29,7 +30,7 @@ DrumRobot::DrumRobot(State &stateRef,
 }
 
 /*
-DrumRobot - checkUserInput, idealStateRoutine, AddStanceSub::TimeCheck 에서 usleep() 함수 존재
+DrumRobot - AddStanceSub::TimeCheck 에서 usleep() 함수 존재
 100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함
 CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
 TestManager, HomeManager 에서 usleep() 함수 다수 존재
@@ -45,7 +46,7 @@ void DrumRobot::stateMachine()
     while (state.main != Main::Shutdown)
     {
         state_time_point = std::chrono::steady_clock::now();
-        state_time_point += std::chrono::microseconds(PERIOD_WHILE);
+        state_time_point += std::chrono::microseconds(5000);    // 주기 : 5ms
 
         switch (state.main.load())
         {
@@ -174,7 +175,7 @@ void DrumRobot::sendLoopForThread()
     while (state.main != Main::Shutdown)
     {
         send_time_point = std::chrono::steady_clock::now();
-        send_time_point += std::chrono::microseconds(PERIOD_WHILE);
+        send_time_point += std::chrono::microseconds(100);  // 주기 : 100us
 
         switch (state.main.load())
         {
@@ -220,7 +221,7 @@ void DrumRobot::sendLoopForThread()
         case Main::AddStance:
         {
             UnfixedMotor();
-            SendAddStanceProcess();
+            SendAddStanceProcess(5000);
             break;
         }
         case Main::Check:
@@ -259,6 +260,12 @@ void DrumRobot::sendLoopForThread()
             break;
         }
 
+        auto send_check = std::chrono::steady_clock::now();
+        if(send_check >= send_time_point)
+        {
+            canManager.appendToCSV_time("TIME_ERR_sendLoopForThread");
+        }
+
         canManager.appendToCSV_time("TIME_sendLoopForThread");
         std::this_thread::sleep_until(send_time_point);
     }
@@ -269,7 +276,7 @@ void DrumRobot::recvLoopForThread()
     while (state.main != Main::Shutdown)
     {
         recv_time_point = std::chrono::steady_clock::now();
-        recv_time_point += std::chrono::microseconds(PERIOD_WHILE);
+        recv_time_point += std::chrono::microseconds(100);  // 주기 : 100us
 
         switch (state.main.load())
         {
@@ -348,6 +355,12 @@ void DrumRobot::recvLoopForThread()
         {
             break;
         }
+        }
+
+        auto send_check = std::chrono::steady_clock::now();
+        if(send_check >= recv_time_point)
+        {
+            canManager.appendToCSV_time("TIME_ERR_recvLoopForThread");
         }
 
         canManager.appendToCSV_time("TIME_recvLoopForThread");
@@ -760,8 +773,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
 }
 
-void DrumRobot::SendAddStanceProcess()
+void DrumRobot::SendAddStanceProcess(int periodMicroSec)
 {
+    auto currentTime = chrono::system_clock::now();
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - addStandard);
+
     switch (state.addstance.load())
     {
     case AddStanceSub::CheckCommand:
@@ -808,8 +824,14 @@ void DrumRobot::SendAddStanceProcess()
     }
     case AddStanceSub::TimeCheck:
     {
-        usleep(5000);
-        state.addstance = AddStanceSub::CheckBuf;
+        if (elapsed_time.count() >= periodMicroSec)
+        {
+            cnt++;
+            state.addstance = AddStanceSub::CheckBuf;
+            addStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
+        }
+        // usleep(5000);    // // sleep_until()
+        // state.addstance = AddStanceSub::CheckBuf;
         break;
     }
     case AddStanceSub::CheckBuf:
@@ -1082,7 +1104,7 @@ void DrumRobot::idealStateRoutine()
     if (!processInput(input))
         std::cout << "Invalid command or not allowed in current state!\n";
 
-    usleep(2000);
+    // usleep(2000);    // sleep_until()
 }
 
 void DrumRobot::checkUserInput()
@@ -1144,7 +1166,7 @@ void DrumRobot::checkUserInput()
     {
         state.main = Main::Error;
     }
-    usleep(5000); 
+    // usleep(5000);    // sleep_until()
 }
 
 int DrumRobot::kbhit()

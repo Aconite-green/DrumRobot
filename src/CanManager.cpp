@@ -819,6 +819,12 @@ bool CanManager::setCANFrame()
             {
                 tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
             }
+            else if (tMotor_control_mode == SPD_LOOP)
+            {
+                float diff_angle = tData.position - tMotor->currentPos; // [rad]
+                float target_spd = (diff_angle / 0.005) * (60 / 2 / M_PI) * (tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs);   // [erpm]
+                tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, target_spd); // [erpm]
+            }
             else
             {
                 std::cout << "tMotor control mode ERROR\n";

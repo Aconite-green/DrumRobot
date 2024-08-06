@@ -43,6 +43,7 @@
 
 #define POS_LOOP 0
 #define POS_SPD_LOOP 1
+#define SPD_LOOP 2
 
 // position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 0.1
