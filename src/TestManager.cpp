@@ -810,7 +810,6 @@ void TestManager::SendTestProcess()
     case TestSub::CheckBuf:
     {
         bool allBuffersEmpty = true;
-        // canManager.appendToCSV_time("CHECKBUF.txt");
         for (const auto &motor_pair : motors)
         {
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
