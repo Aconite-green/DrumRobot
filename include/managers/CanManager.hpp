@@ -27,8 +27,6 @@
 #include <chrono>
 #include <fstream>
 
-#define GPIO_CHIP "/dev/gpiochip0"
-#define GPIO_OUTPUT_LINES 8 // 사용할 GPIO 핀 개수
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
