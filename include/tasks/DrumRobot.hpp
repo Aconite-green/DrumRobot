@@ -35,6 +35,9 @@
 
 using namespace std;
 
+#define PERIOD_WHILE 100
+
+
 class DrumRobot
 {
 public:
@@ -70,6 +73,9 @@ private:
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
+
+    std::chrono::_V2::steady_clock::time_point send_time_point;
+    std::chrono::_V2::steady_clock::time_point recv_time_point;
 
     // State Utility 메소드들
     void displayAvailableCommands() const;
