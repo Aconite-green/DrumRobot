@@ -134,6 +134,7 @@ public:
 
     // tMotor 제어 모드 결정
     int tMotor_control_mode = POS_LOOP;
+    float deltaT = 0.005;
 
     int get_com_number_by_hostname(); 
     void restCanPort(int com_number);

@@ -89,6 +89,7 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
         cout << "time : " << t << "s\n";
+        cout << "delta t : " << canManager.deltaT << "s\n";
         cout << "break start time : " << break_start_time << "s\n";
         cout << "break end time : " << break_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
@@ -113,7 +114,7 @@ void TestManager::SendTestProcess()
             cout << "speed loop mode\n";
         }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Save (15) / profile (17) / Loop mode (18) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Delata t (14) / Save (15) / Profile (17) / Loop mode (18) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -159,6 +160,11 @@ void TestManager::SendTestProcess()
 
             cout << "break end time (" << t << "~" << 2*t << ") : ";
             cin >> break_end_time;
+        }
+        else if (userInput == 14)
+        {
+            cout << "delta t : ";
+            cin >> canManager.deltaT;
         }
         else if (userInput == 15)
         {
@@ -825,7 +831,7 @@ void TestManager::SendTestProcess()
     }
     case TestSub::TimeCheck:
     {
-        usleep(5000);
+        usleep(1000000*canManager.deltaT);
         state.test = TestSub::SetCANFrame;
         break;
     }
@@ -1340,14 +1346,17 @@ void TestManager::GetArr(float arr[])
 
     getMotorPos(c_MotorAngle);
 
-    int n = (int)(1000*t/5);    // t초동안 실행
-    int n_break = (int)(1000*break_start_time/5);
-    int n_break_end = (int)(1000*break_end_time/5) - n;
+    int n = (int)(t/canManager.deltaT);    // t초동안 실행
+    int n_break = (int)(break_start_time/canManager.deltaT);
+    int n_break_end = (int)(break_end_time/canManager.deltaT);
+    int retime = (int)(round(canManager.deltaT/0.005));
 
     // cal_Vmax(c_MotorAngle, arr, t);
     
-    for (int k = 0; k < n; ++k)
+    for (int k = 1; k <= n; ++k)
     {
+        // for (int recom = 0; recom < retime; recom++)
+        // {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
         q_setting.push_back(Qi);
@@ -1371,23 +1380,34 @@ void TestManager::GetArr(float arr[])
                 if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
                     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.spd = speed_test;
+                    newData.acl = 32767;
                 }
-                else    // POS_LOOP, SPD_LOOP
+                else if (canManager.tMotor_control_mode == POS_LOOP)
                 {
                     newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.spd = tMotor->spd;
+                    newData.acl = tMotor->acl;
                 }
+                else if (canManager.tMotor_control_mode == SPD_LOOP)
+                {
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.spd = speed_test;
+                    newData.acl = tMotor->acl;
+                }
+
                 
-                //newData.spd = tMotor->spd;
-                //newData.acl = tMotor->acl;
-                newData.spd = speed_test;
-                newData.acl = 32767;
                 if (k < n_break)
                 {
                     newData.isBreak = false;
                 }
-                else
+                else if (k < n_break_end)
                 {
                     newData.isBreak = true;
+                }
+                else
+                {
+                    newData.isBreak = false;
                 }
                 tMotor->commandBuffer.push(newData);
             }
@@ -1400,6 +1420,7 @@ void TestManager::GetArr(float arr[])
             }
         }
     }
+    // }
 }
 
 vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)

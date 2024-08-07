@@ -822,10 +822,10 @@ bool CanManager::setCANFrame()
             else if (tMotor_control_mode == SPD_LOOP)
             {
                 float diff_angle = tData.position - tMotor->currentPos; // [rad]
-                float target_spd = (diff_angle / 0.005) * (60 / 2 / M_PI) * (tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs);   // [erpm]
-                float P_gain = 0.2;
-                // tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, P_gain * target_spd); // [erpm]
-                tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, tData.spd); // [erpm]
+                float target_spd = (diff_angle / deltaT) * (60 / 2 / M_PI) * (tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs);   // [erpm]
+                float P_gain = 1.0;
+                tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, P_gain * target_spd); // [erpm]
+                // tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, tData.spd); // [erpm]
             }
             else
             {

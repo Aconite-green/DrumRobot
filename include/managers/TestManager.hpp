@@ -96,7 +96,7 @@ private:
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     float speed_test = 1000;
-    float break_start_time = 4.0;
+    float break_start_time = 2.0;
     float break_end_time = 4.0;
     bool profile_flag = true;   // true : 사다리꼴, false : 정현파
    
