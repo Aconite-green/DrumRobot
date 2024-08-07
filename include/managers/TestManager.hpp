@@ -98,7 +98,7 @@ private:
     float speed_test = 1000;
     float break_start_time = 4.0;
     float break_end_time = 4.0;
-    bool profile_flag = true;   // true : 사다리꼴, false : 삼각파
+    bool profile_flag = true;   // true : 사다리꼴, false : 정현파
    
     /* Single Test Code */
     string selectedMotor = "waist";
@@ -137,11 +137,6 @@ private:
     int cycles_servo = 1;
     float amp_servo = 0.2; // [Radian]
     float current_servo;
-
-    /*flag_box*/
-
-    int repeat_flag = 0;
-    bool buffer_test_flag = false;
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 

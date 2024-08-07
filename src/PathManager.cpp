@@ -1557,58 +1557,7 @@ void PathManager::PathLoopTask()
         }
     }
 
-    if (canManager.tMotor_control_mode == POS_LOOP)
-    {
-        VectorXd qt = VectorXd::Zero(9);
-        VectorXd Vmax = VectorXd::Zero(7);
-        const float acc_max = 100.0;    // rad/s^2
-        
-        float dt = 0.005;
-        float t = p2(0) - p1(0);
-        int n = t / dt;
-
-        pair<float, float> qElbow;
-        pair<float, float> qWrist;
-
-        Vmax = cal_Vmax_cngntnwjd(qk1_06, qk2_06, acc_max, t);
-
-        for (int i = 0; i < n; i++)
-        {
-            float t_step = dt*(i+1);
-            VectorXd qi = VectorXd::Zero(7);
-            
-            qi = makeProfile_cngntnwjd(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
-
-            for (int m = 0; m < 7; m++)
-            {
-                qt(m) = qi(m);
-            }
-
-            qElbow = q78_fun(t_elbow_madi, t_step + p1(0));
-            qWrist = q78_fun(t_wrist_madi, t_step + p1(0));
-            
-            qt(4) = qt(4) + qElbow.first;
-            qt(6) = qt(6) + qElbow.second;
-            qt(7) = qWrist.first;
-            qt(8) = qWrist.second;
-
-
-            // 손목 토크 제어 시 필요
-            pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
-
-            VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
-            Motors_sendBuffer(qt, qv_in, wrist_state, false);
-
-            // 데이터 기록
-            // for (int m = 0; m < 9; m++)
-            // {
-            //     std::string motor_ID = std::to_string(m);
-            //     std::string file_name = "_desired_Path";
-            //     canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
-            // }
-        }
-    }
-    else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+    if (canManager.tMotor_control_mode == POS_SPD_LOOP)
     {
         if (p2(0) == State(0, 1)) // 안쪼개진 경우
         {
@@ -1709,10 +1658,56 @@ void PathManager::PathLoopTask()
             }
         }
     }
-    else
+    else // POS_LOOP, SPD_LOOP
     {
-        std::cout << "tMotor control mode ERROR\n";
-        state.main = Main::Error;
+        VectorXd qt = VectorXd::Zero(9);
+        VectorXd Vmax = VectorXd::Zero(7);
+        const float acc_max = 100.0;    // rad/s^2
+        
+        float dt = 0.005;
+        float t = p2(0) - p1(0);
+        int n = t / dt;
+
+        pair<float, float> qElbow;
+        pair<float, float> qWrist;
+
+        Vmax = cal_Vmax_cngntnwjd(qk1_06, qk2_06, acc_max, t);
+
+        for (int i = 0; i < n; i++)
+        {
+            float t_step = dt*(i+1);
+            VectorXd qi = VectorXd::Zero(7);
+            
+            qi = makeProfile_cngntnwjd(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
+
+            for (int m = 0; m < 7; m++)
+            {
+                qt(m) = qi(m);
+            }
+
+            qElbow = q78_fun(t_elbow_madi, t_step + p1(0));
+            qWrist = q78_fun(t_wrist_madi, t_step + p1(0));
+            
+            qt(4) = qt(4) + qElbow.first;
+            qt(6) = qt(6) + qElbow.second;
+            qt(7) = qWrist.first;
+            qt(8) = qWrist.second;
+
+
+            // 손목 토크 제어 시 필요
+            pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+
+            VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
+            Motors_sendBuffer(qt, qv_in, wrist_state, false);
+
+            // 데이터 기록
+            // for (int m = 0; m < 9; m++)
+            // {
+            //     std::string motor_ID = std::to_string(m);
+            //     std::string file_name = "_desired_Path";
+            //     canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
+            // }
+        }
     }
 }
 

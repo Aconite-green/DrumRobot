@@ -30,8 +30,7 @@ DrumRobot::DrumRobot(State &stateRef,
 }
 
 /*
-DrumRobot - AddStanceSub::TimeCheck 에서 usleep() 함수 존재
-100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함
+100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함 -> 일단 돌려야하니 주석 해제함
 CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
 TestManager, HomeManager 에서 usleep() 함수 다수 존재
 */
@@ -187,23 +186,24 @@ void DrumRobot::sendLoopForThread()
         case Main::Ideal:
         {
             // usleep(500000);  // sleep_until()
-            // bool isWriteError = false;
-            // if (state.home == HomeSub::Done)
-            // {
-            //    if (!canManager.checkAllMotors_Fixed())
-            //    {
-            //        isWriteError = true;
-            //    }
-            // }
+            bool isWriteError = false;
+            if (state.home == HomeSub::Done)
+            {
+               if (!canManager.checkAllMotors_Fixed())
+               {
+                   isWriteError = true;
+               }
+            }
             // else
             // {
             //    canManager.checkMaxon();
             // }
             
-            // if (isWriteError)
-            // {
-            //    state.main = Main::Error;
-            // }
+            if (isWriteError)
+            {
+               state.main = Main::Error;
+            }
+            usleep(5000);
             break;
         }
         case Main::Homing:
@@ -388,15 +388,16 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         break;
     case ReadSub::UpdateMotorInfo:
     {
-        // if (state.home != HomeSub::Done || state.main == Main::Test)
-        // {
-        //     canManager.distributeFramesToMotors(false);
-        // }
-        // test 모드에서 에러 검출
-        if (state.home != HomeSub::Done)
+        // test 모드에서 에러 검출 안함
+        if (state.home != HomeSub::Done || state.main == Main::Test)
         {
             canManager.distributeFramesToMotors(false);
         }
+        // test 모드에서 에러 검출함
+        // if (state.home != HomeSub::Done)
+        // {
+        //     canManager.distributeFramesToMotors(false);
+        // }
         else
         {
             bool isSafe = canManager.distributeFramesToMotors(true);

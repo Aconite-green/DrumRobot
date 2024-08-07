@@ -92,8 +92,6 @@ void TestManager::SendTestProcess()
         cout << "break start time : " << break_start_time << "s\n";
         cout << "break end time : " << break_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
-        cout << "repeat flag to " << repeat_flag << endl;
-        cout << "buffer test flag to " << buffer_test_flag << "\n";
         if (profile_flag)
         {
             cout << "make profile\n";
@@ -110,8 +108,12 @@ void TestManager::SendTestProcess()
         {
             cout << "position speed loop mode\n";
         }
+        else if (canManager.tMotor_control_mode == SPD_LOOP)
+        {
+            cout << "speed loop mode\n";
+        }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Repeat (14) / Save (15) / Buffer test (16) / profile (17) / Loop mode (18) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Save (15) / profile (17) / Loop mode (18) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -158,14 +160,6 @@ void TestManager::SendTestProcess()
             cout << "break end time (" << t << "~" << 2*t << ") : ";
             cin >> break_end_time;
         }
-        else if (userInput == 14)
-        {
-            if(repeat_flag ==1)
-                repeat_flag=0;
-            else
-                repeat_flag =1;
-   
-        }
         else if (userInput == 15)
         {
             std::ostringstream fileNameOut;
@@ -173,17 +167,6 @@ void TestManager::SendTestProcess()
             fileNameOut << "../../READ/Test_0717";
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
-        }
-        else if (userInput == 16)
-        {
-            if(buffer_test_flag)
-            {
-                buffer_test_flag = false;
-            }
-            else
-            {
-                buffer_test_flag = true;
-            }
         }
         else if (userInput == 17)
         {
@@ -203,6 +186,10 @@ void TestManager::SendTestProcess()
                 canManager.tMotor_control_mode = POS_SPD_LOOP;
             }
             else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+            {
+                canManager.tMotor_control_mode = SPD_LOOP;
+            }
+            else if (canManager.tMotor_control_mode == SPD_LOOP)
             {
                 canManager.tMotor_control_mode = POS_LOOP;
             }
@@ -925,27 +912,13 @@ void TestManager::SendTestProcess()
     }
     case TestSub::Done:
     {
-        static int repeat_num = 0;
         usleep(5000);
 
         allBreakOff();
         
         if (method == 1)
         {
-            if (buffer_test_flag && repeat_num == 0)
-            {
-                repeat_num ++;
-                for (int i = 1; i < 9; i++)
-                {
-                    q[i] += 3.0;
-                }
-                state.test = TestSub::FillBuf;
-            }
-            else
-            {
-                repeat_num = 0;
-                state.test = TestSub::SetQValue;
-            }
+            state.test = TestSub::SetQValue;
             
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
@@ -1364,12 +1337,9 @@ void TestManager::GetArr(float arr[])
     vector<vector<float>> q_setting;
     float c_MotorAngle[9];
     vector<float> Q_control_mode_test;
-    vector<float> Q_control_mode_test_past;
-    std::vector<float> differences;
 
     getMotorPos(c_MotorAngle);
 
-    //int n = 800; // 4초동안 실행
     int n = (int)(1000*t/5);    // t초동안 실행
     int n_break = (int)(1000*break_start_time/5);
     int n_break_end = (int)(1000*break_end_time/5) - n;
@@ -1389,8 +1359,6 @@ void TestManager::GetArr(float arr[])
         else
         {
             Q_control_mode_test = sinProfile(c_MotorAngle, arr, t*k/n, t);
-
-            repeat_flag = 0;
         }
 
         // Send to Buffer
@@ -1400,22 +1368,15 @@ void TestManager::GetArr(float arr[])
             {
                 TMotorData newData;
 
-                if (canManager.tMotor_control_mode == POS_LOOP)
-                {
-                    // float val;
-                    // val = (arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]])/n;
-                    // newData.position = (k * val + c_MotorAngle[motor_mapping[entry.first]]) * tMotor->cwDir - tMotor->homeOffset;
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                }
-                else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
                     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
-                else
+                else    // POS_LOOP, SPD_LOOP
                 {
-                    cout << "tMotor control mode ERROR\n";
-                    state.main = Main::Error;
+                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
+                
                 //newData.spd = tMotor->spd;
                 //newData.acl = tMotor->acl;
                 newData.spd = speed_test;
@@ -1436,60 +1397,6 @@ void TestManager::GetArr(float arr[])
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
-            }
-        }
-    }
-    if(repeat_flag ==1)
-    {
-        for (int k = 0; k < n; ++k)
-        {
-            // Make GetBack Array
-            Qi = connect(arr, c_MotorAngle, k, n);
-            q_setting.push_back(Qi);
-
-            Q_control_mode_test = makeProfile(arr, c_MotorAngle,  t*k/n, t);
-
-            // Send to Buffer
-            for (auto &entry : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                {
-                    TMotorData newData;
-                    if (canManager.tMotor_control_mode == POS_LOOP)
-                    {
-                        // float val;
-                        // val = (arr[motor_mapping[entry.first]] - c_MotorAngle[motor_mapping[entry.first]])/n;
-                        // newData.position = (k * val + c_MotorAngle[motor_mapping[entry.first]]) * tMotor->cwDir - tMotor->homeOffset;
-                        newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    }
-                    else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-                    {
-                        newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    }
-                    else
-                    {
-                        cout << "tMotor control mode ERROR\n";
-                        state.main = Main::Error;
-                    }
-                    newData.spd = speed_test;
-                    newData.acl = 32767;
-                    if (k < n_break_end)
-                    {
-                        newData.isBreak = true;
-                    }
-                    else
-                    {
-                        newData.isBreak = false;
-                    }
-                    tMotor->commandBuffer.push(newData);
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-                {
-                    MaxonData newData;
-                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
-                    newData.WristState = 0.5;
-                    maxonMotor->commandBuffer.push(newData);
-                }
             }
         }
     }
