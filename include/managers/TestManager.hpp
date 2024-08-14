@@ -143,6 +143,8 @@ private:
     void testBreak();
     void allBreakOff();
 
+    void UnfixedMotor();
+
     bool useArduino = true;
 
 };

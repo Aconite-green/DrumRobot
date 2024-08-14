@@ -185,7 +185,6 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Ideal:
         {
-            // usleep(500000);  // sleep_until()
             bool isWriteError = false;
             if (state.home == HomeSub::Done)
             {
@@ -203,7 +202,7 @@ void DrumRobot::sendLoopForThread()
             {
                state.main = Main::Error;
             }
-            usleep(5000);
+            usleep(5000);   // sleep_until()
             break;
         }
         case Main::Homing:
@@ -231,7 +230,7 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Test:
         {
-            UnfixedMotor();
+            // UnfixedMotor();
             testManager.SendTestProcess();
             break;
         }
@@ -407,22 +406,23 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
 
-        if (maxonMotorCount == 0)
-        {
-            state.read = ReadSub::TimeCheck;
-        }
-        else
-        {
-            for (auto &motor_pair : motors)
-            {
-                auto &motor = motor_pair.second;
-                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-                {
-                    maxonMotor->checked = false;
-                }
-            }
-            state.read = ReadSub::CheckMaxonControl;
-        }
+        state.read = ReadSub::TimeCheck;
+        // if (maxonMotorCount == 0)
+        // {
+        //     state.read = ReadSub::TimeCheck;
+        // }
+        // else
+        // {
+        //     for (auto &motor_pair : motors)
+        //     {
+        //         auto &motor = motor_pair.second;
+        //         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        //         {
+        //             maxonMotor->checked = false;
+        //         }
+        //     }
+        //     state.read = ReadSub::CheckMaxonControl;
+        // }
         break;
     }
     case ReadSub::CheckMaxonControl:

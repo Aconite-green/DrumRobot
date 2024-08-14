@@ -128,6 +128,7 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 9)
         {
+            UnfixedMotor();      
             state.test = TestSub::FillBuf;
         }
         else if (userInput == 10)
@@ -2775,4 +2776,10 @@ void TestManager::allBreakOff()
 
         sensor.closeDevice();
     }
+}
+
+void TestManager::UnfixedMotor()
+{
+    for (auto motor_pair : motors)
+        motor_pair.second->isfixed = false;
 }

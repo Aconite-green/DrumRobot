@@ -1583,11 +1583,11 @@ void PathManager::PathLoopTask()
             cout << "qv_in :\n"
                 << qv_in << "\n";*/
 
-            float dt = 0.005;
+            float dt = canManager.deltaT;   // 0.005 -> canManager.deltaT
             int n = t1 / dt;
             for (int i = 0; i < n; i++)
             {
-                pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
+                pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달 // dt -> canManager.deltaT
                 // 손목부분은 cos함수로 연결 (위치제어)
                 qt(7) = con_fun(q_current(7), qWrist.first, i, n);
                 qt(8) = con_fun(q_current(8), qWrist.second, i, n);
@@ -1623,7 +1623,7 @@ void PathManager::PathLoopTask()
             cout << "qv_in :\n"
                 << qv_in << "\n";*/
 
-            float dt = 0.005;
+            float dt = canManager.deltaT;    // 0.005 -> canManager.deltaT
             int n = t2 / dt;
             for (int i = 0; i < n; i++)
             {
@@ -1664,7 +1664,7 @@ void PathManager::PathLoopTask()
         VectorXd Vmax = VectorXd::Zero(7);
         const float acc_max = 100.0;    // rad/s^2
         
-        float dt = 0.005;
+        float dt = canManager.deltaT;   // 0.005 -> canManager.deltaT
         float t = p2(0) - p1(0);
         int n = t / dt;
 
@@ -1730,7 +1730,7 @@ void PathManager::GetArr(vector<float> &arr)
 
     getMotorPos();
 
-    float dt = 0.005;
+    float dt = canManager.deltaT;   // 0.005 -> canManager.deltaT
     float t = 4.0; // 4초동안 실행
     int n = t / dt;
 

@@ -487,7 +487,7 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
-
+    CanManager::appendToCSV_CAN("can_orgin", motor->sendFrame);
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
@@ -656,7 +656,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     std::string motor_ID = tMotor->myName;
                     std::string file_name = "motor_receive(actual_0)";
                     
-                    appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, 0);
+                    appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
                 }
             }
         }
@@ -911,7 +911,8 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);
-            usleep(5000);
+            // usleep(5000);    // 이거 필요한가???
+            usleep(10);
             maxoncmd.getSync(&maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);
         }
