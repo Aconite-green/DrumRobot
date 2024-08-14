@@ -138,14 +138,14 @@ private:
         {"L_wrist", 8},
         {"maxonForTest", 8}};
     
-    vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);
+    vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);  // 안쓰고 있음
 
-    vector<float> cal_Vmax(vector<float> &q1, vector<float> &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    VectorXd cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    vector<float> makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
-    VectorXd makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    vector<float> cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
+    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
+    vector<float> makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
-    float con_fun_cngntnwjd(float th_a, float th_b, float k, float n);
+    float con_fun_pos(float th_a, float th_b, float k, float n);
 
     void getMotorPos();
 

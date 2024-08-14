@@ -31,7 +31,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
             MaxonData newData;
             newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir;
 
-            // WristState = 0 : 토크 제어 사용 안함
+            // 토크 제어 시 WristState 사용
             if (entry.first == "R_wrist")
                 newData.WristState = 0;
             // newData.WristState = Si.first;
@@ -73,7 +73,7 @@ vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, 
     return Qi;
 }
 
-vector<float> PathManager::cal_Vmax(vector<float> &q1, vector<float> &q2, float acc, float t2)
+vector<float> PathManager::cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2)
 {
     vector<float> Vmax;
 
@@ -128,7 +128,7 @@ vector<float> PathManager::cal_Vmax(vector<float> &q1, vector<float> &q2, float 
     return Vmax;
 }
 
-VectorXd PathManager::cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, float t2)
+VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
 {
     VectorXd Vmax = VectorXd::Zero(7);
 
@@ -183,7 +183,7 @@ VectorXd PathManager::cal_Vmax_cngntnwjd(VectorXd &q1, VectorXd &q2, float acc, 
     return Vmax;
 }
 
-vector<float> PathManager::makeProfile(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2)
+vector<float> PathManager::makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2)
 {
     vector<float> Qi;
 
@@ -260,7 +260,7 @@ vector<float> PathManager::makeProfile(vector<float> &q1, vector<float> &q2, vec
     return Qi;
 }
 
-VectorXd PathManager::makeProfile_cngntnwjd(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
+VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
 {
     VectorXd Qi = VectorXd::Zero(7);
 
@@ -1013,7 +1013,7 @@ float PathManager::con_fun(float th_a, float th_b, int k, int n)
     return (A * cos(M_PI * k / n) + B);
 }
 
-float PathManager::con_fun_cngntnwjd(float th_a, float th_b, float k, float n)
+float PathManager::con_fun_pos(float th_a, float th_b, float k, float n)
 {
     float A, B;
     A = 0.5 * (th_a - th_b);
@@ -1108,14 +1108,14 @@ pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
     if (t_now >= time_madi(0) && t_now < time_madi(1))
     {
         t_i = t_now - time_madi(0);
-        qR_t = con_fun_cngntnwjd(q7_madi(0), q7_madi(1), t_i, t1);
-        qL_t = con_fun_cngntnwjd(q8_madi(0), q8_madi(1), t_i, t1);
+        qR_t = con_fun_pos(q7_madi(0), q7_madi(1), t_i, t1);
+        qL_t = con_fun_pos(q8_madi(0), q8_madi(1), t_i, t1);
     }
     else if (t_now >= time_madi(1) && t_now < time_madi(2))
     {
         t_i = t_now - time_madi(1);
-        qR_t = con_fun_cngntnwjd(q7_madi(1), q7_madi(2), t_i, t2);
-        qL_t = con_fun_cngntnwjd(q8_madi(1), q8_madi(2), t_i, t2);
+        qR_t = con_fun_pos(q7_madi(1), q7_madi(2), t_i, t2);
+        qL_t = con_fun_pos(q8_madi(1), q8_madi(2), t_i, t2);
     }
     else
     {
@@ -1671,14 +1671,14 @@ void PathManager::PathLoopTask()
         pair<float, float> qElbow;
         pair<float, float> qWrist;
 
-        Vmax = cal_Vmax_cngntnwjd(qk1_06, qk2_06, acc_max, t);
+        Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
 
         for (int i = 0; i < n; i++)
         {
             float t_step = dt*(i+1);
             VectorXd qi = VectorXd::Zero(7);
             
-            qi = makeProfile_cngntnwjd(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
+            qi = makeProfile(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
 
             for (int m = 0; m < 7; m++)
             {
@@ -1734,13 +1734,13 @@ void PathManager::GetArr(vector<float> &arr)
     float t = 4.0; // 4초동안 실행
     int n = t / dt;
 
-    Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+    Vmax = cal_Vmax_add(c_MotorAngle, arr, acc_max, t);
 
     for (int k = 1; k <= n; ++k)
     {
         // Make GetBack Array
         // Qi = connect(c_MotorAngle, arr, k, n);
-        Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+        Qi = makeProfile_add(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
 
         // Send to Buffer
         for (auto &entry : motors)
