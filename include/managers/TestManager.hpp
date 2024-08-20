@@ -28,6 +28,11 @@
 #include <cmath>
 #include <chrono>
 #include <set>
+// USBIO 4761
+#include "../include/USBIO_advantech/compatibility.h"
+#include "../include/USBIO_advantech/bdaqctrl.h"
+typedef unsigned char byte;
+#define  deviceDescription  L"USB-4761,BID#0"
 
 using namespace std;
 
@@ -146,5 +151,7 @@ private:
     void UnfixedMotor();
 
     bool useArduino = true;
+
+    void testUSBIO_4761();
 
 };

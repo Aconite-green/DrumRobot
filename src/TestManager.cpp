@@ -66,7 +66,8 @@ void TestManager::SendTestProcess()
         }
         else if (method == 8)
         {
-            testBreak();
+            // testBreak();
+            testUSBIO_4761();
         }
         else if (method == 9)
         {
@@ -1350,7 +1351,7 @@ void TestManager::GetArr(float arr[])
     int n = (int)(t/canManager.deltaT);    // t초동안 실행
     int n_break = (int)(break_start_time/canManager.deltaT);
     int n_break_end = (int)(break_end_time/canManager.deltaT);
-    int retime = (int)(round(canManager.deltaT/0.005));
+    // int retime = (int)(round(canManager.deltaT/0.005));
 
     // cal_Vmax(c_MotorAngle, arr, t);
     
@@ -2782,4 +2783,71 @@ void TestManager::UnfixedMotor()
 {
     for (auto motor_pair : motors)
         motor_pair.second->isfixed = false;
+}
+
+void TestManager::testUSBIO_4761()
+{
+    int input;
+
+    while(true)
+    {
+        using namespace Automation::BDaq;
+
+        const wchar_t* profilePath = L"../../profile/DemoDevice.xml";
+
+        // Step 1: Create a instantDoCtrl for DO function.
+        ErrorCode ret = Automation::BDaq::Success;
+        InstantDoCtrl * instantDoCtrl = InstantDoCtrl::Create();
+
+        // Step 2: Select a device by device number or device description and specify the access mode.
+        DeviceInformation devInfo(deviceDescription);
+        ret = instantDoCtrl->setSelectedDevice(devInfo);
+        CHK_RESULT(ret);
+        ret = instantDoCtrl->LoadProfile(profilePath);//Loads a profile to initialize the device.
+        CHK_RESULT(ret);
+
+        // Step 3: Write DO ports
+        
+        // uint8  bufferForWriting[64] = {0};
+        // uint32 inputVal = 0;
+        // cout << "Input a 16 hex number for DO port " << 0 << " to output(for example, 0x00): ";
+        // cin >> inputVal;
+        // bufferForWriting[0] = inputVal;  
+
+        // // Set the 'startPort'as the first port for Do .
+        // // Set the 'portCount'to decide how many sequential ports to operate Do.
+        // int32    startPort = 0;
+        // int32    portCount = 1;
+        // ret = instantDoCtrl->Write(startPort, portCount, bufferForWriting);
+
+        uint8 portNum;
+        uint32 inputVal;
+        uint8 bufferForWriting[1] = {0x00};
+        cout << "Input a number for DO port : ";
+        cin >> portNum;
+        cout << "Input a value for DO port : ";
+        cin >> inputVal;
+
+        bufferForWriting[0] = inputVal;
+        ret = instantDoCtrl->Write(0, 1, bufferForWriting);
+        CHK_RESULT(ret);
+        cout << "\n DO output completed !\n\n";
+
+        cout << "\n exit(0) :";
+        cin >> input;
+
+        if (input == 0)
+        {
+            // Step 4: Close device and release any allocated resource.
+            instantDoCtrl->Dispose();
+
+            if(BioFailed(ret))
+            {
+                wchar_t enumString[256];
+                AdxEnumToString(L"ErrorCode", (int32)ret, 256, enumString);
+                printf("Some error occurred. And the last error code is 0x%X. [%ls]\n", ret, enumString);
+            }
+            break;
+        }
+    }
 }
