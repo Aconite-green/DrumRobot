@@ -118,14 +118,7 @@ private:
     void mkArr(vector<string> &motorName, int time, int cycles, int LnR, float amp);
     void SendLoop();
     void parse_and_save_to_csv(const std::string &csv_file_name);
-    void multiTestLoop();
     void TestArr(float t, int cycles, int type, int LnR, float amp[]);
-
-    /*Stick Test Code*/
-    void TestStickLoop();
-    void TestStick(const std::string selectedMotor, int des_tff, float tffThreshold, float posThreshold, int backTorqueUnit);
-    bool dct_fun(float positions[], float vel_th);
-    int drumHitDuration, drumReachedDuration;
 
     /*Servo Mode Test Code*/
     string selectedMotor_servo = "R_arm2";
