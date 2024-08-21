@@ -150,7 +150,7 @@ void TestManager::SendTestProcess()
             cout << "break start time (0~" << t << ") : ";
             cin >> brake_start_time;
 
-            cout << "break end time (" << t << "~" << 2*t << ") : ";
+            cout << "break end time (" << brake_start_time << "~" << t << ") : ";
             cin >> brake_end_time;
         }
         else if (userInput == 14)
@@ -162,7 +162,7 @@ void TestManager::SendTestProcess()
         {
             std::ostringstream fileNameOut;
             fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0717";
+            fileNameOut << "../../READ/Test_Qvalue";
             std::string fileName = fileNameOut.str();
             parse_and_save_to_csv(fileName);
         }
@@ -1155,14 +1155,11 @@ void TestManager::GetArr(float arr[])
     int n = (int)(t/canManager.deltaT);    // t초동안 실행
     int n_brake = (int)(brake_start_time/canManager.deltaT);
     int n_brake_end = (int)(brake_end_time/canManager.deltaT);
-    // int retime = (int)(round(canManager.deltaT/0.005));
 
     // cal_Vmax(c_MotorAngle, arr, t);
     
     for (int k = 1; k <= n; ++k)
     {
-        // for (int recom = 0; recom < retime; recom++)
-        // {
         // Make GetBack Array
         Qi = connect(c_MotorAngle, arr, k, n);
         q_setting.push_back(Qi);
@@ -1226,7 +1223,6 @@ void TestManager::GetArr(float arr[])
             }
         }
     }
-    // }
 }
 
 vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)
