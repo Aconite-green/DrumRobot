@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     TestManager testManager(state, canManager, motors, sensor, usbio);
     HomeManager homeManager(state, canManager, motors, sensor);
 
-    DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);
+    DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor, usbio);
     GuiManager guiManager(state, canManager, motors);
 
     //shy-desktop -> 1반환

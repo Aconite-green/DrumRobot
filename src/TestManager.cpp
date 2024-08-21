@@ -33,7 +33,7 @@ void TestManager::SendTestProcess()
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        std::cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - Command, 7 - 나가기, 8 - Break) : ";
+        std::cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - Command, 7 - 나가기, 8 - USBIO-4761) : ";
         std::cin >> method;
         
         if (method == 1)
@@ -66,13 +66,7 @@ void TestManager::SendTestProcess()
         }
         else if (method == 8)
         {
-            // testBreak();
             testUSBIO_4761();
-        }
-        else if (method == 9)
-        {
-            // 이 라인 실행하면 cin 안됨
-            state.test = TestSub::SetCommand;
         }
 
         break;
@@ -589,37 +583,6 @@ void TestManager::SendTestProcess()
                         isWriteError = true;
                     }
 
-                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-                    {
-                        if (useArduino)
-                        {
-                            char data_to_send; // 시리얼 포트로 전송할 문자
-                            
-                            if (tMotor->break_state)
-                            {
-                                data_to_send = '1';
-                            }
-                            else
-                            {
-                                data_to_send = '0';
-                            }
-
-                            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-                            usleep(10);
-
-                            // 데이터 수신
-                            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-                            if (!received_data.empty()) {
-                                std::cout << "Received data: " << received_data << std::endl;
-                            }
-                        }
-                        else
-                        {
-                            sensor.writeVal(tMotor, tMotor->break_state);
-                        }
-                    }
-
                     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                     {
                         virtualMaxonMotor = maxonMotor;
@@ -646,109 +609,6 @@ void TestManager::SendTestProcess()
         
         break;
 
-    }
-    case TestSub::SetCommand:
-    {
-
-        int userInput = 100;
-        bool run_flag = false;
-
-        // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        static int mode = 1;
-        static float test_spd = 0.0;
-        static float test_pos = 0.0;
-
-        float c_MotorAngle[9];
-        getMotorPos(c_MotorAngle);
-
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            cout << "q[" << i << "] : " << c_MotorAngle[i] << "\n";
-            q[i] = c_MotorAngle[i];
-        }
-
-        if (mode == 1)
-        {
-            cout << "speed mode" << "\n";
-        }
-        else if (mode == 2)
-        {
-            cout << "position mode" << "\n";
-        }
-        else if (mode == 3)
-        {
-            cout << "position speed mode" << "\n";
-        }
-
-        cout << "pos : " << test_pos << "rad\n";
-        cout << "spd : " << test_spd << "erpm\n";
-
-        cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
-
-        cin >> userInput;
-
-        // if (!cin)
-        // {
-        //     cin.clear();     // 상태 플래그를 초기화
-        //     cin.ignore(numeric_limits<streamsize>::max(), '\n');    // 버퍼를 비움
-        //     cout << "cin error" << endl;
-        //     std::cin >> userInput;
-        // }
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput == 1)
-        {
-            cout << "\nspeed mode (1) / position mode (2) / position speed mode (3): ";
-            cin >> mode;
-        }
-        else if (userInput == 2)
-        {
-            cout << "pos : ";
-            cin >> test_pos;
-            cout << "spd : ";
-            cin >> test_spd;
-        }
-        else if (userInput == 0)
-        {
-            run_flag = true;
-        }
-
-        if (run_flag)
-        {
-            for (auto &motor_pair : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-                {
-                    float test_pos2 = (q[motor_mapping[motor_pair.first]] + test_pos) * tMotor->cwDir - tMotor->homeOffset;
-                    // test_spd = tMotor->spd;
-                    float test_acl = tMotor->acl;
-                    
-
-                    if (mode == 1)
-                    {
-                        tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
-                    }
-                    else if (mode == 2)
-                    {
-                        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
-                    }
-                    else if (mode == 3)
-                    {
-                        tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
-                    }
-                }
-            }
-        }
-        
-        break;
     }
     case TestSub::FillBuf:
     {
@@ -783,20 +643,6 @@ void TestManager::SendTestProcess()
             // vel = 327680;
             acl = 327670;
             startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
-        }
-
-        // break를 위한 통신 초기화
-        if (useArduino)
-        {
-            canManager.serial_fd = canManager.setup_serial_port();
-            if (canManager.serial_fd == -1) {
-                cout << "Serial error";
-                return;
-            }
-        }
-        else
-        {
-            sensor.OpenDeviceUntilSuccess();
         }
         
         state.test = TestSub::CheckBuf;
@@ -861,37 +707,6 @@ void TestManager::SendTestProcess()
                 isWriteError = true;
             }
 
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                if (useArduino)
-                {
-                    char data_to_send; // 시리얼 포트로 전송할 문자
-                    
-                    if (tMotor->break_state)
-                    {
-                        data_to_send = '1';
-                    }
-                    else
-                    {
-                        data_to_send = '0';
-                    }
-
-                    canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-                    usleep(10);
-
-                    // 데이터 수신
-                    std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-                    if (!received_data.empty()) {
-                        std::cout << "Received data: " << received_data << std::endl;
-                    }
-                }
-                else
-                {
-                    sensor.writeVal(tMotor, tMotor->break_state);
-                }
-            }
-
             if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
                 virtualMaxonMotor = maxonMotor;
@@ -921,8 +736,6 @@ void TestManager::SendTestProcess()
     case TestSub::Done:
     {
         usleep(5000);
-
-        allBreakOff();
         
         if (method == 1)
         {
@@ -2681,104 +2494,6 @@ void TestManager::startTest_servo(const string selectedMotor_servo, float pos, f
     }
 }
 
-void TestManager::testBreak()
-{
-    int num, val;
-    char data_to_send; // 시리얼 포트로 전송할 문자
-
-    if(useArduino)
-    {
-        canManager.serial_fd = canManager.setup_serial_port();
-        if (canManager.serial_fd == -1) {
-            cout << "Serial error";
-            return;
-        }
-
-        while(true)
-        {
-            cout << "\n나가기 : -1";
-            cout << "\nSelect val : ";
-            cin >> val;
-
-            if (val == 0)
-            {
-                data_to_send = '0';
-            }
-            else if (val == -1)
-            {
-                break;
-            }
-            else
-            {
-                data_to_send = '1';
-            }
-
-            canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-            usleep(100000);
-
-            // 데이터 수신
-            std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-            if (!received_data.empty()) {
-                std::cout << "Received data: " << received_data << std::endl;
-            }
-        }
-
-        //close(canManager.serial_fd);
-    }
-    else
-    {
-        if(sensor.OpenDeviceUntilSuccess())
-        {
-            while(true)
-            {
-                cout << "\n나가기 : -1";
-                cout << "\nSelect num : ";
-                cin >> num;
-                if (num == -1) break;
-                cout << "\nSelect val : ";
-                cin >> val;
-
-                sensor.writeValTest(num, val);
-            }
-        }
-
-        sensor.closeDevice();
-    }
-}
-
-void TestManager::allBreakOff()
-{
-    if (useArduino)
-    {
-        char data_to_send = '0'; // 시리얼 포트로 전송할 문자
-
-        canManager.send_char_to_serial(canManager.serial_fd, data_to_send);
-
-        usleep(100000);
-
-        // 데이터 수신
-        std::string received_data = canManager.read_char_from_serial(canManager.serial_fd);
-        if (!received_data.empty()) {
-            std::cout << "Received data: " << received_data << std::endl;
-        }
-
-        //close(canManager.serial_fd);
-    }
-    else
-    {
-        for (auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                sensor.writeVal(tMotor, false);
-            }
-        }
-
-        sensor.closeDevice();
-    }
-}
-
 void TestManager::UnfixedMotor()
 {
     for (auto motor_pair : motors)
@@ -2788,15 +2503,15 @@ void TestManager::UnfixedMotor()
 void TestManager::testUSBIO_4761()
 {
     unsigned int inputVal = 0;
-    bool usbio_init = usbio.USBIO_4761_init();
-    if (usbio_init)
-    {
-        std::cout << "USBIO-4761 init\n";
-    }
-    else
-    {
-        return;
-    }
+    // bool usbio_init = usbio.USBIO_4761_init();
+    // if (usbio_init)
+    // {
+    //     std::cout << "USBIO-4761 init\n";
+    // }
+    // else
+    // {
+    //     return;
+    // }
     
     std::cout << "Input a value for DO port : ";
     std::cin >> inputVal;

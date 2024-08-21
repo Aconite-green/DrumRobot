@@ -921,58 +921,6 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     return isSafe;
 }
 
-int CanManager::setup_serial_port() {
-    int fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NONBLOCK);
-    if (fd == -1) {
-        std::cerr << "Failed to open serial port: " << strerror(errno) << std::endl;
-        return -1;
-    }
-
-    struct termios options;
-    memset(&options, 0, sizeof(options));
-    tcgetattr(fd, &options);
-    cfsetispeed(&options, BAUD_RATE);
-    cfsetospeed(&options, BAUD_RATE);
-
-    options.c_cflag |= (CLOCAL | CREAD);
-    options.c_cflag &= ~PARENB;
-    options.c_cflag &= ~CSTOPB;
-    options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8;
-
-    options.c_iflag &= ~(IXON | IXOFF | IXANY); // Disable software flow control
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Raw input
-    options.c_oflag &= ~OPOST; // Raw output
-
-    tcsetattr(fd, TCSANOW, &options);
-    return fd;
-}
-
-void CanManager::send_char_to_serial(int fd, char data) {
-    int n = write(fd, &data, 1);
-    if (n < 0) {
-        std::cerr << "Failed to write to serial port: " << strerror(errno) << std::endl;
-    } else {
-        std::cout << "Sent data: " << data << std::endl;
-    }
-}
-
-std::string CanManager::read_char_from_serial(int fd) {
-    char buffer[256];
-    int n = read(fd, buffer, sizeof(buffer) - 1);
-    if (n < 0) {
-        if (errno != EAGAIN) {
-            std::cerr << "Failed to read from serial port: " << strerror(errno) << std::endl;
-        }
-        return "";
-    } else if (n == 0) {
-        return "";
-    } else {
-        buffer[n] = '\0';
-        return std::string(buffer);
-    }
-}
-
 // 시간를 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_time(const std::string& filename) {
     auto now = std::chrono::high_resolution_clock::now();

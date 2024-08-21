@@ -31,6 +31,7 @@
 #include "../include/motors/Motor.hpp"
 #include "../include/managers/TestManager.hpp"
 #include "../include/managers/HomeManager.hpp"
+#include "../include/USBIO_advantech/USBIO_advantech.hpp"
 
 
 using namespace std;
@@ -45,7 +46,8 @@ public:
               HomeManager &homeManagerRef,
               TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-              Sensor &sensorRef);
+              Sensor &sensorRef,
+              USBIO &usbioRef);
 
     void stateMachine();
     void sendLoopForThread();
@@ -62,6 +64,7 @@ private:
     TestManager &testManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     Sensor &sensor;
+    USBIO &usbio;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -108,7 +111,6 @@ private:
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
     void SendAddStanceProcess(int periodMicroSec);
-    void SendFixProcess();
     void UnfixedMotor();
     void clearMotorsCommandBuffer();
 

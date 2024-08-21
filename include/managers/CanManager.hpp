@@ -30,17 +30,6 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
-// serial to Arduino
-//#include <sys/ioctl.h> // For TIOCINQ
-//#include <fcntl.h>
-//#include <unistd.h>
-//#include <termios.h>
-#include <cstring> // For memset
-#include <errno.h> // For errno
-
-#define SERIAL_PORT "/dev/ttyACM0"
-#define BAUD_RATE B1000000
-
 #define POS_LOOP 0
 #define POS_SPD_LOOP 1
 #define SPD_LOOP 2
@@ -120,11 +109,6 @@ public:
     std::vector<std::string> ifnames;
     int errorCnt = 0;
 
-    int serial_fd;
-    int setup_serial_port();
-    void send_char_to_serial(int fd, char data);
-    std::string read_char_from_serial(int fd);
-
     /*save csv/txt file*/
     std::chrono::high_resolution_clock::time_point start;  
     const std::string basePath = "../../READ/";  // 기본 경로
@@ -132,7 +116,7 @@ public:
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
 
-    // tMotor 제어 모드 결정
+    // tMotor 제어 모드/주기 결정
     int tMotor_control_mode = POS_LOOP;
     float deltaT = 0.005;
 

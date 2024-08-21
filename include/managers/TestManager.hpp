@@ -29,11 +29,6 @@
 #include <cmath>
 #include <chrono>
 #include <set>
-// USBIO 4761
-// #include "../include/USBIO_advantech/compatibility.h"
-// #include "../include/USBIO_advantech/bdaqctrl.h"
-// typedef unsigned char byte;
-// #define  deviceDescription  L"USB-4761,BID#0"
 
 using namespace std;
 
@@ -41,7 +36,6 @@ class TestManager
 {
 public:
     TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef, USBIO &usbioRef);
-
 
     void SendTestProcess();
     void MaxonEnable();
@@ -147,13 +141,7 @@ private:
     
     void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
 
-    void testBreak();
-    void allBreakOff();
-
     void UnfixedMotor();
 
-    bool useArduino = true;
-
     void testUSBIO_4761();
-
 };

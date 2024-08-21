@@ -87,8 +87,7 @@ enum class TestSub
     SendCANFrame,
     Done,
     StickTest,
-    SetServoTestParm,
-    SetCommand
+    SetServoTestParm
 };
 
 
