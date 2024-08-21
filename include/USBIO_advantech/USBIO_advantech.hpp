@@ -24,8 +24,6 @@ public:
 
     void USBIO_4761_exit();
 
-    void USBIO_test();
-
 private:
     const wchar_t* profilePath = L"../../../profile/DemoDevice.xml";
 
