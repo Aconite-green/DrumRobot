@@ -7,6 +7,7 @@
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
 #include "../include/usbio/SenSor.hpp"
+#include "../include/USBIO_advantech/USBIO_advantech.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -29,17 +30,17 @@
 #include <chrono>
 #include <set>
 // USBIO 4761
-#include "../include/USBIO_advantech/compatibility.h"
-#include "../include/USBIO_advantech/bdaqctrl.h"
-typedef unsigned char byte;
-#define  deviceDescription  L"USB-4761,BID#0"
+// #include "../include/USBIO_advantech/compatibility.h"
+// #include "../include/USBIO_advantech/bdaqctrl.h"
+// typedef unsigned char byte;
+// #define  deviceDescription  L"USB-4761,BID#0"
 
 using namespace std;
 
 class TestManager
 {
 public:
-    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef, USBIO &usbioRef);
 
 
     void SendTestProcess();
@@ -57,6 +58,7 @@ private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
     Sensor &sensor;
+    USBIO &usbio;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;

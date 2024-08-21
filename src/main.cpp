@@ -16,6 +16,7 @@
 #include "../include/tasks/SystemState.hpp"
 #include "../include/managers/GuiManager.hpp"
 #include "../include/usbio/SenSor.hpp"
+#include "../include/USBIO_advantech/USBIO_advantech.hpp"
 
 using namespace std;
 
@@ -40,9 +41,10 @@ int main(int argc, char *argv[])
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
     
     Sensor sensor(motors);
+    USBIO usbio;
     CanManager canManager(motors);
     PathManager pathManager(state, canManager, motors);
-    TestManager testManager(state, canManager, motors, sensor);
+    TestManager testManager(state, canManager, motors, sensor, usbio);
     HomeManager homeManager(state, canManager, motors, sensor);
 
     DrumRobot drumRobot(state, canManager, pathManager, homeManager, testManager, motors, sensor);

@@ -4,8 +4,8 @@
 // #include "../managers/TestManager.hpp"
 using namespace std;
 
-TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef)
-    : state(stateRef), canManager(canManagerRef), motors(motorsRef), sensor(sensorRef)
+TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef, USBIO &usbioRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef), sensor(sensorRef), usbio(usbioRef)
 {
 
 }
@@ -25,16 +25,16 @@ void TestManager::SendTestProcess()
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
-        cout << "[ Current Q Values (Ladian) ]\n";
+        std::cout << "[ Current Q Values (Ladian) ]\n";
         for (int i = 0; i < 9; i++)
         {
             q[i] = c_MotorAngle[i];
-            cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
+            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
-        cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - Command, 7 - 나가기, 8 - Break) : ";
-        cin >> method;
+        std::cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 단일 회전, 4 - 멀티 회전, 5 - 스틱 타격, 6 - Command, 7 - 나가기, 8 - Break) : ";
+        std::cin >> method;
         
         if (method == 1)
         {
@@ -2787,6 +2787,34 @@ void TestManager::UnfixedMotor()
 
 void TestManager::testUSBIO_4761()
 {
+    unsigned int inputVal = 0;
+    bool usbio_init = usbio.USBIO_4761_init();
+    if (usbio_init)
+    {
+        std::cout << "USBIO-4761 init\n";
+    }
+    else
+    {
+        return;
+    }
+    
+    std::cout << "Input a value for DO port : ";
+    std::cin >> inputVal;
+    bool usbio_output = usbio.USBIO_4761_output(inputVal);
+    if (usbio_output)
+    {
+        std::cout << "\n DO output completed !\n\n";
+    }
+    else
+    {
+        return;
+    }
+    
+    //usbio.USBIO_4761_exit();
+    usleep(1000000);
+}
+
+/*
     int input;
 
     while(true)
@@ -2850,4 +2878,4 @@ void TestManager::testUSBIO_4761()
             break;
         }
     }
-}
+*/
