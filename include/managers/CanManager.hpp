@@ -23,7 +23,6 @@
 #include <map>
 #include <queue>
 #include <memory>
-#include <gpiod.h>
 #include <chrono>
 #include <fstream>
 
