@@ -95,7 +95,7 @@ void CanManager::restCanPort(int com_number)
     
     if (ret1 != 0 || ret2 != 0 || ret3 != 0 || ret4 != 0 || ret5 != 0 || ret6 != 0)
     {
-        fprintf(stderr, "Failed to reset port");
+        fprintf(stderr, "Failed to reset port\n");
     }
 
     sleep(2);
@@ -831,7 +831,7 @@ bool CanManager::setCANFrame()
                 std::cout << "tMotor control mode ERROR\n";
                 return false;
             }
-            tMotor->break_state = tData.isBreak;
+            tMotor->brake_state = tData.isBrake;
 
             std::string motor_ID = tMotor->myName;
             std::string file_name = "setCANFrame(desired_actial)";

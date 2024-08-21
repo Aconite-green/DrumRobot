@@ -66,8 +66,6 @@ public:
     void PathLoopTask();
     void GetArr(vector<float> &arr);
 
-    void Get_wrist_BackArr(string MotorName, float &A, float &B, float t);
-
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
 
@@ -149,7 +147,7 @@ private:
 
     void getMotorPos();
 
-    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool break_state);
+    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool brake_state);
 
     ////////////////////////////// New Motor Generation ///////////////////////////////
     /**

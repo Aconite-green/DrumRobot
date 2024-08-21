@@ -120,10 +120,6 @@ void GuiManager::guiThread()
             usleep(100000);
             break;
         }
-        case Main::Homing:
-        {
-            break;
-        }
         case Main::Perform:
         {
             break;

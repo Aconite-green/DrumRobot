@@ -35,7 +35,7 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Sensor &sensorRef, USBIO &usbioRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, USBIO &usbioRef);
 
     void SendTestProcess();
     void MaxonEnable();
@@ -51,7 +51,6 @@ private:
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
 
-    Sensor &sensor;
     USBIO &usbio;
 
     TMotorCommandParser tmotorcmd;
@@ -97,8 +96,8 @@ private:
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     float speed_test = 1000;
-    float break_start_time = 2.0;
-    float break_end_time = 4.0;
+    float brake_start_time = 2.0;
+    float brake_end_time = 4.0;
     bool profile_flag = true;   // true : 사다리꼴, false : 정현파
    
     /* Single Test Code */

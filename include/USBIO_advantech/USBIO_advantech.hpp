@@ -19,16 +19,19 @@ public:
     ~USBIO();
 
     bool USBIO_4761_init();
-
-    bool USBIO_4761_output(unsigned int inputVal);
-
+    bool USBIO_4761_output();
+    void USBIO_4761_set(int num, bool state);
     void USBIO_4761_exit();
+
+    void USBIO_4761_testset(int val);
 
 private:
     const wchar_t* profilePath = L"../../../profile/DemoDevice.xml";
 
     ErrorCode ret;// = Success;
     InstantDoCtrl *instantDoCtrl = InstantDoCtrl::Create();
+
+    uint8 bufferForWriting[1] = {0x00};
 
 };
 

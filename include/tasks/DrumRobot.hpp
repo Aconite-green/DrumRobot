@@ -24,7 +24,6 @@
 #include <set>
 
 #include "SystemState.hpp"
-#include "../include/usbio/SenSor.hpp"
 #include "../include/managers/CanManager.hpp"
 #include "../include/managers/PathManager.hpp"
 #include "../include/motors/CommandParser.hpp"
@@ -43,10 +42,8 @@ public:
     DrumRobot(State &StateRef,
               CanManager &canManagerRef,
               PathManager &pathManagerRef,
-              HomeManager &homeManagerRef,
               TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-              Sensor &sensorRef,
               USBIO &usbioRef);
 
     void stateMachine();
@@ -60,15 +57,13 @@ private:
     State &state;
     CanManager &canManager;
     PathManager &pathManager;
-    HomeManager &homeManager;
     TestManager &testManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-    Sensor &sensor;
     USBIO &usbio;
 
+    TMotorServoCommandParser tservocmd;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
-    TMotorServoCommandParser tservocmd;
 
     // 제어 주기
     chrono::system_clock::time_point ReadStandard;
@@ -88,11 +83,15 @@ private:
     void checkUserInput();
     int kbhit();
 
+    // 로봇 상태 플래그
+    bool getHome = false; ///< 홈 위치 플래그.
+    bool isHome = false;
     bool isReady = false; ///< 준비 상태 플래그.
     bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
     bool sendCheckFrame = false;
+    void flag_setting(string flag);
 
     // System Initialize 메소드들
     void initializeMotors();
@@ -138,5 +137,9 @@ private:
     void parse_and_save_to_csv(const std::string &csv_file_name);
     void ReadProcess(int periodMicroSec);
     bool dct_fun(float positions[], float vel_th);
+
+    // Maxon 모터 Homing 함수
+    void homingMaxonEnable();
+    void homingSetMaxonMode(std::string targetMode);
 
 };

@@ -7,18 +7,14 @@
 DrumRobot::DrumRobot(State &stateRef,
                      CanManager &canManagerRef,
                      PathManager &pathManagerRef,
-                     HomeManager &homeManagerRef,
                      TestManager &testManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                     Sensor &sensorRef,
                      USBIO &usbioRef)
     : state(stateRef),
       canManager(canManagerRef),
       pathManager(pathManagerRef),
-      homeManager(homeManagerRef),
       testManager(testManagerRef),
       motors(motorsRef),
-      sensor(sensorRef),
       usbio(usbioRef)
 {
     ReadStandard = chrono::system_clock::now();
@@ -34,7 +30,7 @@ DrumRobot::DrumRobot(State &stateRef,
 /*
 100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함 -> 일단 돌려야하니 주석 해제함
 CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
-TestManager, HomeManager 에서 usleep() 함수 다수 존재
+TestManager 에서 usleep() 함수 다수 존재
 */
 
 
@@ -70,18 +66,6 @@ void DrumRobot::stateMachine()
         {
             ClearBufferforRecord();
             idealStateRoutine();
-            break;
-        }
-        case Main::Homing:
-        {
-            if (state.home == HomeSub::SelectMotorByUser)
-            {
-                // usleep(50000);   // sleep_until()
-            }
-            else
-            {
-                checkUserInput();
-            }
             break;
         }
         case Main::Perform:
@@ -212,12 +196,6 @@ void DrumRobot::sendLoopForThread()
             usleep(5000);   // sleep_until()
             break;
         }
-        case Main::Homing:
-        {
-            UnfixedMotor();
-            homeManager.SendHomeProcess();
-            break;
-        }
         case Main::Perform:
         {
             UnfixedMotor();
@@ -296,19 +274,6 @@ void DrumRobot::recvLoopForThread()
             ReadProcess(5000); /*5ms*/
             break;
         }
-        case Main::Homing:
-        {
-            if (state.home == HomeSub::HomeTmotor || state.home == HomeSub::HomeMaxon || state.home == HomeSub::GetSelectedMotor)
-            {
-                ReadProcess(5000);
-            }
-            // else // sleep_until()
-            // {
-            //     usleep(5000); // 5msec
-            // }
-
-            break;
-        }
         case Main::Perform:
         {
             ReadProcess(5000);
@@ -326,14 +291,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Test:
         {
-            if (state.test == TestSub::StickTest)
-            {
-                // usleep(500000); // sleep_until()
-            }
-            else
-            {
-                ReadProcess(5000);
-            }
+            ReadProcess(5000);
             break;
         }
         case Main::Pause:
@@ -579,10 +537,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 save_to_txt_inputData("../../READ/DrumData_in");
                 parse_and_save_to_csv("../../READ/DrumData_out");
                 state.main = Main::AddStance;
-                isReady = false;
-                getReady = false;
-                getBack = true;
-                isBack = false;
+                flag_setting("getHome");
                 pathManager.line = 0;
             }
             else
@@ -612,6 +567,11 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             {
                 isWriteError = true;
             }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brake_state);
+            }
         }
         if (maxonMotorCount != 0)
         {
@@ -630,6 +590,12 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             state.perform = PerformSub::TimeCheck;
         }
 
+        // brake
+        if(!usbio.USBIO_4761_output())
+        {
+            cout << "brake Error\n";
+        }
+
         break;
     }
     }
@@ -644,7 +610,14 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
     case AddStanceSub::CheckCommand:
     {
-        if (getReady)
+        if (getHome)
+        {
+            ClearBufferforRecord();
+            std::cout << "Get Home...\n";
+            clearMotorsCommandBuffer();
+            state.addstance = AddStanceSub::FillBuf;
+        }
+        else if (getReady)
         {
             ClearBufferforRecord();
             std::cout << "Get Ready...\n";
@@ -668,15 +641,15 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     }
     case AddStanceSub::FillBuf:
     {
-        if (getReady || getBack)
+        if (getHome)
         {
             pathManager.GetArr(pathManager.standby);
         }
-        else if (isReady)
+        else if (getReady)
         {
             pathManager.GetArr(pathManager.readyarr);
         }
-        else if (isBack)
+        else if (getBack)
         {
             pathManager.GetArr(pathManager.backarr);
         }
@@ -692,8 +665,6 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
             state.addstance = AddStanceSub::CheckBuf;
             addStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
         }
-        // usleep(5000);    // // sleep_until()
-        // state.addstance = AddStanceSub::CheckBuf;
         break;
     }
     case AddStanceSub::CheckBuf:
@@ -726,31 +697,23 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
         }
         else
         {
-            if (getReady)
+            if (getHome)
             {
-                state.addstance = AddStanceSub::FillBuf;
-                isReady = true;
-                getReady = false;
-                isBack = false;
-                getBack = false;
+                state.addstance = AddStanceSub::CheckCommand;
+                canManager.clearReadBuffers();
+                flag_setting("isHome");
+            }
+            else if (getReady)
+            {
+                state.addstance = AddStanceSub::CheckCommand;
+                canManager.clearReadBuffers();
+                flag_setting("isReady");
             }
             else if (getBack)
             {
-                state.addstance = AddStanceSub::FillBuf;
-                isBack = true;
-                getBack = false;
-                isReady = false;
-                getReady = false;
-            }
-            else if (isReady)
-            {
                 state.addstance = AddStanceSub::CheckCommand;
                 canManager.clearReadBuffers();
-            }
-            else if (isBack)
-            {
-                state.addstance = AddStanceSub::CheckCommand;
-                canManager.clearReadBuffers();
+                flag_setting("isBack");
             }
         }
         break;
@@ -777,6 +740,11 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
             {
                 isWriteError = true;
             }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brake_state);
+            }
         }
 
         if (maxonMotorCount != 0)
@@ -798,6 +766,12 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
             state.addstance = AddStanceSub::TimeCheck;
         }
 
+        // brake
+        if(!usbio.USBIO_4761_output())
+        {
+            cout << "brake Error\n";
+        }
+
         break;
     }
     }
@@ -816,129 +790,121 @@ void DrumRobot::displayAvailableCommands() const
         if (!(state.home == HomeSub::Done))
         {
             std::cout << "- h : Start Homing\n";
-            std::cout << "- x : Make home state by user\n";
-            std::cout << "- m : Make SelfHome state by user\n";
+            std::cout << "- s : Shut down the system\n";
+            std::cout << "- c : Check Motors position\n";
         }
         else
         {
-            if (!isReady)
+            if (isHome)
             {
                 std::cout << "- r : Move to Ready Position\n";
+                std::cout << "- b : Move to Back Position\n";
                 std::cout << "- t : Start Test\n";
+                std::cout << "- c : Check Motors position\n";
             }
-            else
+            else if (isReady)
             {
                 std::cout << "- p : Start Drumming\n";
+                std::cout << "- h : Move to Home Position\n";
                 std::cout << "- t : Start Test\n";
+                std::cout << "- c : Check Motors position\n";
+            }
+            else if (isBack)
+            {
+                std::cout << "- s : Shut down the system\n";
+                std::cout << "- h : Move to Home Position\n";
+                std::cout << "- t : Start Test\n";
+                std::cout << "- c : Check Motors position\n";
             }
         }
     }
-    std::cout << "- s : Shut down the system\n";
-    std::cout << "- c : Check Motors position\n";
+    else
+    {
+        std::cout << "- s : Shut down the system\n";
+        std::cout << "- c : Check Motors position\n";
+    }
 }
 
 bool DrumRobot::processInput(const std::string &input)
 {
     if (state.main == Main::Ideal)
     {
-        if (input == "h" && !(state.home == HomeSub::Done))
+        if (input == "h")
         {
-            state.main = Main::Homing;
-            return true;
+            if (!(state.home == HomeSub::Done))
+            {
+                for (auto &entry : motors)
+                {
+                    entry.second->isHomed = true;
+                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                    {
+                        if (entry.first == "R_arm1" || entry.first == "L_arm1")
+                        {
+                            tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
+                        }
+                        else
+                        {
+                            tMotor->homeOffset = -(tMotor->currentPos);
+                        }
+                    }
+                }
+                homingMaxonEnable();
+                homingSetMaxonMode("CSP");
+
+                state.home = HomeSub::Done;
+                state.main = Main::AddStance;
+                flag_setting("getHome");
+
+                return true;
+            }
+            else if (isBack || isReady)
+            {
+                state.main = Main::AddStance;
+                flag_setting("getHome");
+
+                return true;
+            }
         }
-        else if (input == "t" && state.home == HomeSub::Done)
-        {
-            state.main = Main::Test;
-            return true;
-        }
-        else if (input == "r" && state.home == HomeSub::Done)
+        else if (input == "r" && isHome)
         {
             state.main = Main::AddStance;
-            getReady = true;
-            isReady = false;
-            getBack = false;
-            isBack = false;
-            return true;
-        }
-        else if (input == "x" && !(state.home == HomeSub::Done))
-        {
-            for (auto &entry : motors)
-            {
-                entry.second->isHomed = true;
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                {
-                    tMotor->homeOffset = 0.0;
-                }
-            }
-            homeManager.MaxonEnable();
-            homeManager.setMaxonMode("CSP");
-            state.home = HomeSub::Done;
-            return true;
-        }
-        else if (input == "m" && !(state.home == HomeSub::Done))
-        {
-            for (auto &entry : motors)
-            {
-                entry.second->isHomed = true;
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                {
-                    if (entry.first == "R_arm1" || entry.first == "L_arm1")
-                    {
-                        tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
-                    }
-                    else
-                    {
-                        tMotor->homeOffset = -(tMotor->currentPos);
-                    }
-                }
-            }
-            homeManager.MaxonEnable();
-            homeManager.setMaxonMode("CSP");
+            flag_setting("getReady");
 
-            state.home = HomeSub::Done;
             return true;
         }
-        else if (input == "c")
+        else if (input == "b" && isHome)
         {
-            state.main = Main::Check;
-            return true;
-        }
-        else if (input == "s")
-        {
-            if (state.home == HomeSub::Done)
-            {
-                if (!isBack)
-                {
-                    state.main = Main::AddStance;
-                    getBack = true;
-                    isBack = false;
-                    isReady = false;
-                    getReady = false;
-                }
-                else if (isBack)
-                {
-                    state.main = Main::Shutdown;
-                }
-                else if (!isReady && !isBack)
-                {
-                    state.main = Main::Shutdown;
-                }
-            }
-            else
-            {
-                state.main = Main::Shutdown;
-            }
+            state.main = Main::AddStance;
+            flag_setting("getBack");
+
             return true;
         }
         else if (input == "p" && isReady)
         {
             state.main = Main::Perform;
             isReady = false;
+
             return true;
         }
-        else if (input == "t")
+        else if (input == "s")
+        {
+            if (state.home != HomeSub::Done || isBack)
+            {
+                state.main = Main::Shutdown;
+            }
+
+            return true;
+        }
+        else if (input == "t" && state.home == HomeSub::Done)
         {
             state.main = Main::Test;
+
+            return true;
+        }
+        else if (input == "c")
+        {
+            state.main = Main::Check;
+            
             return true;
         }
     }
@@ -1089,79 +1055,79 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "waist";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorReadBit = 3;
+                // tMotor->sensorReadBit = 3;
                 tMotor->rMin = 0.0f * M_PI / 180.0f;   // 0deg
                 tMotor->rMax = 150.0f * M_PI / 180.0f; // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "L_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorReadBit = 0;
+                // tMotor->sensorReadBit = 0;
                 tMotor->rMin = 30.0f * M_PI / 180.0f;  // 30deg
                 tMotor->rMax = 180.0f * M_PI / 180.0f; // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm2")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->sensorReadBit = 4;
+                // tMotor->sensorReadBit = 4;
                 tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
                 tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "R_arm3")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->sensorReadBit = 5;
+                // tMotor->sensorReadBit = 5;
                 tMotor->rMin = -30.0f * M_PI / 180.0f; // -30deg
                 tMotor->rMax = 144.0f * M_PI / 180.0f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 1;
+                // tMotor->sensorWriteBit = 1;
             }
             else if (motor_pair.first == "L_arm2")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorReadBit = 1;
+                // tMotor->sensorReadBit = 1;
                 tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
                 tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
             else if (motor_pair.first == "L_arm3")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->sensorReadBit = 2;
+                // tMotor->sensorReadBit = 2;
                 tMotor->rMin = -30.0f * M_PI / 180.0f; // -30 deg
                 tMotor->rMax = 144.0f * M_PI / 180.0f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
-                tMotor->sensorWriteBit = 0;
+                // tMotor->sensorWriteBit = 0;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -1602,4 +1568,131 @@ bool DrumRobot::dct_fun(float positions[], float vel_th)
         return true;
     else
         return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                                 flag setting                                */
+/////////////////////////////////////////////////////////////////////////////////
+
+void DrumRobot::flag_setting(string flag)
+{
+    // all flag off
+    getHome = false;
+    isHome = false;
+    getReady = false;
+    isReady = false;
+    getBack = false;
+    isBack = false;
+
+    // only one flag on
+    if (flag == "getHome")
+    {
+        getHome = true;
+    }
+    else if (flag == "isHome")
+    {
+        isHome = true;
+    }
+    else if (flag == "getReady")
+    {
+        getReady = true;
+    }
+    else if (flag == "isReady")
+    {
+        isReady = true;
+    }
+    else if (flag == "getBack")
+    {
+        getBack = true;
+    }
+    else if (flag == "isBack")
+    {
+        isBack = true;
+    }
+    else
+    {
+        cout << "flag error\n";
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                       Homing Process Function                               */
+/////////////////////////////////////////////////////////////////////////////////
+
+void DrumRobot::homingMaxonEnable()
+{
+    struct can_frame frame;
+    canManager.setSocketsTimeout(2, 0);
+
+    // 제어 모드 설정
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+        {
+
+            maxoncmd.getOperational(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            usleep(100000);
+            maxoncmd.getEnable(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+            std::cout << "Maxon Enabled(1) \n";
+
+            usleep(100000);
+
+            maxoncmd.getQuickStop(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            usleep(100000);
+            maxoncmd.getEnable(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            std::cout << "Maxon Enabled(2) \n";
+        }
+    }
+}
+
+void DrumRobot::homingSetMaxonMode(std::string targetMode)
+{
+    struct can_frame frame;
+    canManager.setSocketsTimeout(0, 10000);
+    for (const auto &motorPair : motors)
+    {
+        std::string name = motorPair.first;
+        std::shared_ptr<GenericMotor> motor = motorPair.second;
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
+        {
+            if (targetMode == "CSV")
+            {
+                maxoncmd.getCSVMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CST")
+            {
+                maxoncmd.getCSTMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "HMM")
+            {
+                maxoncmd.getHomeMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+            else if (targetMode == "CSP")
+            {
+                maxoncmd.getCSPMode(*maxonMotor, &frame);
+                canManager.sendAndRecv(motor, frame);
+            }
+        }
+    }
 }

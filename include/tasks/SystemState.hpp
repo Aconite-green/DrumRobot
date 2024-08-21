@@ -6,7 +6,6 @@ enum class Main
 {
     SystemInit,
     Ideal,
-    Homing,
     Test,
     Perform,
     Check,

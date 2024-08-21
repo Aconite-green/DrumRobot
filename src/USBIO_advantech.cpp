@@ -34,19 +34,24 @@ bool USBIO::USBIO_4761_init()
     }
 }
 
-bool USBIO::USBIO_4761_output(unsigned int inputVal)
+void USBIO::USBIO_4761_set(int num, bool state)
 {
-    uint8 bufferForWriting[1] = {0x00};
+    uint8 current_output = bufferForWriting[0];
 
-    if (inputVal == 0)
+    if (state)
     {
-        bufferForWriting[0] = 0x00;
+        current_output |= 1<<num;
     }
     else
     {
-        bufferForWriting[0] = 0xff;
+        current_output &= ~(1<<num);
     }
-    
+
+    bufferForWriting[0] = current_output;
+}
+
+bool USBIO::USBIO_4761_output()
+{
     do
     {
         ret = instantDoCtrl->Write(0, 1, bufferForWriting);
@@ -71,4 +76,16 @@ bool USBIO::USBIO_4761_output(unsigned int inputVal)
 void USBIO::USBIO_4761_exit()
 {
     instantDoCtrl->Dispose();
+}
+
+void USBIO::USBIO_4761_testset(int val)
+{
+    if(val)
+    {
+        bufferForWriting[0] = 0x01;
+    }
+    else
+    {
+        bufferForWriting[0] = 0x00;
+    }
 }
