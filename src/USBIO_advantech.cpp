@@ -80,12 +80,36 @@ void USBIO::USBIO_4761_exit()
 
 void USBIO::USBIO_4761_testset(int val)
 {
-    if(val)
+    if(val == 0)
+    {
+        bufferForWriting[0] = 0x00;
+    }
+    else if (val == 1)
     {
         bufferForWriting[0] = 0x01;
     }
-    else
+    else if (val == 2)
     {
-        bufferForWriting[0] = 0x00;
+        bufferForWriting[0] = 0x02;
+    }
+    else if (val == 3)
+    {
+        bufferForWriting[0] = 0x03;
+    }
+    else if (val == 4)
+    {
+        bufferForWriting[0] = 0x04;
+    }
+    else if (val == 5)
+    {
+        bufferForWriting[0] = 0x05;
+    }
+    else if (val == 6)
+    {
+        bufferForWriting[0] = 0x06;
+    }
+    else if (val == 7)
+    {
+        bufferForWriting[0] = 0x07;
     }
 }

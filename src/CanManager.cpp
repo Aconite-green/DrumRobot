@@ -53,13 +53,26 @@ void CanManager::restCanPort(int com_number)
 
     // Reset the commands based on com_number
     if (com_number == 1) {
+        //sudo uhubctl 이 명령어 실행하면 포트 검색가능
+        //0c72:000c PEAK-System Technik GmbH PCAN-USB (8.6.1)]
+        //요런식으로 나오는 애들이 can 통신선임
+        //Current status for hub 1-4.1.1 [0bda:5411 Generic USB2.1 Hub, USB 2.10, 5 ports]
+        //Port 1: 0503 power highspeed enable connect []
+        //Port 2: 0103 power enable connect [0c72:000c PEAK-System Technik GmbH PCAN-USB (8.6.1)]
+        //Port 3: 0103 power enable connect [0c72:000c PEAK-System Technik GmbH PCAN-USB (8.6.1)]
+        // 예를 들어 포트 3번을 끄려고한다면 다음과 같이 명령어 넣어주면된다.
+        //키려면
+        //sudo uhubctl -l 1-4.1.1 -p 3 -a off
+        //끄려면
+        //sudo uhubctl -l 1-4.1.1 -p 3 -a off
+
         // com_number_1
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-3 -p 1 -a off");
-        snprintf(can2_off, sizeof(can2_off), "sudo uhubctl -l 1-3 -p 2 -a off");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 2 -a off");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 3 -a off");
         snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-3 -p 3 -a off");
 
-        snprintf(can1_on, sizeof(can1_on), "sudo uhubctl -l 1-3 -p 1 -a on");
-        snprintf(can2_on, sizeof(can2_on), "sudo uhubctl -l 1-3 -p 2 -a on");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 2 -a on");
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 3 -a on");
         snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-3 -p 3 -a on");
     } else if (com_number == 2) {
         // com_number_2
