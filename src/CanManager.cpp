@@ -67,13 +67,13 @@ void CanManager::restCanPort(int com_number)
         //sudo uhubctl -l 1-4.1.1 -p 3 -a off
 
         // com_number_1
+        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 1 -a off");
         snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 2 -a off");
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 3 -a off");
-        snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-3 -p 3 -a off");
+        snprintf(can3_off, sizeof(can3_off), "sudo uhubctl -l 1-4.1.1 -p 3 -a off");
 
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 2 -a on");
-        snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-4.1.1 -p 3 -a on");
-        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-3 -p 3 -a on");
+        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-4.1.1 -p 1 -a on");
+        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-4.1.1 -p 2 -a on");
+        snprintf(can3_on, sizeof(can3_on), "sudo uhubctl -l 1-4.1.1 -p 3 -a on");
     } else if (com_number == 2) {
         // com_number_2
         snprintf(can1_off, sizeof(can1_off), "sudo uhubctl -l 1-6.1 -p 1 -a off");
