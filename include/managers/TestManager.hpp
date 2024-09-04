@@ -6,7 +6,6 @@
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
-#include "../include/usbio/SenSor.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
 #include <map>
 #include <memory>

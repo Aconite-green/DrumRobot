@@ -29,7 +29,6 @@
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/managers/TestManager.hpp"
-#include "../include/managers/HomeManager.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
 
 

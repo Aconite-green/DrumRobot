@@ -11,11 +11,9 @@
 #include "../include/managers/PathManager.hpp"
 #include "../include/managers/CanManager.hpp"
 #include "../include/managers/TestManager.hpp"
-#include "../include/managers/HomeManager.hpp"
 #include "../include/tasks/DrumRobot.hpp"
 #include "../include/tasks/SystemState.hpp"
 #include "../include/managers/GuiManager.hpp"
-#include "../include/usbio/SenSor.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
 
 using namespace std;
