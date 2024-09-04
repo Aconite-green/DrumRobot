@@ -25,6 +25,8 @@ public:
 
     void USBIO_4761_testset(int val);
 
+    bool useUSBIO = true;
+
 private:
     const wchar_t* profilePath = L"../../../profile/DemoDevice.xml";
 
@@ -32,6 +34,5 @@ private:
     InstantDoCtrl *instantDoCtrl = InstantDoCtrl::Create();
 
     uint8 bufferForWriting[1] = {0x00};
-
 };
 

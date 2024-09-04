@@ -26,6 +26,8 @@ bool USBIO::USBIO_4761_init()
         AdxEnumToString(L"ErrorCode", (int32)ret, 256, enumString);
         std::cout << "Some error occurred. And the last error code is 0x" << ret << ". [" << enumString << "]\n";
 
+        useUSBIO = false;
+
         return false;
     }
     else

@@ -58,7 +58,15 @@ void TestManager::SendTestProcess()
         }
         else if (method == 6)
         {
-            testUSBIO_4761();
+            if(usbio.useUSBIO)
+            {
+                testUSBIO_4761();
+            }
+            else
+            {
+                std::cout << "\n USBIO not connected\n\n";
+                usleep(1000000);
+            }
         }
         else if (method == -1)
         {
@@ -718,9 +726,12 @@ void TestManager::SendTestProcess()
         }
 
         // brake
-        if(!usbio.USBIO_4761_output())
+        if (usbio.useUSBIO)
         {
-            cout << "brake Error\n";
+            if(!usbio.USBIO_4761_output())
+            {
+                cout << "brake Error\n";
+            }
         }
 
         break;
@@ -733,13 +744,13 @@ void TestManager::SendTestProcess()
         {
             state.test = TestSub::SetQValue;
             
-            std::ostringstream fileNameOut;
-            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_0704_P" << q[5]
-                        << "_spd" << speed_test
-                        << "_BrakeTime" << brake_start_time;
-            std::string fileName = fileNameOut.str();
-            //parse_and_save_to_csv(fileName);
+            // std::ostringstream fileNameOut;
+            // fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+            // fileNameOut << "../../READ/Test_0704_P" << q[5]
+            //             << "_spd" << speed_test
+            //             << "_BrakeTime" << brake_start_time;
+            // std::string fileName = fileNameOut.str();
+            // parse_and_save_to_csv(fileName);
         }
         else if (method == 2)
         {

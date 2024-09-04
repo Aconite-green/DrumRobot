@@ -296,16 +296,7 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Pause:
         {
-            bool isWriteError = false;
-            if (!canManager.checkAllMotors_Fixed())
-            {
-                isWriteError = true;
-            }
-            if (isWriteError)
-            {
-                state.main = Main::Error;
-            }
-            // usleep(50000); // sleep_until()
+            ReadProcess(5000);
             break;
         }
         case Main::Error:
@@ -537,11 +528,14 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 save_to_txt_inputData("../../READ/DrumData_in");
                 parse_and_save_to_csv("../../READ/DrumData_out");
                 state.main = Main::AddStance;
+                state.perform = PerformSub::TimeCheck;
                 flag_setting("getHome");
                 pathManager.line = 0;
             }
             else
+            {
                 state.perform = PerformSub::SetCANFrame;
+            }
         }
         break;
     }
@@ -591,9 +585,12 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         }
 
         // brake
-        if(!usbio.USBIO_4761_output())
+        if (usbio.useUSBIO)
         {
-            cout << "brake Error\n";
+            if(!usbio.USBIO_4761_output())
+            {
+                cout << "brake Error\n";
+            }
         }
 
         break;
@@ -767,9 +764,12 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
         }
 
         // brake
-        if(!usbio.USBIO_4761_output())
+        if (usbio.useUSBIO)
         {
-            cout << "brake Error\n";
+            if(!usbio.USBIO_4761_output())
+            {
+                cout << "brake Error\n";
+            }
         }
 
         break;
