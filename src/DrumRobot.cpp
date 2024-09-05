@@ -154,7 +154,10 @@ void DrumRobot::stateMachine()
         canManager.appendToCSV_time("TIME_stateMachine");
         std::this_thread::sleep_until(state_time_point);
     }
-    usbio.USBIO_4761_exit();
+    if (usbio.useUSBIO)
+    {
+        usbio.USBIO_4761_exit();
+    }
     canManager.setSocketBlock();
     DeactivateControlTask();
 }
