@@ -1950,20 +1950,67 @@ void TestManager::UnfixedMotor()
 
 void TestManager::testUSBIO_4761()
 {
-    int inputVal = 0;
+    // int inputVal = 0;
     
-    std::cout << "Input a value for DO port : ";
-    std::cin >> inputVal;
-    usbio.USBIO_4761_testset(inputVal);
-    bool usbio_output = usbio.USBIO_4761_output();
-    if (usbio_output)
+    // do
+    // {
+    //     std::cout << "Input a value for DO port (-1 : Exit) : ";
+    //     std::cin >> inputVal;
+
+    //     if (inputVal == -1)
+    //     {
+    //         break;
+    //     }
+
+    //     usbio.USBIO_4761_testset(inputVal);
+    //     bool usbio_output = usbio.USBIO_4761_output();
+        
+    //     usleep(100000);
+
+    //     if (usbio_output)
+    //     {
+    //         std::cout << "\n DO output completed !\n\n";
+    //     }
+    //     else
+    //     {
+    //         break;
+    //     }
+    // } while (true);
+
+    int i;
+    for (i = 0; i < 20; i++)
     {
-        std::cout << "\n DO output completed !\n\n";
-    }
-    else
-    {
-        return;
+        usbio.USBIO_4761_testset(7);
+        bool usbio_output = usbio.USBIO_4761_output();
+        
+        usleep(500000);
+
+        if (usbio_output)
+        {
+            // std::cout << "\n DO output completed !\n\n";
+        }
+        else
+        {
+            std::cout << "\n Error " << i << "\n\n";
+            usleep(1000000);
+            break;
+        }
+
+        usbio.USBIO_4761_testset(0);
+        usbio_output = usbio.USBIO_4761_output();
+        
+        usleep(500000);
+
+        if (usbio_output)
+        {
+            // std::cout << "\n DO output completed !\n\n";
+        }
+        else
+        {
+            std::cout << "\n Error " << i << "\n\n";
+            usleep(1000000);
+            break;
+        }
     }
     
-    usleep(1000000);
 }
