@@ -68,6 +68,14 @@ void TestManager::SendTestProcess()
                 usleep(1000000);
             }
         }
+        else if (method == 7)
+        {
+            if (usbio.USBIO_4761_init())
+            {
+                std::cout << "USBIO-4761 init\n";
+                usleep(1000000);
+            }
+        }
         else if (method == -1)
         {
             state.main = Main::Ideal;
@@ -1978,12 +1986,12 @@ void TestManager::testUSBIO_4761()
     // } while (true);
 
     int i;
-    for (i = 0; i < 20; i++)
+    for (i = 0; i < 100; i++)
     {
-        usbio.USBIO_4761_testset(7);
+        usbio.USBIO_4761_testset(i%8);
         bool usbio_output = usbio.USBIO_4761_output();
         
-        usleep(500000);
+        usleep(100000);
 
         if (usbio_output)
         {
@@ -1999,11 +2007,16 @@ void TestManager::testUSBIO_4761()
         usbio.USBIO_4761_testset(0);
         usbio_output = usbio.USBIO_4761_output();
         
-        usleep(500000);
+        usleep(100000);
 
         if (usbio_output)
         {
             // std::cout << "\n DO output completed !\n\n";
+            if(i == 99)
+            {
+                std::cout << "\n DO output completed !\n\n";
+                usleep(1000000);
+            }
         }
         else
         {

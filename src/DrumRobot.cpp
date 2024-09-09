@@ -151,7 +151,7 @@ void DrumRobot::stateMachine()
             break;
         }
 
-        canManager.appendToCSV_time("TIME_stateMachine");
+        // canManager.appendToCSV_time("TIME_stateMachine");
         std::this_thread::sleep_until(state_time_point);
     }
     if (usbio.useUSBIO)
@@ -248,12 +248,12 @@ void DrumRobot::sendLoopForThread()
         }
 
         auto send_check = std::chrono::steady_clock::now();
-        if(send_check >= send_time_point)
-        {
-            canManager.appendToCSV_time("TIME_ERR_sendLoopForThread");
-        }
+        // if(send_check >= send_time_point)
+        // {
+        //     canManager.appendToCSV_time("TIME_ERR_sendLoopForThread");
+        // }
 
-        canManager.appendToCSV_time("TIME_sendLoopForThread");
+        // canManager.appendToCSV_time("TIME_sendLoopForThread");
         std::this_thread::sleep_until(send_time_point);
     }
 }
@@ -316,12 +316,12 @@ void DrumRobot::recvLoopForThread()
         }
 
         auto send_check = std::chrono::steady_clock::now();
-        if(send_check >= recv_time_point)
-        {
-            canManager.appendToCSV_time("TIME_ERR_recvLoopForThread");
-        }
+        // if(send_check >= recv_time_point)
+        // {
+        //     canManager.appendToCSV_time("TIME_ERR_recvLoopForThread");
+        // }
 
-        canManager.appendToCSV_time("TIME_recvLoopForThread");
+        // canManager.appendToCSV_time("TIME_recvLoopForThread");
         std::this_thread::sleep_until(recv_time_point);
     }
 }
@@ -590,9 +590,13 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
         // brake
         if (usbio.useUSBIO)
         {
-            if(!usbio.USBIO_4761_output())
+            int cnt = 0;
+            while(!usbio.USBIO_4761_output())
             {
                 cout << "brake Error\n";
+                usbio.USBIO_4761_init();
+                cnt++;
+                if (cnt >= 5) break;
             }
         }
 
