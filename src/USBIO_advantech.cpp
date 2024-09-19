@@ -114,4 +114,36 @@ void USBIO::USBIO_4761_testset(int val)
     {
         bufferForWriting[0] = 0x07;
     }
+    else if (val == 8)
+    {
+        bufferForWriting[0] = 0x08;
+    }
+    else if (val == 9)
+    {
+        bufferForWriting[0] = 0x09;
+    }
+    else if (val == 10)
+    {
+        bufferForWriting[0] = 0x0A;
+    }
+    else if (val == 11)
+    {
+        bufferForWriting[0] = 0x0B;
+    }
+    else if (val == 12)
+    {
+        bufferForWriting[0] = 0x0C;
+    }
+    else if (val == 13)
+    {
+        bufferForWriting[0] = 0x0D;
+    }
+    else if (val == 14)
+    {
+        bufferForWriting[0] = 0x0E;
+    }
+    else if (val == 15)
+    {
+        bufferForWriting[0] = 0x0F;
+    }
 }
