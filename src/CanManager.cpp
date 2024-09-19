@@ -50,7 +50,7 @@ int CanManager::get_com_number_by_hostname() {
 void CanManager::restCanPort(int com_number)
 {
     char can1_on[100], can2_on[100], can3_on[100], can1_off[100], can2_off[100], can3_off[100];
-
+    //com_number = 1 드럼로봇 컴퓨터 com_number = 2 테스트 환경 컴퓨터 
     // Reset the commands based on com_number
     if (com_number == 1) {
         //sudo uhubctl 이 명령어 실행하면 포트 검색가능
