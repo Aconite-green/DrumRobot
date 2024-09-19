@@ -10,6 +10,8 @@ USBIO::~USBIO()
 
 bool USBIO::USBIO_4761_init()
 {
+    useUSBIO = true;
+
     DeviceInformation devInfo(deviceDescription);
 
     do

@@ -1986,7 +1986,7 @@ void TestManager::testUSBIO_4761()
     // } while (true);
 
     int i;
-    for (i = 0; i < 100; i++)
+    for (i = 0; i < 200; i++)
     {
         usbio.USBIO_4761_testset(i%8);
         bool usbio_output = usbio.USBIO_4761_output();
@@ -1995,24 +1995,7 @@ void TestManager::testUSBIO_4761()
 
         if (usbio_output)
         {
-            // std::cout << "\n DO output completed !\n\n";
-        }
-        else
-        {
-            std::cout << "\n Error " << i << "\n\n";
-            usleep(1000000);
-            break;
-        }
-
-        usbio.USBIO_4761_testset(0);
-        usbio_output = usbio.USBIO_4761_output();
-        
-        usleep(100000);
-
-        if (usbio_output)
-        {
-            // std::cout << "\n DO output completed !\n\n";
-            if(i == 99)
+            if(i == 199)
             {
                 std::cout << "\n DO output completed !\n\n";
                 usleep(1000000);
@@ -2020,9 +2003,19 @@ void TestManager::testUSBIO_4761()
         }
         else
         {
-            std::cout << "\n Error " << i << "\n\n";
-            usleep(1000000);
-            break;
+            int cnt = 0;
+            while(!usbio.USBIO_4761_output())
+            {
+                cout << "brake Error\n";
+                usbio.USBIO_4761_init();
+                cnt++;
+                if (cnt >= 5) break;
+            }
+            //cout << "brake Error\n";
+            //usbio.USBIO_4761_init();
+            // std::cout << "\n Error " << i << "\n\n";
+            // usleep(1000000);
+            // break;
         }
     }
     
