@@ -1959,36 +1959,63 @@ void TestManager::UnfixedMotor()
 void TestManager::testUSBIO_4761()
 {
     
-    // bool loop_state = true;
-    // std::vector<bool> status(7, false); 
-    // do
-    // {
-    //     cout << "0-6 상태변경, 8 실행, 10 exit" << endl;
-    //     int i;
-    //     cin >> i;
-
-    //     if (i == 10) {
-    //         loop_state = false;
-    //     } else if (i >= 0 && i <= 6) {
-    //         status[i] = !status[i];
-    //         usbio.USBIO_4761_set(i, status[i]);
-    //     } else if (i == 8) {
-    //         usbio.USBIO_4761_output();
-    //     }
-    //     for (int j = 0; j < status.size(); ++j) {
-    //         cout << j << " = " << (status[j] ? "true" : "false") << endl;
-    //     }
-
-    // } while (loop_state);
-
-    for(int i =0 ; i<7; i++)
+    bool loop_state = true;
+    std::vector<bool> status(7, false); 
+    do
     {
-        usbio.USBIO_4761_set(i, true);
-        usbio.USBIO_4761_output();
-        usleep(3000000);
-        usbio.USBIO_4761_set(i, false);
-    }
-    
+        cout << "0-6 상태변경, 8 실행, 10 exit" << endl;
+        int i;
+        cin >> i;
+
+        if (i == 10) {
+            loop_state = false;
+        } else if (i >= 0 && i <= 6) {
+            status[i] = !status[i];
+            usbio.USBIO_4761_set(i, status[i]);
+        } else if (i == 8) {
+            usbio.USBIO_4761_output();
+        }
+        for (int j = 0; j < status.size(); ++j) {
+            cout << j << " = " << (status[j] ? "true" : "false") << endl;
+        }
+
+    } while (loop_state);
+    //////////////////////////////////////////////
+    // for(int i =0 ; i<7; i++)
+    // {
+    //     if (i == 1 || i == 4)
+    //     {
+    //         continue; 
+    //     }
+    //     usbio.USBIO_4761_set(i, true);
+    //     usbio.USBIO_4761_output();
+    //     usleep(1500000);
+    //     usbio.USBIO_4761_set(i, false);
+    // }
+
+    // for(int i =0 ; i<7; i++)
+    // {
+    //     usbio.USBIO_4761_set(i, false);
+    //     // usbio.USBIO_4761_output();
+    //     // usleep(1500000);
+    // }
+
+    // usbio.USBIO_4761_output();
+    ///////////////////////////////////////////
+
+        // usbio.USBIO_4761_set(1, true);
+        // usbio.USBIO_4761_output();
+        // usleep(1500000);
+        // usbio.USBIO_4761_set(1, false);
+        // usbio.USBIO_4761_output();
+        // usleep(1500000);
+        // usbio.USBIO_4761_set(4, true);
+        // usbio.USBIO_4761_output();
+        // usleep(1500000);
+        // usbio.USBIO_4761_set(4, false);
+        // usbio.USBIO_4761_output();
+        // usleep(1500000);
+        // usbio.USBIO_4761_set(i, false);
     
 
 }
