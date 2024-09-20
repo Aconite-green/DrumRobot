@@ -27,6 +27,7 @@ public:
 
     // Motors Feature
     float cwDir;
+    float timingBelt_ratio;
     float rMin, rMax;
     std::string myName;
     std::string interFaceName;

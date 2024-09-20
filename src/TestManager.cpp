@@ -1958,64 +1958,61 @@ void TestManager::UnfixedMotor()
 
 void TestManager::testUSBIO_4761()
 {
-    
-    bool loop_state = true;
-    std::vector<bool> status(7, false); 
-    do
-    {
-        cout << "0-6 상태변경, 8 실행, 10 exit" << endl;
-        int i;
-        cin >> i;
-
-        if (i == 10) {
-            loop_state = false;
-        } else if (i >= 0 && i <= 6) {
-            status[i] = !status[i];
-            usbio.USBIO_4761_set(i, status[i]);
-        } else if (i == 8) {
-            usbio.USBIO_4761_output();
-        }
-        for (int j = 0; j < status.size(); ++j) {
-            cout << j << " = " << (status[j] ? "true" : "false") << endl;
-        }
-
-    } while (loop_state);
     //////////////////////////////////////////////
-    // for(int i =0 ; i<7; i++)
+    // bool loop_state = true;
+    // std::vector<bool> status(7, false); 
+    // do
     // {
-    //     if (i == 1 || i == 4)
-    //     {
-    //         continue; 
+    //     cout << "0-6 상태변경, 8 실행, 10 exit" << endl;
+    //     int i;
+    //     cin >> i;
+
+    //     if (i == 10) {
+    //         loop_state = false;
+    //     } else if (i >= 0 && i <= 6) {
+    //         status[i] = !status[i];
+    //         usbio.USBIO_4761_set(i, status[i]);
+    //     } else if (i == 8) {
+    //         usbio.USBIO_4761_output();
     //     }
-    //     usbio.USBIO_4761_set(i, true);
-    //     usbio.USBIO_4761_output();
-    //     usleep(1500000);
-    //     usbio.USBIO_4761_set(i, false);
-    // }
+    //     for (int j = 0; j < status.size(); ++j) {
+    //         cout << j << " = " << (status[j] ? "true" : "false") << endl;
+    //     }
 
-    // for(int i =0 ; i<7; i++)
-    // {
-    //     usbio.USBIO_4761_set(i, false);
-    //     // usbio.USBIO_4761_output();
-    //     // usleep(1500000);
-    // }
+    // } while (loop_state);
 
-    // usbio.USBIO_4761_output();
-    ///////////////////////////////////////////
 
-        // usbio.USBIO_4761_set(1, true);
-        // usbio.USBIO_4761_output();
-        // usleep(1500000);
-        // usbio.USBIO_4761_set(1, false);
-        // usbio.USBIO_4761_output();
-        // usleep(1500000);
-        // usbio.USBIO_4761_set(4, true);
-        // usbio.USBIO_4761_output();
-        // usleep(1500000);
-        // usbio.USBIO_4761_set(4, false);
-        // usbio.USBIO_4761_output();
-        // usleep(1500000);
-        // usbio.USBIO_4761_set(i, false);
+    //////////////////////////////////////////////
+    int n = 100;
+    int i;
+    for(i =0; i < n; i++)
+    {
+        usbio.USBIO_4761_set(i % 7, true);
+        bool usbio_output = usbio.USBIO_4761_output();
+        usleep(100000);
+        usbio.USBIO_4761_set(i % 7, false);
+
+        if(!usbio_output)
+        {
+            std::cout << "OUTPUT Error" << endl;
+            usleep(5000000);
+            break;
+        }
+    }
+
+    if(i == n)
+    {
+        for(int i =0 ; i<7; i++)
+        {
+            usbio.USBIO_4761_set(i, false);
+        }
+        bool usbio_output = usbio.USBIO_4761_output();
+
+        if (usbio_output)
+        {
+            std::cout << "END" << endl;
+            usleep(5000000);
+        }
+    }
     
-
 }

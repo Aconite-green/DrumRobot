@@ -20,7 +20,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir / tMotor->timingBelt_ratio - tMotor->homeOffset;
             newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
             newData.acl = 50000;
             newData.isBrake = brake_state;
@@ -1737,11 +1737,11 @@ void PathManager::GetArr(vector<float> &arr)
 
                 if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir / tMotor->timingBelt_ratio - tMotor->homeOffset;
                 }
                 else    // POS_LOOP, SPD_LOOP
                 {
-                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir / tMotor->timingBelt_ratio - tMotor->homeOffset;
                 }
 
                 newData.spd = tMotor->spd;
