@@ -1981,23 +1981,20 @@ void TestManager::testUSBIO_4761()
 
     } while (loop_state);
     //////////////////////////////////////////////
-    // for(int i =0 ; i<7; i++)
-    // {
-    //     if (i == 1 || i == 4)
-    //     {
-    //         continue; 
-    //     }
-    //     usbio.USBIO_4761_set(i, true);
-    //     usbio.USBIO_4761_output();
-    //     usleep(1500000);
-    //     usbio.USBIO_4761_set(i, false);
-    // }
+    for(int i =0 ; i<7; i++)
+    {
+        usbio.USBIO_4761_set(i, true);
+        usbio.USBIO_4761_output();
+        usleep(1500000);
+        usbio.USBIO_4761_set(i, false);
+    }
 
     // for(int i =0 ; i<7; i++)
     // {
     //     usbio.USBIO_4761_set(i, false);
     //     // usbio.USBIO_4761_output();
     //     // usleep(1500000);
+    
     // }
 
     // usbio.USBIO_4761_output();
