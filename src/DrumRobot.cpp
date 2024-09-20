@@ -1056,6 +1056,7 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "waist")
             {
                 tMotor->cwDir = 1.0f;
+                tMotor->timingBelt_ratio = 1.0f;
                 tMotor->rMin = -90.0f * M_PI / 180.0f; // -90deg
                 tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = true;
@@ -1067,6 +1068,7 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_arm1")
             {
                 tMotor->cwDir = -1.0f;
+                tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 3;
                 tMotor->rMin = 0.0f * M_PI / 180.0f;   // 0deg
                 tMotor->rMax = 150.0f * M_PI / 180.0f; // 150deg
@@ -1079,6 +1081,7 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_arm1")
             {
                 tMotor->cwDir = -1.0f;
+                tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 0;
                 tMotor->rMin = 30.0f * M_PI / 180.0f;  // 30deg
                 tMotor->rMax = 180.0f * M_PI / 180.0f; // 180deg
@@ -1090,7 +1093,8 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm2")
             {
-                tMotor->cwDir = 1.0f;
+                tMotor->cwDir = -1.0f;
+                tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 4;
                 tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
                 tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
@@ -1102,7 +1106,8 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "R_arm3")
             {
-                tMotor->cwDir = 1.0f;
+                tMotor->cwDir = -1.0f;
+                tMotor->timingBelt_ratio = 3.0f;
                 // tMotor->sensorReadBit = 5;
                 tMotor->rMin = -30.0f * M_PI / 180.0f; // -30deg
                 tMotor->rMax = 144.0f * M_PI / 180.0f; // 144deg
@@ -1114,7 +1119,8 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_arm2")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
+                tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 1;
                 tMotor->rMin = -60.0f * M_PI / 180.0f; // -60deg
                 tMotor->rMax = 90.0f * M_PI / 180.0f;  // 90deg
@@ -1126,7 +1132,8 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_arm3")
             {
-                tMotor->cwDir = -1.0f;
+                tMotor->cwDir = 1.0f;
+                tMotor->timingBelt_ratio = 3.0f;
                 // tMotor->sensorReadBit = 2;
                 tMotor->rMin = -30.0f * M_PI / 180.0f; // -30 deg
                 tMotor->rMax = 144.0f * M_PI / 180.0f; // 144 deg
