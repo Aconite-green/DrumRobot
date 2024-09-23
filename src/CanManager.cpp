@@ -499,7 +499,7 @@ bool CanManager::sendFromBuff(std::shared_ptr<GenericMotor> &motor)
 bool CanManager::sendMotorFrame(std::shared_ptr<GenericMotor> motor)
 {
     struct can_frame frame;
-    CanManager::appendToCSV_CAN("can_orgin", motor->sendFrame);
+
     if (write(motor->socket, &motor->sendFrame, sizeof(frame)) != sizeof(frame))
     {
         errorCnt++;
@@ -666,9 +666,9 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->recieveBuffer.push(frame);
 
                     std::string motor_ID = tMotor->myName;
-                    std::string file_name = "motor_receive(actual_0)";
+                    std::string file_name = "_receive(actualPos,current)";
                     
-                    appendToCSV_CM(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
+                    appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
                 }
             }
         }
@@ -716,8 +716,8 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
         std::string motor_ID = tMotor->myName;
-        std::string file_name = "Fixed(desired_actial)";
-        appendToCSV_CM(motor_ID + file_name, motor->fixedPos, tMotor->currentPos);
+        std::string file_name = "_Fixed(actialPos,fixedPos)";
+        appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, motor->fixedPos);
 
         // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
 
@@ -725,7 +725,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         float diff_angle = motor->fixedPos - tMotor->currentPos;
         if (abs(diff_angle) > POS_DIFF_LIMIT)
         {
-            std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+            std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (Fixed)\n";
             return false;
         }
         tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
@@ -822,7 +822,7 @@ bool CanManager::setCANFrame()
                 float diff_angle = tData.position - tMotor->currentPos;
                 if (abs(diff_angle) > POS_DIFF_LIMIT)
                 {
-                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << "\n";
+                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n";
                     return false;
                 }
                 tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
@@ -847,8 +847,8 @@ bool CanManager::setCANFrame()
             tMotor->brake_state = tData.isBrake;
 
             std::string motor_ID = tMotor->myName;
-            std::string file_name = "setCANFrame(desired_actial)";
-            appendToCSV_CM(motor_ID + file_name, tData.position, tMotor->currentPos);
+            std::string file_name = "_setCANFrame(actialPos,desiredPos)";
+            appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tData.position);
         }
     }
     Input_pos.push_back(Pos);
@@ -961,7 +961,7 @@ void CanManager::appendToCSV_time(const std::string& filename) {
 }
 
 // 시간과 변수를 CSV 파일에 한 줄씩 저장하는 함수
-void CanManager::appendToCSV_CM(const std::string& filename, float fixed_position, float current_position) {
+void CanManager::appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
     std::ofstream file;
@@ -980,7 +980,7 @@ void CanManager::appendToCSV_CM(const std::string& filename, float fixed_positio
 
     if (file.is_open()) {
         // 데이터 추가
-        file << elapsed.count() << "," << fixed_position << "," << current_position << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+        file << elapsed.count() << "," << A_DATA << "," << B_DATA << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
        
         // 파일 닫기
         file.close();

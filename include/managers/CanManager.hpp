@@ -111,7 +111,7 @@ public:
     /*save csv/txt file*/
     std::chrono::high_resolution_clock::time_point start;  
     const std::string basePath = "../../READ/";  // 기본 경로
-    void appendToCSV_CM(const std::string& filename, float fixed_position, float current_position);
+    void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA);
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
 
