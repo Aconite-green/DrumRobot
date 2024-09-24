@@ -97,8 +97,8 @@ void TestManager::SendTestProcess()
         }
         cout << "time : " << t << "s\n";
         cout << "delta t : " << canManager.deltaT << "s\n";
-        cout << "break start time : " << brake_start_time << "s\n";
-        cout << "break end time : " << brake_end_time << "s\n";
+        cout << "brake start time : " << brake_start_time << "s\n";
+        cout << "brake end time : " << brake_end_time << "s\n";
         cout << "spd : " << speed_test << "erpm\n";
         if (profile_flag)
         {
@@ -121,7 +121,7 @@ void TestManager::SendTestProcess()
             cout << "speed loop mode\n";
         }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BreakTime (13) / Delata t (14) / Save (15) / Profile (17) / Loop mode (18) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BrakeTime (13) / Delata t (14) / Save (15) / Profile (17) / Loop mode (18) / Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -163,10 +163,10 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 13)
         {
-            cout << "break start time (0~" << t << ") : ";
+            cout << "brake start time (0~" << t << ") : ";
             cin >> brake_start_time;
 
-            cout << "break end time (" << brake_start_time << "~" << t << ") : ";
+            cout << "brake end time (" << brake_start_time << "~" << t << ") : ";
             cin >> brake_end_time;
         }
         else if (userInput == 14)
