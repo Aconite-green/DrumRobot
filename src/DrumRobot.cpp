@@ -843,29 +843,28 @@ bool DrumRobot::processInput(const std::string &input)
     {
         if((input == "o") && !(state.home == HomeSub::Done))
         {
-
             for (auto &entry : motors)
+            {
+                entry.second->isHomed = true;
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
-                    entry.second->isHomed = true;
-                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                    if (entry.first == "R_arm1" || entry.first == "L_arm1")
                     {
-                        if (entry.first == "R_arm1" || entry.first == "L_arm1")
-                        {
-                            tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
-                        }
-                        else
-                        {
-                            tMotor->homeOffset = -(tMotor->currentPos);
-                        }
+                        tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
+                    }
+                    else
+                    {
+                        tMotor->homeOffset = -(tMotor->currentPos);
                     }
                 }
-                homingMaxonEnable();
-                homingSetMaxonMode("CSP");
+            }
+            homingMaxonEnable();
+            homingSetMaxonMode("CSP");
 
-                state.home = HomeSub::Done;
-                flag_setting("isBack");
+            state.home = HomeSub::Done;
+            flag_setting("isBack");
 
-                return true;
+            return true;
         }
         if (input == "h")
         {   
@@ -903,14 +902,16 @@ bool DrumRobot::processInput(const std::string &input)
             if (state.home != HomeSub::Done || isBack)
             {
                 state.main = Main::Shutdown;
+
+                return true;
             }
             else if (isHome)
             {
                 state.main = Main::AddStance;
                 getBack = true;
-            }
 
-            return true;
+                return true;
+            }
         }
         else if (input == "t" && state.home == HomeSub::Done)
         {
