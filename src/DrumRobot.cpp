@@ -713,6 +713,10 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
                 canManager.clearReadBuffers();
                 flag_setting("isReady");
             }
+            else if (getBack && isHome)
+            {
+                state.main = Main::Shutdown;
+            }
             else if (getBack)
             {
                 state.addstance = AddStanceSub::CheckCommand;
@@ -796,7 +800,7 @@ void DrumRobot::displayAvailableCommands() const
     {
         if (!(state.home == HomeSub::Done))
         {
-            std::cout << "- h : Start Homing\n";
+            std::cout << "- o : Offset setting\n";
             std::cout << "- s : Shut down the system\n";
             std::cout << "- c : Check Motors position\n";
         }
@@ -808,6 +812,7 @@ void DrumRobot::displayAvailableCommands() const
                 std::cout << "- b : Move to Back Position\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- c : Check Motors position\n";
+                std::cout << "- s : Shut down the system\n";
             }
             else if (isReady)
             {
@@ -836,11 +841,10 @@ bool DrumRobot::processInput(const std::string &input)
 {
     if (state.main == Main::Ideal)
     {
-        if (input == "h")
+        if((input == "o") && !(state.home == HomeSub::Done))
         {
-            if (!(state.home == HomeSub::Done))
-            {
-                for (auto &entry : motors)
+
+            for (auto &entry : motors)
                 {
                     entry.second->isHomed = true;
                     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
@@ -859,12 +863,13 @@ bool DrumRobot::processInput(const std::string &input)
                 homingSetMaxonMode("CSP");
 
                 state.home = HomeSub::Done;
-                state.main = Main::AddStance;
-                flag_setting("getHome");
+                flag_setting("isBack");
 
                 return true;
-            }
-            else if (isBack || isReady)
+        }
+        if (input == "h")
+        {   
+            if (isBack || isReady)
             {
                 state.main = Main::AddStance;
                 flag_setting("getHome");
@@ -898,6 +903,11 @@ bool DrumRobot::processInput(const std::string &input)
             if (state.home != HomeSub::Done || isBack)
             {
                 state.main = Main::Shutdown;
+            }
+            else if (isHome)
+            {
+                state.main = Main::AddStance;
+                getBack = true;
             }
 
             return true;
