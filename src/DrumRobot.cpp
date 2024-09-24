@@ -908,7 +908,7 @@ bool DrumRobot::processInput(const std::string &input)
             else if (isHome)
             {
                 state.main = Main::AddStance;
-                getBack = true;
+                getBack = true; // getBack, isHome 을 동시에 켜면 back pos 이동 후 종료
 
                 return true;
             }
