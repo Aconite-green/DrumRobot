@@ -189,7 +189,7 @@ void TestManager::SendTestProcess()
             {
                 profile_flag = false;
             }
-            else
+            else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
             {
                 profile_flag = true;
             }
@@ -266,8 +266,9 @@ void TestManager::SendTestProcess()
             cout << "q[" << i << "] : " << q[i] << "\n";
         }
         cout << "time : " << t << "s\n";
+        cout << "mode : " <<  getArr_test_mode << endl;
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / Exit (-1): ";
+        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) /  Exit (-1): ";
         cin >> userInput;
 
         if (userInput == -1)
@@ -1294,23 +1295,31 @@ void TestManager::GetArr_test(float arr[])
     getMotorPos(c_MotorAngle);
 
     int n = (int)(t/canManager.deltaT);    // t초동안 실행
-
-    // cal_Vmax(c_MotorAngle, arr, t);
     
     for (int k = 1; k <= n; ++k)
     {
-        // Maxon
+        // Maxon motor
         Qi = connect(c_MotorAngle, arr, k, n);
         q_setting.push_back(Qi);
 
-        if (profile_flag)
+        // Tmotor
+        if (getArr_test_mode == 0)
         {
             Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
         }
-        else
+        else if (getArr_test_mode == 1)
         {
-            Q_control_mode_test = sinProfile(c_MotorAngle, arr, t*k/n, t);
+            Q_control_mode_test = test_mode1(c_MotorAngle, arr, t*k/n, t);
         }
+        else if (getArr_test_mode == 2)
+        {
+            Q_control_mode_test = test_mode2(c_MotorAngle, arr, t*k/n, t);
+        }
+        else if (getArr_test_mode == 3)
+        {
+            Q_control_mode_test = test_mode3(c_MotorAngle, arr, t*k/n, t);
+        }
+        
 
         // Send to Buffer
         for (auto &entry : motors)
@@ -1350,6 +1359,51 @@ void TestManager::GetArr_test(float arr[])
             }
         }
     }
+}
+
+vector<float> TestManager::test_mode1(float Q1[], float Q2[], float k, float n)
+{
+    vector<float> Qi;
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val = 0;
+
+        Qi.push_back(val);
+
+    }
+
+    return Qi;
+}
+
+vector<float> TestManager::test_mode2(float Q1[], float Q2[], float k, float n)
+{
+    vector<float> Qi;
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val = 0;
+
+        Qi.push_back(val);
+
+    }
+
+    return Qi;
+}
+
+vector<float> TestManager::test_mode3(float Q1[], float Q2[], float k, float n)
+{
+    vector<float> Qi;
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val = 0;
+
+        Qi.push_back(val);
+
+    }
+
+    return Qi;
 }
 
 vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)

@@ -99,6 +99,12 @@ private:
     float brake_start_time = 2.0;
     float brake_end_time = 4.0;
     bool profile_flag = true;   // true : 사다리꼴, false : 정현파
+
+
+    vector<float> test_mode1(float Q1[], float Q2[], float k, float n);
+    vector<float> test_mode2(float Q1[], float Q2[], float k, float n);
+    vector<float> test_mode3(float Q1[], float Q2[], float k, float n);
+    int getArr_test_mode = 0;
    
     /* Single Test Code */
     string selectedMotor = "waist";
