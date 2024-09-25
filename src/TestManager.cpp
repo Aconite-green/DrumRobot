@@ -313,7 +313,19 @@ void TestManager::SendTestProcess()
             }
             else if (getArr_test_mode == 3)
             {
-                
+                float test_input = 0;
+                cout << "Enter a desired angle(deg) : ";
+                cin >> test_input; 
+                q[0] = test_input * 1.0 * M_PI / 180.0;
+                q[1] = 0.0 * M_PI / 180.0;
+                q[2] = 0.0 * M_PI / 180.0;
+                q[3] = 0.0 * M_PI / 180.0;
+                q[4] = 0.0 * M_PI / 180.0;
+                q[5] = 0.0 * M_PI / 180.0;
+                q[6] = 0.0 * M_PI / 180.0;
+                q[7] = 0.0 * M_PI / 180.0;
+                q[8] = 0.0 * M_PI / 180.0;
+
             }
 
             UnfixedMotor();      
@@ -1355,7 +1367,7 @@ void TestManager::GetArr_test(float arr[])
         }
         else if (getArr_test_mode == 3)
         {
-            Q_control_mode_test = test_mode3(c_MotorAngle, arr, t*k/n, t);
+            Q_control_mode_test = test_mode1(c_MotorAngle, arr, t*k/n, t);
         }
         
 
