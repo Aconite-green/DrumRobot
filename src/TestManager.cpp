@@ -298,8 +298,8 @@ void TestManager::SendTestProcess()
             else if (getArr_test_mode == 1)
             {
                 q[0] = 0.0 * M_PI / 180.0;
-                q[1] = 45.0 * M_PI / 180.0;
-                q[2] = 45.0 * M_PI / 180.0;
+                q[1] = 30.0 * M_PI / 180.0;
+                q[2] = 30.0 * M_PI / 180.0;
                 q[3] = 0.0 * M_PI / 180.0;
                 q[4] = 0.0 * M_PI / 180.0;
                 q[5] = 0.0 * M_PI / 180.0;
@@ -309,7 +309,15 @@ void TestManager::SendTestProcess()
             }
             else if (getArr_test_mode == 2)
             {
-                
+                q[0] = 0.0 * M_PI / 180.0;
+                q[1] = 30.0 * M_PI / 180.0;
+                q[2] = 30.0 * M_PI / 180.0;
+                q[3] = 30.0 * M_PI / 180.0;
+                q[4] = 0.0 * M_PI / 180.0;
+                q[5] = 30.0 * M_PI / 180.0;
+                q[6] = 0.0 * M_PI / 180.0;
+                q[7] = 0.0 * M_PI / 180.0;
+                q[8] = 0.0 * M_PI / 180.0;
             }
             else if (getArr_test_mode == 3)
             {
