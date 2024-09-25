@@ -1361,13 +1361,17 @@ void TestManager::GetArr_test(float arr[])
     }
 }
 
-vector<float> TestManager::test_mode1(float Q1[], float Q2[], float k, float n)
+vector<float> TestManager::test_mode1(float Q1[], float Q2[], float t, float t2)
 {
     vector<float> Qi;
 
     for (int i = 0; i < 9; i++)
     {
         float val = 0;
+
+        float w = 2.0*M_PI / t2;
+
+        val = Q2[i] * sin(w*t) + Q1[i];
 
         Qi.push_back(val);
 
