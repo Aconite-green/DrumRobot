@@ -106,7 +106,7 @@ void DrumRobot::stateMachine()
         case Main::Test:
         {
             bool isWriteError = false;
-            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest)
+            if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest || state.test == TestSub::SetSingleTuneParm)
             {
                 // usleep(5000);    // sleep_until()
                 if (!canManager.checkAllMotors_Fixed())
@@ -114,7 +114,7 @@ void DrumRobot::stateMachine()
                     isWriteError = true;
                 }
             }
-            else if (state.test == TestSub::SetSingleTuneParm || state.test == TestSub::SetServoTestParm)
+            else if (state.test == TestSub::SetServoTestParm)
             {
                 // usleep(500000);  // sleep_until()
             }
