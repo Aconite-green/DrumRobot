@@ -1568,7 +1568,9 @@ void PathManager::PathLoopTask()
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
 
             // 데이터 기록
-            // for (int m = 0; m < 9; m++)         << qk2_06 << "\n";
+            // for (int m = 0; m < 9; m++)
+            // {
+            //     std::string motor_ID = std::to_string(m);
             //     std::string file_name = "_desired_Path";
             //     canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
             // }
