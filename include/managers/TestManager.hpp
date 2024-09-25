@@ -67,7 +67,6 @@ private:
     float part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
     float s = 0.600;  ///< 허리 길이.
     float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
-    int cnt = 0;
 
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},

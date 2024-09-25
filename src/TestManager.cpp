@@ -17,7 +17,6 @@ void TestManager::SendTestProcess()
     {
     case TestSub::SelectParamByUser:
     {
-        cnt = 0;
         int ret = system("clear");
         if (ret == -1)
             std::cout << "system clear error" << endl;
@@ -257,38 +256,69 @@ void TestManager::SendTestProcess()
     {
         int userInput = 100;
         int ret = system("clear");
-
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values (Radian) ]\n";
+
+        float c_MotorAngle[9];
+        getMotorPos(c_MotorAngle);
+
+        std::cout << "[ Current Q Values (Radian) ]\n";
         for (int i = 0; i < 9; i++)
         {
-            cout << "q[" << i << "] : " << q[i] << "\n";
+            q[i] = c_MotorAngle[i];
+            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
         }
-        cout << "time : " << t << "s\n";
-        cout << "mode : " <<  getArr_test_mode << endl;
+        std::cout << "time : " << t << "s\n";
+        std::cout << "mode : " <<  getArr_test_mode << endl;
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) /  Exit (-1): ";
-        cin >> userInput;
+        std::cout << "\nRun : mode 0 (Move to Start Position) / mode 1 (R & L Move) / mode 2 (Circle Move) / mode 3 (Waist Move)";
+        std::cout << "\nCommand : Time (4) /  Exit (-1) : ";
+        std::cin >> userInput;
 
         if (userInput == -1)
         {
             state.test = TestSub::SelectParamByUser;
         }
-        else if (userInput < 9)
+        else if (userInput < 4)
         {
-            cout << "Enter q[" << userInput << "] Values (Radian) : ";
-            cin >> q[userInput];
-        }
-        else if (userInput == 9)
-        {
+            getArr_test_mode = userInput;
+
+            if (getArr_test_mode == 0)
+            {
+                q[0] = 0.0 * M_PI / 180.0;
+                q[1] = 90.0 * M_PI / 180.0;
+                q[2] = 90.0 * M_PI / 180.0;
+                q[3] = 30.0 * M_PI / 180.0;
+                q[4] = 90.0 * M_PI / 180.0;
+                q[5] = 30.0 * M_PI / 180.0;
+                q[6] = 90.0 * M_PI / 180.0;
+                q[7] = 90.0 * M_PI / 180.0;
+                q[8] = 90.0 * M_PI / 180.0;
+            }
+            else if (getArr_test_mode == 1)
+            {
+
+            }
+            else if (getArr_test_mode == 2)
+            {
+                
+            }
+            else if (getArr_test_mode == 3)
+            {
+                
+            }
+
             UnfixedMotor();      
             state.test = TestSub::FillBuf;
         }
-        else if (userInput == 10)
+        else if (userInput == 4)
         {
-            cout << "time : ";
-            cin >> t;
+            std::cout << "time : ";
+            std::cin >> t;
+        }
+        else
+        {
+            std::cout << "Invalid command!\n";
         }
         
         
