@@ -252,7 +252,7 @@ void TestManager::SendTestProcess()
         }
         break;
     }
-    case TestSub::SetSingleTuneParm:
+    case TestSub::SetSingleTuneParm:    // 정해진 동작 테스트
     {
         int userInput = 100;
         int ret = system("clear");
@@ -297,7 +297,15 @@ void TestManager::SendTestProcess()
             }
             else if (getArr_test_mode == 1)
             {
-
+                q[0] = 0.0 * M_PI / 180.0;
+                q[1] = 45.0 * M_PI / 180.0;
+                q[2] = 45.0 * M_PI / 180.0;
+                q[3] = 0.0 * M_PI / 180.0;
+                q[4] = 0.0 * M_PI / 180.0;
+                q[5] = 0.0 * M_PI / 180.0;
+                q[6] = 0.0 * M_PI / 180.0;
+                q[7] = 0.0 * M_PI / 180.0;
+                q[8] = 0.0 * M_PI / 180.0;
             }
             else if (getArr_test_mode == 2)
             {
