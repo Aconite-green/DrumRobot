@@ -1569,17 +1569,6 @@ void PathManager::PathLoopTask()
 
             // 데이터 기록
             // for (int m = 0; m < 9; m++)         << qk2_06 << "\n";
-
-    // Timing Belt
-    for (auto &entry : motors)
-    {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        {
-            qk1_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
-            qk2_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
-            qk3_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
-        }
-    }
             //     std::string file_name = "_desired_Path";
             //     canManager.appendToCSV_CM(motor_ID + file_name, t_step + p1(0), qt(m));
             // }

@@ -822,7 +822,7 @@ bool CanManager::setCANFrame()
                 float diff_angle = tData.position - tMotor->currentPos;
                 if (abs(diff_angle) > POS_DIFF_LIMIT)
                 {
-                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n";
+                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n" << tData.position << tMotor->currentPos << endl;
                     return false;
                 }
                 tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
