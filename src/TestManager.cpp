@@ -1424,7 +1424,22 @@ vector<float> TestManager::test_mode2(float Q1[], float Q2[], float k, float n)
 
     for (int i = 0; i < 9; i++)
     {
-        float val = 0;
+        float val;
+
+        if (i == 0 || i == 4 || i == 6 || i == 7 || i == 8)
+        {
+            val = Q1[i];
+        }
+        else if (i == 1 || i == 2)
+        {
+            float w = 2.0*M_PI / n;
+            val = Q2[i] * sin(w*k) + Q1[i];
+        }
+        else if (i == 3 || i == 5)
+        {
+            float w = 2.0*M_PI / n;
+            val = -0.5 * Q2[i] * cos(w*k) + Q1[i] + 0.5 * Q2[i];
+        }
 
         Qi.push_back(val);
 
