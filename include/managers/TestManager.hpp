@@ -87,17 +87,18 @@ private:
     /*Value Test Code*/
     void getMotorPos(float c_MotorAngle[]);
     vector<float> connect(float Q1[], float Q2[], int k, int n);
-    vector<float> makeProfile(float Q1[], float Q2[], float k, float n);
-    vector<float> cal_Vmax(float q0[], float q1[], float t1);
+    vector<float> makeProfile(float Q1[], float Q2[], vector<float> &Vmax, float acc, float t, float t2);
+    vector<float> cal_Vmax(float q1[], float q2[],  float acc, float t2);
     vector<float> sinProfile(float q1[], float q2[], float t, float t2);
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     void GetArr_test(float arr[]);
-    float speed_test = 1000;
+    
+    bool brake_flag = false;
     float brake_start_time = 2.0;
     float brake_end_time = 4.0;
-    bool profile_flag = true;   // true : 사다리꼴, false : 정현파
+    bool return_flag = false;
 
 
     vector<float> test_mode1(float Q1[], float Q2[], float k, float n);

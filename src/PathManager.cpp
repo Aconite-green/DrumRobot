@@ -80,7 +80,7 @@ VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
     for (int i = 0; i < 7; i++)
     {
         float val;
-        float S = q2[i] - q1[i];
+        float S = q2(i) - q1(i);
 
         // 이동거리 양수로 변경
         if (S < 0)
@@ -137,7 +137,7 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
         float val, S;
         int sign;
 
-        S = q2[i] - q1[i];
+        S = q2(i) - q1(i);
         
         // 부호 확인
         if (S < 0)
@@ -157,45 +157,45 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
             // 정지
             val = q1(i);
         }
-        else if (Vmax[i] < 0)
+        else if (Vmax(i) < 0)
         {
             // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
             float acc_tri = 4 * S / t2 / t2;
 
             if (t < t2/2)
             {
-                val = q1[i] + sign * 0.5 * acc_tri * t * t;
+                val = q1(i) + sign * 0.5 * acc_tri * t * t;
             }
             else if (t < t2)
             {
-                val = q2[i] - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
+                val = q2(i) - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
             }
             else
             {
-                val = q2[i];
+                val = q2(i);
             }
         }
         else
         {
             // 사다리꼴 프로파일
-            if (t < Vmax[i] / acc)
+            if (t < Vmax(i) / acc)
             {
                 // 가속
-                val = q1[i] + sign * 0.5 * acc * t * t;
+                val = q1(i) + sign * 0.5 * acc * t * t;
             }
-            else if (t < S / Vmax[i])
+            else if (t < S / Vmax(i))
             {
                 // 등속
-                val = q1[i] + (sign * 0.5 * Vmax[i] * Vmax[i] / acc) + (sign * Vmax[i] * (t - Vmax[i] / acc));          
+                val = q1(i) + (sign * 0.5 * Vmax(i) * Vmax(i) / acc) + (sign * Vmax(i) * (t - Vmax(i) / acc));          
             }
-            else if (t < Vmax[i] / acc + S / Vmax[i])
+            else if (t < Vmax(i) / acc + S / Vmax(i))
             {
                 // 감속
-                val = q2[i] - sign * 0.5 * acc * (S / Vmax[i] + Vmax[i] / acc - t) * (S / Vmax[i] + Vmax[i] / acc - t);              
+                val = q2(i) - sign * 0.5 * acc * (S / Vmax(i) + Vmax(i) / acc - t) * (S / Vmax(i) + Vmax(i) / acc - t);              
             }
             else 
             {
-                val = q2[i];              
+                val = q2(i);              
             }
         }
 
@@ -1578,148 +1578,21 @@ void PathManager::PathLoopTask()
     }
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////
 /*                           AddStance FUNCTION                               */
 ///////////////////////////////////////////////////////////////////////////////
 
-vector<float> PathManager::cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2)
-{
-    vector<float> Vmax;
-
-    for (long unsigned int i = 0; i < q1.size(); i++)
-    {
-        float val;
-        float S = q2[i] - q1[i];
-
-        // 이동거리 양수로 변경
-        if (S < 0)
-        {
-            S = -1 * S;
-        }
-
-        if (S > t2*t2*acc/4)
-        {
-            // 가속도로 도달 불가능
-            // -1 반환
-            val = -1;
-        }
-        else
-        {
-            // 2차 방정식 계수
-            float A = 1/acc;
-            float B = -1*t2;
-            float C = S;
-
-            float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
-            float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
-
-            if (sol1 >= 0 && sol1 <= acc*t2/2)
-            {
-                val = sol1;
-            }
-            else if (sol2 >= 0 && sol2 <= acc*t2/2)
-            {
-                val = sol2;
-            }
-            else
-            {
-                // 해가 범위 안에 없음
-                // -2 반환
-                val = -2;
-            }
-        }
-
-        Vmax.push_back(val);
-
-        cout << "Vmax_" << i << " : " << val << "rad/s\n";
-    }
-
-    return Vmax;
-}
-
-vector<float> PathManager::makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2)
-{
-    vector<float> Qi;
-
-    for(long unsigned int i = 0; i < q1.size(); i++)
-    {
-        float val, S;
-        int sign;
-
-        S = q2[i] - q1[i];
-        
-        // 부호 확인
-        if (S < 0)
-        {
-            S = -1 * S;
-            sign = -1;
-        }
-        else
-        {
-            sign = 1;
-        }
-
-
-        // 궤적 생성
-        if (S == 0)
-        {
-            // 정지
-            val = q1[i];
-        }
-        else if (Vmax[i] < 0)
-        {
-            // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
-            float acc_tri = 4 * S / t2 / t2;
-
-            if (t < t2/2)
-            {
-                val = q1[i] + sign * 0.5 * acc_tri * t * t;
-            }
-            else if (t < t2)
-            {
-                val = q2[i] - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
-            }
-            else
-            {
-                val = q2[i];
-            }
-        }
-        else
-        {
-            // 사다리꼴 프로파일
-            if (t < Vmax[i] / acc)
-            {
-                // 가속
-                val = q1[i] + sign * 0.5 * acc * t * t;
-            }
-            else if (t < S / Vmax[i])
-            {
-                // 등속
-                val = q1[i] + (sign * 0.5 * Vmax[i] * Vmax[i] / acc) + (sign * Vmax[i] * (t - Vmax[i] / acc));          
-            }
-            else if (t < Vmax[i] / acc + S / Vmax[i])
-            {
-                // 감속
-                val = q2[i] - sign * 0.5 * acc * (S / Vmax[i] + Vmax[i] / acc - t) * (S / Vmax[i] + Vmax[i] / acc - t);              
-            }
-            else 
-            {
-                val = q2[i];              
-            }
-        }
-
-        Qi.push_back(val);
-    }
-
-    return Qi;
-}
-
 void PathManager::GetArr(vector<float> &arr)
 {
     const float acc_max = 100.0;    // rad/s^2
-    vector<float> Qi;
-    vector<float> Vmax;
-
+    //vector<float> Qi;
+    //vector<float> Vmax;
+    VectorXd Q1 = VectorXd::Zero(9);
+    VectorXd Q2 = VectorXd::Zero(9);
+    VectorXd Qi = VectorXd::Zero(9);
+    VectorXd Vmax = VectorXd::Zero(7);
+    
     cout << "Get Array...\n";
     for (int k = 0; k < 9; k++)
     {
@@ -1741,12 +1614,18 @@ void PathManager::GetArr(vector<float> &arr)
     float t = 4.0; // 4초동안 실행
     int n = (int)(t / dt);
 
-    Vmax = cal_Vmax_add(c_MotorAngle, arr, acc_max, t);
+    for (int i = 0; i < 9; i++)
+    {
+        Q1(i) = c_MotorAngle[i];
+        Q2(i) = arr[i];
+    }
+
+    Vmax = cal_Vmax(Q1, Q2, acc_max, t);
 
     for (int k = 1; k <= n; ++k)
     {
         // Make Array
-        Qi = makeProfile_add(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+        Qi = makeProfile(Q1, Q2, Vmax, acc_max, t*k/n, t);
 
         // Send to Buffer
         for (auto &entry : motors)
@@ -1779,3 +1658,120 @@ void PathManager::GetArr(vector<float> &arr)
         }
     }
 }
+
+// vector<float> PathManager::cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2)
+// {
+//     vector<float> Vmax;
+//     for (long unsigned int i = 0; i < q1.size(); i++)
+//     {
+//         float val;
+//         float S = q2[i] - q1[i];
+//         // 이동거리 양수로 변경
+//         if (S < 0)
+//         {
+//             S = -1 * S;
+//         }
+//         if (S > t2*t2*acc/4)
+//         {
+//             // 가속도로 도달 불가능
+//             // -1 반환
+//             val = -1;
+//         }
+//         else
+//         {
+//             // 2차 방정식 계수
+//             float A = 1/acc;
+//             float B = -1*t2;
+//             float C = S;
+//             float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
+//             float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
+//             if (sol1 >= 0 && sol1 <= acc*t2/2)
+//             {
+//                 val = sol1;
+//             }
+//             else if (sol2 >= 0 && sol2 <= acc*t2/2)
+//             {
+//                 val = sol2;
+//             }
+//             else
+//             {
+//                 // 해가 범위 안에 없음
+//                 // -2 반환
+//                 val = -2;
+//             }
+//         }
+//         Vmax.push_back(val);
+//         cout << "Vmax_" << i << " : " << val << "rad/s\n";
+//     }
+//     return Vmax;
+// }
+
+// vector<float> PathManager::makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2)
+// {
+//     vector<float> Qi;
+//     for(long unsigned int i = 0; i < q1.size(); i++)
+//     {
+//         float val, S;
+//         int sign;
+//         S = q2[i] - q1[i];   
+//         // 부호 확인
+//         if (S < 0)
+//         {
+//             S = -1 * S;
+//             sign = -1;
+//         }
+//         else
+//         {
+//             sign = 1;
+//         }
+//         // 궤적 생성
+//         if (S == 0)
+//         {
+//             // 정지
+//             val = q1[i];
+//         }
+//         else if (Vmax[i] < 0)
+//         {
+//             // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
+//             float acc_tri = 4 * S / t2 / t2;
+//             if (t < t2/2)
+//             {
+//                 val = q1[i] + sign * 0.5 * acc_tri * t * t;
+//             }
+//             else if (t < t2)
+//             {
+//                 val = q2[i] - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
+//             }
+//             else
+//             {
+//                 val = q2[i];
+//             }
+//         }
+//         else
+//         {
+//             // 사다리꼴 프로파일
+//             if (t < Vmax[i] / acc)
+//             {
+//                 // 가속
+//                 val = q1[i] + sign * 0.5 * acc * t * t;
+//             }
+//             else if (t < S / Vmax[i])
+//             {
+//                 // 등속
+//                 val = q1[i] + (sign * 0.5 * Vmax[i] * Vmax[i] / acc) + (sign * Vmax[i] * (t - Vmax[i] / acc));          
+//             }
+//             else if (t < Vmax[i] / acc + S / Vmax[i])
+//             {
+//                 // 감속
+//                 val = q2[i] - sign * 0.5 * acc * (S / Vmax[i] + Vmax[i] / acc - t) * (S / Vmax[i] + Vmax[i] / acc - t);              
+//             }
+//             else 
+//             {
+//                 val = q2[i];              
+//             }
+//         }
+//         Qi.push_back(val);
+//     }
+//     return Qi;
+// }
+

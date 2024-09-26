@@ -49,6 +49,7 @@ public:
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},
         {"AK70_10", 10},
+        {"AK10_9", 9}
     };
     int PolePairs = 21;
 
