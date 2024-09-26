@@ -1043,7 +1043,7 @@ int DrumRobot::kbhit()
 
 void DrumRobot::initializeMotors()
 {
-    motors["waist"] = make_shared<TMotor>(0x00, "AK80_64");
+    motors["waist"] = make_shared<TMotor>(0x00, "AK10_9");
     motors["R_arm1"] = make_shared<TMotor>(0x01, "AK70_10");
     motors["L_arm1"] = make_shared<TMotor>(0x02, "AK70_10");
     motors["R_arm2"] = make_shared<TMotor>(0x03, "AK70_10");
@@ -1698,22 +1698,22 @@ void DrumRobot::homingSetMaxonMode(std::string targetMode)
         std::shared_ptr<GenericMotor> motor = motorPair.second;
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motorPair.second))
         {
-            if (targetMode == "CSV")
+            if (targetMode == "CSV")    // Cyclic Sync Velocity Mode
             {
                 maxoncmd.getCSVMode(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if (targetMode == "CST")
+            else if (targetMode == "CST")   // Cyclic Sync Torque Mode
             {
                 maxoncmd.getCSTMode(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if (targetMode == "HMM")
+            else if (targetMode == "HMM")   // Homming Mode
             {
                 maxoncmd.getHomeMode(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
             }
-            else if (targetMode == "CSP")
+            else if (targetMode == "CSP")   // Cyclic Sync Position Mode
             {
                 maxoncmd.getCSPMode(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);

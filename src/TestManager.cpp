@@ -24,7 +24,7 @@ void TestManager::SendTestProcess()
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
-        std::cout << "[ Current Q Values (Ladian) ]\n";
+        std::cout << "[ Current Q Values (Radian) ]\n";
         for (int i = 0; i < 9; i++)
         {
             q[i] = c_MotorAngle[i];
@@ -87,42 +87,46 @@ void TestManager::SendTestProcess()
     {
         int userInput = 100;
         int ret = system("clear");
-
         if (ret == -1)
             std::cout << "system clear error" << endl;
-        cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
+
+        float c_MotorAngle[9];
+        getMotorPos(c_MotorAngle);
+
+        if (return_flag)
         {
-            cout << "q[" << i << "] : " << q[i] << "\n";
-        }
-        cout << "time : " << t << "s\n";
-        cout << "delta t : " << canManager.deltaT << "s\n";
-        cout << "brake start time : " << brake_start_time << "s\n";
-        cout << "brake end time : " << brake_end_time << "s\n";
-        cout << "spd : " << speed_test << "erpm\n";
-        if (profile_flag)
-        {
-            cout << "make profile\n";
+            std::cout << "Mode : Go to target point and return\n";
         }
         else
         {
-            cout << "sin profile\n";
+            std::cout << "Mode : Go to target point\n";
         }
-        if (canManager.tMotor_control_mode == POS_LOOP)
+        std::cout << "\n[ Current Q Values ] [ Target Q Values ] (Radian)\n";
+        for (int i = 0; i < 9; i++)
         {
-            cout << "position loop mode\n";
-        }
-        else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-        {
-            cout << "position speed loop mode\n";
-        }
-        else if (canManager.tMotor_control_mode == SPD_LOOP)
-        {
-            cout << "speed loop mode\n";
+            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t ";
+            if(return_flag)
+            {
+                std::cout << "<";
+            }
+            std::cout << "-> \t" << q[i] << "\n";
         }
 
-        cout << "\nSelect Motor to Change Value (0-8) / Start Test (9) / Time (10) / q 확인 (11) / Speed (12) / BrakeTime (13) / Delata t (14) / Save (15) / Profile (17) / Loop mode (18) / Exit (-1): ";
-        cin >> userInput;
+        std::cout << "\ntime : " << t << "s\n";
+
+        if (brake_flag)
+        {
+            std::cout << "brake on\n";
+            std::cout << "brake start time : " << brake_start_time << "s\n";
+            std::cout << "brake end time : " << brake_end_time << "s\n";
+        }
+        else
+        {
+            std::cout << "brake off\n";
+        }
+        
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Brake (11) / Mode (12) / Exit (-1): ";
+        std::cin >> userInput;
 
         if (userInput == -1)
         {
@@ -130,8 +134,8 @@ void TestManager::SendTestProcess()
         }
         else if (userInput < 9)
         {
-            cout << "Enter q[" << userInput << "] Values (Radian) : ";
-            cin >> q[userInput];
+            std::cout << "Enter q[" << userInput << "] Values (Radian) : ";
+            std::cin >> q[userInput];
         }
         else if (userInput == 9)
         {
@@ -140,72 +144,39 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 10)
         {
-            cout << "time : ";
-            cin >> t;
+            std::cout << "time : ";
+            std::cin >> t;
         }
         else if (userInput == 11)
         {
-            float c_MotorAngle[9];
-            getMotorPos(c_MotorAngle);
+            int input_brake;
+            std::cout << "brake : ON(1) / OFF(0) : ";
+            std::cin >> input_brake;
 
-            cout << "[ Current Q Values (Ladian) ]\n";
-            for (int i = 0; i < 9; i++)
+            if (input_brake == 0)
             {
-                
-                cout << "Q[" << i << "] : " << q[i] << "\t " << "C_M[" << i << "] : " << c_MotorAngle[i] << "\n";
+                brake_flag = false;
             }
-            cin >> userInput;
+            else
+            {
+                brake_flag = true;
+
+                std::cout << "brake start time (0~" << t << ") : ";
+                std::cin >> brake_start_time;
+
+                std::cout << "brake end time (" << brake_start_time << "~" << t << ") : ";
+                std::cin >> brake_end_time;
+            }
         }
         else if (userInput == 12)
         {
-            cout << "speed (0~32767) : ";
-            cin >> speed_test;
-        }
-        else if (userInput == 13)
-        {
-            cout << "brake start time (0~" << t << ") : ";
-            cin >> brake_start_time;
-
-            cout << "brake end time (" << brake_start_time << "~" << t << ") : ";
-            cin >> brake_end_time;
-        }
-        else if (userInput == 14)
-        {
-            cout << "delta t : ";
-            cin >> canManager.deltaT;
-        }
-        else if (userInput == 15)
-        {
-            std::ostringstream fileNameOut;
-            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/Test_Qvalue";
-            std::string fileName = fileNameOut.str();
-            parse_and_save_to_csv(fileName);
-        }
-        else if (userInput == 17)
-        {
-            if (profile_flag)
+            if (return_flag)
             {
-                profile_flag = false;
+                return_flag = false;
             }
             else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
             {
-                profile_flag = true;
-            }
-        }
-        else if (userInput == 18)
-        {
-            if (canManager.tMotor_control_mode == POS_LOOP)
-            {
-                canManager.tMotor_control_mode = POS_SPD_LOOP;
-            }
-            else if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-            {
-                canManager.tMotor_control_mode = SPD_LOOP;
-            }
-            else if (canManager.tMotor_control_mode == SPD_LOOP)
-            {
-                canManager.tMotor_control_mode = POS_LOOP;
+                return_flag = true;
             }
         }
         
@@ -299,7 +270,7 @@ void TestManager::SendTestProcess()
             {
                 q[0] = 0.0 * M_PI / 180.0;
                 q[1] = 30.0 * M_PI / 180.0;
-                q[2] = 30.0 * M_PI / 180.0;
+                q[2] = -1 * 30.0 * M_PI / 180.0;
                 q[3] = 0.0 * M_PI / 180.0;
                 q[4] = 0.0 * M_PI / 180.0;
                 q[5] = 0.0 * M_PI / 180.0;
@@ -311,7 +282,7 @@ void TestManager::SendTestProcess()
             {
                 q[0] = 0.0 * M_PI / 180.0;
                 q[1] = 30.0 * M_PI / 180.0;
-                q[2] = 30.0 * M_PI / 180.0;
+                q[2] = -1 * 30.0 * M_PI / 180.0;
                 q[3] = 30.0 * M_PI / 180.0;
                 q[4] = 0.0 * M_PI / 180.0;
                 q[5] = 30.0 * M_PI / 180.0;
@@ -1061,78 +1032,66 @@ vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
     return Qi;
 }
 
-vector<float> TestManager::cal_Vmax(float q0[], float q1[], float t1)
+vector<float> TestManager::cal_Vmax(float q1[], float q2[],  float acc, float t2)
 {
     vector<float> Vmax;
-    const float acc = 100.0;    // rad/s^2
 
-    for (int i = 0; i < 9; i++)
+    for (long unsigned int i = 0; i < 7; i++)
     {
         float val;
-        float S = q1[i] - q0[i];
+        float S = q2[i] - q1[i];
 
-
-        cout << i << "번쨰 q0 : " << q0[i] << "rad, q1 : " << q1[i] << "rad\n";
-        cout << "S : " << S << "rad, t1 : " << t1 << "s\n";
-
-        // 부호 확인
+        // 이동거리 양수로 변경
         if (S < 0)
         {
             S = -1 * S;
         }
 
-        if (S > t1*t1*acc/4)
+        if (S > t2*t2*acc/4)
         {
-            // 최대가속도로 도달 불가능
+            // 가속도로 도달 불가능
             // -1 반환
             val = -1;
         }
         else
         {
+            // 2차 방정식 계수
             float A = 1/acc;
-            float B = -1*t1;
+            float B = -1*t2;
             float C = S;
-
             float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
             float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
-
-            if (sol1 >= 0 && sol1 <= acc*t1/2)
+            if (sol1 >= 0 && sol1 <= acc*t2/2)
             {
                 val = sol1;
             }
-            else if (sol2 >= 0 && sol2 <= acc*t1/2)
+            else if (sol2 >= 0 && sol2 <= acc*t2/2)
             {
                 val = sol2;
             }
             else
             {
+                // 해가 범위 안에 없음
+                // -2 반환
                 val = -2;
             }
         }
-
         Vmax.push_back(val);
-
         cout << "Vmax_" << i << " : " << val << "rad/s\n";
     }
 
     return Vmax;
 }
 
-vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
+vector<float> TestManager::makeProfile(float q1[], float q2[], vector<float> &Vmax, float acc, float t, float t2)
 {
     vector<float> Qi;
-    float acceleration = 100; //320000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2 
-    int sign;
-    float Vmax = 0;
-    float S;
-    static int loop_count =0;
-
-    for (int i = 0; i < 9; i++)
+    for(long unsigned int i = 0; i < 9; i++)
     {
-        float val;
-
-        S = Q2[i] - Q1[i];
-
+        float val, S;
+        int sign;
+        S = q2[i] - q1[i];   
+        // 부호 확인
         if (S < 0)
         {
             S = -1 * S;
@@ -1142,99 +1101,171 @@ vector<float> TestManager::makeProfile(float Q1[], float Q2[], float k, float n)
         {
             sign = 1;
         }
-        // 2차 방정식의 계수들
-        float a = 1.0 / acceleration;
-        float b = -n;
-        float c = S;
-        float discriminant = (b * b) - (4 * a * c);
-
-        if (discriminant < 0)
-        {
-            // if(i ==4)
-            // {
-            // std::cout << "No real solution for Vmax." << std::endl;
-            // sleep(1);
-            // }
-            val = -1;   //Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
-            Qi.push_back(val);
-            continue;
-        }
-        else
-        {
-            // 2차 방정식의 해 구하기
-            float Vmax1 = (-b + std::sqrt(discriminant)) / (2 * a);
-            float Vmax2 = (-b - std::sqrt(discriminant)) / (2 * a);
-            
-            // 두 해 중 양수인 해 선택
-            if (Vmax1 > 0 && Vmax1 < 0.5*n*acceleration)
-            {
-                Vmax = Vmax1;
-
-            }
-            else if (Vmax2 > 0 && Vmax2 < 0.5*n*acceleration)
-            {
-                Vmax = Vmax2;
-
-            }
-            else
-            {
-                //std::cout << "No real solution for Vmax." << std::endl;
-                Qi.push_back(Q1[i]); // 실수 해가 없을 경우
-                continue;
-            }
-            //std::cout << "Calculated Vmax: " << Vmax << std::endl;
-        }
-
+        // 궤적 생성
         if (S == 0)
         {
             // 정지
-            val = Q1[i];
+            val = q1[i];
         }
-        else// if ((Vmax * Vmax / acceleration) < S)
+        else if (Vmax[i] < 0)
         {
-            // 가속
-            if (k < Vmax / acceleration)
+            // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
+            float acc_tri = 4 * S / t2 / t2;
+            if (t < t2/2)
             {
-                val = Q1[i] + sign * 0.5 * acceleration * k * k;
-                // if(i==4)
-                // {
-                // std::cout <<"가속 : " <<val<< std::endl;
-                // }
+                val = q1[i] + sign * 0.5 * acc_tri * t * t;
             }
-            // 등속
-            else if (k < S / Vmax)
+            else if (t < t2)
             {
-                val = Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration)); 
-            //    if(i==4)
-            //     {
-            //     std::cout <<"등속 : " <<val<< std::endl;
-            //     }            
+                val = q2[i] - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
             }
-            // 감속
-            else if (k < Vmax / acceleration + S / Vmax)
+            else
             {
-                val = Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k);
-                // if(i ==4)
-                // {
-                // std::cout <<"감속 : " <<val<< std::endl;
-                // }               
-            }           
+                val = q2[i];
+            }
+        }
+        else
+        {
+            // 사다리꼴 프로파일
+            if (t < Vmax[i] / acc)
+            {
+                // 가속
+                val = q1[i] + sign * 0.5 * acc * t * t;
+            }
+            else if (t < S / Vmax[i])
+            {
+                // 등속
+                val = q1[i] + (sign * 0.5 * Vmax[i] * Vmax[i] / acc) + (sign * Vmax[i] * (t - Vmax[i] / acc));          
+            }
+            else if (t < Vmax[i] / acc + S / Vmax[i])
+            {
+                // 감속
+                val = q2[i] - sign * 0.5 * acc * (S / Vmax[i] + Vmax[i] / acc - t) * (S / Vmax[i] + Vmax[i] / acc - t);              
+            }
             else 
             {
-                val = Q2[i];
-                // if(i ==4)                
-                // {
-                // std::cout <<"else : " <<val<< std::endl;
-                // }                   
+                val = q2[i];              
             }
         }
-
         Qi.push_back(val);
-
     }
-    loop_count ++;
-    // cout << " Qi[3] : "<< Qi[3] << " Qi[4] : "<< Qi[4] <<endl;
     return Qi;
+
+    // vector<float> Qi;
+    // float acceleration = 100; //320000 / 21 / 10 * 2 * M_PI / 60;  // rad/s^2 
+    // int sign;
+    // float Vmax = 0;
+    // float S;
+    // static int loop_count =0;
+
+    // for (int i = 0; i < 9; i++)
+    // {
+    //     float val;
+
+    //     S = Q2[i] - Q1[i];
+
+    //     if (S < 0)
+    //     {
+    //         S = -1 * S;
+    //         sign = -1;
+    //     }
+    //     else
+    //     {
+    //         sign = 1;
+    //     }
+    //     // 2차 방정식의 계수들
+    //     float a = 1.0 / acceleration;
+    //     float b = -n;
+    //     float c = S;
+    //     float discriminant = (b * b) - (4 * a * c);
+
+    //     if (discriminant < 0)
+    //     {
+    //         // if(i ==4)
+    //         // {
+    //         // std::cout << "No real solution for Vmax." << std::endl;
+    //         // sleep(1);
+    //         // }
+    //         val = -1;   //Qi.push_back(-1); // 실수 해가 없을 경우 -1 추가
+    //         Qi.push_back(val);
+    //         continue;
+    //     }
+    //     else
+    //     {
+    //         // 2차 방정식의 해 구하기
+    //         float Vmax1 = (-b + std::sqrt(discriminant)) / (2 * a);
+    //         float Vmax2 = (-b - std::sqrt(discriminant)) / (2 * a);
+            
+    //         // 두 해 중 양수인 해 선택
+    //         if (Vmax1 > 0 && Vmax1 < 0.5*n*acceleration)
+    //         {
+    //             Vmax = Vmax1;
+
+    //         }
+    //         else if (Vmax2 > 0 && Vmax2 < 0.5*n*acceleration)
+    //         {
+    //             Vmax = Vmax2;
+
+    //         }
+    //         else
+    //         {
+    //             //std::cout << "No real solution for Vmax." << std::endl;
+    //             Qi.push_back(Q1[i]); // 실수 해가 없을 경우
+    //             continue;
+    //         }
+    //         //std::cout << "Calculated Vmax: " << Vmax << std::endl;
+    //     }
+
+    //     if (S == 0)
+    //     {
+    //         // 정지
+    //         val = Q1[i];
+    //     }
+    //     else// if ((Vmax * Vmax / acceleration) < S)
+    //     {
+    //         // 가속
+    //         if (k < Vmax / acceleration)
+    //         {
+    //             val = Q1[i] + sign * 0.5 * acceleration * k * k;
+    //             // if(i==4)
+    //             // {
+    //             // std::cout <<"가속 : " <<val<< std::endl;
+    //             // }
+    //         }
+    //         // 등속
+    //         else if (k < S / Vmax)
+    //         {
+    //             val = Q1[i] + (sign * 0.5 * Vmax * Vmax / acceleration) + (sign * Vmax * (k - Vmax / acceleration)); 
+    //         //    if(i==4)
+    //         //     {
+    //         //     std::cout <<"등속 : " <<val<< std::endl;
+    //         //     }            
+    //         }
+    //         // 감속
+    //         else if (k < Vmax / acceleration + S / Vmax)
+    //         {
+    //             val = Q2[i] - sign * 0.5 * acceleration * (S / Vmax + Vmax / acceleration - k) * (S / Vmax + Vmax / acceleration - k);
+    //             // if(i ==4)
+    //             // {
+    //             // std::cout <<"감속 : " <<val<< std::endl;
+    //             // }               
+    //         }           
+    //         else 
+    //         {
+    //             val = Q2[i];
+    //             // if(i ==4)                
+    //             // {
+    //             // std::cout <<"else : " <<val<< std::endl;
+    //             // }                   
+    //         }
+    //     }
+
+    //     Qi.push_back(val);
+
+    // }
+    // loop_count ++;
+    // // cout << " Qi[3] : "<< Qi[3] << " Qi[4] : "<< Qi[4] <<endl;
+    // return Qi;
 }
 
 vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
@@ -1258,35 +1289,56 @@ vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
 
 void TestManager::GetArr(float arr[])
 {
-
-    cout << "Get Array...\n";
-
+    const float acc_max = 100.0;    // rad/s^2
     vector<float> Qi;
-    vector<vector<float>> q_setting;
+    vector<float> Vmax;
     float c_MotorAngle[9];
-    vector<float> Q_control_mode_test;
+    int n;
+    int n_brake_start = 0;
+    int n_brake_end = 0;
+
+    std::cout << "Get Array...\n";
 
     getMotorPos(c_MotorAngle);
 
-    int n = (int)(t/canManager.deltaT);    // t초동안 실행
-    int n_brake = (int)(brake_start_time/canManager.deltaT);
-    int n_brake_end = (int)(brake_end_time/canManager.deltaT);
+    // Timing Belt
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            arr[motor_mapping[entry.first]] /= tMotor->timingBelt_ratio;
+        }
+    }
 
-    // cal_Vmax(c_MotorAngle, arr, t);
+    if (return_flag)
+    {
+        n = (int)(0.5*t/canManager.deltaT);    // t초동안 왕복
+        Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, 0.5*t);
+    }
+    else
+    {
+        n = (int)(t/canManager.deltaT);    // t초동안 이동
+        Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+    }
+
+    if (brake_flag)
+    {
+        n_brake_start = (int)(brake_start_time/canManager.deltaT);
+        n_brake_end = (int)(brake_end_time/canManager.deltaT);
+    }
+
+    
     
     for (int k = 1; k <= n; ++k)
     {
-        // Make GetBack Array
-        Qi = connect(c_MotorAngle, arr, k, n);
-        q_setting.push_back(Qi);
-
-        if (profile_flag)
+        // Make Array
+        if (return_flag)
         {
-            Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+            Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
         }
         else
         {
-            Q_control_mode_test = sinProfile(c_MotorAngle, arr, t*k/n, t);
+            Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
         }
 
         // Send to Buffer
@@ -1299,24 +1351,24 @@ void TestManager::GetArr(float arr[])
                 if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
                     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = speed_test;
-                    newData.acl = 32767;
+                    newData.spd = tMotor->spd;
+                    newData.acl = tMotor->acl;
                 }
                 else if (canManager.tMotor_control_mode == POS_LOOP)
                 {
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                     newData.spd = tMotor->spd;
                     newData.acl = tMotor->acl;
                 }
                 else if (canManager.tMotor_control_mode == SPD_LOOP)
                 {
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = speed_test;
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                    newData.spd = tMotor->spd;
                     newData.acl = tMotor->acl;
                 }
 
                 
-                if (k < n_brake)
+                if (k < n_brake_start)
                 {
                     newData.isBrake = false;
                 }
@@ -1336,6 +1388,67 @@ void TestManager::GetArr(float arr[])
                 newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+
+    if (return_flag)
+    {
+        Vmax = cal_Vmax(arr, c_MotorAngle, acc_max, 0.5*t);
+    
+        for (int k = 1; k <= n; ++k)
+        {
+            // Make Array
+            Qi = makeProfile(arr, c_MotorAngle, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
+
+            // Send to Buffer
+            for (auto &entry : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    TMotorData newData;
+
+                    if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                    {
+                        newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
+                    }
+                    else if (canManager.tMotor_control_mode == POS_LOOP)
+                    {
+                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
+                    }
+                    else if (canManager.tMotor_control_mode == SPD_LOOP)
+                    {
+                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
+                    }
+
+                    
+                    if (k < n_brake_start)
+                    {
+                        newData.isBrake = false;
+                    }
+                    else if (k < n_brake_end)
+                    {
+                        newData.isBrake = true;
+                    }
+                    else
+                    {
+                        newData.isBrake = false;
+                    }
+                    tMotor->commandBuffer.push(newData);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+                {
+                    MaxonData newData;
+                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                    newData.WristState = 0.5;
+                    maxonMotor->commandBuffer.push(newData);
+                }
             }
         }
     }
@@ -1363,7 +1476,8 @@ void TestManager::GetArr_test(float arr[])
         // Tmotor
         if (getArr_test_mode == 0)
         {
-            Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+            // Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
+            return;
         }
         else if (getArr_test_mode == 1)
         {
@@ -1389,8 +1503,8 @@ void TestManager::GetArr_test(float arr[])
                 if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
                     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = speed_test;
-                    newData.acl = 32767;
+                    newData.spd = tMotor->spd;
+                    newData.acl = tMotor->acl;
                 }
                 else if (canManager.tMotor_control_mode == POS_LOOP)
                 {
@@ -1401,7 +1515,7 @@ void TestManager::GetArr_test(float arr[])
                 else if (canManager.tMotor_control_mode == SPD_LOOP)
                 {
                     newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = speed_test;
+                    newData.spd = tMotor->spd;
                     newData.acl = tMotor->acl;
                 }
                 newData.isBrake = false;
