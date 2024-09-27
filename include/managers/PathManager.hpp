@@ -121,6 +121,7 @@ private:
     // vector<float> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
     // vector<float> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
     // vector<float> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
+    
     VectorXd part_length;
     float s = 0.600;  ///< 허리 길이.
     float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
@@ -140,11 +141,15 @@ private:
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);  // 안쓰고 있음
 
     // vector<float> cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
     // vector<float> makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
-    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+
+    // q1[rad], q2[rad], acc[rad/s^2], t2[s]
+    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
+    // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
     pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
-    float con_fun_pos(float th_a, float th_b, float k, float n);    // POS LOOP mode
+    // POS LOOP mode
+    float con_fun_pos(float th_a, float th_b, float k, float n);
 
     void getMotorPos();
 
@@ -161,7 +166,8 @@ private:
     MatrixXd sts2wrist_fun(MatrixXd &AA, float v_wrist);
     MatrixXd sts2elbow_fun(MatrixXd &AA, float v_elbow);
     VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0);
-    float con_fun(float th_a, float th_b, int k, int n);    // POS-SPD LOOP mode
+    // POS-SPD LOOP mode
+    float con_fun(float th_a, float th_b, int k, int n);
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
     pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);
