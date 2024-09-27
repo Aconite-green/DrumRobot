@@ -75,9 +75,9 @@ vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, 
 
 VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
 {
-    VectorXd Vmax = VectorXd::Zero(7);
+    VectorXd Vmax = VectorXd::Zero(9);
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 9; i++)
     {
         float val;
         float S = q2(i) - q1(i);
@@ -130,9 +130,9 @@ VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
 
 VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
 {
-    VectorXd Qi = VectorXd::Zero(7);
+    VectorXd Qi = VectorXd::Zero(9);
 
-    for(int i = 0; i < 7; i++)
+    for(int i = 0; i < 9; i++)
     {
         float val, S;
         int sign;
@@ -734,7 +734,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     int j = 0;
     float the3[1351];
     float zeta = z0 - z2;
-    VectorXd Qf(7);
+    VectorXd Qf(9);
     float the0_f = 0;
 
     // the3 배열 초기화
@@ -825,6 +825,9 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
         cout << "IKFUN is not solved!!\n";
         state.main = Main::Error;
     }
+
+    Qf(7) = 0.0;
+    Qf(8) = 0.0;
 
     return Qf;
 }
@@ -1528,7 +1531,7 @@ void PathManager::PathLoopTask()
     else // POS_LOOP, SPD_LOOP
     {
         VectorXd qt = VectorXd::Zero(9);
-        VectorXd Vmax = VectorXd::Zero(7);
+        VectorXd Vmax = VectorXd::Zero(9);
         const float acc_max = 100.0;    // rad/s^2
         
         float dt = canManager.deltaT;   // 0.005 -> canManager.deltaT
@@ -1543,7 +1546,7 @@ void PathManager::PathLoopTask()
         for (int i = 0; i < n; i++)
         {
             float t_step = dt*(i+1);
-            VectorXd qi = VectorXd::Zero(7);
+            VectorXd qi = VectorXd::Zero(9);
             
             qi = makeProfile(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
 
@@ -1591,7 +1594,7 @@ void PathManager::GetArr(vector<float> &arr)
     VectorXd Q1 = VectorXd::Zero(9);
     VectorXd Q2 = VectorXd::Zero(9);
     VectorXd Qi = VectorXd::Zero(9);
-    VectorXd Vmax = VectorXd::Zero(7);
+    VectorXd Vmax = VectorXd::Zero(9);
     
     cout << "Get Array...\n";
     for (int k = 0; k < 9; k++)
