@@ -28,6 +28,7 @@ void TestManager::SendTestProcess()
         for (int i = 0; i < 9; i++)
         {
             q[i] = c_MotorAngle[i];
+            return_q[i] = c_MotorAngle[i];
             std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
@@ -101,15 +102,21 @@ void TestManager::SendTestProcess()
         {
             std::cout << "Mode : Go to target point\n";
         }
-        std::cout << "\n[ Current Q Values ] [ Target Q Values ] (Radian)\n";
+
+        std::cout << "\n[Current Q Values] [Target Q Values]";
+        if(return_flag)
+        {
+            std::cout << " [Return Q Values]";
+        }
+        std::cout << " (Radian)\n";
         for (int i = 0; i < 9; i++)
         {
-            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t ";
+            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t->\t" << q[i];
             if(return_flag)
             {
-                std::cout << "<";
+                std::cout << "\t->\t" << return_q[i];
             }
-            std::cout << "-> \t" << q[i] << "\n";
+            std::cout << "\n";
         }
 
         std::cout << "\ntime : " << t << "s\n";
@@ -134,12 +141,30 @@ void TestManager::SendTestProcess()
         }
         else if (userInput < 9)
         {
-            std::cout << "Enter q[" << userInput << "] Values (Radian) : ";
-            std::cin >> q[userInput];
+            float degree_angle;
+            
+            if(return_flag)
+            {
+                std::cout << "\nRange : " << c_MotorAngle[userInput]*180.0/M_PI << "~" << canManager.motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "Enter q[" << userInput << "](Max) Values (Degree) : ";
+                std::cin >> degree_angle;
+                q[userInput] = degree_angle * M_PI / 180.0;
+                std::cout << "Range : " << canManager.motorMinArr[userInput] << "~" << q[userInput]*180.0/M_PI << "(Degree)\n";
+                std::cout << "Enter return q[" << userInput << "](Min) Values (Degree) : ";
+                std::cin >> degree_angle;
+                return_q[userInput] = degree_angle * M_PI / 180.0;
+            }
+            else
+            {
+                std::cout << "\nRange : " << canManager.motorMinArr[userInput] << "~" << canManager.motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
+                std::cin >> degree_angle;
+                q[userInput] = degree_angle * M_PI / 180.0;
+            }
         }
         else if (userInput == 9)
         {
-            UnfixedMotor();      
+            UnfixedMotor();
             state.test = TestSub::FillBuf;
         }
         else if (userInput == 10)
@@ -1077,7 +1102,7 @@ vector<float> TestManager::cal_Vmax(float q1[], float q2[],  float acc, float t2
             }
         }
         Vmax.push_back(val);
-        cout << "Vmax_" << i << " : " << val << "rad/s\n";
+        // cout << "Vmax_" << i << " : " << val << "rad/s\n";
     }
 
     return Vmax;
@@ -1394,12 +1419,12 @@ void TestManager::GetArr(float arr[])
 
     if (return_flag)
     {
-        Vmax = cal_Vmax(arr, c_MotorAngle, acc_max, 0.5*t);
+        Vmax = cal_Vmax(arr, return_q, acc_max, 0.5*t);
     
         for (int k = 1; k <= n; ++k)
         {
             // Make Array
-            Qi = makeProfile(arr, c_MotorAngle, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
+            Qi = makeProfile(arr, return_q, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
 
             // Send to Buffer
             for (auto &entry : motors)

@@ -68,7 +68,7 @@ private:
     float s = 0.600;  ///< 허리 길이.
     float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
 
-    map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
+    map<std::string, int> motor_mapping = { //< 각 관절에 해당하는 열 정보.
         {"waist", 0},
         {"R_arm1", 1},
         {"L_arm1", 2},
@@ -78,7 +78,9 @@ private:
         {"L_arm3", 6},
         {"R_wrist", 7},
         {"L_wrist", 8},
-        {"maxonForTest", 8}};
+        {"maxonForTest", 8},
+        {"R_foot", 9},
+        {"L_foot", 10}};
 
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
     int maxonMotorCount = 0;
@@ -95,6 +97,7 @@ private:
     void GetArr(float arr[]);
     void GetArr_test(float arr[]);
     
+    float return_q[9] = {0.0};
     bool brake_flag = false;
     float brake_start_time = 2.0;
     float brake_end_time = 4.0;

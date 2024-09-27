@@ -123,7 +123,9 @@ private:
         {"L_arm3", 6},
         {"R_wrist", 7},
         {"L_wrist", 8},
-        {"maxonForTest", 8}};
+        {"maxonForTest", 8},
+        {"R_foot", 9},
+        {"L_foot", 10}};
 
     can_frame frame;
     int des = 0;

@@ -103,7 +103,9 @@ public:
         {"L_arm3", 6},
         {"R_wrist", 7},
         {"L_wrist", 8},
-        {"maxonForTest", 8}};
+        {"maxonForTest", 8},
+        {"R_foot", 9},
+        {"L_foot", 10}};
 
     std::vector<std::string> ifnames;
     int errorCnt = 0;
@@ -115,12 +117,16 @@ public:
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
 
+    int get_com_number_by_hostname(); 
+    void restCanPort(int com_number);
+
     // tMotor 제어 모드/주기 결정
     int tMotor_control_mode = POS_LOOP;
     float deltaT = 0.005;
 
-    int get_com_number_by_hostname(); 
-    void restCanPort(int com_number);
+    //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
+    const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
+    const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
 private:
 
