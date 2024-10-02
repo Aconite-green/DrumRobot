@@ -1607,7 +1607,7 @@ void PathManager::GetArr(vector<float> &arr)
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            arr[motor_mapping[entry.first]] /= tMotor->timingBelt_ratio;
+            Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
         }
     }
 
@@ -1620,7 +1620,6 @@ void PathManager::GetArr(vector<float> &arr)
     for (int i = 0; i < 9; i++)
     {
         Q1(i) = c_MotorAngle[i];
-        Q2(i) = arr[i];
     }
 
     Vmax = cal_Vmax(Q1, Q2, acc_max, t);
