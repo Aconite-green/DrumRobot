@@ -119,17 +119,18 @@ void TestManager::SendTestProcess()
             std::cout << "\n";
         }
 
-        std::cout << "\ntime : " << t << "s\n";
+        std::cout << "\ntime : " << t << "s\n" << endl;
 
-        if (brake_flag)
+        for (int i = 0; i < 7; i++)
         {
-            std::cout << "brake on\n";
-            std::cout << "brake start time : " << brake_start_time << "s\n";
-            std::cout << "brake end time : " << brake_end_time << "s\n";
-        }
-        else
-        {
-            std::cout << "brake off\n";
+            if (brake_flag[i])
+            {
+                std::cout << "Joint " << i << " brake on : " << brake_start_time[i] << "s ~ " << brake_end_time[i] << "s\n";
+            }
+            else
+            {
+                std::cout << "Joint " << i << " brake off\n";
+            }
         }
         
         std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Brake (11) / Mode (12) / Exit (-1): ";
@@ -175,22 +176,25 @@ void TestManager::SendTestProcess()
         else if (userInput == 11)
         {
             int input_brake;
-            std::cout << "brake : ON(1) / OFF(0) : ";
+            std::cout << "Select joint : ";
             std::cin >> input_brake;
 
-            if (input_brake == 0)
+            if(input_brake < 7)
             {
-                brake_flag = false;
-            }
-            else
-            {
-                brake_flag = true;
+                if(brake_flag[input_brake])
+                {
+                    brake_flag[input_brake] = false;
+                }
+                else
+                {
+                    brake_flag[input_brake] = true;
 
-                std::cout << "brake start time (0~" << t << ") : ";
-                std::cin >> brake_start_time;
+                    std::cout << "brake start time (0~" << t << ") : ";
+                    std::cin >> brake_start_time[input_brake];
 
-                std::cout << "brake end time (" << brake_start_time << "~" << t << ") : ";
-                std::cin >> brake_end_time;
+                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t << ") : ";
+                    std::cin >> brake_end_time[input_brake];
+                }
             }
         }
         else if (userInput == 12)
@@ -1319,8 +1323,8 @@ void TestManager::GetArr(float arr[])
     vector<float> Vmax;
     float c_MotorAngle[9];
     int n;
-    int n_brake_start = 0;
-    int n_brake_end = 0;
+    int n_brake_start[7] = {0};
+    int n_brake_end[7] = {0};
 
     std::cout << "Get Array...\n";
 
@@ -1346,13 +1350,14 @@ void TestManager::GetArr(float arr[])
         Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
     }
 
-    if (brake_flag)
+    for (int i = 0; i < 7; i++)
     {
-        n_brake_start = (int)(brake_start_time/canManager.deltaT);
-        n_brake_end = (int)(brake_end_time/canManager.deltaT);
+        if (brake_flag[i])
+        {
+            n_brake_start[i] = (int)(brake_start_time[i]/canManager.deltaT);
+            n_brake_end[i] = (int)(brake_end_time[i]/canManager.deltaT);
+        }
     }
-
-    
     
     for (int k = 1; k <= n; ++k)
     {
@@ -1393,11 +1398,11 @@ void TestManager::GetArr(float arr[])
                 }
 
                 
-                if (k < n_brake_start)
+                if (k < n_brake_start[motor_mapping[entry.first]])
                 {
                     newData.isBrake = false;
                 }
-                else if (k < n_brake_end)
+                else if (k < n_brake_end[motor_mapping[entry.first]])
                 {
                     newData.isBrake = true;
                 }
@@ -1453,11 +1458,11 @@ void TestManager::GetArr(float arr[])
                     }
 
                     
-                    if (k < n_brake_start)
+                    if (k+n < n_brake_start[motor_mapping[entry.first]])
                     {
                         newData.isBrake = false;
                     }
-                    else if (k < n_brake_end)
+                    else if (k+n < n_brake_end[motor_mapping[entry.first]])
                     {
                         newData.isBrake = true;
                     }
