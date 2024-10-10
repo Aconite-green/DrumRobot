@@ -29,6 +29,7 @@ public:
     float cwDir;
     float timingBelt_ratio;
     float rMin, rMax;
+    float initial_position;
     std::string myName;
     std::string interFaceName;
     bool isError = false;

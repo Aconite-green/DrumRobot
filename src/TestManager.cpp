@@ -146,18 +146,18 @@ void TestManager::SendTestProcess()
             
             if(return_flag)
             {
-                std::cout << "\nRange : " << c_MotorAngle[userInput]*180.0/M_PI << "~" << canManager.motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "\nRange : " << c_MotorAngle[userInput]*180.0/M_PI << "~" << motorMaxArr[userInput] << "(Degree)\n";
                 std::cout << "Enter q[" << userInput << "](Max) Values (Degree) : ";
                 std::cin >> degree_angle;
                 q[userInput] = degree_angle * M_PI / 180.0;
-                std::cout << "Range : " << canManager.motorMinArr[userInput] << "~" << q[userInput]*180.0/M_PI << "(Degree)\n";
+                std::cout << "Range : " << motorMinArr[userInput] << "~" << q[userInput]*180.0/M_PI << "(Degree)\n";
                 std::cout << "Enter return q[" << userInput << "](Min) Values (Degree) : ";
                 std::cin >> degree_angle;
                 return_q[userInput] = degree_angle * M_PI / 180.0;
             }
             else
             {
-                std::cout << "\nRange : " << canManager.motorMinArr[userInput] << "~" << canManager.motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
                 std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
                 std::cin >> degree_angle;
                 q[userInput] = degree_angle * M_PI / 180.0;

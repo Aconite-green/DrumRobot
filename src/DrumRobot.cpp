@@ -817,14 +817,7 @@ bool DrumRobot::processInput(const std::string &input)
                 entry.second->isHomed = true;
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
-                    if (entry.first == "R_arm1" || entry.first == "L_arm1")
-                    {
-                        tMotor->homeOffset = tMotor->cwDir * 90.0 * M_PI / 180.0 - (tMotor->currentPos);
-                    }
-                    else
-                    {
-                        tMotor->homeOffset = -(tMotor->currentPos);
-                    }
+                    tMotor->homeOffset = tMotor->cwDir * tMotor->initial_position - (tMotor->currentPos);
                 }
             }
             homingMaxonEnable();
@@ -1038,10 +1031,11 @@ void DrumRobot::initializeMotors()
             {
                 tMotor->cwDir = 1.0f;
                 tMotor->timingBelt_ratio = 1.0f;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -90deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -90deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1051,10 +1045,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 3;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f;   // 0deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 150deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f;   // 0deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1064,10 +1059,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 0;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f;  // 30deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 180deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f;  // 30deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1077,10 +1073,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 4;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -60deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -60deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1090,10 +1087,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->timingBelt_ratio = 3.0f;
                 // tMotor->sensorReadBit = 5;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -30deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 144deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -30deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 1;
@@ -1103,10 +1101,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->timingBelt_ratio = 1.0f;
                 // tMotor->sensorReadBit = 1;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -60deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -60deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1116,10 +1115,11 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->timingBelt_ratio = 3.0f;
                 // tMotor->sensorReadBit = 2;
-                tMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -30 deg
-                tMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 144 deg
+                tMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -30 deg
+                tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
+                tMotor->initial_position = initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1133,8 +1133,8 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "R_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -108deg
-                maxonMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f;  // 135deg
+                maxonMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -108deg
+                maxonMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword
                 maxonMotor->txPdoIds[1] = 0x307; // TargetPosition
@@ -1142,12 +1142,13 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x507; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x187; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_wrist";
+                maxonMotor->initial_position = initial_positions[can_id];
             }
             else if (motor_pair.first == "L_wrist")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -108deg
-                maxonMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f;  // 135deg
+                maxonMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -108deg
+                maxonMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword
                 maxonMotor->txPdoIds[1] = 0x308; // TargetPosition
@@ -1155,12 +1156,13 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_wrist";
+                maxonMotor->initial_position = initial_positions[can_id];
             }
             else if (motor_pair.first == "R_foot")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -90deg
-                maxonMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
+                maxonMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x209; // Controlword
                 maxonMotor->txPdoIds[1] = 0x309; // TargetPosition
@@ -1168,12 +1170,13 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_foot";
+                maxonMotor->initial_position = initial_positions[can_id];
             }
             else if (motor_pair.first == "L_foot")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -90deg
-                maxonMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
+                maxonMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x20A; // Controlword
                 maxonMotor->txPdoIds[1] = 0x30A; // TargetPosition
@@ -1181,12 +1184,13 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50A; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18A; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_foot";
+                maxonMotor->initial_position = initial_positions[can_id];
             }
             else if (motor_pair.first == "maxonForTest")
             {
                 maxonMotor->cwDir = 1.0f;
-                maxonMotor->rMin = canManager.motorMinArr[can_id] * M_PI / 180.0f; // -90deg
-                maxonMotor->rMax = canManager.motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
+                maxonMotor->rMin = motorMinArr[can_id] * M_PI / 180.0f; // -90deg
+                maxonMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 135deg
                 maxonMotor->isHomed = false;
                 maxonMotor->txPdoIds[0] = 0x20B; // Controlword
                 maxonMotor->txPdoIds[1] = 0x30B; // TargetPosition
@@ -1194,9 +1198,8 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50B; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18B; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "maxonForTest";
+                maxonMotor->initial_position = initial_positions[can_id];
             }
-
-            // std::cout << can_id << "\t" << maxonMotor->myName << "\t" << maxonMotor->rMin << "\t" << maxonMotor->rMax << endl;
         }
     }
 };

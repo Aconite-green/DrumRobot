@@ -36,6 +36,9 @@
 // position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 1.0
 
+#define SEND_SIGN 100
+#define INIT_SIGN 99.9
+
 using namespace std;
 
 class CanManager
@@ -113,7 +116,7 @@ public:
     /*save csv/txt file*/
     std::chrono::high_resolution_clock::time_point start;  
     const std::string basePath = "../../READ/";  // 기본 경로
-    void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA);
+    void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
 
@@ -124,9 +127,9 @@ public:
     int tMotor_control_mode = POS_LOOP;
     float deltaT = 0.005;
 
-    //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
-    const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
+    // //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
+    // const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
+    // const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
 private:
 

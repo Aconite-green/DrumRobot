@@ -617,6 +617,9 @@ void CanManager::setMotorsSocket()
                 if (motor->isConected)
                 {
                     std::cerr << "--------------> CAN NODE ID " << motor->nodeId << " Connected. " << "Motor [" << name << "]\n";
+
+                    std::string file_name = "data";
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, motor->initial_position, INIT_SIGN);
                 }
                 else
                 {
@@ -672,10 +675,12 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
 
-                    std::string motor_ID = tMotor->myName;
-                    std::string file_name = "_receive(actualPos,current)";
-                    
-                    appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
+                    // std::string motor_ID = tMotor->myName;
+                    // std::string file_name = "_receive(actualPos,current)";
+                    // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
+
+                    std::string file_name = "data";
+                    appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->currentPos, tMotor->currentTor);
                 }
             }
         }
@@ -696,12 +701,15 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                         }
                     }
                     maxonMotor->currentPos = std::get<1>(parsedData);
-                    maxonMotor->currentTor = std::get<2>(parsedData);
+                    maxonMotor->currentTor = std::get<2>(parsedData);   // 이건 토크임? 전류임?
                     maxonMotor->statusBit = std::get<3>(parsedData);
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
                     maxonMotor->coordinatePos = maxonMotor->currentPos * maxonMotor->cwDir;
+
+                    std::string file_name = "data";
+                    appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->currentPos, maxonMotor->currentTor);
                 }
             }
         }
@@ -722,9 +730,12 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        std::string motor_ID = tMotor->myName;
-        std::string file_name = "_Fixed(actialPos,fixedPos)";
-        appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, motor->fixedPos);
+        // std::string motor_ID = tMotor->myName;
+        // std::string file_name = "_Fixed(actialPos,fixedPos)";
+        // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, motor->fixedPos);
+
+        std::string file_name = "data";
+        appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedPos,  motor->fixedPos - tMotor->currentPos);
 
         // safety check
         float diff_angle = motor->fixedPos - tMotor->currentPos;
@@ -759,6 +770,9 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         {
             return false;
         };
+
+        std::string file_name = "data";
+        appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, maxonMotor->fixedPos, maxonMotor->fixedPos - maxonMotor->currentPos);
     }
     return true;
 }
@@ -814,6 +828,9 @@ bool CanManager::setCANFrame()
             maxonMotor->commandBuffer.pop();
             Pos[motor_mapping[maxonMotor->myName]] = mData.position;
             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+
+            std::string file_name = "data";
+            appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, mData.position, mData.position - maxonMotor->currentPos);
         }
         else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
@@ -851,9 +868,12 @@ bool CanManager::setCANFrame()
             }
             tMotor->brake_state = tData.isBrake;
 
-            std::string motor_ID = tMotor->myName;
-            std::string file_name = "_setCANFrame(actialPos,desiredPos)";
-            appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tData.position);
+            // std::string motor_ID = tMotor->myName;
+            // std::string file_name = "_setCANFrame(actialPos,desiredPos)";
+            // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tData.position);
+
+            std::string file_name = "data";
+            appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->currentPos);
         }
     }
     Input_pos.push_back(Pos);
@@ -971,7 +991,7 @@ void CanManager::appendToCSV_time(const std::string& filename) {
 }
 
 // 시간과 변수를 CSV 파일에 한 줄씩 저장하는 함수
-void CanManager::appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA) {
+void CanManager::appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
     std::ofstream file;
@@ -990,7 +1010,7 @@ void CanManager::appendToCSV_DATA(const std::string& filename, float A_DATA, flo
 
     if (file.is_open()) {
         // 데이터 추가
-        file << elapsed.count() << "," << A_DATA << "," << B_DATA << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
+        file << elapsed.count() << "," << A_DATA << "," << B_DATA << "," << C_DATA << "\n";  // 시간과 float 변수들을 CSV 형식으로 한 줄에 기록
        
         // 파일 닫기
         file.close();
