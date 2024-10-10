@@ -27,12 +27,7 @@ DrumRobot::DrumRobot(State &stateRef,
 
 }
 
-/*
-100us 안에 canManager.checkAllMotors_Fixed() 함수 실행 안되고 에러남 -> sendLoopForThread Ideal 에서 주석 처리함 -> 일단 돌려야하니 주석 해제함
-CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
-TestManager 에서 usleep() 함수 다수 존재
-*/
-
+// CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM LOOPS                             */
@@ -96,7 +91,6 @@ void DrumRobot::stateMachine()
                 state.main = Main::Error;
                 break;
             }
-            // usleep(200000);  // sleep_until()
 
             int ret = system("clear");
             if (ret == -1)
@@ -108,15 +102,10 @@ void DrumRobot::stateMachine()
             bool isWriteError = false;
             if (state.test == TestSub::SelectParamByUser || state.test == TestSub::SetQValue || state.test == TestSub::SetXYZ || state.test == TestSub::StickTest || state.test == TestSub::SetSingleTuneParm)
             {
-                // usleep(5000);    // sleep_until()
-                if (!canManager.checkAllMotors_Fixed())
+                if (!canManager.checkAllMotors_Fixed()) // stateMachine() 주기가 5ms 라서 delay 필요 없음
                 {
                     isWriteError = true;
                 }
-            }
-            else if (state.test == TestSub::SetServoTestParm)
-            {
-                // usleep(500000);  // sleep_until()
             }
             else
             {
@@ -142,8 +131,8 @@ void DrumRobot::stateMachine()
         case Main::Error:
         {
             // checkUserInput();
-            parse_and_save_to_csv("../../READ/Error_DrumData_out");
-            save_to_txt_inputData("../../READ/Error_DrumData_in");
+            // parse_and_save_to_csv("../../READ/Error_DrumData_out");
+            // save_to_txt_inputData("../../READ/Error_DrumData_in");
             state.main = Main::Shutdown;
             break;
         }
@@ -154,6 +143,7 @@ void DrumRobot::stateMachine()
         // canManager.appendToCSV_time("TIME_stateMachine");
         std::this_thread::sleep_until(state_time_point);
     }
+
     if (usbio.useUSBIO)
     {
         usbio.USBIO_4761_exit();
@@ -174,7 +164,6 @@ void DrumRobot::sendLoopForThread()
         {
         case Main::SystemInit:
         {
-            // usleep(5000);    // sleep_until()
             break;
         }
         case Main::Ideal:
@@ -196,7 +185,7 @@ void DrumRobot::sendLoopForThread()
             {
                state.main = Main::Error;
             }
-            usleep(5000);   // sleep_until()
+            usleep(5000);   // sendLoopForThread() 주기가 100us 라서 delay 필요
             break;
         }
         case Main::Perform:
@@ -213,7 +202,6 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Check:
         {
-            // usleep(500000);  // sleep_until()
             break;
         }
         case Main::Test:
@@ -233,25 +221,16 @@ void DrumRobot::sendLoopForThread()
             {
                 state.main = Main::Error;
             }
-            // usleep(50000);  // sleep_until()
+            usleep(5000);  // sendLoopForThread() 주기가 100us 라서 delay 필요
             break;
         }
         case Main::Error:
         {
-            // save_to_txt_inputData("../../READ/Error_DrumData_in");
-            // sleep(2);    // sleep_until()
-            // state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
             break;
         }
-
-        auto send_check = std::chrono::steady_clock::now();
-        // if(send_check >= send_time_point)
-        // {
-        //     canManager.appendToCSV_time("TIME_ERR_sendLoopForThread");
-        // }
 
         // canManager.appendToCSV_time("TIME_sendLoopForThread");
         std::this_thread::sleep_until(send_time_point);
@@ -269,7 +248,6 @@ void DrumRobot::recvLoopForThread()
         {
         case Main::SystemInit:
         {
-            // usleep(500000);  // sleep_until()
             break;
         }
         case Main::Ideal:
@@ -304,9 +282,6 @@ void DrumRobot::recvLoopForThread()
         }
         case Main::Error:
         {
-            // parse_and_save_to_csv("../../READ/Error_DrumData_out");
-            // sleep(2);    // sleep_until()
-            // state.main = Main::Shutdown;
             break;
         }
         case Main::Shutdown:
@@ -314,12 +289,6 @@ void DrumRobot::recvLoopForThread()
             break;
         }
         }
-
-        auto send_check = std::chrono::steady_clock::now();
-        // if(send_check >= recv_time_point)
-        // {
-        //     canManager.appendToCSV_time("TIME_ERR_recvLoopForThread");
-        // }
 
         // canManager.appendToCSV_time("TIME_recvLoopForThread");
         std::this_thread::sleep_until(recv_time_point);
@@ -528,8 +497,8 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             if (allBuffersEmpty)
             {
                 std::cout << "Performance is Over\n";
-                save_to_txt_inputData("../../READ/DrumData_in");
-                parse_and_save_to_csv("../../READ/DrumData_out");
+                // save_to_txt_inputData("../../READ/DrumData_in");
+                // parse_and_save_to_csv("../../READ/DrumData_out");
                 state.main = Main::AddStance;
                 state.perform = PerformSub::TimeCheck;
                 flag_setting("getHome");
@@ -637,8 +606,8 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
         }
         else
         {
-            save_to_txt_inputData("../../READ/AddStance_in");
-            parse_and_save_to_csv("../../READ/AddStance_out");
+            // save_to_txt_inputData("../../READ/AddStance_in");
+            // parse_and_save_to_csv("../../READ/AddStance_out");
             state.main = Main::Ideal;
         }
         break;
@@ -968,8 +937,8 @@ void DrumRobot::checkUserInput()
             else if (input == 'e')
             {
                 std::cout << "Performance is interrupted!\n";
-                save_to_txt_inputData("../../READ/interrupted_DrumData_in");
-                parse_and_save_to_csv("../../READ/interrupted_DrumData_out");
+                // save_to_txt_inputData("../../READ/interrupted_DrumData_in");
+                // parse_and_save_to_csv("../../READ/interrupted_DrumData_out");
                 isReady = false;
                 getReady = false;
                 getBack = true;
@@ -1601,7 +1570,7 @@ bool DrumRobot::dct_fun(float positions[], float vel_th)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                                 flag setting                                */
+/*                            flag setting                                     */
 /////////////////////////////////////////////////////////////////////////////////
 
 void DrumRobot::flag_setting(string flag)
@@ -1725,4 +1694,99 @@ void DrumRobot::homingSetMaxonMode(std::string targetMode)
             }
         }
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                             Log Data                                        */
+/////////////////////////////////////////////////////////////////////////////////
+
+void DrumRobot::toCSV_sendData(const string &csv_file_name)
+{
+    // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
+    std::ofstream ofs_p(csv_file_name + ".txt");
+
+    if (!ofs_p.is_open())
+    {
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
+
+    // CSV 헤더 추가
+    ofs_p << "0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08\n";
+
+    for (const auto &row : canManager.Input_pos)
+    {
+        for (const float cell : row)
+        {
+            ofs_p << std::fixed << std::setprecision(5) << cell;
+            if (&cell != &row.back())
+                ofs_p << ","; // 쉼표로 셀 구분
+        }
+        ofs_p << "\n"; // 다음 행으로 이동
+    }
+
+    canManager.Input_pos.clear();
+    ofs_p.close();
+
+    std::cout << "sendData 파일이 생성되었습니다 : " << csv_file_name << std::endl;
+}
+
+void DrumRobot::toCSV_recvData(const string &csv_file_name)
+{
+    // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
+    std::ofstream ofs(csv_file_name + ".txt");
+    if (!ofs.is_open())
+    {
+        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
+        return;
+    }
+
+    // CSV 헤더 추가
+    ofs << "CAN_ID,position,velocity,current\n";
+
+    while (true)
+    {
+        bool allRecvBufferEmpty = true;
+        for (const auto &pair : motors)
+        {
+            auto &motor = pair.second;
+            if (!motor->recieveBuffer.empty())
+            {
+                allRecvBufferEmpty = false;
+                can_frame frame = motor->recieveBuffer.front();
+                motor->recieveBuffer.pop();
+
+                int id = motor->nodeId;
+                float position, velocity, current;
+
+                // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
+                {
+                    std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
+                    position = std::get<1>(parsedData);
+                    velocity = std::get<2>(parsedData);
+                    current = std::get<3>(parsedData);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
+                {
+                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
+                    position = std::get<1>(parsedData);
+                    current = std::get<2>(parsedData);
+                    velocity = 0.0;
+                }
+
+                // 데이터 CSV 파일에 쓰기
+                ofs << "0x" << std::hex << std::setw(4) << std::setfill('0') << id << ","
+                    << std::dec << position << "," << velocity << "," << current << "\n";
+            }
+        }
+
+        if (allRecvBufferEmpty)
+            break;
+    }
+
+    // 각 모터에 대한 처리
+
+    ofs.close();
+    std::cout << "recvData 파일이 생성되었습니다: " << csv_file_name << std::endl;
 }

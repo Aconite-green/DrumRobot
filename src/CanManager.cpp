@@ -605,20 +605,27 @@ void CanManager::setMotorsSocket()
         tempFrames.clear();
     }
 
-    // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 삭제
-    for (auto it = motors.begin(); it != motors.end();)
+    // 모든 소켓에 대한 검사가 완료된 후, 모터 연결 상태 확인 및 연결 안된 모터 삭제
+    for (uint32_t i = 0; i < 12; i++)
     {
-        std::string name = it->first;
-        std::shared_ptr<GenericMotor> motor = it->second;
-        if (motor->isConected)
+        for (auto it = motors.begin(); it != motors.end(); it++)
         {
-            std::cerr << "--------------> Motor [" << name << "] is Connected. " << motor->nodeId << std::endl;
-            ++it;
-        }
-        else
-        {
-            std::cerr << "Motor [" << name << "] Not Connected. " << motor->nodeId << std::endl;
-            it = motors.erase(it);
+            std::string name = it->first;
+            std::shared_ptr<GenericMotor> motor = it->second;
+            if (motor->nodeId == i)
+            {
+                if (motor->isConected)
+                {
+                    std::cerr << "--------------> CAN NODE ID " << motor->nodeId << " Connected. " << "Motor [" << name << "]\n";
+                }
+                else
+                {
+                    std::cerr << "CAN NODE ID " << motor->nodeId << " Not Connected. " << "Motor [" << name << "]\n";
+                    it = motors.erase(it);
+                }
+
+                break;
+            }
         }
     }
 }
@@ -662,7 +669,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     }
                     tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
-                    tMotor->currentTor = std::get<3>(parsedData);
+                    tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
 
                     std::string motor_ID = tMotor->myName;
@@ -718,8 +725,6 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         std::string motor_ID = tMotor->myName;
         std::string file_name = "_Fixed(actialPos,fixedPos)";
         appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, motor->fixedPos);
-
-        // tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, motor->fixedPos, 20000, 300000);//tMotor->spd, tMotor->acl);
 
         // safety check
         float diff_angle = motor->fixedPos - tMotor->currentPos;
@@ -880,6 +885,11 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Max)\n";
                 std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
+
+            // if (std::get<3>(parsedData) > 23)
+            // {
+
+            // }
 
             isSafe = false;
             tMotor->isError = true;

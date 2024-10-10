@@ -60,6 +60,7 @@ private:
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     USBIO &usbio;
 
+    // Parsing
     TMotorServoCommandParser tservocmd;
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
@@ -68,6 +69,8 @@ private:
     chrono::system_clock::time_point ReadStandard;
     chrono::system_clock::time_point SendStandard;
     chrono::system_clock::time_point addStandard;
+
+    // Sync command
     std::shared_ptr<MaxonMotor> virtualMaxonMotor;
 
     // 쓰레드 루프 주기
@@ -143,4 +146,7 @@ private:
     void homingMaxonEnable();
     void homingSetMaxonMode(std::string targetMode);
 
+    // Log data
+    void toCSV_sendData(const string &csv_file_name);
+    void toCSV_recvData(const string &csv_file_name);
 };
