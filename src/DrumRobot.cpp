@@ -967,6 +967,11 @@ void DrumRobot::checkUserInput()
                 state.main = Main::Perform;
             else if (input == 's')
                 state.main = Main::Shutdown;
+            else if (input == 'h')
+            {
+                state.main = Main::AddStance;
+                flag_setting("getHome");
+            }
         }
         else if (state.main == Main::Error)
         {
