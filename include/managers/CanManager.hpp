@@ -119,6 +119,7 @@ public:
     void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);
+    void appendToCSV_State(const std::string& filename, string state, string sub_state);
 
     int get_com_number_by_hostname(); 
     void restCanPort(int com_number);
