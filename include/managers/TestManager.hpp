@@ -101,11 +101,9 @@ private:
     void GetArr(float arr[]);
     void GetArr_test(float arr[]);
     
-    float return_q[9] = {0.0};
     bool brake_flag[7] = {false, false, false, false, false, false, false};
     float brake_start_time[7] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
     float brake_end_time[7] = {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
-    bool return_flag = false;
     int n_repeat = 1;
 
 

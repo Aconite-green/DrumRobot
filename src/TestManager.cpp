@@ -28,7 +28,6 @@ void TestManager::SendTestProcess()
         for (int i = 0; i < 9; i++)
         {
             q[i] = c_MotorAngle[i];
-            return_q[i] = c_MotorAngle[i];
             std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
         }
         fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
@@ -94,29 +93,11 @@ void TestManager::SendTestProcess()
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
-        if (return_flag)
-        {
-            std::cout << "Mode : Go to target point and return\n";
-        }
-        else
-        {
-            std::cout << "Mode : Go to target point\n";
-        }
-
-        std::cout << "\n[Current Q Values] [Target Q Values]";
-        if(return_flag)
-        {
-            std::cout << " [Return Q Values]";
-        }
-        std::cout << " (Radian)\n";
+        std::cout << "Mode : Go to target point\n";
+        std::cout << "\n[Current Q Values] [Target Q Values] (Radian)\n";
         for (int i = 0; i < 9; i++)
         {
-            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t->\t" << q[i];
-            if(return_flag)
-            {
-                std::cout << "\t->\t" << return_q[i];
-            }
-            std::cout << "\n";
+            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t<->\t" << q[i] << std::endl;
         }
 
         std::cout << "\ntime : " << t << "s\n" << endl;
@@ -145,24 +126,10 @@ void TestManager::SendTestProcess()
         {
             float degree_angle;
             
-            if(return_flag)
-            {
-                std::cout << "\nRange : " << c_MotorAngle[userInput]*180.0/M_PI << "~" << motorMaxArr[userInput] << "(Degree)\n";
-                std::cout << "Enter q[" << userInput << "](Max) Values (Degree) : ";
-                std::cin >> degree_angle;
-                q[userInput] = degree_angle * M_PI / 180.0;
-                std::cout << "Range : " << motorMinArr[userInput] << "~" << q[userInput]*180.0/M_PI << "(Degree)\n";
-                std::cout << "Enter return q[" << userInput << "](Min) Values (Degree) : ";
-                std::cin >> degree_angle;
-                return_q[userInput] = degree_angle * M_PI / 180.0;
-            }
-            else
-            {
-                std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
-                std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
-                std::cin >> degree_angle;
-                q[userInput] = degree_angle * M_PI / 180.0;
-            }
+            std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
+            std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
+            std::cin >> degree_angle;
+            q[userInput] = degree_angle * M_PI / 180.0;
         }
         else if (userInput == 9)
         {
@@ -190,24 +157,16 @@ void TestManager::SendTestProcess()
                 {
                     brake_flag[input_brake] = true;
 
-                    std::cout << "brake start time (0~" << t << ") : ";
+                    std::cout << "brake start time (0~" << t+0.5 << ") : ";
                     std::cin >> brake_start_time[input_brake];
 
-                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t << ") : ";
+                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t+0.5 << ") : ";
                     std::cin >> brake_end_time[input_brake];
                 }
             }
         }
         else if (userInput == 12)
         {
-            // if (return_flag)
-            // {
-            //     return_flag = false;
-            // }
-            // else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-            // {
-            //     return_flag = true;
-            // }
             std::cout << "number of repeat : ";
             std::cin >> n_repeat;
         }
@@ -1384,18 +1343,9 @@ void TestManager::GetArr(float arr[])
         }
     }
 
-    if (return_flag)
-    {
-        n = (int)(0.5*t/canManager.deltaT);    // t초동안 왕복
-        Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, 0.5*t);
-        n_p = 0;
-    }
-    else
-    {
-        n = (int)(t/canManager.deltaT);    // t초동안 이동
-        Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
-        n_p = 100;  // 추가 시간 0.5s
-    }
+    n = (int)(t/canManager.deltaT);    // t초동안 이동
+    Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+    n_p = 100;  // 추가 시간 0.5s
 
     for (int i = 0; i < 7; i++)
     {
@@ -1411,11 +1361,6 @@ void TestManager::GetArr(float arr[])
         for (int k = 1; k <= n + n_p; ++k)
         {
             // Make Vector
-            // if (return_flag)
-            // {
-            //     Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
-            // }
-
             if ((i%2) == 0)
             {
                 Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
@@ -1458,68 +1403,6 @@ void TestManager::GetArr(float arr[])
                         newData.isBrake = false;
                     }
                     else if (k < n_brake_end[motor_mapping[entry.first]])
-                    {
-                        newData.isBrake = true;
-                    }
-                    else
-                    {
-                        newData.isBrake = false;
-                    }
-                    tMotor->commandBuffer.push(newData);
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-                {
-                    MaxonData newData;
-                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
-                    newData.WristState = 0.5;
-                    maxonMotor->commandBuffer.push(newData);
-                }
-            }
-        }
-    }
-    
-
-    if (return_flag)
-    {
-        Vmax = cal_Vmax(arr, return_q, acc_max, 0.5*t);
-    
-        for (int k = 1; k <= n; ++k)
-        {
-            // Make Array
-            Qi = makeProfile(arr, return_q, Vmax, acc_max, 0.5*t*k/n, 0.5*t);
-
-            // Send to Buffer
-            for (auto &entry : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-                {
-                    TMotorData newData;
-
-                    if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-                    {
-                        newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-                    else if (canManager.tMotor_control_mode == POS_LOOP)
-                    {
-                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-                    else if (canManager.tMotor_control_mode == SPD_LOOP)
-                    {
-                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-
-                    
-                    if (k+n < n_brake_start[motor_mapping[entry.first]])
-                    {
-                        newData.isBrake = false;
-                    }
-                    else if (k+n < n_brake_end[motor_mapping[entry.first]])
                     {
                         newData.isBrake = true;
                     }
