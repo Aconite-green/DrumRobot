@@ -106,6 +106,7 @@ private:
     float brake_start_time[7] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
     float brake_end_time[7] = {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
     bool return_flag = false;
+    int n_repeat = 1;
 
 
     vector<float> test_mode1(float Q1[], float Q2[], float k, float n);

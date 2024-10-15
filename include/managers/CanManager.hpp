@@ -34,7 +34,7 @@
 #define SPD_LOOP 2
 
 // position loop mode 에서 step input 각도 제한
-#define POS_DIFF_LIMIT 1.0
+#define POS_DIFF_LIMIT 30.0*M_PI/180.0
 
 #define SEND_SIGN 100
 #define INIT_SIGN 99.9
