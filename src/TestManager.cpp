@@ -1323,6 +1323,7 @@ void TestManager::GetArr(float arr[])
     vector<float> Vmax;
     float c_MotorAngle[9];
     int n;
+    int n_p;    // 목표위치까지 가기 위한 추가 시간
     int n_brake_start[7] = {0};
     int n_brake_end[7] = {0};
 
@@ -1343,11 +1344,13 @@ void TestManager::GetArr(float arr[])
     {
         n = (int)(0.5*t/canManager.deltaT);    // t초동안 왕복
         Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, 0.5*t);
+        n_p = 0;
     }
     else
     {
         n = (int)(t/canManager.deltaT);    // t초동안 이동
         Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+        n_p = 100;
     }
 
     for (int i = 0; i < 7; i++)
@@ -1359,7 +1362,7 @@ void TestManager::GetArr(float arr[])
         }
     }
     
-    for (int k = 1; k <= n; ++k)
+    for (int k = 1; k <= n + n_p; ++k)
     {
         // Make Array
         if (return_flag)
@@ -1368,7 +1371,17 @@ void TestManager::GetArr(float arr[])
         }
         else
         {
-            Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+            if(k > n)
+            {
+                for(int i = 0; i < 9; i++)
+                {
+                    Qi.push_back(arr[i]);
+                }
+            }
+            else
+            {
+                Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+            }
         }
 
         // Send to Buffer
