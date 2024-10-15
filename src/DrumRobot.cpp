@@ -1737,6 +1737,7 @@ void DrumRobot::toCSV_sendData(const string &csv_file_name)
 void DrumRobot::toCSV_recvData(const string &csv_file_name)
 {
     // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
+
     std::ofstream ofs(csv_file_name + ".txt");
     if (!ofs.is_open())
     {
@@ -1787,6 +1788,8 @@ void DrumRobot::toCSV_recvData(const string &csv_file_name)
         if (allRecvBufferEmpty)
             break;
     }
+
+    
 
     // 각 모터에 대한 처리
 

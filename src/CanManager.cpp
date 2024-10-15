@@ -1019,7 +1019,7 @@ void CanManager::appendToCSV_DATA(const std::string& filename, float A_DATA, flo
     }
 }
 
-// 시간과 CAN Feame을 CSV 파일에 한 줄씩 저장하는 함수
+// 시간과 CAN Frame을 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_CAN(const std::string& filename, can_frame& c_frame) {
     auto now = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = now - start;
