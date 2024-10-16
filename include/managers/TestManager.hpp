@@ -100,10 +100,11 @@ private:
     void fkfun(float arr[]);
     void GetArr(float arr[]);
     void GetArr_test(float arr[]);
-    
+
     bool brake_flag[7] = {false, false, false, false, false, false, false};
     float brake_start_time[7] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
     float brake_end_time[7] = {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
+    float extra_time = 0.5;
     int n_repeat = 1;
 
 

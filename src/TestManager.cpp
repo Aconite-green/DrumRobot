@@ -100,7 +100,8 @@ void TestManager::SendTestProcess()
             std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t<->\t" << q[i] << std::endl;
         }
 
-        std::cout << "\ntime : " << t << "s\n" << endl;
+        std::cout << "\ntime : " << t << "s + " << extra_time << "s\n";
+        std::cout << "number of repeat : " << n_repeat << std::endl << std::endl;
 
         for (int i = 0; i < 7; i++)
         {
@@ -113,9 +114,8 @@ void TestManager::SendTestProcess()
                 std::cout << "Joint " << i << " brake off\n";
             }
         }
-        std::cout << "number of repeat : " << n_repeat << std::endl;
         
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Brake (11) / Repeat(12) / Exit (-1): ";
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) /Exit (-1): ";
         std::cin >> userInput;
 
         if (userInput == -1)
@@ -139,9 +139,19 @@ void TestManager::SendTestProcess()
         else if (userInput == 10)
         {
             std::cout << "time : ";
-            std::cin >> t;
+            std::cin >> t;extra_time;
         }
         else if (userInput == 11)
+        {
+            std::cout << "extra time : ";
+            std::cin >> extra_time;
+        }
+        else if (userInput == 12)
+        {
+            std::cout << "number of repeat : ";
+            std::cin >> n_repeat;
+        }
+        else if (userInput == 13)
         {
             int input_brake;
             std::cout << "Select joint : ";
@@ -157,18 +167,13 @@ void TestManager::SendTestProcess()
                 {
                     brake_flag[input_brake] = true;
 
-                    std::cout << "brake start time (0~" << t+0.5 << ") : ";
+                    std::cout << "brake start time (0~" << t+extra_time << ") : ";
                     std::cin >> brake_start_time[input_brake];
 
-                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t+0.5 << ") : ";
+                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t+extra_time << ") : ";
                     std::cin >> brake_end_time[input_brake];
                 }
             }
-        }
-        else if (userInput == 12)
-        {
-            std::cout << "number of repeat : ";
-            std::cin >> n_repeat;
         }
         
         break;
@@ -1345,7 +1350,7 @@ void TestManager::GetArr(float arr[])
 
     n = (int)(t/canManager.deltaT);    // t초동안 이동
     Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
-    n_p = 100;  // 추가 시간 0.5s
+    n_p = (int)(extra_time/canManager.deltaT);  // 추가 시간
 
     for (int i = 0; i < 7; i++)
     {

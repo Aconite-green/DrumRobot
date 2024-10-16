@@ -324,6 +324,8 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     auto currentTime = chrono::system_clock::now();
     auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
 
+    canManager.appendToCSV_time("ReadProcess");
+
     switch (state.read.load())
     {
     case ReadSub::TimeCheck:
@@ -332,10 +334,12 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
             ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
         }
+        canManager.appendToCSV_time("TimeCheck");
         break;
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
+        canManager.appendToCSV_time("ReadCANFrame");
         break;
     case ReadSub::UpdateMotorInfo:
     {
@@ -375,6 +379,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         //     }
         //     state.read = ReadSub::CheckMaxonControl;
         // }
+        canManager.appendToCSV_time("UpdateMotorInfo");
         break;
     }
     case ReadSub::CheckMaxonControl:
@@ -956,11 +961,8 @@ void DrumRobot::checkUserInput()
                 std::cout << "Performance is interrupted!\n";
                 // save_to_txt_inputData("../../READ/interrupted_DrumData_in");
                 // parse_and_save_to_csv("../../READ/interrupted_DrumData_out");
-                isReady = false;
-                getReady = false;
-                getBack = true;
-                isBack = false;
                 state.main = Main::AddStance;
+                flag_setting("getBack");
                 pathManager.line = 0;
             }
             else if (input == 'r')
@@ -982,12 +984,14 @@ void DrumRobot::checkUserInput()
         {
             if (input == 'e')
             {
-                isReady = false;
-                getReady = false;
-                getBack = true;
-                isBack = false;
                 state.main = Main::AddStance;
+                flag_setting("getBack");
                 pathManager.line = 0;
+            }
+            else if (input == 'h')
+            {
+                state.main = Main::AddStance;
+                flag_setting("getHome");
             }
             else if (input == 's')
                 state.main = Main::Shutdown;
