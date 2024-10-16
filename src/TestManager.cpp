@@ -133,8 +133,9 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 9)
         {
-            UnfixedMotor();
             state.test = TestSub::FillBuf;
+            usleep(1000);
+            UnfixedMotor();
         }
         else if (userInput == 10)
         {
