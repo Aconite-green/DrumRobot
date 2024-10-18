@@ -292,28 +292,29 @@ void DrumRobot::recvLoopForThread()
 
         // canManager.appendToCSV_time("TIME_recvLoopForThread");
 
-        std::string file_name = "fixed";
-        float data = 0;
+        // 허리 모터의 isfixed 플래그 상태를 저장
+        // std::string file_name = "fixed";
+        // float data = 0;
 
-        for (auto &motor : motors)
-        {
-            if (motor.first == "waist")
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
-                {
-                    if (tMotor->isfixed == false)
-                    {
-                        data = 1.0;
-                    }
-                    else
-                    {
-                        data = -1.0;
-                    }
+        // for (auto &motor : motors)
+        // {
+        //     if (motor.first == "waist")
+        //     {
+        //         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
+        //         {
+        //             if (tMotor->isfixed == false)
+        //             {
+        //                 data = 1.0;
+        //             }
+        //             else
+        //             {
+        //                 data = -1.0;
+        //             }
 
-                    canManager.appendToCSV_DATA(file_name, data, tMotor->currentPos, 0);
-                }
-            }
-        }
+        //             canManager.appendToCSV_DATA(file_name, data, tMotor->currentPos, 0);
+        //         }
+        //     }
+        // }
 
         std::this_thread::sleep_until(recv_time_point);
     }

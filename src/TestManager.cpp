@@ -134,7 +134,7 @@ void TestManager::SendTestProcess()
         else if (userInput == 9)
         {
             state.test = TestSub::FillBuf;
-            usleep(1000);
+            usleep(5000);
             UnfixedMotor();
         }
         else if (userInput == 10)
@@ -891,46 +891,47 @@ void TestManager::SendTestProcess()
     }
     }
 
-    if (state.test == TestSub::SelectParamByUser)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SelectParamByUser");
-    }
-    else if (state.test == TestSub::SetQValue)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SetQValue");
-    }
-    else if (state.test == TestSub::SetXYZ)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SetXYZ");
-    }
-    else if (state.test == TestSub::SetSingleTuneParm)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SetSingleTuneParm");
-    }
-    else if (state.test == TestSub::FillBuf)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "FillBuf");
-    }
-    else if (state.test == TestSub::CheckBuf)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "CheckBuf");
-    }
-    else if (state.test == TestSub::TimeCheck)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "TimeCheck");
-    }
-    else if (state.test == TestSub::SetCANFrame)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SetCANFrame");
-    }
-    else if (state.test == TestSub::SendCANFrame)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "SendCANFrame");
-    }
-    else if (state.test == TestSub::Done)
-    {
-        canManager.appendToCSV_State("state_test", "Test", "Done");
-    }
+    // Test state를 저장
+    // if (state.test == TestSub::SelectParamByUser)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SelectParamByUser");
+    // }
+    // else if (state.test == TestSub::SetQValue)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SetQValue");
+    // }
+    // else if (state.test == TestSub::SetXYZ)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SetXYZ");
+    // }
+    // else if (state.test == TestSub::SetSingleTuneParm)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SetSingleTuneParm");
+    // }
+    // else if (state.test == TestSub::FillBuf)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "FillBuf");
+    // }
+    // else if (state.test == TestSub::CheckBuf)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "CheckBuf");
+    // }
+    // else if (state.test == TestSub::TimeCheck)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "TimeCheck");
+    // }
+    // else if (state.test == TestSub::SetCANFrame)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SetCANFrame");
+    // }
+    // else if (state.test == TestSub::SendCANFrame)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "SendCANFrame");
+    // }
+    // else if (state.test == TestSub::Done)
+    // {
+    //     canManager.appendToCSV_State("state_test", "Test", "Done");
+    // }
 }
 
 void TestManager::MaxonEnable()
