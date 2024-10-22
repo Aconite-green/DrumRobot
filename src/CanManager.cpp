@@ -641,9 +641,7 @@ void CanManager::readFramesFromAllSockets()
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
-        ssize_t result = read(socket_fd, &frame, sizeof(frame));
-        if (result == -1) appendToCSV_time("readFramesFromAllSockets_err");
-        while (result == sizeof(frame))
+        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
             isCAN = true;
