@@ -140,7 +140,7 @@ void TestManager::SendTestProcess()
         else if (userInput == 10)
         {
             std::cout << "time : ";
-            std::cin >> t;extra_time;
+            std::cin >> t;
         }
         else if (userInput == 11)
         {

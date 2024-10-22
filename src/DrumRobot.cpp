@@ -325,7 +325,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     auto currentTime = chrono::system_clock::now();
     auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
 
-    canManager.appendToCSV_time("ReadProcess");
+    // canManager.appendToCSV_time("ReadProcess");
 
     switch (state.read.load())
     {
@@ -335,7 +335,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
             ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
         }
-        canManager.appendToCSV_time("TimeCheck");
+        // canManager.appendToCSV_time("TimeCheck");
         break;
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
@@ -380,7 +380,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         //     }
         //     state.read = ReadSub::CheckMaxonControl;
         // }
-        canManager.appendToCSV_time("UpdateMotorInfo");
+        // canManager.appendToCSV_time("UpdateMotorInfo");
         break;
     }
     case ReadSub::CheckMaxonControl:

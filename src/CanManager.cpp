@@ -636,14 +636,23 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
+    bool isCAN = false;
 
     for (const auto &socketPair : sockets)
     {
         int socket_fd = socketPair.second;
-        while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
+        ssize_t result = read(socket_fd, &frame, sizeof(frame));
+        if (result == -1) appendToCSV_time("readFramesFromAllSockets_err");
+        while (result == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
+            isCAN = true;
         }
+    }
+
+    if(isCAN)
+    {
+        appendToCSV_time("readFramesFromAllSockets");
     }
 }
 
@@ -715,6 +724,8 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
         }
     }
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
+
+    // appendToCSV_time("distributeFramesToMotors");
 
     return true;
 }
