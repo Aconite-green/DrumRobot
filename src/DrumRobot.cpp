@@ -1445,6 +1445,36 @@ void DrumRobot::motorSettingCmd()
                 tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
                 canManager.sendMotorFrame(tMotor);
             }
+            else if (tMotor->myName == "R_arm1")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
+            else if (tMotor->myName == "L_arm1")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
+            else if (tMotor->myName == "R_arm2")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
+            else if (tMotor->myName == "L_arm2")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
+            else if (tMotor->myName == "R_arm3")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
+            else if (tMotor->myName == "L_arm3")
+            {
+                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                canManager.sendMotorFrame(tMotor);
+            }
         }
     }
 }

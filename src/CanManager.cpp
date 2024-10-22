@@ -469,7 +469,7 @@ bool CanManager::txFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame 
     return true;
 }
 
-    bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame)
+bool CanManager::rxFrame(std::shared_ptr<GenericMotor> &motor, struct can_frame &frame)
 {
 
     if (read(motor->socket, &frame, sizeof(frame)) != sizeof(frame))
