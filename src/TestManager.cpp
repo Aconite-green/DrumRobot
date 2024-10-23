@@ -1368,9 +1368,9 @@ vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
         float val;
         
         float A = q2[i] - q1[i];
-        float w = M_PI/t2;
+        float w = 2.0 * M_PI/t2;
         
-        val = A * sin(w*t) + q1[i];
+        val = -1/2 * ((A * cos(w*t)) - A)+ q1[i];
 
         Qi.push_back(val);
     }
