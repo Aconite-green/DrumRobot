@@ -92,6 +92,7 @@ public:
     // Functions for Thread Case
 
     bool setCANFrame();
+    bool safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData tData);
     bool safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData);
     bool safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, unsigned char> parsedData);
 

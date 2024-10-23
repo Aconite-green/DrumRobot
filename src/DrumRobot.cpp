@@ -140,7 +140,6 @@ void DrumRobot::stateMachine()
             break;
         }
         
-        // canManager.appendToCSV_time("TIME_stateMachine");
         std::this_thread::sleep_until(state_time_point);
     }
 
@@ -232,7 +231,6 @@ void DrumRobot::sendLoopForThread()
             break;
         }
 
-        // canManager.appendToCSV_time("TIME_sendLoopForThread");
         std::this_thread::sleep_until(send_time_point);
     }
 }
@@ -290,32 +288,6 @@ void DrumRobot::recvLoopForThread()
         }
         }
 
-        // canManager.appendToCSV_time("TIME_recvLoopForThread");
-
-        // 허리 모터의 isfixed 플래그 상태를 저장
-        // std::string file_name = "fixed";
-        // float data = 0;
-
-        // for (auto &motor : motors)
-        // {
-        //     if (motor.first == "waist")
-        //     {
-        //         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
-        //         {
-        //             if (tMotor->isfixed == false)
-        //             {
-        //                 data = 1.0;
-        //             }
-        //             else
-        //             {
-        //                 data = -1.0;
-        //             }
-
-        //             canManager.appendToCSV_DATA(file_name, data, tMotor->currentPos, 0);
-        //         }
-        //     }
-        // }
-
         std::this_thread::sleep_until(recv_time_point);
     }
 }
@@ -325,8 +297,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     auto currentTime = chrono::system_clock::now();
     auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - ReadStandard);
 
-    // canManager.appendToCSV_time("ReadProcess");
-
     switch (state.read.load())
     {
     case ReadSub::TimeCheck:
@@ -335,12 +305,10 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             state.read = ReadSub::ReadCANFrame; // 주기가 되면 ReadCANFrame 상태로 진입
             ReadStandard = currentTime;         // 현재 시간으로 시간 객체 초기화
         }
-        // canManager.appendToCSV_time("TimeCheck");
         break;
     case ReadSub::ReadCANFrame:
         canManager.readFramesFromAllSockets(); // CAN frame 읽기
         state.read = ReadSub::UpdateMotorInfo; // 다음 상태로 전환
-        canManager.appendToCSV_time("ReadCANFrame");
         break;
     case ReadSub::UpdateMotorInfo:
     {
@@ -363,7 +331,6 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
 
-        state.read = ReadSub::TimeCheck;
         // if (maxonMotorCount == 0)
         // {
         //     state.read = ReadSub::TimeCheck;
@@ -380,7 +347,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         //     }
         //     state.read = ReadSub::CheckMaxonControl;
         // }
-        // canManager.appendToCSV_time("UpdateMotorInfo");
+        state.read = ReadSub::TimeCheck;
         break;
     }
     case ReadSub::CheckMaxonControl:
@@ -898,6 +865,7 @@ bool DrumRobot::processInput(const std::string &input)
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
+            sleep(1);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
             state.home = HomeSub::Done;
             flag_setting("isBack");
 
@@ -1132,8 +1100,9 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 // tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id];
+                tMotor->limitCurrent = 29.8;  // [A]    // ak10-9
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1147,7 +1116,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1161,7 +1131,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1175,7 +1146,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1189,7 +1161,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 1;
@@ -1203,7 +1176,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1217,7 +1191,8 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                tMotor->initial_position = initial_positions[can_id];
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1240,7 +1215,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x507; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x187; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_wrist";
-                maxonMotor->initial_position = initial_positions[can_id];
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "L_wrist")
             {
@@ -1254,7 +1229,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_wrist";
-                maxonMotor->initial_position = initial_positions[can_id];
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "R_foot")
             {
@@ -1268,7 +1243,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_foot";
-                maxonMotor->initial_position = initial_positions[can_id];
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "L_foot")
             {
@@ -1282,7 +1257,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50A; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18A; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_foot";
-                maxonMotor->initial_position = initial_positions[can_id];
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "maxonForTest")
             {
@@ -1296,7 +1271,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50B; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18B; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "maxonForTest";
-                maxonMotor->initial_position = initial_positions[can_id];
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
             }
         }
     }

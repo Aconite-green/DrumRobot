@@ -47,6 +47,7 @@ public:
     int32_t spd = 300; // ERPM
     int32_t acl = 10000; // ERPA
 
+    // Gear ratio
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},
         {"AK70_10", 10},
@@ -91,6 +92,9 @@ public:
 
     // For Homing Session
     bool atFirstSensor, atSecondSensor, atZeroPosition;
+
+    // [A]
+    float limitCurrent;
 
     std::queue<TMotorData> commandBuffer;
 

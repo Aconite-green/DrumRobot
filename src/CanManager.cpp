@@ -636,7 +636,6 @@ void CanManager::setMotorsSocket()
 void CanManager::readFramesFromAllSockets()
 {
     struct can_frame frame;
-    bool isCAN = false;
 
     for (const auto &socketPair : sockets)
     {
@@ -644,13 +643,7 @@ void CanManager::readFramesFromAllSockets()
         while (read(socket_fd, &frame, sizeof(frame)) == sizeof(frame))
         {
             tempFrames[socket_fd].push_back(frame);
-            isCAN = true;
         }
-    }
-
-    if(isCAN)
-    {
-        appendToCSV_time("readFramesFromAllSockets");
     }
 }
 
@@ -681,10 +674,6 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
-
-                    // std::string motor_ID = tMotor->myName;
-                    // std::string file_name = "_receive(actualPos,current)";
-                    // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tMotor->currentTor);
 
                     std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->currentPos, tMotor->currentTor);
@@ -723,8 +712,6 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
     }
     tempFrames.clear(); // 프레임 분배 후 임시 배열 비우기
 
-    // appendToCSV_time("distributeFramesToMotors");
-
     return true;
 }
 
@@ -739,9 +726,6 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->fixedPos = tMotor->currentPos;
             motor->isfixed = true;
         }
-        // std::string motor_ID = tMotor->myName;
-        // std::string file_name = "_Fixed(actialPos,fixedPos)";
-        // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, motor->fixedPos);
 
         std::string file_name = "data";
         appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedPos,  motor->fixedPos - tMotor->currentPos);
@@ -850,10 +834,15 @@ bool CanManager::setCANFrame()
             if (tMotor_control_mode == POS_LOOP)
             {
                 // safety check
-                float diff_angle = tData.position - tMotor->currentPos;
-                if (abs(diff_angle) > POS_DIFF_LIMIT)
+                // float diff_angle = tData.position - tMotor->currentPos;
+                // if (abs(diff_angle) > POS_DIFF_LIMIT)
+                // {
+                //     std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n" << tData.position << tMotor->currentPos << endl;
+                //     return false;
+                // }
+
+                if(!safetyCheck_Tmotor(tMotor, tData))
                 {
-                    std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n" << tData.position << tMotor->currentPos << endl;
                     return false;
                 }
                 tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
@@ -877,16 +866,39 @@ bool CanManager::setCANFrame()
             }
             tMotor->brake_state = tData.isBrake;
 
-            // std::string motor_ID = tMotor->myName;
-            // std::string file_name = "_setCANFrame(actialPos,desiredPos)";
-            // appendToCSV_DATA(motor_ID + file_name, tMotor->currentPos, tData.position);
-
             std::string file_name = "data";
             appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->currentPos);
         }
     }
     Input_pos.push_back(Pos);
     return true;
+}
+
+bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData tData)
+{
+    bool isSafe = true;
+    float diff_angle = tData.position - tMotor->currentPos;
+    float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+
+    if (abs(diff_angle) > POS_DIFF_LIMIT)
+    {
+        std::cout << "Go to Error state by safety check (Pos Diff : " << tMotor->myName << ")" << endl;
+        isSafe = false;
+    }
+    else if (tMotor->rMin > coordinationPos)
+    {
+        std::cout << "Go to Error state by safety check (Out of Range(Min) : " << tMotor->myName << ")" << endl;
+        std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+        isSafe = false;
+    }
+    else if (tMotor->rMax < coordinationPos)
+    {
+        std::cout << "Go to Error state by safety check (Out of Range(Max) : " << tMotor->myName << ")" << endl;
+        std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+        isSafe = false;
+    }
+
+    return isSafe;
 }
 
 bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData)
@@ -896,29 +908,23 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
         float coordinationPos = (std::get<1>(parsedData) + tMotor->homeOffset) * tMotor->cwDir;
-        if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.4 || tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos)
+        if (tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos || std::get<3>(parsedData) > tMotor->limitCurrent)
         {
-            if (abs(tMotor->currentPos - std::get<1>(parsedData)) > 0.4)
-            {
-                std::cout << "Error For " << tMotor->myName << " (Pos Diff)\n";
-                std::cout << "Previous : " << tMotor->currentPos << "\nCrrent : " << std::get<1>(parsedData) << "\n";
-                std::cout << "Diff : " << abs(tMotor->currentPos - std::get<1>(parsedData)) / M_PI * 180 << "deg\n";
-            }
-            else if (tMotor->rMin > coordinationPos)
+            if (tMotor->rMin > coordinationPos)
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Min)\n";
                 std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
-            else
+            else if (tMotor->rMax < coordinationPos)
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Max)\n";
                 std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
             }
-
-            // if (std::get<3>(parsedData) > 23)
-            // {
-
-            // }
+            else if (std::get<3>(parsedData) > tMotor->limitCurrent)
+            {
+                std::cout << "Error For " << tMotor->myName << " (Limit Current)\n";
+                std::cout << "current : " << tMotor->limitCurrent << "A\n";
+            }
 
             isSafe = false;
             tMotor->isError = true;
@@ -937,7 +943,7 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
         float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir;
-        if (/*abs(maxonMotor->currentPos - std::get<1>(parsedData)) > 0.4 || */ maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+        if (maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
             if (maxonMotor->rMin > coordinationPos)
             {
