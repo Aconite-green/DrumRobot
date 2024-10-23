@@ -115,7 +115,7 @@ void TestManager::SendTestProcess()
             }
         }
         
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Exit (-1): ";
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15)/Exit (-1): ";
         std::cin >> userInput;
 
         if (userInput == -1)
@@ -204,6 +204,12 @@ void TestManager::SendTestProcess()
             usleep(5000);
             UnfixedMotor();
 
+        }
+
+        else if (userInput == 15)
+        {
+            if(sin_flag) sin_flag = false;
+            else sin_flag = true;
         }
         
         break;
@@ -1396,16 +1402,22 @@ void TestManager::GetArr(float arr[])
     {
         for (int k = 1; k <= n + n_p; ++k)
         {
-            // Make Vector
-            if ((i%2) == 0)
+            if(!sin_flag)
             {
-                Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+                // Make Vector
+                if ((i%2) == 0)
+                {
+                    Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+                }
+                else
+                {
+                    Qi = makeProfile(arr, c_MotorAngle, Vmax, acc_max, t*k/n, t);
+                }
             }
             else
             {
-                Qi = makeProfile(arr, c_MotorAngle, Vmax, acc_max, t*k/n, t);
+                Qi = sinProfile(arr, c_MotorAngle, t*k/n, t);
             }
-            
 
             // Send to Buffer
             for (auto &entry : motors)

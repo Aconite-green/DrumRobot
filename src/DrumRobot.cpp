@@ -429,6 +429,10 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     switch (state.perform.load())
     {
     case PerformSub::TimeCheck:
+
+
+
+    
     {
         if (elapsed_time.count() >= periodMicroSec)
         {
