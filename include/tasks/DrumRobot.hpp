@@ -130,8 +130,8 @@ private:
         {"R_foot", 9},
         {"L_foot", 10}};
 
-    // 로봇 고정했을 때 각 모터의 관절각 [rad]
-    const float initial_positions[11] = {0, 90.0*M_PI/180.0, 90.0*M_PI/180.0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // 로봇 고정했을 때 각 모터의 관절각  Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
+    const float initial_positions[11] = {0.0,   90.0,   90.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0};
 
     // 로봇의 관절각 범위
     //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
