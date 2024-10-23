@@ -108,8 +108,9 @@ void TestManager::SendTestProcess()
             std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t<->\t" << q[i] << std::endl;
         }
 
-        std::cout << "\ntime : " << t << "s + " << extra_time << "s\n";
-        std::cout << "number of repeat : " << n_repeat << std::endl << std::endl;
+        std::cout << "\ntime : " << t << "s";
+        if(!sin_flag) std::cout << " + " << extra_time << "s";
+        std::cout << "\nnumber of repeat : " << n_repeat << std::endl << std::endl;
 
         for (int i = 0; i < 7; i++)
         {
@@ -123,7 +124,7 @@ void TestManager::SendTestProcess()
             }
         }
         
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15)/Exit (-1): ";
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15) / Exit (-1): ";
         std::cin >> userInput;
 
         if (userInput == -1)
@@ -204,8 +205,8 @@ void TestManager::SendTestProcess()
                 // degree 값을 radian으로 변환하여 q 배열에 저장
                 q[i] = degree_angle * M_PI / 180.0;
             }
-            t = 10;
-            extra_time = 0.5;
+            t = 10.0;
+            extra_time = 1.0;
             n_repeat = 1;
 
             state.test = TestSub::FillBuf;
@@ -216,8 +217,16 @@ void TestManager::SendTestProcess()
 
         else if (userInput == 15)
         {
-            if(sin_flag) sin_flag = false;
-            else sin_flag = true;
+            if(sin_flag)
+            {
+                sin_flag = false;
+                extra_time = 1.0;
+            }
+            else
+            {
+                sin_flag = true;
+                extra_time = 0.0;
+            }
         }
         
         break;

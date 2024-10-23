@@ -856,6 +856,7 @@ bool DrumRobot::processInput(const std::string &input)
                     }
                 }   
             }
+            sleep(1);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
 
             //motor initialize
             for (auto &entry : motors)
@@ -869,7 +870,6 @@ bool DrumRobot::processInput(const std::string &input)
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
-            sleep(1);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
             state.home = HomeSub::Done;
             flag_setting("isBack");
 
