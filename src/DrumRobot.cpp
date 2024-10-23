@@ -799,7 +799,8 @@ void DrumRobot::displayAvailableCommands() const
     {
         if (!(state.home == HomeSub::Done))
         {
-            std::cout << "- o : Offset setting\n";
+            std::cout << "- o : Set Zero & Offset setting\n";
+            std::cout << "- i : Offset setting\n";
             std::cout << "- s : Shut down the system\n";
             std::cout << "- c : Check Motors position\n";
         }
@@ -842,12 +843,72 @@ bool DrumRobot::processInput(const std::string &input)
     {
         if((input == "o") && !(state.home == HomeSub::Done))
         {
+            for (const auto &motorPair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor  = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+                {
+                    if (tMotor->myName == "waist")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "R_arm1")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "L_arm1")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "R_arm2")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "L_arm2")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "R_arm3")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                    else if (tMotor->myName == "L_arm3")
+                    {
+                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                        canManager.sendMotorFrame(tMotor);
+                    }
+                }   
+            }
+
             for (auto &entry : motors)
             {
                 entry.second->isHomed = true;
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
-                    tMotor->homeOffset = tMotor->cwDir * tMotor->initial_position - (tMotor->currentPos);
+                    tMotor->homeOffset = tMotor->cwDir * tMotor->initial_position;
+                }
+            }
+            homingMaxonEnable();
+            homingSetMaxonMode("CSP");
+
+            state.home = HomeSub::Done;
+            flag_setting("isBack");
+
+            return true;
+        }
+        else if((input == "i") && !(state.home == HomeSub::Done))
+        {
+            for (auto &entry : motors)
+            {
+                entry.second->isHomed = true;
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                {
+                    tMotor->homeOffset = tMotor->cwDir * tMotor->initial_position;
                 }
             }
             homingMaxonEnable();
@@ -1070,6 +1131,7 @@ void DrumRobot::initializeMotors()
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
                 tMotor->initial_position = initial_positions[can_id];
+                // tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id];
                 tMotor->spd = 1000;
                 tMotor->acl = 3000;
                 // tMotor->sensorWriteBit = 0;
@@ -1436,44 +1498,6 @@ void DrumRobot::motorSettingCmd()
 
                 maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
                 canManager.sendAndRecv(motor, frame);
-            }
-        }
-        else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
-        {
-            if (tMotor->myName == "waist")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "R_arm1")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "L_arm1")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "R_arm2")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "L_arm2")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "R_arm3")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
-            }
-            else if (tMotor->myName == "L_arm3")
-            {
-                tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                canManager.sendMotorFrame(tMotor);
             }
         }
     }
