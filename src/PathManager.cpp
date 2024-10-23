@@ -1568,6 +1568,7 @@ void PathManager::PathLoopTask()
             pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
 
             VectorXd qv_in = VectorXd::Zero(7);     // POS LOOP MODE 에서 사용 안함
+            
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
 
             // 데이터 기록

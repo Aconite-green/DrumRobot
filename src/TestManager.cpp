@@ -115,7 +115,7 @@ void TestManager::SendTestProcess()
             }
         }
         
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) /Exit (-1): ";
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Exit (-1): ";
         std::cin >> userInput;
 
         if (userInput == -1)
@@ -175,6 +175,35 @@ void TestManager::SendTestProcess()
                     std::cin >> brake_end_time[input_brake];
                 }
             }
+        }
+        else if (userInput == 14)
+        {
+            for (int i = 0; i <= 6; ++i)
+            {
+                brake_flag[i] = false;
+                float degree_angle;
+                
+                // 1과 2는 90도, 나머지는 0도로 설정
+                if (i == 1 || i == 2) {
+                    degree_angle = 90.0;
+                } else {
+                    degree_angle = 0.0;
+                }
+                
+                std::cout << "\nRange : " << motorMinArr[i] << "~" << motorMaxArr[i] << "(Degree)\n";
+                std::cout << "Enter q[" << i << "] Values (Degree) : " << degree_angle << "\n";
+                
+                // degree 값을 radian으로 변환하여 q 배열에 저장
+                q[i] = degree_angle * M_PI / 180.0;
+            }
+            t = 10;
+            extra_time = 0.5;
+            n_repeat = 1;
+
+            state.test = TestSub::FillBuf;
+            usleep(5000);
+            UnfixedMotor();
+
         }
         
         break;

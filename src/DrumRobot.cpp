@@ -843,6 +843,7 @@ bool DrumRobot::processInput(const std::string &input)
     {
         if((input == "o") && !(state.home == HomeSub::Done))
         {
+            // set zero
             for (const auto &motorPair : motors)
             {
                 if (std::shared_ptr<TMotor> tMotor  = std::dynamic_pointer_cast<TMotor>(motorPair.second))
@@ -885,6 +886,7 @@ bool DrumRobot::processInput(const std::string &input)
                 }   
             }
 
+            //motor initialize
             for (auto &entry : motors)
             {
                 entry.second->isHomed = true;
