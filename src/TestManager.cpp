@@ -93,7 +93,15 @@ void TestManager::SendTestProcess()
         float c_MotorAngle[9];
         getMotorPos(c_MotorAngle);
 
-        std::cout << "Mode : Go to target point\n";
+
+        if(sin_flag)
+        {
+            std::cout << "Mode : Sin Wave\n";
+        }
+        else
+        {
+            std::cout << "Mode : Go to target point\n";
+        }
         std::cout << "\n[Current Q Values] [Target Q Values] (Radian)\n";
         for (int i = 0; i < 9; i++)
         {
@@ -1351,7 +1359,7 @@ vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
         float val;
         
         float A = q2[i] - q1[i];
-        float w = 2.0*M_PI/t2;
+        float w = M_PI/t2;
         
         val = A * sin(w*t) + q1[i];
 
@@ -1416,7 +1424,7 @@ void TestManager::GetArr(float arr[])
             }
             else
             {
-                Qi = sinProfile(arr, c_MotorAngle, t*k/n, t);
+                Qi = sinProfile(c_MotorAngle, arr, t*k/n, t);
             }
 
             // Send to Buffer
