@@ -856,6 +856,7 @@ bool DrumRobot::processInput(const std::string &input)
                     }
                 }   
             }
+            std::cout << "set zero and offset setting ~ ~ ~\n";
             sleep(1);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
 
             //motor initialize

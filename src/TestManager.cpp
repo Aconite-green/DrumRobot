@@ -205,9 +205,10 @@ void TestManager::SendTestProcess()
                 // degree 값을 radian으로 변환하여 q 배열에 저장
                 q[i] = degree_angle * M_PI / 180.0;
             }
-            t = 10.0;
+            t = 4.0;
             extra_time = 1.0;
             n_repeat = 1;
+            sin_flag = false;
 
             state.test = TestSub::FillBuf;
             usleep(5000);
@@ -1370,7 +1371,7 @@ vector<float> TestManager::sinProfile(float q1[], float q2[], float t, float t2)
         float A = q2[i] - q1[i];
         float w = 2.0 * M_PI/t2;
         
-        val = -1/2 * ((A * cos(w*t)) - A)+ q1[i];
+        val = -0.5*((A * cos(w*t)) - A)+ q1[i];
 
         Qi.push_back(val);
     }

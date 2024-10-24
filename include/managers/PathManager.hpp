@@ -98,8 +98,8 @@ private:
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
 
-    string score_path = "../include/codes/codeMeaningOfYou.txt";
-    // string score_path = "../include/codes/codeTest.txt";
+    // string score_path = "../include/codes/codeMeaningOfYou.txt";
+    string score_path = "../include/codes/codeTest.txt";
 
     // Functions for DrumRobot PathGenerating
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
