@@ -135,7 +135,7 @@ private:
 
     // 로봇의 관절각 범위
     //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
+    const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   120.0,  90.0,   120.0,  135.0,  135.0,  135.0,  135.0};
     const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
     can_frame frame;
