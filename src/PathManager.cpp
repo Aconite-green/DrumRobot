@@ -1241,7 +1241,7 @@ void PathManager::GetMusicSheet()
     inst_00.resize(19, 1);
     inst_00(0) = 0.0;
     inst_00.block(1, 0, 9, 1) = default_right;
-    inst_00.block(10, 0, 9, 1) = default_right;
+    inst_00.block(10, 0, 9, 1) = default_left;
     while (getline(file, row))
     {
         istringstream iss(row);

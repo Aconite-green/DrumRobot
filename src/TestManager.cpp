@@ -1384,6 +1384,8 @@ void TestManager::GetArr(float arr[])
     const float acc_max = 100.0;    // rad/s^2
     vector<float> Qi;
     vector<float> Vmax;
+    float Q2[9] = {0};
+    
     float c_MotorAngle[9];
     int n;
     int n_p;    // 목표위치까지 가기 위한 추가 시간
@@ -1399,12 +1401,12 @@ void TestManager::GetArr(float arr[])
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            arr[motor_mapping[entry.first]] /= tMotor->timingBelt_ratio;
+            Q2[motor_mapping[entry.first]] = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
         }
     }
 
     n = (int)(t/canManager.deltaT);    // t초동안 이동
-    Vmax = cal_Vmax(c_MotorAngle, arr, acc_max, t);
+    Vmax = cal_Vmax(c_MotorAngle, Q2, acc_max, t);
     n_p = (int)(extra_time/canManager.deltaT);  // 추가 시간
 
     for (int i = 0; i < 7; i++)
@@ -1425,16 +1427,16 @@ void TestManager::GetArr(float arr[])
                 // Make Vector
                 if ((i%2) == 0)
                 {
-                    Qi = makeProfile(c_MotorAngle, arr, Vmax, acc_max, t*k/n, t);
+                    Qi = makeProfile(c_MotorAngle, Q2, Vmax, acc_max, t*k/n, t);
                 }
                 else
                 {
-                    Qi = makeProfile(arr, c_MotorAngle, Vmax, acc_max, t*k/n, t);
+                    Qi = makeProfile(Q2, c_MotorAngle, Vmax, acc_max, t*k/n, t);
                 }
             }
             else
             {
-                Qi = sinProfile(c_MotorAngle, arr, t*k/n, t);
+                Qi = sinProfile(c_MotorAngle, Q2, t*k/n, t);
             }
 
             // Send to Buffer
@@ -1446,7 +1448,7 @@ void TestManager::GetArr(float arr[])
 
                     if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                     {
-                        newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.position = Q2[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                         newData.spd = tMotor->spd;
                         newData.acl = tMotor->acl;
                     }

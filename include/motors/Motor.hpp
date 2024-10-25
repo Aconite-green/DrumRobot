@@ -96,6 +96,8 @@ public:
     // [A]
     float limitCurrent;
 
+    int errorCnt = 0;
+
     std::queue<TMotorData> commandBuffer;
 
     void clearCommandBuffer();

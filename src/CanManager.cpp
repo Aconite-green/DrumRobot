@@ -926,9 +926,17 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
                 std::cout << "current : " << tMotor->limitCurrent << "A\n";
             }
 
-            isSafe = false;
-            tMotor->isError = true;
-            tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
+            if (tMotor->errorCnt > 10)
+            {
+                isSafe = false;
+                tMotor->isError = true;
+            }
+            else
+            {
+                tMotor->errorCnt++;
+            }
+
+            tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);  // current brake ?????????????????????????????????????????????????????????????????????
             sendMotorFrame(tMotor);
         }
     }
