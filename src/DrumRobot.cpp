@@ -313,15 +313,15 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::UpdateMotorInfo:
     {
         // test 모드에서 에러 검출 안함
-        // if (state.home != HomeSub::Done || state.main == Main::Test)
-        // {
-        //     canManager.distributeFramesToMotors(false);
-        // }
-        // test 모드에서 에러 검출함
-        if (state.home != HomeSub::Done)
+        if (state.home != HomeSub::Done || state.main == Main::Test)
         {
             canManager.distributeFramesToMotors(false);
         }
+        // test 모드에서 에러 검출함
+        // if (state.home != HomeSub::Done)
+        // {
+        //     canManager.distributeFramesToMotors(false);
+        // }
         else
         {
             bool isSafe = canManager.distributeFramesToMotors(true);

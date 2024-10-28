@@ -1610,6 +1610,10 @@ void PathManager::GetArr(vector<float> &arr)
         {
             Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
         }
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]];
+        }
     }
 
     getMotorPos();

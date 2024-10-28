@@ -124,7 +124,7 @@ void TestManager::SendTestProcess()
             }
         }
         
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15) / Exit (-1): ";
+        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15) /break on off (16) / Exit (-1): ";
         std::cin >> userInput;
 
         if (userInput == -1)
@@ -229,7 +229,41 @@ void TestManager::SendTestProcess()
                 extra_time = 0.0;
             }
         }
-        
+
+        else if (userInput == 16)
+        {
+            bool usbio_output = false;
+
+            std::cout << "Current brake states:" << std::endl;
+            for (int i = 0; i < 7; i++)
+            {
+                std::cout << "Brake " << i << ": " << (single_brake_flag[i] ? "Active" : "Inactive") << std::endl;
+            }
+
+            int break_num;
+            cin >> break_num;
+
+            if(!single_brake_flag[break_num])
+            {
+                usbio.USBIO_4761_set(break_num % 7, true);
+                usbio_output = usbio.USBIO_4761_output();
+                single_brake_flag[break_num] = true;
+            }
+            else
+            {
+                usbio.USBIO_4761_set(break_num % 7, false);
+                usbio_output = usbio.USBIO_4761_output();
+                single_brake_flag[break_num] = false;
+            }
+
+            if(!usbio_output)
+            {
+                std::cout << "OUTPUT Error" << endl;
+                usleep(5000000);
+                break;
+            }
+
+        }
         break;
     }
     case TestSub::SetXYZ:
@@ -1402,6 +1436,10 @@ void TestManager::GetArr(float arr[])
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             Q2[motor_mapping[entry.first]] = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
+        }
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            Q2[motor_mapping[entry.first]] = arr[motor_mapping[entry.first]];
         }
     }
 

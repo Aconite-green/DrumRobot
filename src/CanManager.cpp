@@ -882,6 +882,7 @@ bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData t
 
     if (abs(diff_angle) > POS_DIFF_LIMIT)
     {
+        std::cout << "tData.position : " << tData.position << "currentPos : " << tMotor -> currentPos  << endl;
         std::cout << "Go to Error state by safety check (Pos Diff : " << tMotor->myName << ")" << endl;
         isSafe = false;
     }
