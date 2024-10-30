@@ -80,8 +80,8 @@ public:
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2.0, M_PI / 2.0};
 
     /*토크 제어에서 사용됨*/
-    // float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
-    // float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
+    float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
+    float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
     float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
     float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
