@@ -127,7 +127,7 @@ public:
 
     // tMotor 제어 모드/주기 결정
     int tMotor_control_mode = POS_LOOP;
-    float deltaT = 0.005;
+    const float deltaT = 0.005;
 
     // //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
     // const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
