@@ -94,6 +94,7 @@ private:
     bool getBack = false;
     bool sendCheckFrame = false;
     void flag_setting(string flag);
+    bool getBackAndShutdown = false;
 
     // System Initialize 메소드들
     void initializeMotors();
