@@ -313,15 +313,15 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::UpdateMotorInfo:
     {
         // test 모드에서 에러 검출 안함
-        if (state.home != HomeSub::Done || state.main == Main::Test)
-        {
-            canManager.distributeFramesToMotors(false);
-        }
-        // test 모드에서 에러 검출함
-        // if (state.home != HomeSub::Done)
+        // if (state.home != HomeSub::Done || state.main == Main::Test)
         // {
         //     canManager.distributeFramesToMotors(false);
         // }
+        // test 모드에서 에러 검출함
+        if (state.home != HomeSub::Done)
+        {
+            canManager.distributeFramesToMotors(false);
+        }
         else
         {
             bool isSafe = canManager.distributeFramesToMotors(true);
@@ -429,10 +429,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     switch (state.perform.load())
     {
     case PerformSub::TimeCheck:
-
-
-
-    
     {
         if (elapsed_time.count() >= periodMicroSec)
         {
@@ -444,10 +440,13 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     }
     case PerformSub::CheckBuf:
     {
+        bool motor_connected = false;
+
         for (const auto &motor_pair : motors)
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
             {
+                motor_connected = true;
                 if (tMotor->commandBuffer.size() < 10)
                     state.perform = PerformSub::GeneratePath;
                 else
@@ -455,11 +454,18 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             }
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
             {
+                motor_connected = true;
                 if (maxonMotor->commandBuffer.size() < 10)
                     state.perform = PerformSub::GeneratePath;
                 else
                     state.perform = PerformSub::SetCANFrame;
             }
+        }
+
+        if(!motor_connected)
+        {
+            // 모터 연결 안됨 -> 프로그램만 실행
+            state.perform = PerformSub::GeneratePath;
         }
         break;
     }
@@ -498,8 +504,6 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
             if (allBuffersEmpty)
             {
                 std::cout << "Performance is Over\n";
-                // save_to_txt_inputData("../../READ/DrumData_in");
-                // parse_and_save_to_csv("../../READ/DrumData_out");
                 state.main = Main::AddStance;
                 state.perform = PerformSub::TimeCheck;
                 flag_setting("getHome");
@@ -584,31 +588,14 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
     case AddStanceSub::CheckCommand:
     {
-        if (getHome)
+        if (getHome || getBack || getReady)
         {
             ClearBufferforRecord();
-            std::cout << "Get Home...\n";
-            clearMotorsCommandBuffer();
-            state.addstance = AddStanceSub::FillBuf;
-        }
-        else if (getReady)
-        {
-            ClearBufferforRecord();
-            std::cout << "Get Ready...\n";
-            clearMotorsCommandBuffer();
-            state.addstance = AddStanceSub::FillBuf;
-        }
-        else if (getBack)
-        {
-            ClearBufferforRecord();
-            std::cout << "Get Back...\n";
             clearMotorsCommandBuffer();
             state.addstance = AddStanceSub::FillBuf;
         }
         else
         {
-            // save_to_txt_inputData("../../READ/AddStance_in");
-            // parse_and_save_to_csv("../../READ/AddStance_out");
             state.main = Main::Ideal;
         }
         break;
@@ -617,25 +604,18 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
         if (getHome)
         {
-            cout << "standby : ";
-            for(int i = 0; i < 9; i++)
-            {
-                cout << pathManager.standby[i] << ' ';
-            }
-            pathManager.GetArr(pathManager.standby);
+            std::cout << "Get Home Pos Array ...\n";
+            pathManager.GetArr(pathManager.homeArr);
         }
         else if (getReady)
         {
-            cout << "readyarr : ";
-            for(int i = 0; i < 9; i++)
-            {
-                cout << pathManager.readyarr[i] << ' ';
-            }
-            pathManager.GetArr(pathManager.readyarr);
+            std::cout << "Get Ready Pos Array ...\n";
+            pathManager.GetArr(pathManager.readyArr);
         }
         else if (getBack)
         {
-            pathManager.GetArr(pathManager.backarr);
+            std::cout << "Get Back Pos Array ...\n";
+            pathManager.GetArr(pathManager.backArr);
         }
 
         state.addstance = AddStanceSub::TimeCheck;
@@ -681,25 +661,28 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
         }
         else
         {
-            if (getHome)
+            if (getBackAndShutdown)
+            {
+                state.main = Main::Shutdown;
+            }
+            else if (getHome)
             {
                 state.addstance = AddStanceSub::CheckCommand;
+                state.main = Main::Ideal;
                 canManager.clearReadBuffers();
                 flag_setting("isHome");
             }
             else if (getReady)
             {
                 state.addstance = AddStanceSub::CheckCommand;
+                state.main = Main::Ideal;
                 canManager.clearReadBuffers();
                 flag_setting("isReady");
-            }
-            else if (getBack && isHome)
-            {
-                state.main = Main::Shutdown;
             }
             else if (getBack)
             {
                 state.addstance = AddStanceSub::CheckCommand;
+                state.main = Main::Ideal;
                 canManager.clearReadBuffers();
                 flag_setting("isBack");
             }
@@ -789,8 +772,8 @@ void DrumRobot::displayAvailableCommands() const
         {
             if (isHome)
             {
-                std::cout << "- r : Move to Ready Position\n";
-                std::cout << "- b : Move to Back Position\n";
+                std::cout << "- r : Move to Ready Pos\n";
+                std::cout << "- b : Move to Back Pos\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- c : Check Motors position\n";
                 std::cout << "- s : Shut down the system\n";
@@ -798,14 +781,14 @@ void DrumRobot::displayAvailableCommands() const
             else if (isReady)
             {
                 std::cout << "- p : Start Drumming\n";
-                std::cout << "- h : Move to Home Position\n";
+                std::cout << "- h : Move to Home Pos\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- c : Check Motors position\n";
             }
             else if (isBack)
             {
                 std::cout << "- s : Shut down the system\n";
-                std::cout << "- h : Move to Home Position\n";
+                std::cout << "- h : Move to Home Pos\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- c : Check Motors position\n";
             }
@@ -930,6 +913,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "p" && isReady)
         {
+            std::cout << "bpm : " << pathManager.bpm << std::endl;
             state.main = Main::Perform;
             isReady = false;
 
@@ -946,7 +930,8 @@ bool DrumRobot::processInput(const std::string &input)
             else if (isHome)
             {
                 state.main = Main::AddStance;
-                getBack = true; // getBack, isHome 을 동시에 켜면 back pos 이동 후 종료
+                flag_setting("getBack");
+                getBackAndShutdown = true; // 켜면 back pos 이동 후 종료
 
                 return true;
             }

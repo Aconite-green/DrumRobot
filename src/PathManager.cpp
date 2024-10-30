@@ -1087,8 +1087,6 @@ VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
         }
 
         Vmax(i) = val;
-
-        // cout << "Vmax_" << i << " : " << val << "rad/s\n";
     }
 
     return Vmax;
@@ -1340,10 +1338,10 @@ void PathManager::SetReadyAng()
 
     for (int i = 0; i < qk.size(); ++i)
     {
-        readyarr[i] = qk(i);
+        readyArr[i] = qk(i);
     }
-    readyarr[7] = 0.0;
-    readyarr[8] = 0.0;
+    readyArr[7] = 0.0;
+    readyArr[8] = 0.0;
 }
 
 void PathManager::PathLoopTask()
@@ -1569,6 +1567,11 @@ void PathManager::PathLoopTask()
 
         Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
 
+        for (int k = 0; k < 9; k++)
+        {
+            cout << "Vmax_" << k << " : " << Vmax(k) << "rad/s\n";
+        }
+
         for (int i = 0; i < n; i++)
         {
             float t_step = dt*(i+1);
@@ -1623,10 +1626,9 @@ void PathManager::GetArr(vector<float> &arr)
     VectorXd Qi = VectorXd::Zero(9);
     VectorXd Vmax = VectorXd::Zero(9);
     
-    cout << "Get Array...\n";
     for (int k = 0; k < 9; k++)
     {
-        cout << "arr[" << k << "] : " << arr[k] << endl;
+        cout << "arr[" << k << "] : " << arr[k]*180.0/M_PI <<  " [deg]"<< endl;
     }
 
     // Timing Belt
@@ -1642,16 +1644,10 @@ void PathManager::GetArr(vector<float> &arr)
         }
     }
 
-    // for (int i = 0; i < 9; i++)
-    // {
-    //     cout << "Q2[" << i << "] : " << Q2[i] << endl;
-    // }
-    // usleep(1000000);
-
     getMotorPos();
 
     float dt = canManager.deltaT;   // 0.005
-    float t = 4.0; // 4초동안 실행
+    float t = 3.0; // 3초동안 실행
     int n = (int)(t / dt);
 
     for (int i = 0; i < 9; i++)
@@ -1660,6 +1656,11 @@ void PathManager::GetArr(vector<float> &arr)
     }
 
     Vmax = cal_Vmax(Q1, Q2, acc_max, t);
+
+    for (int k = 0; k < 9; k++)
+    {
+        cout << "Vmax_" << k << " : " << Vmax(k) << "rad/s\n";
+    }
 
     for (int k = 1; k <= n; ++k)
     {
