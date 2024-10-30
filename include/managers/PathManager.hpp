@@ -79,17 +79,16 @@ public:
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
     vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2.0, M_PI / 2.0};
 
-    /*하이브리드 제어때 사용됨*/
-    float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
-    float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
+    /*토크 제어에서 사용됨*/
+    // float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
+    // float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
-    float wrist_backPos = M_PI / 18.0;  // 대기 시 들어올리는 손목 각도 (-0.5) : 10deg
-    float wrist_hitPos = M_PI / 9.0;    // 타격 시 들어올리는 손목 각도 (-1)   : 20deg
-    float wrist_back_time = 0.04;       // 타격 후 들어올리는 궤적시간
+    float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
+    float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
 
-    float elbow_backPos = M_PI / 36.0;  // 대기 시 들어올리는 팔꿈치 각도 (-0.5) : 5deg
-    float elbow_hitPos = M_PI / 15.0;   // 타격 시 들어올리는 팔꿈치 각도 (-1)   : 12deg
-
+    float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
+    float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
+    
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
     MaxonCommandParser MParser;  ///< Maxon 모터 명령어 파서
@@ -98,30 +97,21 @@ private:
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
 
-    // string score_path = "../include/codes/codeMeaningOfYou.txt";
     string score_path = "../include/codes/codeTest.txt";
 
     // Functions for DrumRobot PathGenerating
-    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
-    MatrixXd right_inst;                                       ///< 오른팔의 각 악기별 위치 좌표 벡터.
-    MatrixXd left_inst;                                        ///< 왼팔의 각 악기별 위치 좌표 벡터.
+    MatrixXd right_drum_position;                               ///< 오른팔의 각 악기별 위치 좌표 벡터.
+    MatrixXd left_drum_position;                                ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
-    int n_inst = 10; ///< 총 악기의 수.
-    float bpm = 50; /// 악보의 BPM 정보.
-
-    vector<float> time_arr; ///< 악보의 시간간격 정보.
-    MatrixXd inst_arr;       ///< 오른팔 / 왼팔이 치는 악기.
-    VectorXd default_right;
-    VectorXd default_left;
-    VectorXd inst_00;
+    float bpm = 50;         /// txt 악보의 BPM 정보.
+    vector<float> time_arr; /// txt 악보의 시간간격 정보.
+    MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
+    VectorXd default_right; /// 오른팔 시작 위치
+    VectorXd default_left;  /// 왼팔 시작 위치
+    VectorXd inst_now;      /// 연주 중 현재 위치하는 악기
 
     // MatrixXd RF, LF;         ///< 오른발 / 왼발이 치는 악기.
 
-    /* 실측값 */
-    // vector<float> P1 = {0.3, 0.94344, 1.16582};       ///< 오른팔 준비자세 좌표.
-    // vector<float> P2 = {-0.3, 0.94344, 1.16582};      ///< 왼팔 준비자세 좌표.
-    // vector<float> R = {0.363, 0.793, 0.363, 0.793};     ///< [오른팔 상완, 오른팔 하완+스틱, 왼팔 상완, 왼팔 하완+스틱]의 길이.
-    
     VectorXd part_length;
     float s = 0.600;  ///< 허리 길이.
     float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
@@ -140,18 +130,15 @@ private:
     
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);  // 안쓰고 있음
 
-    // vector<float> cal_Vmax_add(vector<float> &q1, vector<float> &q2, float acc, float t2);  // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    // vector<float> makeProfile_add(vector<float> &q1, vector<float> &q2, vector<float> &Vmax, float acc, float t, float t2);  // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    // AddStance
+    void getMotorPos();
+    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
 
-    // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
-    // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
-    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
     pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
     // POS LOOP mode
     float con_fun_pos(float th_a, float th_b, float k, float n);
 
-    void getMotorPos();
+    
 
     void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool brake_state);
 
@@ -161,15 +148,21 @@ private:
      */
     MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
     void itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
-    void itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB);
+    void itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB, VectorXd &pre_inst);
     VectorXd pos_madi_fun(VectorXd &A);
-    MatrixXd sts2wrist_fun(MatrixXd &AA, float v_wrist);
-    MatrixXd sts2elbow_fun(MatrixXd &AA, float v_elbow);
+    MatrixXd sts2wrist_fun(MatrixXd &AA);
+    MatrixXd sts2elbow_fun(MatrixXd &AA);
     VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0);
+    
     // POS-SPD LOOP mode
     float con_fun(float th_a, float th_b, int k, int n);
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
     pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);
-    // void SetTargetPos(MatrixXd &State, MatrixXd &t_madi);
+
+    // POS LOOP mode
+    // q1[rad], q2[rad], acc[rad/s^2], t2[s]
+    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
+    // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
 };
