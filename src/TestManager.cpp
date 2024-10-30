@@ -90,7 +90,7 @@ void TestManager::SendTestProcess()
         if (ret == -1)
             std::cout << "system clear error" << endl;
 
-        float c_MotorAngle[9];
+        float c_MotorAngle[9] = {0};
         getMotorPos(c_MotorAngle);
 
 
@@ -142,6 +142,21 @@ void TestManager::SendTestProcess()
         }
         else if (userInput == 9)
         {
+            for (auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    tMotor->clearCommandBuffer();
+                    tMotor->clearReceiveBuffer();
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    maxonMotor->clearCommandBuffer();
+                    maxonMotor->clearReceiveBuffer();
+                }
+            }
+            canManager.Input_pos.clear();
+            Input_pos.clear();
             state.test = TestSub::FillBuf;
             usleep(5000);
             UnfixedMotor();
@@ -1162,7 +1177,7 @@ vector<float> TestManager::cal_Vmax(float q1[], float q2[],  float acc, float t2
 {
     vector<float> Vmax;
 
-    for (long unsigned int i = 0; i < 7; i++)
+    for (long unsigned int i = 0; i < 9; i++)
     {
         float val;
         float S = q2[i] - q1[i];
@@ -1203,7 +1218,7 @@ vector<float> TestManager::cal_Vmax(float q1[], float q2[],  float acc, float t2
             }
         }
         Vmax.push_back(val);
-        // cout << "Vmax_" << i << " : " << val << "rad/s\n";
+        cout << "Vmax_" << i << " : " << val << "rad/s\n";
     }
 
     return Vmax;
@@ -1418,9 +1433,9 @@ void TestManager::GetArr(float arr[])
     const float acc_max = 100.0;    // rad/s^2
     vector<float> Qi;
     vector<float> Vmax;
-    float Q2[9] = {0};
+    float Q2[9] = {0.0};
     
-    float c_MotorAngle[9];
+    float c_MotorAngle[9] = {0.0};
     int n;
     int n_p;    // 목표위치까지 가기 위한 추가 시간
     int n_brake_start[7] = {0};

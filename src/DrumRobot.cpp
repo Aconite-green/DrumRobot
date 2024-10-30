@@ -617,10 +617,20 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
         if (getHome)
         {
+            cout << "standby : ";
+            for(int i = 0; i < 9; i++)
+            {
+                cout << pathManager.standby[i] << ' ';
+            }
             pathManager.GetArr(pathManager.standby);
         }
         else if (getReady)
         {
+            cout << "readyarr : ";
+            for(int i = 0; i < 9; i++)
+            {
+                cout << pathManager.readyarr[i] << ' ';
+            }
             pathManager.GetArr(pathManager.readyarr);
         }
         else if (getBack)
@@ -817,7 +827,7 @@ bool DrumRobot::processInput(const std::string &input)
             // set zero
             for (const auto &motorPair : motors)
             {
-                if (std::shared_ptr<TMotor> tMotor  = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
                 {
                     if (tMotor->myName == "waist")
                     {
@@ -1083,7 +1093,7 @@ void DrumRobot::initializeMotors()
     motors["L_arm2"] = make_shared<TMotor>(0x05, "AK70_10");
     motors["L_arm3"] = make_shared<TMotor>(0x06, "AK70_10");
     motors["R_wrist"] = make_shared<MaxonMotor>(0x07);
-    motors["L_wrist"] = make_shared<MaxonMotor>(0x08);
+    motors["L_wrist"] = make_shared<MaxonMotor>(0x08); 
     motors["R_foot"] = make_shared<MaxonMotor>(0x09);
     motors["L_foot"] = make_shared<MaxonMotor>(0x0A);
     motors["maxonForTest"] = make_shared<MaxonMotor>(0x0B);

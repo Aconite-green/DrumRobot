@@ -71,13 +71,13 @@ public:
 
     //     Ready Array      : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
-    vector<float> readyarr = {0, M_PI / 2, M_PI / 2, M_PI * 0.25, M_PI / 2.4, M_PI * 0.25, M_PI / 2.4, M_PI / 6, M_PI / 6};
+    vector<float> readyarr = {0, M_PI / 2.0, M_PI / 2.0, M_PI * 0.25, M_PI / 2.4, M_PI * 0.25, M_PI / 2.4, M_PI / 6.0, M_PI / 6.0};
     // Standby(Home) Array  : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 135    , 45    , -45    , 90     , -45     , 90     , 90      , 90 }      [deg]
-    vector<float> standby = {0, M_PI * 0.75, M_PI * 0.25, -M_PI / 4, M_PI / 2, -M_PI / 4, M_PI / 2, M_PI / 2, M_PI / 2};
+    vector<float> standby = {0, M_PI * 0.75, M_PI * 0.25, -M_PI / 4.0, M_PI / 2.0, -M_PI / 4.0, M_PI / 2.0, M_PI / 2.0, M_PI / 2.0};
     //     Back Array       : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
     //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
-    vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2, M_PI / 2};
+    vector<float> backarr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2.0, M_PI / 2.0};
 
     /*하이브리드 제어때 사용됨*/
     float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도

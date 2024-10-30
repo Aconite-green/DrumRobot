@@ -9,7 +9,7 @@ def load_txt(file_path):
     return pd.read_csv(file_path, delimiter=',', header=None, names=['시간', 'CAN ID', '현재 위치', '전류값'])
 
 # CAN ID별 그래프 그리기 함수 (각각 별도의 팝업)
-def plot_by_can_id(df, y_column, y_label, filename_prefix):
+def plot_by_can_id_receive(df, y_column, y_label):
     for can_id in df['CAN ID'].unique():
         can_id_df = df[df['CAN ID'] == can_id]
         
@@ -17,7 +17,22 @@ def plot_by_can_id(df, y_column, y_label, filename_prefix):
         plt.figure(figsize=(10, 6))
         plt.plot(can_id_df['시간'], can_id_df[y_column], label=f'CAN ID {can_id}', marker='o')
         
-        plt.xlabel('시간')
+        plt.xlabel('시간') 
+        plt.ylabel(y_label)
+        plt.title(f'{y_label} - CAN ID {can_id}')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        
+def plot_by_can_id_send(df, y_column, y_label):
+    for can_id in df['CAN ID'].unique():
+        can_id_df = df[df['CAN ID'] == can_id]
+        
+        # 각각의 CAN ID에 대한 그래프 팝업 생성
+        plt.figure(figsize=(10, 6))
+        plt.plot(can_id_df['시간'], can_id_df[y_column], label=f'CAN ID {can_id}', marker='o')
+        
+        plt.xlabel('시간') 
         plt.ylabel(y_label)
         plt.title(f'{y_label} - CAN ID {can_id}')
         plt.legend()

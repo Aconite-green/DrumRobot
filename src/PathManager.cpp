@@ -1600,7 +1600,7 @@ void PathManager::GetArr(vector<float> &arr)
     cout << "Get Array...\n";
     for (int k = 0; k < 9; k++)
     {
-        cout << arr[k] << endl;
+        cout << "arr[" << k << "] : " << arr[k] << endl;
     }
 
     // Timing Belt
@@ -1615,6 +1615,12 @@ void PathManager::GetArr(vector<float> &arr)
             Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]];
         }
     }
+
+    // for (int i = 0; i < 9; i++)
+    // {
+    //     cout << "Q2[" << i << "] : " << Q2[i] << endl;
+    // }
+    // usleep(1000000);
 
     getMotorPos();
 
