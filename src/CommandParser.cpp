@@ -425,6 +425,20 @@ void MaxonCommandParser::getOperational(MaxonMotor &motor, struct can_frame *fra
     frame->data[7] = 0x00;
 }
 
+void MaxonCommandParser::getShutdown(MaxonMotor &motor, struct can_frame *frame)
+{
+    frame->can_id = motor.txPdoIds[0];
+    frame->can_dlc = 8;
+    frame->data[0] = 0x06;
+    frame->data[1] = 0x00;
+    frame->data[2] = 0x00;
+    frame->data[3] = 0x00;
+    frame->data[4] = 0x00;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
+}
+
 void MaxonCommandParser::getEnable(MaxonMotor &motor, struct can_frame *frame)
 {
     frame->can_id = motor.txPdoIds[0];
@@ -629,7 +643,7 @@ void MaxonCommandParser::getStartHoming(MaxonMotor &motor, struct can_frame *fra
 {
     frame->can_id = motor.txPdoIds[0];
     frame->can_dlc = 8;
-    frame->data[0] = 0x1F;
+    frame->data[0] = 0x1F; // 00011111
     frame->data[1] = 0x00;
     frame->data[2] = 0x00;
     frame->data[3] = 0x00;

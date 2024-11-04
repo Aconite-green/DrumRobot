@@ -1698,11 +1698,22 @@ void DrumRobot::homingMaxonEnable()
         std::shared_ptr<GenericMotor> motor = motorPair.second;
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
+            maxoncmd.getHomeMode(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
 
             maxoncmd.getOperational(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
             usleep(100000);
+
+            maxoncmd.getShutdown(*maxonMotor, &frame);
+            canManager.txFrame(motor, frame);
+
+            maxoncmd.getSync(&frame);
+            canManager.txFrame(motor, frame);
+
+            usleep(100000);
+
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
@@ -1712,18 +1723,18 @@ void DrumRobot::homingMaxonEnable()
 
             usleep(100000);
 
-            maxoncmd.getQuickStop(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
+            // maxoncmd.getQuickStop(*maxonMotor, &frame);
+            // canManager.txFrame(motor, frame);
 
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
+            // maxoncmd.getSync(&frame);
+            // canManager.txFrame(motor, frame);
 
-            usleep(100000);
-            maxoncmd.getEnable(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
+            // usleep(100000);
+            // maxoncmd.getEnable(*maxonMotor, &frame);
+            // canManager.txFrame(motor, frame);
 
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
+            // maxoncmd.getSync(&frame);
+            // canManager.txFrame(motor, frame);
 
             std::cout << "Maxon Enabled(2) \n";
         }

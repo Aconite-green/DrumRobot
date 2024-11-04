@@ -11,7 +11,8 @@ def load_txt(file_path):
             # CAN ID는 두 번째 열에 있음
             time, can_id, pos, current_or_error = float(split_line[0]), int(split_line[1]), float(split_line[2]), float(split_line[3])
 
-            # CAN ID가 1자리이면 Receive, 3자리이면 Send 신호로 분류
+            # CAN ID가 1자리이면 Receive, 3자리
+            # 이면 Send 신호로 분류
             if can_id < 100:
                 data.append([time, can_id, pos, current_or_error, 'Receive'])
             else:

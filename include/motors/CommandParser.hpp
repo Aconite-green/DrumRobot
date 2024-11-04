@@ -69,6 +69,7 @@ public:
     void getStop(MaxonMotor &motor, struct can_frame *frame);
     void getQuickStop(MaxonMotor &motor, struct can_frame *frame);
     void getOperational(MaxonMotor &motor, struct can_frame *frame);
+    void getShutdown(MaxonMotor &motor, struct can_frame *frame);
     void getEnable(MaxonMotor &motor, struct can_frame *frame);
     void getSync(struct can_frame *frame);
 
