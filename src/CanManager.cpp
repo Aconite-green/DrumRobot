@@ -618,7 +618,7 @@ void CanManager::setMotorsSocket()
                 {
                     std::cerr << "--------------> CAN NODE ID " << motor->nodeId << " Connected. " << "Motor [" << name << "]\n";
 
-                    std::string file_name = "data";
+                    // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)motor->nodeId, motor->initial_position, INIT_SIGN);
                 }
                 else
@@ -675,7 +675,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
 
-                    std::string file_name = "data";
+                    // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->currentPos, tMotor->currentTor);
                 }
             }
@@ -704,7 +704,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     maxonMotor->recieveBuffer.push(frame);
                     maxonMotor->coordinatePos = (maxonMotor->currentPos + maxonMotor->currentPos) * maxonMotor->cwDir;
 
-                    std::string file_name = "data";
+                    // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->currentPos, maxonMotor->currentTor);
                 }
             }
@@ -727,7 +727,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
 
-        std::string file_name = "data";
+        // std::string file_name = "data";
         appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedPos,  motor->fixedPos - tMotor->currentPos);
 
         // safety check
@@ -764,7 +764,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             return false;
         };
 
-        std::string file_name = "data";
+        // std::string file_name = "data";
         appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, maxonMotor->fixedPos, maxonMotor->fixedPos - maxonMotor->currentPos);
     }
     return true;
@@ -822,7 +822,7 @@ bool CanManager::setCANFrame()
             Pos[motor_mapping[maxonMotor->myName]] = mData.position;
             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
 
-            std::string file_name = "data";
+            // std::string file_name = "data";
             appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, mData.position, mData.position - maxonMotor->currentPos);
         }
         else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
@@ -866,7 +866,7 @@ bool CanManager::setCANFrame()
             }
             tMotor->brake_state = tData.isBrake;
 
-            std::string file_name = "data";
+            // std::string file_name = "data";
             appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->currentPos);
         }
     }
@@ -1012,6 +1012,28 @@ void CanManager::appendToCSV_time(const std::string& filename) {
     } else {
         std::cerr << "Unable to open file: " << fullPath << std::endl;
     }
+}
+
+bool CanManager::openCSVFile()
+{
+    bool openCSV = false;
+    for (int i = 0; i < 100; i++)
+    {
+        // 기본 경로와 파일 이름을 결합
+        std::string fullPath = basePath + file_name + to_string(i) + ".txt";
+
+        // 파일이 이미 존재하는지 확인
+        bool fileExists = std::ifstream(fullPath).good();
+
+        if(!fileExists)
+        {
+            // 처음 실행 시
+            openCSV = true;
+            break;
+        }
+    }
+
+    return openCSV;
 }
 
 // 시간과 변수를 CSV 파일에 한 줄씩 저장하는 함수

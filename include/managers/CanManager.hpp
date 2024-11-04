@@ -117,6 +117,8 @@ public:
     /*save csv/txt file*/
     std::chrono::high_resolution_clock::time_point start;  
     const std::string basePath = "../DataPlot/";  // 기본 경로
+    std::string file_name = "data";
+    bool openCSVFile();
     void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
     void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
     void appendToCSV_time(const std::string& filename);

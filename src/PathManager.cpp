@@ -1645,7 +1645,7 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = canManager.deltaT;   // 0.005
-    float t = 3.0; // 3초동안 실행
+    float t = 5.0; // 5초동안 실행
     int n = (int)(t / dt);
 
     for (int i = 0; i < 9; i++)
