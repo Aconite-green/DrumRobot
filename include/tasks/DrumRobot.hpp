@@ -132,7 +132,7 @@ private:
         {"L_foot", 10}};
 
     // 로봇 고정했을 때 각 모터의 관절각  Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    const float initial_positions[11] = {0.0,   90.0,   90.0,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0};
+    const float initial_positions[11] = {0.0,   90.0,   90.0,   0.0,    120.0,  0.0,    120.0,  0.0,    95.0,    95.0,    0.0};
 
     // 로봇의 관절각 범위
     //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
@@ -152,6 +152,7 @@ private:
     bool dct_fun(float positions[], float vel_th);
 
     // Maxon 모터 Homing 함수
+    void homingSetZero();
     void homingMaxonEnable();
     void homingSetMaxonMode(std::string targetMode);
 

@@ -605,10 +605,10 @@ void MaxonCommandParser::getHomingMethodL(MaxonMotor &motor, struct can_frame *f
     frame->data[1] = 0x98;
     frame->data[2] = 0x60;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xFD;
-    frame->data[5] = 0xFF;
-    frame->data[6] = 0xFF;
-    frame->data[7] = 0xFF;
+    frame->data[4] = 0x25;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
 }
 
 void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *frame)
@@ -619,10 +619,10 @@ void MaxonCommandParser::getHomingMethodR(MaxonMotor &motor, struct can_frame *f
     frame->data[1] = 0x98;
     frame->data[2] = 0x60;
     frame->data[3] = 0x00;
-    frame->data[4] = 0xFD;
-    frame->data[5] = 0xFF;
-    frame->data[6] = 0xFF;
-    frame->data[7] = 0xFF;
+    frame->data[4] = 0x25;
+    frame->data[5] = 0x00;
+    frame->data[6] = 0x00;
+    frame->data[7] = 0x00;
 }
 
 void MaxonCommandParser::getHomingMethodTest(MaxonMotor &motor, struct can_frame *frame)

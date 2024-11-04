@@ -1146,7 +1146,7 @@ void TestManager::getMotorPos(float c_MotorAngle[])
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir;
+            c_MotorAngle[motor_mapping[entry.first]] = (maxonMotor->currentPos + maxonMotor->homeOffset) * maxonMotor->cwDir;
         }
     }
 }
@@ -1536,7 +1536,7 @@ void TestManager::GetArr(float arr[])
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
                 {
                     MaxonData newData;
-                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir - maxonMotor->homeOffset;
                     newData.WristState = 0.5;
                     maxonMotor->commandBuffer.push(newData);
                 }
@@ -1616,7 +1616,7 @@ void TestManager::GetArr_test(float arr[])
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
                 MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir - maxonMotor->homeOffset;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
             }

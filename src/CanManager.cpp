@@ -702,7 +702,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
-                    maxonMotor->coordinatePos = maxonMotor->currentPos * maxonMotor->cwDir;
+                    maxonMotor->coordinatePos = (maxonMotor->currentPos + maxonMotor->currentPos) * maxonMotor->cwDir;
 
                     std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->currentPos, maxonMotor->currentTor);
@@ -951,7 +951,7 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
-        float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir;
+        float coordinationPos = (std::get<1>(parsedData) + maxonMotor->homeOffset) * maxonMotor->cwDir;
         if (maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
             if (maxonMotor->rMin > coordinationPos)

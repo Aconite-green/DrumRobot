@@ -864,6 +864,15 @@ bool DrumRobot::processInput(const std::string &input)
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
+            for (auto &entry : motors)
+            {
+                entry.second->isHomed = true;
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+                {
+                    maxonMotor->homeOffset = maxonMotor->cwDir * maxonMotor->initial_position;
+                }
+            }
+
             state.home = HomeSub::Done;
             flag_setting("isBack");
 
@@ -881,6 +890,15 @@ bool DrumRobot::processInput(const std::string &input)
             }
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
+
+            for (auto &entry : motors)
+            {
+                entry.second->isHomed = true;
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+                {
+                    maxonMotor->homeOffset = maxonMotor->cwDir * maxonMotor->initial_position;
+                }
+            }
 
             state.home = HomeSub::Done;
             flag_setting("isBack");
@@ -1442,11 +1460,11 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                // maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
+                // canManager.sendAndRecv(motor, frame);
             }
             else if (name == "R_wrist")
             {
@@ -1456,11 +1474,11 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 90);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
-                canManager.sendAndRecv(motor, frame);
+                // maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);
+                // canManager.sendAndRecv(motor, frame);
             }
             else if (name == "maxonForTest")
             {
@@ -1713,12 +1731,13 @@ void DrumRobot::homingMaxonEnable()
             canManager.txFrame(motor, frame);
 
             usleep(100000);
-
+            
             maxoncmd.getEnable(*maxonMotor, &frame);
             canManager.txFrame(motor, frame);
 
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
+            
             std::cout << "Maxon Enabled(1) \n";
 
             usleep(100000);
@@ -1735,7 +1754,7 @@ void DrumRobot::homingMaxonEnable()
 
             // maxoncmd.getSync(&frame);
             // canManager.txFrame(motor, frame);
-
+            
             std::cout << "Maxon Enabled(2) \n";
         }
     }
