@@ -879,7 +879,6 @@ bool DrumRobot::processInput(const std::string &input)
                     tMotor->homeOffset = tMotor->cwDir * tMotor->initial_position;
                 }
             }
-            homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
             state.home = HomeSub::Done;

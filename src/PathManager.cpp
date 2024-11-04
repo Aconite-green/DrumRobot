@@ -766,7 +766,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
                             float the0 = asin(det_the0) - alpha;
                             if (the0 > -M_PI / 3.0 && the0 < M_PI / 3.0) // the0 범위 : -60deg ~ 60deg
                             {
-                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + Y2 * Y2);
+                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
                                 float det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
 
                                 if (det_the2 < 1 && det_the2 > -1)
@@ -1406,10 +1406,13 @@ void PathManager::PathLoopTask()
         State = BB;
     }
 
+
+
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
     VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
     VectorXd qk1_06 = ikfun_final(pR1, pL1, part_length, s, z0);
+
 
     VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
     VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
@@ -1483,11 +1486,6 @@ void PathManager::PathLoopTask()
             qt(6) += qElbow.second;
             qv_in(4) = ((abs(qt(4) - q_current(4)) / M_PI * 180) / t1); // [deg/s]
             qv_in(6) = ((abs(qt(6) - q_current(6)) / M_PI * 180) / t1); // [deg/s]
-
-            /*cout << "qt :\n"
-                << qt << "\n";
-            cout << "qv_in :\n"
-                << qv_in << "\n";*/
 
             float dt = canManager.deltaT;   // 0.005
             int n = t1 / dt;
