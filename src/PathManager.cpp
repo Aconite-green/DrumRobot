@@ -1596,12 +1596,12 @@ void PathManager::PathLoopTask()
             // 사용 안함 (POS-SPD LOOP MODE에서 사용) 
             VectorXd qv_in = VectorXd::Zero(7);     
 
-            // 데이터 기록
-            for (int m = 0; m < 9; m++)
-            {
-                std::string file_name = "desired_path";
-                canManager.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
-            }
+            // // 데이터 기록
+            // for (int m = 0; m < 9; m++)
+            // {
+            //     std::string file_name = "desired_path";
+            //     canManager.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
+            // }
             
             // Command Buffer 쌓기
             Motors_sendBuffer(qt, qv_in, wrist_state, false);
@@ -1645,8 +1645,10 @@ void PathManager::GetArr(vector<float> &arr)
     getMotorPos();
 
     float dt = canManager.deltaT;   // 0.005
-    float t = 5.0; // 5초동안 실행
-    int n = (int)(t / dt);
+    float t = 3.0;                  // 3초동안 실행
+    float extra_time = 1.0;         // 추가 시간 1초
+    int n = (int)(t / dt);   
+    int n_p = (int)(extra_time / dt);  
 
     for (int i = 0; i < 9; i++)
     {
@@ -1660,7 +1662,7 @@ void PathManager::GetArr(vector<float> &arr)
         cout << "Vmax_" << k << " : " << Vmax(k) << "rad/s\n";
     }
 
-    for (int k = 1; k <= n; ++k)
+    for (int k = 1; k <= n + n_p; ++k)
     {
         // Make Array
         Qi = makeProfile(Q1, Q2, Vmax, acc_max, t*k/n, t);

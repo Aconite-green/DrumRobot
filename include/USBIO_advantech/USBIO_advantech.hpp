@@ -18,7 +18,7 @@ public:
 
     ~USBIO();
 
-    bool USBIO_4761_init();
+    void USBIO_4761_init();
     bool USBIO_4761_output();
     void USBIO_4761_set(int num, bool state);
     void USBIO_4761_exit();

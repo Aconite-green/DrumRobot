@@ -70,11 +70,9 @@ void TestManager::SendTestProcess()
         }
         else if (method == 7)
         {
-            if (usbio.USBIO_4761_init())
-            {
-                std::cout << "USBIO-4761 init\n";
-                usleep(1000000);
-            }
+            usbio.USBIO_4761_init();
+            usleep(1000000);
+            
         }
         else if (method == -1)
         {

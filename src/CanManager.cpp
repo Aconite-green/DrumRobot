@@ -987,6 +987,30 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
     return isSafe;
 }
 
+void CanManager::openCSVFile()
+{
+    bool openCSV = false;
+    for (int i = 1; i < 100; i++)
+    {
+        // 기본 경로와 파일 이름을 결합
+        std::string fullPath = basePath + file_name + to_string(i) + ".txt";
+
+        // 파일이 이미 존재하는지 확인
+        bool fileExists = std::ifstream(fullPath).good();
+
+        if(!fileExists)
+        {
+            // 처음 실행 시
+            openCSV = true;
+            file_name = file_name + to_string(i);
+            std::cout << "Start Logging of Log Data : " << file_name << ".txt\n";
+            return;
+        }
+    }
+
+    std::cerr << "Unable to open file" << std::endl;
+}
+
 // 시간를 CSV 파일에 한 줄씩 저장하는 함수
 void CanManager::appendToCSV_time(const std::string& filename) {
     auto now = std::chrono::high_resolution_clock::now();
@@ -1012,28 +1036,6 @@ void CanManager::appendToCSV_time(const std::string& filename) {
     } else {
         std::cerr << "Unable to open file: " << fullPath << std::endl;
     }
-}
-
-bool CanManager::openCSVFile()
-{
-    bool openCSV = false;
-    for (int i = 0; i < 100; i++)
-    {
-        // 기본 경로와 파일 이름을 결합
-        std::string fullPath = basePath + file_name + to_string(i) + ".txt";
-
-        // 파일이 이미 존재하는지 확인
-        bool fileExists = std::ifstream(fullPath).good();
-
-        if(!fileExists)
-        {
-            // 처음 실행 시
-            openCSV = true;
-            break;
-        }
-    }
-
-    return openCSV;
 }
 
 // 시간과 변수를 CSV 파일에 한 줄씩 저장하는 함수

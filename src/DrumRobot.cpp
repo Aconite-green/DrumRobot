@@ -48,10 +48,9 @@ void DrumRobot::stateMachine()
             initializecanManager();
             motorSettingCmd();
             canManager.setSocketNonBlock();
-            if (usbio.USBIO_4761_init())
-            {
-                std::cout << "USBIO-4761 init\n";
-            }
+            usbio.USBIO_4761_init();
+            canManager.openCSVFile();
+
             std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
             state.main = Main::Ideal;

@@ -8,7 +8,7 @@ USBIO::~USBIO()
 {
 }
 
-bool USBIO::USBIO_4761_init()
+void USBIO::USBIO_4761_init()
 {
     useUSBIO = true;
 
@@ -29,12 +29,10 @@ bool USBIO::USBIO_4761_init()
         std::cout << "Some error occurred. And the last error code is 0x" << ret << ". [" << enumString << "]\n";
 
         useUSBIO = false;
-
-        return false;
     }
     else
     {
-        return true;
+        std::cout << "USBIO-4761 init\n";
     }
 }
 
