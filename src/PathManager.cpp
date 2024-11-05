@@ -20,7 +20,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             TMotorData newData;
-            newData.position = (Qi(motor_mapping[entry.first]) - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
+            newData.position = Qi(motor_mapping[entry.first]) * tMotor->cwDir - tMotor->homeOffset;
             newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
             newData.acl = 50000;
             newData.isBrake = brake_state;
@@ -29,7 +29,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, floa
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
             MaxonData newData;
-            newData.position = (Qi(motor_mapping[entry.first]) - maxonMotor->initial_position) * maxonMotor->cwDir;
+            newData.position = Qi(motor_mapping[entry.first]) * maxonMotor->cwDir - maxonMotor->homeOffset;
 
             // 토크 제어 시 WristState 사용
             if (entry.first == "R_wrist")
@@ -226,11 +226,11 @@ void PathManager::getMotorPos()
         entry.second->prePos = entry.second->currentPos;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = tMotor->currentPos * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
+            c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir + maxonMotor->initial_position;
+            c_MotorAngle[motor_mapping[entry.first]] = (maxonMotor->currentPos + maxonMotor->homeOffset) * maxonMotor->cwDir;
         }
     }
 }
@@ -719,7 +719,7 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA)
 
 VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0)
 {
-    // float direction = 0.0 * M_PI;
+    float direction = 0.0 * M_PI;
 
     float X1 = pR(0), Y1 = pR(1), z1 = pR(2);
     float X2 = pL(0), Y2 = pL(1), z2 = pL(2);
@@ -733,7 +733,7 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_len
     float zeta = z0 - z2;
     VectorXd Qf(9);
     MatrixXd Q_arr(7,1);
-    // float the0_f = 0;
+    float the0_f = 0;
 
     // the3 배열 초기화
     for (int i = 0; i < 1351; ++i)
@@ -879,12 +879,12 @@ vector<float> PathManager::fkfun()
         auto &motor = motorPair.second;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
         {
-            theta[motor_mapping[name]] = tMotor->currentPos * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
+            theta[motor_mapping[name]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
             cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
         {
-            theta[motor_mapping[name]] = maxonMotor->currentPos * maxonMotor->cwDir + maxonMotor->initial_position;
+            theta[motor_mapping[name]] = (maxonMotor->currentPos + maxonMotor->homeOffset) * maxonMotor->cwDir;
             cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
     }
@@ -1442,6 +1442,16 @@ void PathManager::PathLoopTask()
     cout << "qk2_06 :\n"
          << qk2_06 << "\n";
 
+    // Timing Belt
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            qk1_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
+            qk2_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
+            qk3_06(motor_mapping[entry.first]) /= tMotor->timingBelt_ratio;
+        }
+    }
 
     if (canManager.tMotor_control_mode == POS_SPD_LOOP)
     {
@@ -1619,6 +1629,19 @@ void PathManager::GetArr(vector<float> &arr)
         cout << "arr[" << k << "] : " << arr[k]*180.0/M_PI <<  " [deg]"<< endl;
     }
 
+    // Timing Belt
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
+        }
+        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            Q2(motor_mapping[entry.first]) = arr[motor_mapping[entry.first]];
+        }
+    }
+
     getMotorPos();
 
     float dt = canManager.deltaT;   // 0.005
@@ -1630,7 +1653,6 @@ void PathManager::GetArr(vector<float> &arr)
     for (int i = 0; i < 9; i++)
     {
         Q1(i) = c_MotorAngle[i];
-        Q2(i) = arr[i];
     }
 
     Vmax = cal_Vmax(Q1, Q2, acc_max, t);
@@ -1654,11 +1676,11 @@ void PathManager::GetArr(vector<float> &arr)
 
                 if (canManager.tMotor_control_mode == POS_SPD_LOOP)
                 {
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->initial_position;
+                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
                 else    // POS_LOOP, SPD_LOOP
                 {
-                    newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
+                    newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
                 }
 
                 newData.spd = tMotor->spd;
@@ -1669,7 +1691,7 @@ void PathManager::GetArr(vector<float> &arr)
             else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
             {
                 MaxonData newData;
-                newData.position = (Qi[motor_mapping[entry.first]] - maxonMotor->initial_position) * maxonMotor->cwDir;
+                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir - maxonMotor->homeOffset;
                 newData.WristState = 0.5;
                 maxonMotor->commandBuffer.push(newData);
             }
