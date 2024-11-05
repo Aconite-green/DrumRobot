@@ -665,9 +665,8 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                         {
                             return false;
                         }
-                        tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;  // 이거 이 위치가 맞나??
                     }
-                    tMotor->currentPos = std::get<1>(parsedData);
+                    tMotor->currentPos = std::get<1>(parsedData) * tMotor->timingBelt_ratio;
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
@@ -699,7 +698,6 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
                     maxonMotor->recieveBuffer.push(frame);
-                    maxonMotor->coordinatePos = (maxonMotor->currentPos + maxonMotor->currentPos) * maxonMotor->cwDir;
 
                     // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->currentPos, maxonMotor->currentTor);

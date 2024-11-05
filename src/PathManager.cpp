@@ -1460,11 +1460,11 @@ void PathManager::PathLoopTask()
         {
             if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor.second))
             {
-                q_current(motor_mapping[motor.first]) = tMotor->coordinatePos;
+                q_current(motor_mapping[motor.first]) = tMotor->currentPos;
             }
             else if (std::shared_ptr<MaxonMotor> mMotor = std::dynamic_pointer_cast<MaxonMotor>(motor.second))
             {
-                q_current(motor_mapping[motor.first]) = mMotor->coordinatePos;
+                q_current(motor_mapping[motor.first]) = mMotor->currentPos;
             }
         }
 
