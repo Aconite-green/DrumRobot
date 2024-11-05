@@ -99,7 +99,6 @@ private:
     vector<float> ikfun_final(float pR[], float pL[], float part_length[], float s, float z0);
     void fkfun(float arr[]);
     void GetArr(float arr[]);
-    void GetArr_test(float arr[]);
 
 
     bool sin_flag = false;
