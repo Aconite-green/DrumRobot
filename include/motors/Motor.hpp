@@ -27,25 +27,22 @@ public:
 
     // Motors Feature
     float cwDir;
-    float timingBelt_ratio;
     float rMin, rMax;
-    // float initial_position;
+    int32_t spd = 300; // ERPM
+    int32_t acl = 10000; // ERPA
     std::string myName;
-    std::string interFaceName;
     bool isError = false;
     // Values
     float desPos, desVel, desTor;
     float prePos;
     float currentPos, currentVel, currentTor;
     float coordinatePos;
+    // Fixed
     float fixedPos;
     bool isfixed = false;
-    int Kp;
-    double Kd;
 
-    float pre_spd = 0.0;
-    int32_t spd = 300; // ERPM
-    int32_t acl = 10000; // ERPA
+    // Save CSV
+    float pre_spd = 0.0;    
 
     // Gear ratio
     std::map<std::string, int> R_Ratio = {
@@ -54,6 +51,7 @@ public:
         {"AK10_9", 9}
     };
     int PolePairs = 21;
+    float timingBelt_ratio;
 
     // For Homing Session
     bool isHomed;
@@ -85,9 +83,7 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
-    // int sensorReadBit, sensorWriteBit;
     float homeOffset = 0.0;
-    // double sensorLocation = 0.0;
     bool brake_state;
 
     // For Homing Session
@@ -130,7 +126,6 @@ public:
     bool isPositionMode = false;
     bool atPosition = false;
     bool positioning = false;
-    // float targetPos = M_PI / 18.0;
 
     bool checked = false;
 
