@@ -80,7 +80,7 @@ def plot_error_by_can_id(send_df, can_id):
 # 메인 함수
 def main():
     # txt 파일 경로
-    file_path = 'DataPlot/data.txt'  # txt 파일 경로
+    file_path = 'DataPlot/data1.txt'  # txt 파일 경로
 
     # 데이터 로드
     df = load_txt(file_path)
