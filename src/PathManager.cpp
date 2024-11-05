@@ -1178,7 +1178,7 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
 void PathManager::GetDrumPositoin()
 {
     part_length.resize(6);
-    part_length << 0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
+    part_length << 0.250, 0.328, 0.250, 0.328, 0.325+0.048, 0.325+0.048; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
 
     ifstream inputFile("../include/managers/rT.txt");
 

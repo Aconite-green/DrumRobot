@@ -66,9 +66,9 @@ private:
     float L_xyz[3] = {0.0};
 
     // Robot Parameters
-    float part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
-    float s = 0.600;  ///< 허리 길이.
-    float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
+    float part_length[6] = {0.250, 0.328, 0.250, 0.328, 0.325+0.048, 0.325+0.048};
+    float s = 0.520;  ///< 허리 길이.
+    float z0 = 0.890-0.0605; ///< 바닥부터 허리까지의 높이.
 
     map<std::string, int> motor_mapping = { //< 각 관절에 해당하는 열 정보.
         {"waist", 0},
