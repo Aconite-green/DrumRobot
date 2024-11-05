@@ -15,1024 +15,443 @@ void TestManager::SendTestProcess()
     // 선택에 따라 testMode 설정
     switch (state.test.load())
     {
-    case TestSub::SelectParamByUser:
-    {
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
+        case TestSub::SelectParamByUser:
+        {
+            int ret = system("clear");
+            if (ret == -1)
+                std::cout << "system clear error" << endl;
 
-        float c_MotorAngle[9];
-        getMotorPos(c_MotorAngle);
+            float c_MotorAngle[9];
+            getMotorPos(c_MotorAngle);
 
-        std::cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            q[i] = c_MotorAngle[i];
-            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
-        }
-        fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
-
-        std::cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, 3 - 테스트 동작, 4 - Command, 5 - 서보모드, 6 - USBIO-4761, -1 - 나가기) : ";
-        std::cin >> method;
-        
-        if (method == 1)
-        {
-            state.test = TestSub::SetQValue;
-        }
-        else if (method == 2)
-        {
-            state.test = TestSub::SetXYZ;
-        }
-        else if (method == 3)
-        {
-            // 정해진 동작 테스트
-            state.test = TestSub::SetSingleTuneParm;
-        }
-        else if (method == 4)
-        {
-            state.test = TestSub::StickTest;    // command test
-        }
-        else if (method == 5)
-        {
-            state.test = TestSub::SetServoTestParm;
-        }
-        else if (method == 6)
-        {
-            if(usbio.useUSBIO)
+            std::cout << "[ Current Q Values (Radian) ]\n";
+            for (int i = 0; i < 9; i++)
             {
-                testUSBIO_4761();
+                q[i] = c_MotorAngle[i];
+                std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
+            }
+            fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
+
+            std::cout << "\nSelect Method (1 - 관절각도값 조절, 2 - 좌표값 조절, -1 - 나가기) : ";
+            std::cin >> method;
+            
+            if (method == 1)
+            {
+                state.test = TestSub::SetQValue;
+            }
+            else if (method == 2)
+            {
+                state.test = TestSub::SetXYZ;
+            }
+            else if (method == -1)
+            {
+                state.main = Main::Ideal;
+            }
+
+            break;
+        }
+        case TestSub::SetQValue:
+        {
+            int userInput = 100;
+            int ret = system("clear");
+            if (ret == -1)
+                std::cout << "system clear error" << endl;
+
+            float c_MotorAngle[9] = {0};
+            getMotorPos(c_MotorAngle);
+
+
+            if(sin_flag)
+            {
+                std::cout << "Mode : Sin Wave\n";
             }
             else
             {
-                std::cout << "\n USBIO not connected\n\n";
-                usleep(1000000);
+                std::cout << "Mode : Go to target point\n";
             }
-        }
-        else if (method == 7)
-        {
-            usbio.USBIO_4761_init();
-            usleep(1000000);
-            
-        }
-        else if (method == -1)
-        {
-            state.main = Main::Ideal;
-        }
-
-        break;
-    }
-    case TestSub::SetQValue:
-    {
-        int userInput = 100;
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        float c_MotorAngle[9] = {0};
-        getMotorPos(c_MotorAngle);
-
-
-        if(sin_flag)
-        {
-            std::cout << "Mode : Sin Wave\n";
-        }
-        else
-        {
-            std::cout << "Mode : Go to target point\n";
-        }
-        std::cout << "\n[Current Q Values] [Target Q Values] (Radian)\n";
-        for (int i = 0; i < 9; i++)
-        {
-            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t<->\t" << q[i] << std::endl;
-        }
-
-        std::cout << "\ntime : " << t << "s";
-        if(!sin_flag) std::cout << " + " << extra_time << "s";
-        std::cout << "\nnumber of repeat : " << n_repeat << std::endl << std::endl;
-
-        for (int i = 0; i < 7; i++)
-        {
-            if (brake_flag[i])
+            std::cout << "\n[Current Q Values] [Target Q Values] (Radian)\n";
+            for (int i = 0; i < 9; i++)
             {
-                std::cout << "Joint " << i << " brake on : " << brake_start_time[i] << "s ~ " << brake_end_time[i] << "s\n";
+                std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t<->\t" << q[i] << std::endl;
             }
-            else
-            {
-                std::cout << "Joint " << i << " brake off\n";
-            }
-        }
-        
-        std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15) /break on off (16) / Exit (-1): ";
-        std::cin >> userInput;
 
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput < 9)
-        {
-            float degree_angle;
-            
-            std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
-            std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
-            std::cin >> degree_angle;
-            q[userInput] = degree_angle * M_PI / 180.0;
-        }
-        else if (userInput == 9)
-        {
-            for (auto &motor_pair : motors)
+            std::cout << "\ntime : " << t << "s";
+            if(!sin_flag) std::cout << " + " << extra_time << "s";
+            std::cout << "\nnumber of repeat : " << n_repeat << std::endl << std::endl;
+
+            for (int i = 0; i < 7; i++)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                if (brake_flag[i])
                 {
-                    tMotor->clearCommandBuffer();
-                    tMotor->clearReceiveBuffer();
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-                {
-                    maxonMotor->clearCommandBuffer();
-                    maxonMotor->clearReceiveBuffer();
-                }
-            }
-            canManager.Input_pos.clear();
-            Input_pos.clear();
-            state.test = TestSub::FillBuf;
-            usleep(5000);
-            UnfixedMotor();
-        }
-        else if (userInput == 10)
-        {
-            std::cout << "time : ";
-            std::cin >> t;
-        }
-        else if (userInput == 11)
-        {
-            std::cout << "extra time : ";
-            std::cin >> extra_time;
-        }
-        else if (userInput == 12)
-        {
-            std::cout << "number of repeat : ";
-            std::cin >> n_repeat;
-        }
-        else if (userInput == 13)
-        {
-            int input_brake;
-            std::cout << "Select joint : ";
-            std::cin >> input_brake;
-
-            if(input_brake < 7)
-            {
-                if(brake_flag[input_brake])
-                {
-                    brake_flag[input_brake] = false;
+                    std::cout << "Joint " << i << " brake on : " << brake_start_time[i] << "s ~ " << brake_end_time[i] << "s\n";
                 }
                 else
                 {
-                    brake_flag[input_brake] = true;
-
-                    std::cout << "brake start time (0~" << t+extra_time << ") : ";
-                    std::cin >> brake_start_time[input_brake];
-
-                    std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t+extra_time << ") : ";
-                    std::cin >> brake_end_time[input_brake];
+                    std::cout << "Joint " << i << " brake off\n";
                 }
             }
-        }
-        else if (userInput == 14)
-        {
-            for (int i = 0; i <= 6; ++i)
+            
+            std::cout << "\nSelect Motor to Change Value (0-8) / Run (9) / Time (10) / Extra Time (11) / Repeat(12) / Brake (13) / initialize test (14) / Sin Profile (15) / break on off (16) / Exit (-1): ";
+            std::cin >> userInput;
+
+            if (userInput == -1)
             {
-                brake_flag[i] = false;
+                state.test = TestSub::SelectParamByUser;
+            }
+            else if (userInput < 9)
+            {
                 float degree_angle;
                 
-                // 1과 2는 90도, 나머지는 0도로 설정
-                if (i == 1 || i == 2) {
-                    degree_angle = 90.0;
-                } else {
-                    degree_angle = 0.0;
-                }
-                
-                std::cout << "\nRange : " << motorMinArr[i] << "~" << motorMaxArr[i] << "(Degree)\n";
-                std::cout << "Enter q[" << i << "] Values (Degree) : " << degree_angle << "\n";
-                
-                // degree 값을 radian으로 변환하여 q 배열에 저장
-                q[i] = degree_angle * M_PI / 180.0;
+                std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
+                std::cin >> degree_angle;
+                q[userInput] = degree_angle * M_PI / 180.0;
             }
-            t = 4.0;
-            extra_time = 1.0;
-            n_repeat = 1;
-            sin_flag = false;
-
-            state.test = TestSub::FillBuf;
-            usleep(5000);
-            UnfixedMotor();
-
-        }
-
-        else if (userInput == 15)
-        {
-            if(sin_flag)
+            else if (userInput == 9)
             {
-                sin_flag = false;
-                extra_time = 1.0;
-            }
-            else
-            {
-                sin_flag = true;
-                extra_time = 0.0;
-            }
-        }
-
-        else if (userInput == 16)
-        {
-            bool usbio_output = false;
-
-            std::cout << "Current brake states:" << std::endl;
-            for (int i = 0; i < 7; i++)
-            {
-                std::cout << "Brake " << i << ": " << (single_brake_flag[i] ? "Active" : "Inactive") << std::endl;
-            }
-
-            int break_num;
-            cin >> break_num;
-
-            if(!single_brake_flag[break_num])
-            {
-                usbio.USBIO_4761_set(break_num % 7, true);
-                usbio_output = usbio.USBIO_4761_output();
-                single_brake_flag[break_num] = true;
-            }
-            else
-            {
-                usbio.USBIO_4761_set(break_num % 7, false);
-                usbio_output = usbio.USBIO_4761_output();
-                single_brake_flag[break_num] = false;
-            }
-
-            if(!usbio_output)
-            {
-                std::cout << "OUTPUT Error" << endl;
-                usleep(5000000);
-                break;
-            }
-
-        }
-        break;
-    }
-    case TestSub::SetXYZ:
-    {
-        int userInput = 100;
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-        cout << "[ Current x, y, z (meter) ]\n";
-        cout << "Right : ";
-        for (int i = 0; i < 3; i++)
-        {
-            cout << R_xyz[i] << ", ";
-        }
-        cout << "\nLeft : ";
-        for (int i = 0; i < 3; i++)
-        {
-            cout << L_xyz[i] << ", ";
-        }
-
-        cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) / Start Test (3) / Exit (-1) : ";
-        cin >> userInput;
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput == 1)
-        {
-            cout << "Enter x, y, z Values (meter) : ";
-            cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
-        }
-        else if (userInput == 2)
-        {
-            cout << "Enter x, y, z Values (meter) : ";
-            cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
-        }
-        else if (userInput == 3)
-        {
-            state.test = TestSub::FillBuf;
-        }
-        break;
-    }
-    case TestSub::SetSingleTuneParm:    // 정해진 동작 테스트
-    {
-        int userInput = 100;
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        float c_MotorAngle[9];
-        getMotorPos(c_MotorAngle);
-
-        std::cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            q[i] = c_MotorAngle[i];
-            std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
-        }
-        std::cout << "time : " << t << "s\n";
-        std::cout << "mode : " <<  getArr_test_mode << endl;
-
-        std::cout << "\nRun : mode 0 (Move to Start Position) / mode 1 (R & L Move) / mode 2 (Circle Move) / mode 3 (Waist Move)";
-        std::cout << "\nCommand : Time (4) /  Exit (-1) : ";
-        std::cin >> userInput;
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput < 4)
-        {
-            getArr_test_mode = userInput;
-
-            if (getArr_test_mode == 0)
-            {
-                q[0] = 0.0 * M_PI / 180.0;
-                q[1] = 90.0 * M_PI / 180.0;
-                q[2] = 90.0 * M_PI / 180.0;
-                q[3] = 30.0 * M_PI / 180.0;
-                q[4] = 90.0 * M_PI / 180.0;
-                q[5] = 30.0 * M_PI / 180.0;
-                q[6] = 90.0 * M_PI / 180.0;
-                q[7] = 90.0 * M_PI / 180.0;
-                q[8] = 90.0 * M_PI / 180.0;
-            }
-            else if (getArr_test_mode == 1)
-            {
-                q[0] = 0.0 * M_PI / 180.0;
-                q[1] = 30.0 * M_PI / 180.0;
-                q[2] = -1 * 30.0 * M_PI / 180.0;
-                q[3] = 0.0 * M_PI / 180.0;
-                q[4] = 0.0 * M_PI / 180.0;
-                q[5] = 0.0 * M_PI / 180.0;
-                q[6] = 0.0 * M_PI / 180.0;
-                q[7] = 0.0 * M_PI / 180.0;
-                q[8] = 0.0 * M_PI / 180.0;
-            }
-            else if (getArr_test_mode == 2)
-            {
-                q[0] = 0.0 * M_PI / 180.0;
-                q[1] = 30.0 * M_PI / 180.0;
-                q[2] = -1 * 30.0 * M_PI / 180.0;
-                q[3] = 30.0 * M_PI / 180.0;
-                q[4] = 0.0 * M_PI / 180.0;
-                q[5] = 30.0 * M_PI / 180.0;
-                q[6] = 0.0 * M_PI / 180.0;
-                q[7] = 0.0 * M_PI / 180.0;
-                q[8] = 0.0 * M_PI / 180.0;
-            }
-            else if (getArr_test_mode == 3)
-            {
-                float test_input = 0;
-                cout << "Enter a desired angle(deg) : ";
-                cin >> test_input; 
-                q[0] = test_input * 1.0 * M_PI / 180.0;
-                q[1] = 0.0 * M_PI / 180.0;
-                q[2] = 0.0 * M_PI / 180.0;
-                q[3] = 0.0 * M_PI / 180.0;
-                q[4] = 0.0 * M_PI / 180.0;
-                q[5] = 0.0 * M_PI / 180.0;
-                q[6] = 0.0 * M_PI / 180.0;
-                q[7] = 0.0 * M_PI / 180.0;
-                q[8] = 0.0 * M_PI / 180.0;
-
-            }
-
-            UnfixedMotor();      
-            state.test = TestSub::FillBuf;
-        }
-        else if (userInput == 4)
-        {
-            std::cout << "time : ";
-            std::cin >> t;
-        }
-        else
-        {
-            std::cout << "Invalid command!\n";
-        }
-        
-        
-        // for (auto &motor_pair : motors)
-        // {
-        //     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-        //     {
-        //         tMotor->clearCommandBuffer();
-        //         tMotor->clearReceiveBuffer();
-        //     }
-        //     else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        //     {
-        //         maxonMotor->clearCommandBuffer();
-        //         maxonMotor->clearReceiveBuffer();
-        //     }
-        // }
-
-        // char userInput = '0';
-        // int ret = system("clear");
-        // if (ret == -1)
-        //     std::cout << "system clear error" << endl;
-
-        // std::cout << "< Current Position >\n";
-        // for (auto &entry : motors)
-        // {
-        //     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        //     {
-        //         entry.second->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
-        //         cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
-        //     }
-        // }
-        // std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
-        // std::cout << "Selected Motor : " << selectedMotor << "\n"
-        //           << "Time : " << t << "[s]\n"
-        //           << "Cycles : " << cycles << "\n"
-        //           << "Amplitude : " << amp << "[Radian]\n";
-        // std::cout << "------------------------------------------------------------------------------------------------------------\n";
-
-        // std::cout << "\n[Commands]\n";
-        // std::cout << "[s] : Select Other Motor\n"
-        //           << "[t] : Time\t [c] : Cycles\n"
-        //           << "[a] : Amplitude\n"
-        //           << "[r] : run\t [e] : Exit\n";
-        // std::cout << "Enter Command : ";
-        // std::cin >> userInput;
-
-        // if (userInput == 's')
-        // {
-        //     std::cout << "\nMotor List : \n";
-        //     for (auto &motor_pair : motors)
-        //     {
-        //         std::cout << motor_pair.first << "\n";
-        //     }
-        //     std::cout << "\nEnter Desire Motor : ";
-        //     std::cin >> selectedMotor;
-        // }
-        // else if (userInput == 't')
-        // { // 한 주기 도는데 걸리는 시간
-        //     std::cout << "\nEnter Desire Time [s] : ";
-        //     std::cin >> t;
-        // }
-        // else if (userInput == 'c')
-        // {
-        //     std::cout << "\nEnter Desire Cycles : ";
-        //     std::cin >> cycles;
-        // }
-        // else if (userInput == 'a')
-        // {
-        //     std::cout << "\nEnter Desire Amplitude [Radian] : ";
-        //     std::cin >> amp;
-        // }
-        // else if (userInput == 'r')
-        // {
-        //     state.test = TestSub::FillBuf;
-        // }
-        // else if (userInput == 'e')
-        // {
-        //     state.test = TestSub::SelectParamByUser;
-        // }
-        break;
-    }
-    case TestSub::StickTest:    // command test
-    {
-        int userInput = 100;
-        bool run_flag = false;
-        static int nn = 1;
-        static int delay = 5;
-
-        // mode : 0(spd mode), 1(pos mode), 2(pos spd mode)
-        static int mode = 1;
-        static float test_spd = 0.0;
-        static float test_pos = 0.0;
-
-        float c_MotorAngle[9];
-        getMotorPos(c_MotorAngle);
-
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        cout << "[ Current Q Values (Radian) ]\n";
-        for (int i = 0; i < 9; i++)
-        {
-            cout << "q[" << i << "] : " << c_MotorAngle[i] << "\n";
-            q[i] = c_MotorAngle[i];
-        }
-
-        if (mode == 1)
-        {
-            cout << "speed mode" << "\n";
-        }
-        else if (mode == 2)
-        {
-            cout << "position mode" << "\n";
-        }
-        else if (mode == 3)
-        {
-            cout << "position speed mode" << "\n";
-        }
-
-        cout << "pos : " << test_pos << "rad\n";
-        cout << "spd : " << test_spd << "erpm\n";
-        cout << "n : " << nn << "\n";
-        cout << "delay : " << delay << "ms\n";
-
-        cout << "\nSelect Mode (1) / Change Value (2) / Run(0) / Exit (-1): ";
-
-        cin >> userInput;
-
-        if (userInput == -1)
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        else if (userInput == 1)
-        {
-            cout << "\nspeed mode (1) / position mode (2) / position speed mode (3): ";
-            cin >> mode;
-        }
-        else if (userInput == 2)
-        {
-            cout << "pos : ";
-            cin >> test_pos;
-            cout << "spd : ";
-            cin >> test_spd;
-            cout << "n : ";
-            cin >> nn;
-            cout << "delay : ";
-            cin >> delay;
-        }
-        else if (userInput == 0)
-        {
-            run_flag = true;
-        }
-
-        if (run_flag)
-        {
-            for (int i = 0; i < nn ; i++)
-            {
-                // float c_MotorAngle[9];
-                // getMotorPos(c_MotorAngle);
-                // for (int i = 0; i < 9; i++)
-                // {
-                //     q[i] = c_MotorAngle[i];
-                // }
-
-
                 for (auto &motor_pair : motors)
                 {
                     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                     {
-                        float test_pos2 = (q[motor_mapping[motor_pair.first]] + i * test_pos) * tMotor->cwDir - tMotor->homeOffset;
-                        // test_spd = tMotor->spd;
-                        float test_acl = tMotor->acl;
-                        
-
-                        if (mode == 1)
-                        {
-                            tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, test_spd);
-                        }
-                        else if (mode == 2)
-                        {
-                            tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, test_pos2);
-                        }
-                        else if (mode == 3)
-                        {
-                            tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, test_pos2, test_spd, test_acl);
-                        }
+                        tMotor->clearCommandBuffer();
+                        tMotor->clearReceiveBuffer();
                     }
-                }
-
-                bool needSync = false;
-                bool isWriteError = false;
-                for (auto &motor_pair : motors)
-                {
-                    shared_ptr<GenericMotor> motor = motor_pair.second;
-
-                    if (!canManager.sendMotorFrame(motor))
+                    else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                     {
-                        isWriteError = true;
+                        maxonMotor->clearCommandBuffer();
+                        maxonMotor->clearReceiveBuffer();
                     }
+                }
+                canManager.Input_pos.clear();
+                Input_pos.clear();
+                state.test = TestSub::FillBuf;
+                usleep(5000);
+                UnfixedMotor();
+            }
+            else if (userInput == 10)
+            {
+                std::cout << "time : ";
+                std::cin >> t;
+            }
+            else if (userInput == 11)
+            {
+                std::cout << "extra time : ";
+                std::cin >> extra_time;
+            }
+            else if (userInput == 12)
+            {
+                std::cout << "number of repeat : ";
+                std::cin >> n_repeat;
+            }
+            else if (userInput == 13)
+            {
+                int input_brake;
+                std::cout << "Select joint : ";
+                std::cin >> input_brake;
 
-                    if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                if(input_brake < 7)
+                {
+                    if(brake_flag[input_brake])
                     {
-                        virtualMaxonMotor = maxonMotor;
-                        needSync = true;
+                        brake_flag[input_brake] = false;
                     }
-                }
-
-                if (needSync)
-                {
-                    maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-                    if (!canManager.sendMotorFrame(virtualMaxonMotor))
+                    else
                     {
-                        isWriteError = true;
+                        brake_flag[input_brake] = true;
+
+                        std::cout << "brake start time (0~" << t+extra_time << ") : ";
+                        std::cin >> brake_start_time[input_brake];
+
+                        std::cout << "brake end time (" << brake_start_time[input_brake] << "~" << t+extra_time << ") : ";
+                        std::cin >> brake_end_time[input_brake];
                     }
                 }
-                if (isWriteError)
+            }
+            else if (userInput == 14)
+            {
+                for (int i = 0; i <= 6; ++i)
                 {
-                    state.main = Main::Error;
+                    brake_flag[i] = false;
+                    float degree_angle;
+                    
+                    // 1과 2는 90도, 나머지는 0도로 설정
+                    if (i == 1 || i == 2) {
+                        degree_angle = 90.0;
+                    } else {
+                        degree_angle = 0.0;
+                    }
+                    
+                    std::cout << "\nRange : " << motorMinArr[i] << "~" << motorMaxArr[i] << "(Degree)\n";
+                    std::cout << "Enter q[" << i << "] Values (Degree) : " << degree_angle << "\n";
+                    
+                    // degree 값을 radian으로 변환하여 q 배열에 저장
+                    q[i] = degree_angle * M_PI / 180.0;
+                }
+                t = 4.0;
+                extra_time = 1.0;
+                n_repeat = 1;
+                sin_flag = false;
+
+                state.test = TestSub::FillBuf;
+                usleep(5000);
+                UnfixedMotor();
+
+            }
+
+            else if (userInput == 15)
+            {
+                if(sin_flag)
+                {
+                    sin_flag = false;
+                    extra_time = 1.0;
+                }
+                else
+                {
+                    sin_flag = true;
+                    extra_time = 0.0;
+                }
+            }
+
+            else if (userInput == 16)
+            {
+                bool usbio_output = false;
+
+                std::cout << "Current brake states:" << std::endl;
+                for (int i = 0; i < 7; i++)
+                {
+                    std::cout << "Brake " << i << ": " << (single_brake_flag[i] ? "Active" : "Inactive") << std::endl;
                 }
 
-                usleep(delay*1000);
-            }
-        }
-        
-        break;
-    }
-    case TestSub::SetServoTestParm:
-    {
-        for (auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                tMotor->clearCommandBuffer();
-                tMotor->clearReceiveBuffer();
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                maxonMotor->clearCommandBuffer();
-                maxonMotor->clearReceiveBuffer();
-            }
-            Input_pos.clear();
-        }
+                int break_num;
+                cin >> break_num;
 
-        char userInput = '0';
-        int ret = system("clear");
-        if (ret == -1)
-            std::cout << "system clear error" << endl;
-
-        std::cout << "< Current Position >\n";
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                tMotor->coordinatePos = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
-                cout << tMotor->myName << " : " << entry.second->coordinatePos << "\n";
-                if (tMotor->myName == selectedMotor_servo)
+                if(!single_brake_flag[break_num])
                 {
-                    targetpos_coo = tMotor->coordinatePos;
+                    usbio.USBIO_4761_set(break_num % 7, true);
+                    usbio_output = usbio.USBIO_4761_output();
+                    single_brake_flag[break_num] = true;
+                }
+                else
+                {
+                    usbio.USBIO_4761_set(break_num % 7, false);
+                    usbio_output = usbio.USBIO_4761_output();
+                    single_brake_flag[break_num] = false;
+                }
+
+                if(!usbio_output)
+                {
+                    std::cout << "OUTPUT Error" << endl;
+                    usleep(5000000);
+                    break;
+                }
+
+            }
+            break;
+        }
+        case TestSub::SetXYZ:
+        {
+            int userInput = 100;
+            int ret = system("clear");
+            if (ret == -1)
+                std::cout << "system clear error" << endl;
+            cout << "[ Current x, y, z (meter) ]\n";
+            cout << "Right : ";
+            for (int i = 0; i < 3; i++)
+            {
+                cout << R_xyz[i] << ", ";
+            }
+            cout << "\nLeft : ";
+            for (int i = 0; i < 3; i++)
+            {
+                cout << L_xyz[i] << ", ";
+            }
+
+            cout << "\nSelect Motor to Change Value (1 - Right, 2 - Left) / Start Test (3) / Exit (-1) : ";
+            cin >> userInput;
+
+            if (userInput == -1)
+            {
+                state.test = TestSub::SelectParamByUser;
+            }
+            else if (userInput == 1)
+            {
+                cout << "Enter x, y, z Values (meter) : ";
+                cin >> R_xyz[0] >> R_xyz[1] >> R_xyz[2];
+            }
+            else if (userInput == 2)
+            {
+                cout << "Enter x, y, z Values (meter) : ";
+                cin >> L_xyz[0] >> L_xyz[1] >> L_xyz[2];
+            }
+            else if (userInput == 3)
+            {
+                state.test = TestSub::FillBuf;
+            }
+            break;
+        }
+        case TestSub::FillBuf:
+        {
+            // Fill motors command Buffer
+            if (method == 1)
+            {
+                GetArr(q);
+            }
+            else if (method == 2)
+            {
+                vector<float> Qf(7);
+                Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
+                Qf.push_back(0.0);                                  // 오른쪽 손목 각도
+                Qf.push_back(0.0);                                  // 왼쪽 손목 각도
+                for (int i = 0; i < 9; i++)
+                {
+                    q[i] = Qf[i];
+                    cout << Qf[i] << " ";
+                }
+                cout << "\n";
+                sleep(1);
+                GetArr(q);
+            }
+            else if (method == 6)
+            {
+                std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
+                vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
+                // vel = 327680;
+                acl = 327670;
+                startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
+            }
+            
+            state.test = TestSub::CheckBuf;
+            break;
+        }
+        case TestSub::CheckBuf:
+        {
+            bool allBuffersEmpty = true;
+            for (const auto &motor_pair : motors)
+            {
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    if (!maxonMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
+                }
+                else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    if (!tMotor->commandBuffer.empty())
+                    {
+                        allBuffersEmpty = false;
+                        break;
+                    }
                 }
             }
+
+            if (!allBuffersEmpty)
+                state.test = TestSub::TimeCheck;
+            else
+                state.test = TestSub::Done;
+            break;
         }
-        std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
-        std::cout << "Selected Motor : " << selectedMotor_servo << "\n"
-                  << "Time : " << time_servo << "[sec]\n"
-                  << "Target coordinate Pos : " << targetpos_coo << " [Radian]\n"
-                  << "Single Target Pos : " << targetpos_des << " [Radian]\n"
-                  << "Current Break Val : " << current_servo << "[A]\n";
-        std::cout << "------------------------------------------------------------------------------------------------------------\n";
-
-        std::cout << "\n[Commands]\n";
-        std::cout << "[s] : Select Other Motor\n"
-                  << "[t] : Set Time"
-                  << "[p] : Set Single Target Pos\t [d] : Set Break Current\n"
-                  << "[f] : Set Origin\t [g] : Current Break!!\t [h] : Dont Break\n"
-                  << "[r] : run\t [e] : Exit\n";
-        std::cout << "Enter Command : ";
-        std::cin >> userInput;
-
-        if (userInput == 's')
+        case TestSub::TimeCheck:
         {
-            std::cout << "\nMotor List : \n";
+            usleep(1000000*canManager.deltaT);
+            state.test = TestSub::SetCANFrame;
+            break;
+        }
+        case TestSub::SetCANFrame:
+        {
+            bool isSafe;
+            isSafe = canManager.setCANFrame();
+            if (!isSafe)
+            {
+                state.main = Main::Error;
+            }
+            state.test = TestSub::SendCANFrame;
+            break;
+        }
+        case TestSub::SendCANFrame:
+        {
+            bool needSync = false;
+            bool isWriteError = false;
             for (auto &motor_pair : motors)
             {
-                std::cout << motor_pair.first << "\n";
-            }
-            std::cout << "\nEnter Desire Motor : ";
-            std::cin >> selectedMotor_servo;
-        }
-        else if (userInput == 't')
-        {
-            std::cout << "\nEnter Desire Time [sec] : ";
-            std::cin >> time_servo;
-        }
-        else if (userInput == 'p')
-        {
-            std::cout << "\nEnter Desire Target Position [Degree] : ";
-            std::cin >> targetpos_des;
-        }
-        else if (userInput == 'd')
-        {
-            std::cout << "\nEnter Desire Current : ";
-            std::cin >> current_servo;
-        }
-        else if (userInput == 'f')
-        {
-            for (auto &entry : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                shared_ptr<GenericMotor> motor = motor_pair.second;
+
+                if (!canManager.sendMotorFrame(motor))
                 {
-                    if (tMotor->myName == selectedMotor_servo)
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
+                    isWriteError = true;
+                }
+
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brake_state);
+                }
+
+                if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    virtualMaxonMotor = maxonMotor;
+                    needSync = true;
                 }
             }
-        }
-        else if (userInput == 'g')
-        {
-            for (auto &entry : motors)
+
+            if (needSync)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+                if (!canManager.sendMotorFrame(virtualMaxonMotor))
                 {
-                    if (tMotor->myName == selectedMotor_servo)
-                    {
-                        tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, current_servo);
-                        canManager.sendMotorFrame(tMotor);
-                    }
+                    isWriteError = true;
                 }
             }
-        }
-        else if (userInput == 'h')
-        {
-            for (auto &entry : motors)
+            if (isWriteError)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+                state.main = Main::Error;
+            }
+            else
+            {
+                state.test = TestSub::CheckBuf;
+            }
+
+            // brake
+            if (usbio.useUSBIO)
+            {
+                if(!usbio.USBIO_4761_output())
                 {
-                    if (tMotor->myName == selectedMotor_servo)
-                    {
-                        tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
+                    cout << "brake Error\n";
                 }
             }
-        }
-        else if (userInput == 'r')
-        {
-            state.test = TestSub::FillBuf;
-        }
-        else if (userInput == 'e')
-        {
-            state.test = TestSub::SelectParamByUser;
-        }
-        break;
-    }
-    case TestSub::FillBuf:
-    {
-        // Fill motors command Buffer
-        if (method == 1)
-        {
-            GetArr(q);
-        }
-        else if (method == 2)
-        {
-            vector<float> Qf(7);
-            Qf = ikfun_final(R_xyz, L_xyz, part_length, s, z0); // IK함수는 손목각도가 0일 때를 기준으로 풀림
-            Qf.push_back(0.0);                                  // 오른쪽 손목 각도
-            Qf.push_back(0.0);                                  // 왼쪽 손목 각도
-            for (int i = 0; i < 9; i++)
-            {
-                q[i] = Qf[i];
-                cout << Qf[i] << " ";
-            }
-            cout << "\n";
-            sleep(1);
-            GetArr(q);
-        }
-        else if (method == 3)
-        {
-            // startTest(selectedMotor, t, cycles, amp);
-            GetArr_test(q);
-        }
-        else if (method == 6)
-        {
-            std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-            vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-            // vel = 327680;
-            acl = 327670;
-            startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
-        }
-        
-        state.test = TestSub::CheckBuf;
-        break;
-    }
-    case TestSub::CheckBuf:
-    {
-        bool allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                if (!maxonMotor->commandBuffer.empty())
-                {
-                    allBuffersEmpty = false;
-                    break;
-                }
-            }
-            else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                if (!tMotor->commandBuffer.empty())
-                {
-                    allBuffersEmpty = false;
-                    break;
-                }
-            }
-        }
 
-        if (!allBuffersEmpty)
-            state.test = TestSub::TimeCheck;
-        else
-            state.test = TestSub::Done;
-        break;
-    }
-    case TestSub::TimeCheck:
-    {
-        usleep(1000000*canManager.deltaT);
-        state.test = TestSub::SetCANFrame;
-        break;
-    }
-    case TestSub::SetCANFrame:
-    {
-        bool isSafe;
-        isSafe = canManager.setCANFrame();
-        if (!isSafe)
-        {
-            state.main = Main::Error;
+            break;
         }
-        state.test = TestSub::SendCANFrame;
-        break;
-    }
-    case TestSub::SendCANFrame:
-    {
-        bool needSync = false;
-        bool isWriteError = false;
-        for (auto &motor_pair : motors)
+        case TestSub::Done:
         {
-            shared_ptr<GenericMotor> motor = motor_pair.second;
-
-            if (!canManager.sendMotorFrame(motor))
-            {
-                isWriteError = true;
-            }
-
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brake_state);
-            }
-
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                virtualMaxonMotor = maxonMotor;
-                needSync = true;
-            }
-        }
-
-        if (needSync)
-        {
-            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            if (!canManager.sendMotorFrame(virtualMaxonMotor))
-            {
-                isWriteError = true;
-            }
-        }
-        if (isWriteError)
-        {
-            state.main = Main::Error;
-        }
-        else
-        {
-            state.test = TestSub::CheckBuf;
-        }
-
-        // brake
-        if (usbio.useUSBIO)
-        {
-            if(!usbio.USBIO_4761_output())
-            {
-                cout << "brake Error\n";
-            }
-        }
-
-        break;
-    }
-    case TestSub::Done:
-    {
-        usleep(5000);
-        
-        if (method == 1)
-        {
-            state.test = TestSub::SetQValue;
+            usleep(5000);
             
-            // std::ostringstream fileNameOut;
-            // fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            // fileNameOut << "../../READ/Test_0704_P" << q[5]
-            //             << "_spd" << speed_test
-            //             << "_BrakeTime" << brake_start_time;
-            // std::string fileName = fileNameOut.str();
-            // parse_and_save_to_csv(fileName);
+            if (method == 1)
+            {
+                state.test = TestSub::SetQValue;
+                
+                // std::ostringstream fileNameOut;
+                // fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
+                // fileNameOut << "../../READ/Test_0704_P" << q[5]
+                //             << "_spd" << speed_test
+                //             << "_BrakeTime" << brake_start_time;
+                // std::string fileName = fileNameOut.str();
+                // parse_and_save_to_csv(fileName);
+            }
+            else if (method == 2)
+            {
+                state.test = TestSub::SetXYZ;
+            }
+            else
+                state.test = TestSub::SelectParamByUser;
+
+            if (error)
+                state.main = Main::Error;
+            break;
         }
-        else if (method == 2)
-        {
-            state.test = TestSub::SetXYZ;
-        }
-        else if (method == 3)
-        {
-            std::ostringstream fileNameIn;
-            fileNameIn << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameIn << "../../READ/" << selectedMotor
-                       << "_Period" << t
-                       << "_Kp" << kp
-                       << "_Kd" << kd
-                       << "_in";
-            std::string fileName = fileNameIn.str();
-            save_to_txt_inputData(fileName);
-
-            std::ostringstream fileNameOut;
-            fileNameOut << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            fileNameOut << "../../READ/" << selectedMotor
-                        << "_Period" << t
-                        << "_Kp" << kp
-                        << "_Kd" << kd
-                        << "_out";
-            fileName = fileNameOut.str();
-            parse_and_save_to_csv(fileName);
-
-            state.test = TestSub::SetSingleTuneParm;
-        }
-        else if (method == 4)
-        {
-            // multiTestLoop(); State로 변경 시 state.test 값 변환으로 변경
-        }
-        else if (method == 6)
-        {
-            sleep(1);
-            std::ostringstream oss;
-            oss << std::fixed << std::setprecision(1); // 소숫점 1자리까지 표시
-            oss << "../../READ/" << selectedMotor_servo
-                << "_T" << time_servo
-                << "_P" << abs(targetpos_coo - targetpos_des) / M_PI * 180
-                << "_V" << vel
-                << "_A" << acl << "_in";
-            std::string fileName = oss.str();
-            save_to_txt_inputData(fileName);
-
-            oss.str("");
-
-            oss << "../../READ/" << selectedMotor_servo
-                << "_T" << time_servo
-                << "_P" << abs(targetpos_coo - targetpos_des) / M_PI * 180
-                << "_V" << vel
-                << "_A" << acl << "_out";
-            fileName = oss.str();
-            parse_and_save_to_csv(fileName);
-
-            state.test = TestSub::SetServoTestParm;
-        }
-        else
-            state.test = TestSub::SelectParamByUser;
-
-        if (error)
-            state.main = Main::Error;
-        break;
     }
-    }
-
-    // Test state를 저장
-    // if (state.test == TestSub::SelectParamByUser)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SelectParamByUser");
-    // }
-    // else if (state.test == TestSub::SetQValue)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SetQValue");
-    // }
-    // else if (state.test == TestSub::SetXYZ)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SetXYZ");
-    // }
-    // else if (state.test == TestSub::SetSingleTuneParm)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SetSingleTuneParm");
-    // }
-    // else if (state.test == TestSub::FillBuf)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "FillBuf");
-    // }
-    // else if (state.test == TestSub::CheckBuf)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "CheckBuf");
-    // }
-    // else if (state.test == TestSub::TimeCheck)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "TimeCheck");
-    // }
-    // else if (state.test == TestSub::SetCANFrame)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SetCANFrame");
-    // }
-    // else if (state.test == TestSub::SendCANFrame)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "SendCANFrame");
-    // }
-    // else if (state.test == TestSub::Done)
-    // {
-    //     canManager.appendToCSV_State("state_test", "Test", "Done");
-    // }
 }
+
 
 void TestManager::MaxonEnable()
 {
@@ -1541,149 +960,6 @@ void TestManager::GetArr(float arr[])
             }
         }
     }
-}
-
-void TestManager::GetArr_test(float arr[])
-{
-    cout << "Get Array...\n";
-
-    vector<float> Qi;
-    vector<vector<float>> q_setting;
-    float c_MotorAngle[9];
-    vector<float> Q_control_mode_test;
-
-    getMotorPos(c_MotorAngle);
-
-    int n = (int)(t/canManager.deltaT);    // t초동안 실행
-    
-    for (int k = 1; k <= n; ++k)
-    {
-        // Maxon motor
-        Qi = connect(c_MotorAngle, arr, k, n);
-        q_setting.push_back(Qi);
-
-        // Tmotor
-        if (getArr_test_mode == 0)
-        {
-            // Q_control_mode_test = makeProfile(c_MotorAngle, arr, t*k/n, t);
-            return;
-        }
-        else if (getArr_test_mode == 1)
-        {
-            Q_control_mode_test = test_mode1(c_MotorAngle, arr, t*k/n, t);
-        }
-        else if (getArr_test_mode == 2)
-        {
-            Q_control_mode_test = test_mode2(c_MotorAngle, arr, t*k/n, t);
-        }
-        else if (getArr_test_mode == 3)
-        {
-            Q_control_mode_test = test_mode1(c_MotorAngle, arr, t*k/n, t);
-        }
-        
-
-        // Send to Buffer
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                TMotorData newData;
-
-                if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-                {
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = tMotor->spd;
-                    newData.acl = tMotor->acl;
-                }
-                else if (canManager.tMotor_control_mode == POS_LOOP)
-                {
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = tMotor->spd;
-                    newData.acl = tMotor->acl;
-                }
-                else if (canManager.tMotor_control_mode == SPD_LOOP)
-                {
-                    newData.position = Q_control_mode_test[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = tMotor->spd;
-                    newData.acl = tMotor->acl;
-                }
-                newData.isBrake = false;
-
-                tMotor->commandBuffer.push(newData);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-            {
-                MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir - maxonMotor->homeOffset;
-                newData.WristState = 0.5;
-                maxonMotor->commandBuffer.push(newData);
-            }
-        }
-    }
-}
-
-vector<float> TestManager::test_mode1(float Q1[], float Q2[], float t, float t2)
-{
-    vector<float> Qi;
-
-    for (int i = 0; i < 9; i++)
-    {
-        float val = 0;
-
-        float w = 2.0*M_PI / t2;
-
-        val = Q2[i] * sin(w*t) + Q1[i];
-
-        Qi.push_back(val);
-
-    }
-
-    return Qi;
-}
-
-vector<float> TestManager::test_mode2(float Q1[], float Q2[], float k, float n)
-{
-    vector<float> Qi;
-
-    for (int i = 0; i < 9; i++)
-    {
-        float val;
-
-        if (i == 0 || i == 4 || i == 6 || i == 7 || i == 8)
-        {
-            val = Q1[i];
-        }
-        else if (i == 1 || i == 2)
-        {
-            float w = 2.0*M_PI / n;
-            val = Q2[i] * sin(w*k) + Q1[i];
-        }
-        else if (i == 3 || i == 5)
-        {
-            float w = 2.0*M_PI / n;
-            val = -0.5 * Q2[i] * cos(w*k) + Q1[i] + 0.5 * Q2[i];
-        }
-
-        Qi.push_back(val);
-
-    }
-
-    return Qi;
-}
-
-vector<float> TestManager::test_mode3(float Q1[], float Q2[], float k, float n)
-{
-    vector<float> Qi;
-
-    for (int i = 0; i < 9; i++)
-    {
-        float val = 0;
-
-        Qi.push_back(val);
-
-    }
-
-    return Qi;
 }
 
 vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length[], float s, float z0)
@@ -2396,64 +1672,4 @@ void TestManager::UnfixedMotor()
 {
     for (auto motor_pair : motors)
         motor_pair.second->isfixed = false;
-}
-
-void TestManager::testUSBIO_4761()
-{
-    //////////////////////////////////////////////
-    // for(int i =0 ; i<7; i++)
-    // {
-    //     if (i == 1 || i == 4)
-    //     {
-    //         continue; 
-    //     }
-    //     usbio.USBIO_4761_set(i, true);
-    //     usbio.USBIO_4761_output();
-    //     usleep(1500000);
-    //     usbio.USBIO_4761_set(i, false);
-    // }
-
-    // for(int i =0 ; i<7; i++)
-    // {
-    //     usbio.USBIO_4761_set(i, false);
-    //     // usbio.USBIO_4761_output();
-    //     // usleep(1500000);
-    // }
-
-    // } while (loop_state);
-
-
-    //////////////////////////////////////////////
-    int n = 100;
-    int i;
-    for(i =0; i < n; i++)
-    {
-        usbio.USBIO_4761_set(i % 7, true);
-        bool usbio_output = usbio.USBIO_4761_output();
-        usleep(100000);
-        usbio.USBIO_4761_set(i % 7, false);
-
-        if(!usbio_output)
-        {
-            std::cout << "OUTPUT Error" << endl;
-            usleep(5000000);
-            break;
-        }
-    }
-
-    if(i == n)
-    {
-        for(int i =0 ; i<7; i++)
-        {
-            usbio.USBIO_4761_set(i, false);
-        }
-        bool usbio_output = usbio.USBIO_4761_output();
-
-        if (usbio_output)
-        {
-            std::cout << "END" << endl;
-            usleep(5000000);
-        }
-    }
-    
 }

@@ -78,15 +78,12 @@ enum class TestSub
     SelectParamByUser,
     SetQValue,
     SetXYZ,
-    SetSingleTuneParm,
     FillBuf,
     CheckBuf,
     TimeCheck,
     SetCANFrame,
     SendCANFrame,
-    Done,
-    StickTest,
-    SetServoTestParm
+    Done
 };
 
 
