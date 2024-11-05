@@ -36,6 +36,7 @@ public:
     float desPos, desVel, desTor;
     float prePos;
     float currentPos, currentVel, currentTor;
+    float initial_position;
     // Fixed
     float fixedPos;
     bool isfixed = false;

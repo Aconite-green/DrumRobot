@@ -59,16 +59,14 @@ private:
     vector<string> InputData;
     bool error = false;
 
-    /*For SendTestProcess*/
-    int method = 0;
-    float q[9] = {0.0};
-    float R_xyz[3] = {0.0};
-    float L_xyz[3] = {0.0};
-
     // Robot Parameters
     float part_length[6] = {0.250, 0.328, 0.250, 0.328, 0.325+0.048, 0.325+0.048};
     float s = 0.520;  ///< 허리 길이.
     float z0 = 0.890-0.0605; ///< 바닥부터 허리까지의 높이.
+
+    /*For SendTestProcess*/
+    int method = 0;
+    float q[9] = {0.0};
 
     map<std::string, int> motor_mapping = { //< 각 관절에 해당하는 열 정보.
         {"waist", 0},
@@ -94,7 +92,6 @@ private:
 
     /*Value Test Code*/
     void getMotorPos(float c_MotorAngle[]);
-    vector<float> connect(float Q1[], float Q2[], int k, int n);
     vector<float> makeProfile(float Q1[], float Q2[], vector<float> &Vmax, float acc, float t, float t2);
     vector<float> cal_Vmax(float q1[], float q2[],  float acc, float t2);
     vector<float> sinProfile(float q1[], float q2[], float t, float t2);
@@ -102,55 +99,19 @@ private:
     void fkfun(float arr[]);
     void GetArr(float arr[]);
 
-
+    // setQ
     bool sin_flag = false;
     bool brake_flag[7] = {false, false, false, false, false, false, false};
     bool single_brake_flag[7] = {false, false, false, false, false, false, false};
     float brake_start_time[7] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
     float brake_end_time[7] = {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
+    float t = 4.0;
     float extra_time = 1.0;
     int n_repeat = 1;
 
-
-    vector<float> test_mode1(float Q1[], float Q2[], float k, float n);
-    vector<float> test_mode2(float Q1[], float Q2[], float k, float n);
-    vector<float> test_mode3(float Q1[], float Q2[], float k, float n);
-    int getArr_test_mode = 0;
-   
-    /* Single Test Code */
-    string selectedMotor = "waist";
-    float t = 4.0;
-    int cycles = 1;
-    float amp = 0.2; // [Radian]
-    float kp = 20;
-    float kd = 3.0;
-    float Kp_for_Fixed = 300;
-    float Kd_for_Fixed = 3;
-    void singleTestLoop();
-    void startTest(string selectedMotor, float t, int cycles, float amp);
-    void save_to_txt_inputData(const string &csv_file_name);
-
-    /*Multi Test Code*/
-    void mkArr(vector<string> &motorName, int time, int cycles, int LnR, float amp);
-    void SendLoop();
-    void parse_and_save_to_csv(const std::string &csv_file_name);
-    void TestArr(float t, int cycles, int type, int LnR, float amp[]);
-
-    /*Servo Mode Test Code*/
-    string selectedMotor_servo = "R_arm2";
-    float time_servo = 1;
-    float targetpos_des = 1.57;   // Radian
-    float targetpos_coo;
-    float vel = 500;
-    float acl = 3000;
-    float t_servo = 4.0;
-    int cycles_servo = 1;
-    float amp_servo = 0.2; // [Radian]
-    float current_servo;
-    
-    void startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl);
+    // setXYZ
+    float R_xyz[3] = {0.0};
+    float L_xyz[3] = {0.0};
 
     void UnfixedMotor();
-
-    void testUSBIO_4761();
 };

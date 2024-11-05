@@ -311,14 +311,6 @@ void TestManager::SendTestProcess()
                 sleep(1);
                 GetArr(q);
             }
-            else if (method == 6)
-            {
-                std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-                vel = ((abs(targetpos_coo - targetpos_des) / M_PI * 180) / time_servo) * sMotor->R_Ratio[sMotor->motorType] * sMotor->PolePairs * 60 / 360;
-                // vel = 327680;
-                acl = 327670;
-                startTest_servo(selectedMotor_servo, targetpos_des, vel, acl);
-            }
             
             state.test = TestSub::CheckBuf;
             break;
@@ -559,35 +551,13 @@ void TestManager::getMotorPos(float c_MotorAngle[])
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = (tMotor->currentPos + tMotor->homeOffset) * tMotor->cwDir;
+            c_MotorAngle[motor_mapping[entry.first]] = tMotor->currentPos * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = (maxonMotor->currentPos + maxonMotor->homeOffset) * maxonMotor->cwDir;
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir + maxonMotor->initial_position;
         }
     }
-}
-
-vector<float> TestManager::connect(float Q1[], float Q2[], int k, int n)
-{
-    vector<float> Qi;
-    std::vector<float> A, B;
-
-    // Compute A and Bk
-    for (long unsigned int i = 0; i < 9; ++i)
-    {
-        A.push_back(0.5 * (Q1[i] - Q2[i]));
-        B.push_back(0.5 * (Q1[i] + Q2[i]));
-    }
-
-    // Compute Qi using the provided formula
-    for (long unsigned int i = 0; i < 9; ++i)
-    {
-        float val = A[i] * cos(M_PI * k / n) + B[i];
-        Qi.push_back(val);
-    }
-
-    return Qi;
 }
 
 vector<float> TestManager::cal_Vmax(float q1[], float q2[],  float acc, float t2)
@@ -850,9 +820,8 @@ void TestManager::GetArr(float arr[])
     const float acc_max = 100.0;    // rad/s^2
     vector<float> Qi;
     vector<float> Vmax;
+    float Q1[9] = {0.0};
     float Q2[9] = {0.0};
-    
-    float c_MotorAngle[9] = {0.0};
     int n;
     int n_p;    // 목표위치까지 가기 위한 추가 시간
     int n_brake_start[7] = {0};
@@ -860,23 +829,10 @@ void TestManager::GetArr(float arr[])
 
     std::cout << "Get Array...\n";
 
-    getMotorPos(c_MotorAngle);
-
-    // Timing Belt
-    for (auto &entry : motors)
-    {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        {
-            Q2[motor_mapping[entry.first]] = arr[motor_mapping[entry.first]] / tMotor->timingBelt_ratio;
-        }
-        else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-        {
-            Q2[motor_mapping[entry.first]] = arr[motor_mapping[entry.first]];
-        }
-    }
+    getMotorPos(Q1);
 
     n = (int)(t/canManager.deltaT);    // t초동안 이동
-    Vmax = cal_Vmax(c_MotorAngle, Q2, acc_max, t);
+    Vmax = cal_Vmax(Q1, Q2, acc_max, t);
     n_p = (int)(extra_time/canManager.deltaT);  // 추가 시간
 
     for (int i = 0; i < 7; i++)
@@ -886,6 +842,11 @@ void TestManager::GetArr(float arr[])
             n_brake_start[i] = (int)(brake_start_time[i]/canManager.deltaT);
             n_brake_end[i] = (int)(brake_end_time[i]/canManager.deltaT);
         }
+    }
+
+    for (int i = 0; i < 9; i++)
+    {
+        Q2[i] = arr[i];
     }
     
     for (int i = 0; i < n_repeat; i++)
@@ -897,16 +858,16 @@ void TestManager::GetArr(float arr[])
                 // Make Vector
                 if ((i%2) == 0)
                 {
-                    Qi = makeProfile(c_MotorAngle, Q2, Vmax, acc_max, t*k/n, t);
+                    Qi = makeProfile(Q1, Q2, Vmax, acc_max, t*k/n, t);
                 }
                 else
                 {
-                    Qi = makeProfile(Q2, c_MotorAngle, Vmax, acc_max, t*k/n, t);
+                    Qi = makeProfile(Q2, Q1, Vmax, acc_max, t*k/n, t);
                 }
             }
             else
             {
-                Qi = sinProfile(c_MotorAngle, Q2, t*k/n, t);
+                Qi = sinProfile(Q1, Q2, t*k/n, t);
             }
 
             // Send to Buffer
@@ -924,13 +885,19 @@ void TestManager::GetArr(float arr[])
                     }
                     else if (canManager.tMotor_control_mode == POS_LOOP)
                     {
-                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
                         newData.spd = tMotor->spd;
                         newData.acl = tMotor->acl;
                     }
                     else if (canManager.tMotor_control_mode == SPD_LOOP)
                     {
                         newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
+                        newData.spd = tMotor->spd;
+                        newData.acl = tMotor->acl;
+                    }
+                    else
+                    {
+                        newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
                         newData.spd = tMotor->spd;
                         newData.acl = tMotor->acl;
                     }
@@ -953,7 +920,7 @@ void TestManager::GetArr(float arr[])
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
                 {
                     MaxonData newData;
-                    newData.position = Qi[motor_mapping[entry.first]] * maxonMotor->cwDir - maxonMotor->homeOffset;
+                    newData.position = (Qi[motor_mapping[entry.first]] - maxonMotor->initial_position) * maxonMotor->cwDir;
                     newData.WristState = 0.5;
                     maxonMotor->commandBuffer.push(newData);
                 }
@@ -1063,200 +1030,13 @@ vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length
         }
     }
 
-    if (j == 0)struct TMotorData
-{
-    float position;
-    int32_t spd;
-    int32_t acl;
-    bool isBrake;
-};
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 Multi Test Mode                           */
-///////////////////////////////////////////////////////////////////////////////
-
-void TestManager::SendLoop()
-{
-    std::cout << "Settig...\n";
-    struct can_frame frameToProcess;
-    std::string maxonCanInterface;
-    std::shared_ptr<GenericMotor> virtualMaxonMotor;
-
-    int maxonMotorCount = 0;
-    for (const auto &motor_pair : motors)
+    if (j == 0)
     {
-        // 각 요소가 MaxonMotor 타입인지 확인
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-        {
-            maxonMotorCount++;
-            virtualMaxonMotor = motor_pair.second;
-        }
-    }
-    chrono::system_clock::time_point external = std::chrono::system_clock::now();
-
-    bool allBuffersEmpty;
-    do
-    {
-        allBuffersEmpty = true;
-        for (const auto &motor_pair : motors)
-        {
-            if (!motor_pair.second->sendBuffer.empty())
-            {
-                allBuffersEmpty = false;
-                break;
-            }
-        }
-
-        if (!allBuffersEmpty)
-        {
-            chrono::system_clock::time_point internal = std::chrono::system_clock::now();
-            chrono::microseconds elapsed_time = chrono::duration_cast<chrono::microseconds>(internal - external);
-
-            if (elapsed_time.count() >= 5000) // 5ms
-            {
-                external = std::chrono::system_clock::now();
-
-                for (auto &motor_pair : motors)
-                {
-                    shared_ptr<GenericMotor> motor = motor_pair.second;
-                    canManager.sendFromBuff(motor);
-                }
-
-                if (maxonMotorCount != 0)
-                {
-                    maxoncmd.getSync(&frameToProcess);
-                    canManager.txFrame(virtualMaxonMotor, frameToProcess);
-                }
-
-                // canManager.readFramesFromAllSockets();
-                // canManager.distributeFramesToMotors();
-            }
-        }
-    } while (!allBuffersEmpty);
-    canManager.clearReadBuffers();
-}
-
-void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)
-{
-    // CSV 파일 열기. 파일이 있으면 지우고 새로 생성됩니다.
-    std::ofstream ofs(csv_file_name + ".txt");
-    if (!ofs.is_open())
-    {
-        std::cerr << "Failed to open or create the CSV file: " << csv_file_name << std::endl;
-        return;
+        cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
     }
 
-    // CSV 헤더 추가
-    ofs << "CAN_ID,p_act,v_act,c_act,a_act\n";
-
-    while (true)
-    {
-        bool allRecvBufferEmpty = true;
-        for (const auto &pair : motors)
-        {
-            auto &motor = pair.second;
-
-            if (!motor->recieveBuffer.empty())
-            {
-                allRecvBufferEmpty = false;
-                can_frame frame = motor->recieveBuffer.front();
-                motor->recieveBuffer.pop();
-
-                int id = motor->nodeId;
-                float position, speed, torque, acceleration;
-
-                // TMotor 또는 MaxonMotor에 따른 데이터 파싱 및 출력
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
-                {
-                    std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
-                    position = std::get<1>(parsedData);
-                    speed = std::get<2>(parsedData);
-                    torque = std::get<3>(parsedData);
-                    acceleration = (speed - motor->pre_spd) / 0.002;
-                    motor->pre_spd = speed;
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-                {
-                    std::tuple<int, float, float, int8_t> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    position = std::get<1>(parsedData);
-                    torque = std::get<2>(parsedData);
-                    speed = 0.0;
-                }
-
-                // 데이터 CSV 파일에 쓰기
-                ofs << "0x" << std::hex << std::setw(2) << std::setfill('0') << id << ","
-                    << std::dec << position << "," << speed << "," << torque << "," << acceleration << "\n";
-            }
-        }
-
-        if (allRecvBufferEmpty)
-            break;
-    }
-
-    // 각 모터에 대한 처리
-
-    ofs.close();
-    std::cout << "Tunning Output Data 파일이 생성되었습니다 : " << csv_file_name << std::endl;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 Servo Test Mode                           */
-///////////////////////////////////////////////////////////////////////////////
-
-void TestManager::startTest_servo(const string selectedMotor_servo, float pos, float vel, float acl)
-{
-    std::cout << "Test Start For " << selectedMotor_servo << "\n";
-
-    float dt = 0.005;
-    std::shared_ptr<TMotor> sMotor = std::dynamic_pointer_cast<TMotor>(motors[selectedMotor_servo]);
-    float time = time_servo + 1;
-    int n = time / dt;
-
-    for (int i = 0; i < n; i++)
-    {
-        for (const auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                TMotorData newData;
-                if (tMotor->myName == selectedMotor_servo)
-                {
-                    tMotor->isfixed = false;
-                    newData.position = pos * tMotor->cwDir - tMotor->homeOffset;
-                    newData.spd = vel;
-                    newData.acl = acl;
-                    newData.isBrake = false;
-                    tMotor->commandBuffer.push(newData);
-                }
-                else
-                {
-                    if (tMotor->isfixed == false)
-                    {
-                        tMotor->fixedPos = tMotor->currentPos;
-                        tMotor->isfixed = true;
-                    }
-                    newData.position = tMotor->fixedPos;
-                    newData.spd = tMotor->spd;
-                    newData.acl = tMotor->acl;
-                    newData.isBrake = false;
-                    tMotor->commandBuffer.push(newData);
-                }
-            }
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                if (maxonMotor->isfixed == false)
-                {
-                    maxonMotor->fixedPos = maxonMotor->currentPos;
-                    maxonMotor->isfixed = true;
-                }
-                MaxonData newData;
-                newData.position = maxonMotor->fixedPos;
-                newData.WristState = 0.0;
-                maxonMotor->commandBuffer.push(newData);
-            }
-        }
-    }
+    return Qf;
 }
 
 void TestManager::UnfixedMotor()

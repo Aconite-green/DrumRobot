@@ -666,7 +666,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                             return false;
                         }
                     }
-                    tMotor->currentPos = std::get<1>(parsedData) * tMotor->timingBelt_ratio;
+                    tMotor->currentPos = std::get<1>(parsedData);
                     tMotor->currentVel = std::get<2>(parsedData);
                     tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
                     tMotor->recieveBuffer.push(frame);
@@ -873,7 +873,7 @@ bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData t
 {
     bool isSafe = true;
     float diff_angle = tData.position - tMotor->currentPos;
-    float coordinationPos = (tData.position + tMotor->homeOffset) * tMotor->cwDir;
+    float coordinationPos = tData.position * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
 
     if (abs(diff_angle) > POS_DIFF_LIMIT)
     {
@@ -903,7 +903,7 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        float coordinationPos = (std::get<1>(parsedData) + tMotor->homeOffset) * tMotor->cwDir;
+        float coordinationPos = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
         if (tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos || std::get<3>(parsedData) > tMotor->limitCurrent)
         {
             if (tMotor->rMin > coordinationPos)
@@ -946,7 +946,7 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
-        float coordinationPos = (std::get<1>(parsedData) + maxonMotor->homeOffset) * maxonMotor->cwDir;
+        float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initial_position;
         if (maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
             if (maxonMotor->rMin > coordinationPos)
@@ -1003,11 +1003,11 @@ void CanManager::openCSVFile()
                 std::shared_ptr<GenericMotor> motor = motor_pair.second;
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    appendToCSV_DATA(file_name, (float)motor->nodeId, tMotor->homeOffset, INIT_SIGN);
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, tMotor->initial_position, INIT_SIGN);
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
-                    appendToCSV_DATA(file_name, (float)motor->nodeId, maxonMotor->homeOffset, INIT_SIGN);
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, maxonMotor->initial_position, INIT_SIGN);
                 }
             }
 

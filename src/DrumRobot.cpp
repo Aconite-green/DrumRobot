@@ -1127,7 +1127,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = true;
                 tMotor->myName = "waist";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 29.8;  // [A]    // ak10-9
                 tMotor->spd = 1000;
@@ -1143,7 +1143,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 150deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm1";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1159,7 +1159,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 180deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm1";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1175,7 +1175,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm2";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1191,7 +1191,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144deg
                 tMotor->isHomed = false;
                 tMotor->myName = "R_arm3";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1207,7 +1207,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm2";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1223,7 +1223,7 @@ void DrumRobot::initializeMotors()
                 tMotor->rMax = motorMaxArr[can_id] * M_PI / 180.0f; // 144 deg
                 tMotor->isHomed = false;
                 tMotor->myName = "L_arm3";
-                // tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                tMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->homeOffset = tMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
                 tMotor->limitCurrent = 23.2;  // [A]    // ak70-10
                 tMotor->spd = 1000;
@@ -1248,7 +1248,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x507; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x187; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_wrist";
-                // maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 maxonMotor->homeOffset = maxonMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "L_wrist")
@@ -1263,7 +1263,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x508; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x188; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_wrist";
-                // maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 maxonMotor->homeOffset = maxonMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "R_foot")
@@ -1278,7 +1278,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x509; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x189; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "R_foot";
-                // maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 maxonMotor->homeOffset = maxonMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "L_foot")
@@ -1293,7 +1293,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50A; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18A; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "L_foot";
-                // maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 maxonMotor->homeOffset = maxonMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
             }
             else if (motor_pair.first == "maxonForTest")
@@ -1308,7 +1308,7 @@ void DrumRobot::initializeMotors()
                 maxonMotor->txPdoIds[3] = 0x50B; // TargetTorque
                 maxonMotor->rxPdoIds[0] = 0x18B; // Statusword, ActualPosition, ActualTorque
                 maxonMotor->myName = "maxonForTest";
-                // maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
+                maxonMotor->initial_position = initial_positions[can_id] * M_PI / 180.0f;
                 maxonMotor->homeOffset = maxonMotor->cwDir * initial_positions[can_id] * M_PI / 180.0f;
             }
         }
