@@ -29,7 +29,7 @@ public:
     float cwDir;
     float timingBelt_ratio;
     float rMin, rMax;
-    float initial_position;
+    // float initial_position;
     std::string myName;
     std::string interFaceName;
     bool isError = false;
@@ -86,7 +86,7 @@ public:
     std::string motorType;
 
     // int sensorReadBit, sensorWriteBit;
-    double homeOffset = 0.0;
+    float homeOffset = 0.0;
     // double sensorLocation = 0.0;
     bool brake_state;
 
@@ -135,12 +135,12 @@ public:
     bool checked = false;
 
     unsigned char statusBit;
-    double homeOffset = 0.0;
-    double bumperLocation = 0.0;
+    float homeOffset = 0.0;
+    float bumperLocation = 0.0;
     int errorCnt = 0;
 
     queue<MaxonData> commandBuffer;
-    queue<double> wrist_BackArr;
+    queue<float> wrist_BackArr;
     void clearCommandBuffer();
     void clearWrist_BackArr();
 };

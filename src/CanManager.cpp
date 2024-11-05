@@ -617,9 +617,6 @@ void CanManager::setMotorsSocket()
                 if (motor->isConected)
                 {
                     std::cerr << "--------------> CAN NODE ID " << motor->nodeId << " Connected. " << "Motor [" << name << "]\n";
-
-                    // std::string file_name = "data";
-                    appendToCSV_DATA(file_name, (float)motor->nodeId, motor->initial_position, INIT_SIGN);
                 }
                 else
                 {
@@ -1004,6 +1001,20 @@ void CanManager::openCSVFile()
             openCSV = true;
             file_name = file_name + to_string(i);
             std::cout << "Start Logging of Log Data : " << file_name << ".txt\n";
+
+            for (auto &motor_pair : motors)
+            {
+                std::shared_ptr<GenericMotor> motor = motor_pair.second;
+                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+                {
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, tMotor->homeOffset, INIT_SIGN);
+                }
+                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
+                {
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, maxonMotor->homeOffset, INIT_SIGN);
+                }
+            }
+
             return;
         }
     }
