@@ -1063,13 +1063,13 @@ vector<float> TestManager::ikfun_final(float pR[], float pL[], float part_length
         }
     }
 
-    if (j == 0)
-    {
-        cout << "IKFUN is not solved!!\n";
-        state.main = Main::Error;
-    }
-
-    return Qf;
+    if (j == 0)struct TMotorData
+{
+    float position;
+    int32_t spd;
+    int32_t acl;
+    bool isBrake;
+};
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1307,122 +1307,6 @@ void TestManager::save_to_txt_inputData(const string &csv_file_name)
 /*                                 Multi Test Mode                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-void TestManager::mkArr(vector<string> &motorName, int time, int cycles, int LnR, float amp)
-{
-    struct can_frame frame;
-    int Kp_fixed = 450;
-    float Kd_fixed = 4.5;
-    map<string, bool> TestMotor;
-    if (LnR == 0) // 양쪽 다 고정
-    {
-        for (auto &motorname : motorName)
-        {
-            TestMotor[motorname] = false;
-        }
-    }
-    else if (LnR == 1) // 오른쪽만 Test
-    {
-        for (auto &motorname : motorName)
-        {
-            if (motorname[0] == 'L')
-                TestMotor[motorname] = false;
-            else
-                TestMotor[motorname] = true;
-        }
-    }
-    else if (LnR == 2) // 왼쪽만 Test
-    {
-        for (auto &motorname : motorName)
-        {
-            if (motorname[0] == 'R')
-                TestMotor[motorname] = false;
-            else
-                TestMotor[motorname] = true;
-        }
-    }
-    else if (LnR == 3) // 양쪽 다 Test
-    {
-        for (auto &motorname : motorName)
-        {
-            TestMotor[motorname] = true;
-        }
-    }
-
-    amp = amp / 180.0 * M_PI; // Degree -> Radian 변경
-    for (const auto &motorname : motorName)
-    {
-        if (motors.find(motorname) != motors.end())
-        {
-            std::cout << motorname << " ";
-            if (TestMotor[motorname])
-            { // Test 하는 모터
-                std::cout << "Move\n";
-                InputData[0] += motorname + ",";
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
-                {
-                    int kp = tMotor->Kp;
-                    float kd = tMotor->Kd;
-
-                    for (int c = 0; c < cycles; c++)
-                    {
-                        for (int i = 0; i < time; i++)
-                        {
-                            float val = tMotor->currentPos + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * tMotor->cwDir;
-                            tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, val, 0, kp, kd, 0.0);
-                            tMotor->sendBuffer.push(frame);
-                            InputData[time * c + i + 1] += to_string(val) + ",";
-                        }
-                    }
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
-                {
-                    for (int c = 0; c < cycles; c++)
-                    {
-                        for (int i = 0; i < time; i++)
-                        {
-                            float val = maxonMotor->currentPos + (1.0 - cos(2.0 * M_PI * i / time)) / 2 * amp * maxonMotor->cwDir;
-                            maxoncmd.getTargetPosition(*maxonMotor, &frame, val);
-                            maxonMotor->sendBuffer.push(frame);
-                            InputData[time * c + i + 1] += to_string(val) + ",";
-                        }
-                    }
-                }
-            }
-            else
-            { // Fixed 하는 모터
-                std::cout << "Fixed\n";
-                InputData[0] += motorname + ",";
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motors[motorname]))
-                {
-                    for (int c = 0; c < cycles; c++)
-                    {
-                        for (int i = 0; i < time; i++)
-                        {
-                            float val = tMotor->currentPos;
-                            tmotorcmd.parseSendCommand(*tMotor, &frame, tMotor->nodeId, 8, val, 0, Kp_fixed, Kd_fixed, 0.0);
-                            tMotor->sendBuffer.push(frame);
-                            InputData[time * c + i + 1] += to_string(val) + ",";
-                        }
-                    }
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motors[motorname]))
-                {
-                    for (int c = 0; c < cycles; c++)
-                    {
-                        for (int i = 0; i < time; i++)
-                        {
-                            float val = maxonMotor->currentPos;
-                            maxoncmd.getTargetPosition(*maxonMotor, &frame, val);
-                            maxonMotor->sendBuffer.push(frame);
-                            InputData[time * c + i + 1] += to_string(val) + ",";
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 void TestManager::SendLoop()
 {
     std::cout << "Settig...\n";
@@ -1482,68 +1366,6 @@ void TestManager::SendLoop()
         }
     } while (!allBuffersEmpty);
     canManager.clearReadBuffers();
-}
-
-void TestManager::TestArr(float t, int cycles, int type, int LnR, float amp[])
-{
-    std::cout << "Test Start!!\n";
-
-    int time = t / 0.005;
-    std::vector<std::string> SmotorName;
-    InputData.clear();
-    InputData.resize(time * cycles + 1);
-
-    SmotorName = {"waist"};
-    if ((type | 0b10111) == 0b11111) // Turn Waist
-        mkArr(SmotorName, time, cycles, LnR, amp[3]);
-    else
-        mkArr(SmotorName, time, cycles, 0, 0);
-
-    SmotorName = {"R_arm1", "L_arm1"};
-    if ((type | 0b11011) == 0b11111) // Turn Arm1
-        mkArr(SmotorName, time, cycles, LnR, amp[2]);
-    else
-        mkArr(SmotorName, time, cycles, 0, 0);
-
-    SmotorName = {"R_arm2", "L_arm2"};
-    if ((type | 0b11101) == 0b11111) // Turn Arm2
-        mkArr(SmotorName, time, cycles, LnR, amp[1]);
-    else
-        mkArr(SmotorName, time, cycles, 0, 0);
-
-    SmotorName = {"R_arm3", "L_arm3"};
-    if ((type | 0b11110) == 0b11111) // Turn Arm3
-        mkArr(SmotorName, time, cycles, LnR, amp[0]);
-    else
-        mkArr(SmotorName, time, cycles, 0, 0);
-
-    SmotorName = {"R_wrist", "L_wrist", "maxonForTest"};
-    if ((type | 0b01111) == 0b11111) // Turn Wrist
-        mkArr(SmotorName, time, cycles, LnR, amp[4]);
-    else
-        mkArr(SmotorName, time, cycles, 0, 0);
-
-    // TXT 파일 열기
-    string FileNamein = "../../READ/test_in.txt";
-    ofstream csvFileIn(FileNamein);
-    if (!csvFileIn.is_open())
-    {
-        std::cerr << "Error opening TXT file." << std::endl;
-    }
-
-    // TXT 파일 입력
-    for (auto &data : InputData)
-    {
-        csvFileIn << data << "\n";
-    }
-
-    // CSV 파일 닫기
-    csvFileIn.close();
-    std::cout << "연주 txt_InData 파일이 생성되었습니다: " << FileNamein << std::endl;
-
-    SendLoop();
-
-    parse_and_save_to_csv("../../READ/test_out");
 }
 
 void TestManager::parse_and_save_to_csv(const std::string &csv_file_name)

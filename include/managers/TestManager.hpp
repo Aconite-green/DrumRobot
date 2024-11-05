@@ -64,6 +64,8 @@ private:
     float q[9] = {0.0};
     float R_xyz[3] = {0.0};
     float L_xyz[3] = {0.0};
+
+    // Robot Parameters
     float part_length[6] = {0.313, 0.3335, 0.313, 0.3335, 0.367, 0.367};
     float s = 0.600;  ///< 허리 길이.
     float z0 = 1.026; ///< 바닥부터 허리까지의 높이.
