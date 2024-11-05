@@ -986,7 +986,6 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
 void CanManager::openCSVFile()
 {
-    bool openCSV = false;
     for (int i = 1; i < 100; i++)
     {
         // 기본 경로와 파일 이름을 결합
@@ -998,7 +997,6 @@ void CanManager::openCSVFile()
         if(!fileExists)
         {
             // 처음 실행 시
-            openCSV = true;
             file_name = file_name + to_string(i);
             std::cout << "Start Logging of Log Data : " << file_name << ".txt\n";
 
