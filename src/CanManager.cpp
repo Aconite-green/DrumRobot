@@ -663,6 +663,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->motorCurrent = std::get<3>(parsedData);
 
                     tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
+
                     tMotor->recieveBuffer.push(frame);
 
                     appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->motorPosition, tMotor->motorCurrent);
