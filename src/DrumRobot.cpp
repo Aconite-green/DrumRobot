@@ -69,31 +69,44 @@ void DrumRobot::stateMachine()
         }
         case Main::Check:
         {
+            // bool isWriteError = false;
+            // if (state.home == HomeSub::Done)
+            // {
+            //     if (!canManager.checkAllMotors_Fixed())
+            //     {
+            //         isWriteError = true;
+            //     }
+            //     canManager.checkMaxon();
+            // }
+            // printCurrentPositions();
+            // std::cout << "Put any keyboard input\n";
+            // if (kbhit())
+            // {
+            //     state.main = Main::Ideal;
+            // }
+
+            // if (isWriteError)
+            // {
+            //     state.main = Main::Error;
+            //     break;
+            // }
+
+            // int ret = system("clear");
+            // if (ret == -1)
+            //     std::cout << "system clear error" << endl;
+            // break;
+
             bool isWriteError = false;
-            if (state.home == HomeSub::Done)
+
+            if (!canManager.checkAllMotors_Fixed()) // stateMachine() 주기가 5ms 라서 delay 필요 없음
             {
-                if (!canManager.checkAllMotors_Fixed())
-                {
-                    isWriteError = true;
-                }
-                canManager.checkMaxon();
-            }
-            printCurrentPositions();
-            std::cout << "Put any keyboard input\n";
-            if (kbhit())
-            {
-                state.main = Main::Ideal;
+                isWriteError = true;
             }
 
             if (isWriteError)
             {
                 state.main = Main::Error;
-                break;
             }
-
-            int ret = system("clear");
-            if (ret == -1)
-                std::cout << "system clear error" << endl;
             break;
         }
         case Main::Test:
@@ -197,6 +210,17 @@ void DrumRobot::sendLoopForThread()
         }
         case Main::Check:
         {
+            bool isWriteError = false;
+            if (!canManager.checkAllMotors_Fixed())
+            {
+                isWriteError = true;
+            }
+
+            if (isWriteError)
+            {
+                state.main = Main::Error;
+            }
+            usleep(5000);   // sendLoopForThread() 주기가 100us 라서 delay 필요
             break;
         }
         case Main::Test:
@@ -1113,7 +1137,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = -1.0f;
                 tMotor->timingBeltRatio = 3.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -30deg
-                tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 120deg
+                tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 130deg
                 tMotor->myName = "R_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
@@ -1133,7 +1157,7 @@ void DrumRobot::initializeMotors()
                 tMotor->cwDir = 1.0f;
                 tMotor->timingBeltRatio = 3.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -30 deg
-                tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 120 deg
+                tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 130 deg
                 tMotor->myName = "L_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10

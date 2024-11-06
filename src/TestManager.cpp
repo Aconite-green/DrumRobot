@@ -24,11 +24,11 @@ void TestManager::SendTestProcess()
             float c_MotorAngle[9];
             getMotorPos(c_MotorAngle);
 
-            std::cout << "[ Current Q Values (Radian) ]\n";
+            std::cout << "[ Current Q Values (Radian / Degree) ]\n";
             for (int i = 0; i < 9; i++)
             {
                 q[i] = c_MotorAngle[i];
-                std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\n";
+                std::cout << "Q[" << i << "] : " << c_MotorAngle[i] << "\t\t" << c_MotorAngle[i] * 180.0 / M_PI << "\n";
             }
             fkfun(c_MotorAngle); // 현재 q값에 대한 fkfun 진행
 
