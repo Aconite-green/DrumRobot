@@ -122,8 +122,6 @@ void TestManager::SendTestProcess()
                         maxonMotor->clearReceiveBuffer();
                     }
                 }
-                canManager.Input_pos.clear();
-                Input_pos.clear();
                 state.test = TestSub::FillBuf;
                 usleep(5000);
                 UnfixedMotor();
@@ -376,7 +374,7 @@ void TestManager::SendTestProcess()
 
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brake_state);
+                    usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
                 }
 
                 if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))

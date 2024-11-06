@@ -116,7 +116,6 @@ private:
     void UnfixedMotor();
     void clearMotorsCommandBuffer();
 
-    vector<vector<float>> Input_pos;
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},
         {"R_arm1", 1},
@@ -147,16 +146,10 @@ private:
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;
-    void parse_and_save_to_csv(const std::string &csv_file_name);
     void ReadProcess(int periodMicroSec);
     bool dct_fun(float positions[], float vel_th);
 
     // Maxon 모터 Homing 함수
-    void homingSetZero();
     void homingMaxonEnable();
     void homingSetMaxonMode(std::string targetMode);
-
-    // Log data
-    void toCSV_sendData(const string &csv_file_name);
-    void toCSV_recvData(const string &csv_file_name);
 };

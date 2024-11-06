@@ -657,14 +657,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                 if ((frame.can_id & 0xFF) == tMotor->nodeId)
                 {
                     std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
-                    if (setlimit)
-                    {
-                        bool isSafe = safetyCheck_T(motor, parsedData);
-                        if (!isSafe)
-                        {
-                            return false;
-                        }
-                    }
+                    
                     tMotor->motorPosition = std::get<1>(parsedData);
                     tMotor->motorVelocity = std::get<2>(parsedData);
                     tMotor->motorCurrent = std::get<3>(parsedData);
@@ -672,8 +665,16 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
                     tMotor->recieveBuffer.push(frame);
 
-                    // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->motorPosition, tMotor->motorCurrent);
+
+                    if (setlimit)
+                    {
+                        bool isSafe = safetyCheck_T(motor);
+                        if (!isSafe)
+                        {
+                            return false;
+                        }
+                    }
                 }
             }
         }
@@ -685,14 +686,7 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                 if (frame.can_id == maxonMotor->rxPdoIds[0])
                 {
                     std::tuple<int, float, float, unsigned char> parsedData = maxoncmd.parseRecieveCommand(*maxonMotor, &frame);
-                    if (setlimit)
-                    {
-                        bool isSafe = safetyCheck_M(motor, parsedData);
-                        if (!isSafe)
-                        {
-                            return false;
-                        }
-                    }
+                    
                     maxonMotor->motorPosition = std::get<1>(parsedData);
                     maxonMotor->motorTorque = std::get<2>(parsedData);
                     maxonMotor->statusBit = std::get<3>(parsedData);
@@ -702,8 +696,16 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     maxonMotor->jointAngle = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
                     maxonMotor->recieveBuffer.push(frame);
 
-                    // std::string file_name = "data";
                     appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->motorPosition, maxonMotor->motorTorque);
+
+                    if (setlimit)
+                    {
+                        bool isSafe = safetyCheck_M(motor);
+                        if (!isSafe)
+                        {
+                            return false;
+                        }
+                    }
                 }
             }
         }
@@ -762,7 +764,6 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             return false;
         };
 
-        // std::string file_name = "data";
         appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, maxonMotor->fixedMotorPosition, maxonMotor->fixedMotorPosition - maxonMotor->motorPosition);
     }
     return true;
@@ -839,7 +840,7 @@ bool CanManager::setCANFrame()
                 return false;
             }
             tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, desiredPosition);
-            tMotor->brake_state = tData.isBrake;
+            tMotor->brakeState = tData.isBrake;
 
             // std::string file_name = "data";
             appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->motorPosition);
@@ -876,39 +877,41 @@ bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData t
     return isSafe;
 }
 
-bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, float, int8_t, int8_t> parsedData)
+bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor)
 {
     bool isSafe = true;
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        float coordinationPos = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
-        if (tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos || std::get<3>(parsedData) > tMotor->limitCurrent)
+        if (tMotor->rMin > tMotor->jointAngle || tMotor->rMax < tMotor->jointAngle)
         {
-            if (tMotor->rMin > coordinationPos)
+            if (tMotor->rMin > tMotor->jointAngle)
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Min)\n";
-                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
             }
-            else if (tMotor->rMax < coordinationPos)
+            else
             {
                 std::cout << "Error For " << tMotor->myName << " (Out of Range : Max)\n";
-                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
-            }
-            else if (std::get<3>(parsedData) > tMotor->limitCurrent)
-            {
-                std::cout << "Error For " << tMotor->myName << " (Limit Current)\n";
-                std::cout << "current : " << tMotor->limitCurrent << "A\n";
+                std::cout << "coordinationPos : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
             }
 
-            if (tMotor->errorCnt > 10)
+            isSafe = false;
+            tMotor->isError = true;
+        }
+        else if (tMotor->motorCurrent > tMotor->currentLimit)
+        {
+            if (tMotor->currentErrorCnt > 10)
             {
+                std::cout << "Error For " << tMotor->myName << " (Limit Current)\n";
+                std::cout << "current : " << tMotor->motorCurrent << "A\n";
+
                 isSafe = false;
                 tMotor->isError = true;
             }
             else
             {
-                tMotor->errorCnt++;
+                tMotor->currentErrorCnt++;
             }
         }
     }
@@ -916,39 +919,27 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
     return isSafe;
 }
 
-bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<int, float, float, unsigned char> parsedData)
+bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor)
 {
     bool isSafe = true;
 
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
-        float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
-        if (maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
+        if (maxonMotor->rMin > maxonMotor->jointAngle || maxonMotor->rMax < maxonMotor->jointAngle)
         {
-            if (maxonMotor->rMin > coordinationPos)
+            if (maxonMotor->rMin > maxonMotor->jointAngle)
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Min)\n";
-                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+                std::cout << "coordinationPos : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
             }
             else
             {
                 std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Max)\n";
-                std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
-            }
-
-            if (maxonMotor->errorCnt > 10)
-            {
-                isSafe = false;
-                maxonMotor->isError = true;
-            }
-            else
-            {
-                maxonMotor->errorCnt++;
+                std::cout << "coordinationPos : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
             }
 
             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);
-            // usleep(5000);    // 이거 필요한가???
             usleep(10);
             maxoncmd.getSync(&maxonMotor->sendFrame);
             sendMotorFrame(maxonMotor);

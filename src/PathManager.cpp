@@ -194,7 +194,6 @@ pair<float, float> PathManager::SetTorqFlag(MatrixXd &State, float t_now)
 }
 
 
-
 vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, int n)
 {
     vector<float> Qi;
@@ -216,7 +215,6 @@ vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, 
 
     return Qi;
 }
-
 
 
 void PathManager::getMotorPos()

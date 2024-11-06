@@ -28,37 +28,26 @@ public:
     // Motors Feature
     float cwDir;
     float rMin, rMax;
-    int32_t spd = 300; // ERPM
-    int32_t acl = 10000; // ERPA
     std::string myName;
-    bool isError = false;
-    // Values
-    float desPos, desVel, desTor;
-    float prePos;
+
+    // Receive
     float motorPosition, motorVelocity;
     float jointAngle;
     float initialJointAngle;
+
     // Fixed
+    bool isError = false;
     float fixedMotorPosition;
     bool isfixed = false;
 
-    // Save CSV
-    float pre_spd = 0.0;    
+    // Values
+    float desPos, desVel, desTor;
+    float prePos;
+    // int32_t spd = 0; // ERPM
+    // int32_t acl = 0; // ERPA
 
-    // Gear ratio
-    std::map<std::string, int> R_Ratio = {
-        {"AK80_64", 64},
-        {"AK70_10", 10},
-        {"AK10_9", 9}
-    };
-    int PolePairs = 21;
-    float timingBeltRatio;
-
-    // For Homing Session
-    bool isHomed;
-
-    std::queue<can_frame> recieveBuffer;
     std::queue<can_frame> sendBuffer;
+    std::queue<can_frame> recieveBuffer;
 
     struct can_frame sendFrame;
     struct can_frame recieveFrame;
@@ -84,17 +73,24 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
+    // Gear ratio
+    std::map<std::string, int> R_Ratio = {
+        {"AK80_64", 64},
+        {"AK70_10", 10},
+        {"AK10_9", 9}
+    };
+    const int PolePairs = 21;
+
+    // timing belt
+    float timingBeltRatio;
+
+    // current [A]
+    float currentLimit;
     float motorCurrent;
+    int currentErrorCnt = 0;
 
-    bool brake_state;
-
-    // For Homing Session
-    bool atFirstSensor, atSecondSensor, atZeroPosition;
-
-    // [A]
-    float limitCurrent;
-
-    int errorCnt = 0;
+    // brake
+    bool brakeState;
 
     std::queue<TMotorData> commandBuffer;
 
@@ -135,7 +131,6 @@ public:
 
     unsigned char statusBit;
     float bumperLocation = 0.0;
-    int errorCnt = 0;
 
     queue<MaxonData> commandBuffer;
     queue<float> wrist_BackArr;
