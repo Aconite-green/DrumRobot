@@ -1652,15 +1652,16 @@ void PathManager::GetArr(vector<float> &arr)
             {
                 TMotorData newData;
 
-                if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-                {
-                    newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->initial_position;
-                }
-                else    // POS_LOOP, SPD_LOOP
-                {
-                    newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
-                }
+                // if (canManager.tMotor_control_mode == POS_SPD_LOOP)
+                // {
+                //     newData.position = arr[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->initial_position;
+                // }
+                // else    // POS_LOOP, SPD_LOOP
+                // {
+                //     newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
+                // }
 
+                newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
                 newData.spd = tMotor->spd;
                 newData.acl = tMotor->acl;
                 newData.isBrake = false;
