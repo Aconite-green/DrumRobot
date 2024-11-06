@@ -829,6 +829,11 @@ void TestManager::GetArr(float arr[])
 
     getMotorPos(Q1);
 
+    for (int i = 0; i < 9; i++)
+    {
+        Q2[i] = arr[i];
+    }
+
     n = (int)(t/canManager.deltaT);    // t초동안 이동
     Vmax = cal_Vmax(Q1, Q2, acc_max, t);
     n_p = (int)(extra_time/canManager.deltaT);  // 추가 시간
@@ -840,11 +845,6 @@ void TestManager::GetArr(float arr[])
             n_brake_start[i] = (int)(brake_start_time[i]/canManager.deltaT);
             n_brake_end[i] = (int)(brake_end_time[i]/canManager.deltaT);
         }
-    }
-
-    for (int i = 0; i < 9; i++)
-    {
-        Q2[i] = arr[i];
     }
     
     for (int i = 0; i < n_repeat; i++)
