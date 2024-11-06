@@ -102,7 +102,7 @@ void TestManager::SendTestProcess()
             {
                 float degree_angle;
                 
-                std::cout << "\nRange : " << motorMinArr[userInput] << "~" << motorMaxArr[userInput] << "(Degree)\n";
+                std::cout << "\nRange : " << joint_range_min[userInput] << "~" << joint_range_max[userInput] << "(Degree)\n";
                 std::cout << "Enter q[" << userInput << "] Values (Degree) : ";
                 std::cin >> degree_angle;
                 q[userInput] = degree_angle * M_PI / 180.0;
@@ -181,7 +181,7 @@ void TestManager::SendTestProcess()
                         degree_angle = 0.0;
                     }
                     
-                    std::cout << "\nRange : " << motorMinArr[i] << "~" << motorMaxArr[i] << "(Degree)\n";
+                    std::cout << "\nRange : " << joint_range_min[i] << "~" << joint_range_max[i] << "(Degree)\n";
                     std::cout << "Enter q[" << i << "] Values (Degree) : " << degree_angle << "\n";
                     
                     // degree 값을 radian으로 변환하여 q 배열에 저장
@@ -551,11 +551,11 @@ void TestManager::getMotorPos(float c_MotorAngle[])
     {
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = tMotor->currentPos * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
+            c_MotorAngle[motor_mapping[entry.first]] = tMotor->jointAngle;
         }
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
         {
-            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->currentPos * maxonMotor->cwDir + maxonMotor->initial_position;
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->jointAngle;
         }
     }
 }
@@ -876,32 +876,9 @@ void TestManager::GetArr(float arr[])
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
                 {
                     TMotorData newData;
-
-                    if (canManager.tMotor_control_mode == POS_SPD_LOOP)
-                    {
-                        newData.position = Q2[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-                    else if (canManager.tMotor_control_mode == POS_LOOP)
-                    {
-                        newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-                    else if (canManager.tMotor_control_mode == SPD_LOOP)
-                    {
-                        newData.position = Qi[motor_mapping[entry.first]] * tMotor->cwDir - tMotor->homeOffset;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-                    else
-                    {
-                        newData.position = (Qi[motor_mapping[entry.first]] - tMotor->initial_position) * tMotor->cwDir / tMotor->timingBelt_ratio;
-                        newData.spd = tMotor->spd;
-                        newData.acl = tMotor->acl;
-                    }
-
+                    newData.position = Qi[motor_mapping[entry.first]];
+                    newData.spd = 0;
+                    newData.acl = 0;
                     
                     if (k < n_brake_start[motor_mapping[entry.first]])
                     {
@@ -920,7 +897,7 @@ void TestManager::GetArr(float arr[])
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
                 {
                     MaxonData newData;
-                    newData.position = (Qi[motor_mapping[entry.first]] - maxonMotor->initial_position) * maxonMotor->cwDir;
+                    newData.position = Qi[motor_mapping[entry.first]];
                     newData.WristState = 0.5;
                     maxonMotor->commandBuffer.push(newData);
                 }

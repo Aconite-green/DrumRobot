@@ -29,9 +29,9 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
-#define POS_LOOP 0
-#define POS_SPD_LOOP 1
-#define SPD_LOOP 2
+// #define POS_LOOP 0
+// #define POS_SPD_LOOP 1
+// #define SPD_LOOP 2
 
 // position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 30.0*M_PI/180.0
@@ -128,12 +128,8 @@ public:
     void restCanPort(int com_number);
 
     // tMotor 제어 모드/주기 결정
-    int tMotor_control_mode = POS_LOOP;
+    // int tMotor_control_mode = POS_LOOP;
     const float deltaT = 0.005;
-
-    // //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    // const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   144.0,  90.0,   144.0,  135.0,  135.0,  135.0,  135.0};
-    // const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
 private:
 

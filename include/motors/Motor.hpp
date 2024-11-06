@@ -35,10 +35,11 @@ public:
     // Values
     float desPos, desVel, desTor;
     float prePos;
-    float currentPos, currentVel, currentTor;
-    float initial_position;
+    float motorPosition, motorVelocity;
+    float jointAngle;
+    float initialJointAngle;
     // Fixed
-    float fixedPos;
+    float fixedMotorPosition;
     bool isfixed = false;
 
     // Save CSV
@@ -51,7 +52,7 @@ public:
         {"AK10_9", 9}
     };
     int PolePairs = 21;
-    float timingBelt_ratio;
+    float timingBeltRatio;
 
     // For Homing Session
     bool isHomed;
@@ -83,7 +84,8 @@ public:
     TMotor(uint32_t nodeId, const std::string &motorType);
     std::string motorType;
 
-    float homeOffset = 0.0;
+    float motorCurrent;
+
     bool brake_state;
 
     // For Homing Session
@@ -118,6 +120,8 @@ public:
     uint32_t txPdoIds[4];
     uint32_t rxPdoIds[4];
 
+    float motorTorque;
+
     float positionValues[4] = {0}; // 포지션 값 저장을 위한 정적 배열
     int posIndex = 0;
 
@@ -130,7 +134,6 @@ public:
     bool checked = false;
 
     unsigned char statusBit;
-    float homeOffset = 0.0;
     float bumperLocation = 0.0;
     int errorCnt = 0;
 

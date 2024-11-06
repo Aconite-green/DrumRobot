@@ -386,7 +386,6 @@ void CanManager::clearReadBuffers()
     }
 }
 
-
 void CanManager::clearCanBuffer(int canSocket)
 {
     struct can_frame frame;
@@ -585,7 +584,7 @@ void CanManager::setMotorsSocket()
                     {
                         motor->isConected = true;
                         std::tuple<int, float, float, float, int8_t, int8_t> parsedData = tservocmd.motor_receive(&frame);
-                        motor->currentPos = std::get<1>(parsedData);
+                        motor->motorPosition = std::get<1>(parsedData);
                     }
                 }
             }
@@ -666,13 +665,15 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                             return false;
                         }
                     }
-                    tMotor->currentPos = std::get<1>(parsedData);
-                    tMotor->currentVel = std::get<2>(parsedData);
-                    tMotor->currentTor = std::get<3>(parsedData);   // 토크 아님, 전류임
+                    tMotor->motorPosition = std::get<1>(parsedData);
+                    tMotor->motorVelocity = std::get<2>(parsedData);
+                    tMotor->motorCurrent = std::get<3>(parsedData);
+
+                    tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
                     tMotor->recieveBuffer.push(frame);
 
                     // std::string file_name = "data";
-                    appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->currentPos, tMotor->currentTor);
+                    appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->motorPosition, tMotor->motorCurrent);
                 }
             }
         }
@@ -692,15 +693,17 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                             return false;
                         }
                     }
-                    maxonMotor->currentPos = std::get<1>(parsedData);
-                    maxonMotor->currentTor = std::get<2>(parsedData);   // 이건 토크임? 전류임?
+                    maxonMotor->motorPosition = std::get<1>(parsedData);
+                    maxonMotor->motorTorque = std::get<2>(parsedData);
                     maxonMotor->statusBit = std::get<3>(parsedData);
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
+
+                    maxonMotor->jointAngle = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
                     maxonMotor->recieveBuffer.push(frame);
 
                     // std::string file_name = "data";
-                    appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->currentPos, maxonMotor->currentTor);
+                    appendToCSV_DATA(file_name, (float)maxonMotor->nodeId, maxonMotor->motorPosition, maxonMotor->motorTorque);
                 }
             }
         }
@@ -718,21 +721,21 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
     {
         if (motor->isfixed == false)
         {
-            motor->fixedPos = tMotor->currentPos;
+            motor->fixedMotorPosition = tMotor->motorPosition;
             motor->isfixed = true;
         }
 
         // std::string file_name = "data";
-        appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedPos,  motor->fixedPos - tMotor->currentPos);
+        appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedMotorPosition,  motor->fixedMotorPosition - tMotor->motorPosition);
 
         // safety check
-        float diff_angle = motor->fixedPos - tMotor->currentPos;
+        float diff_angle = motor->fixedMotorPosition - tMotor->motorPosition;
         if (abs(diff_angle) > POS_DIFF_LIMIT)
         {
             std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (Fixed)\n";
             return false;
         }
-        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedPos);
+        tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedMotorPosition);
 
         if (!sendMotorFrame(tMotor))
         {
@@ -743,11 +746,11 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
     {
         if (motor->isfixed == false)
         {
-            motor->fixedPos = maxonMotor->currentPos;
+            motor->fixedMotorPosition = maxonMotor->motorPosition;
             motor->isfixed = true;
         }
 
-        maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->fixedPos);
+        maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, maxonMotor->fixedMotorPosition);
         if (!sendMotorFrame(maxonMotor))
         {
             return false;
@@ -760,7 +763,7 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
         };
 
         // std::string file_name = "data";
-        appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, maxonMotor->fixedPos, maxonMotor->fixedPos - maxonMotor->currentPos);
+        appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, maxonMotor->fixedMotorPosition, maxonMotor->fixedMotorPosition - maxonMotor->motorPosition);
     }
     return true;
 }
@@ -813,84 +816,60 @@ bool CanManager::setCANFrame()
         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
         {
             MaxonData mData = maxonMotor->commandBuffer.front();
+            float desiredPosition;
+
             maxonMotor->commandBuffer.pop();
-            Pos[motor_mapping[maxonMotor->myName]] = mData.position;
-            maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, mData.position);
+            desiredPosition = (mData.position - maxonMotor->initialJointAngle) * maxonMotor->cwDir;
+
+            maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, desiredPosition);
 
             // std::string file_name = "data";
-            appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, mData.position, mData.position - maxonMotor->currentPos);
+            appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, mData.position, mData.position - maxonMotor->motorPosition);
         }
         else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
             TMotorData tData = tMotor->commandBuffer.front();
+            float desiredPosition;
+
+            desiredPosition = (tData.position - tMotor->initialJointAngle) * tMotor->cwDir / tMotor->timingBeltRatio;
             tMotor->commandBuffer.pop();
-            Pos[motor_mapping[tMotor->myName]] = tData.position;
 
-            if (tMotor_control_mode == POS_LOOP)
+            if(!safetyCheck_Tmotor(tMotor, tData))
             {
-                // safety check
-                // float diff_angle = tData.position - tMotor->currentPos;
-                // if (abs(diff_angle) > POS_DIFF_LIMIT)
-                // {
-                //     std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (set)\n" << tData.position << tMotor->currentPos << endl;
-                //     return false;
-                // }
-
-                if(!safetyCheck_Tmotor(tMotor, tData))
-                {
-                    return false;
-                }
-                tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, tData.position);
-            }
-            else if (tMotor_control_mode == POS_SPD_LOOP)
-            {
-                tservocmd.comm_can_set_pos_spd(*tMotor, &tMotor->sendFrame, tData.position, tData.spd, tData.acl);
-            }
-            else if (tMotor_control_mode == SPD_LOOP)
-            {
-                float diff_angle = tData.position - tMotor->currentPos; // [rad]
-                float target_spd = (diff_angle / deltaT) * (60 / 2 / M_PI) * (tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs);   // [erpm]
-                float P_gain = 1.0;
-                tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, P_gain * target_spd); // [erpm]
-                // tservocmd.comm_can_set_spd(*tMotor, &tMotor->sendFrame, tData.spd); // [erpm]
-            }
-            else
-            {
-                std::cout << "tMotor control mode ERROR\n";
                 return false;
             }
+            tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, desiredPosition);
             tMotor->brake_state = tData.isBrake;
 
             // std::string file_name = "data";
-            appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->currentPos);
+            appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->motorPosition);
         }
     }
-    Input_pos.push_back(Pos);
+
     return true;
 }
 
 bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData tData)
 {
     bool isSafe = true;
-    float diff_angle = tData.position - tMotor->currentPos;
-    float coordinationPos = tData.position * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
+    float diff_angle = tData.position - tMotor->jointAngle;
 
     if (abs(diff_angle) > POS_DIFF_LIMIT)
     {
-        std::cout << "tData.position : " << tData.position << "currentPos : " << tMotor -> currentPos  << endl;
+        std::cout << "tData.position : " << tData.position << "motorPosition : " << tMotor -> motorPosition  << endl;
         std::cout << "Go to Error state by safety check (Pos Diff : " << tMotor->myName << ")" << endl;
         isSafe = false;
     }
-    else if (tMotor->rMin > coordinationPos)
+    else if (tMotor->rMin > tData.position)
     {
         std::cout << "Go to Error state by safety check (Out of Range(Min) : " << tMotor->myName << ")" << endl;
-        std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+        std::cout << "coordinationPos : " << tData.position / M_PI * 180 << "deg\n";
         isSafe = false;
     }
-    else if (tMotor->rMax < coordinationPos)
+    else if (tMotor->rMax < tData.position)
     {
         std::cout << "Go to Error state by safety check (Out of Range(Max) : " << tMotor->myName << ")" << endl;
-        std::cout << "coordinationPos : " << coordinationPos / M_PI * 180 << "deg\n";
+        std::cout << "coordinationPos : " << tData.position / M_PI * 180 << "deg\n";
         isSafe = false;
     }
 
@@ -903,7 +882,7 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
     if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor))
     {
-        float coordinationPos = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBelt_ratio + tMotor->initial_position;
+        float coordinationPos = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
         if (tMotor->rMin > coordinationPos || tMotor->rMax < coordinationPos || std::get<3>(parsedData) > tMotor->limitCurrent)
         {
             if (tMotor->rMin > coordinationPos)
@@ -931,9 +910,6 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor, std::tuple<
             {
                 tMotor->errorCnt++;
             }
-
-            // tservocmd.comm_can_set_cb(*tMotor, &tMotor->sendFrame, 0);  // current brake ?????????????????????????????????????????????????????????????????????
-            // sendMotorFrame(tMotor);
         }
     }
 
@@ -946,7 +922,7 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor, std::tuple<
 
     if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
     {
-        float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initial_position;
+        float coordinationPos = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
         if (maxonMotor->rMin > coordinationPos || maxonMotor->rMax < coordinationPos)
         {
             if (maxonMotor->rMin > coordinationPos)
@@ -1003,11 +979,11 @@ void CanManager::openCSVFile()
                 std::shared_ptr<GenericMotor> motor = motor_pair.second;
                 if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
                 {
-                    appendToCSV_DATA(file_name, (float)motor->nodeId, tMotor->initial_position, INIT_SIGN);
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, tMotor->initialJointAngle, INIT_SIGN);
                 }
                 else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
                 {
-                    appendToCSV_DATA(file_name, (float)motor->nodeId, maxonMotor->initial_position, INIT_SIGN);
+                    appendToCSV_DATA(file_name, (float)motor->nodeId, maxonMotor->initialJointAngle, INIT_SIGN);
                 }
             }
 

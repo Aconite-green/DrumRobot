@@ -131,13 +131,13 @@ private:
         {"R_foot", 9},
         {"L_foot", 10}};
 
-    // 로봇 고정했을 때 각 모터의 관절각  Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    const float initial_positions[11] = {10.0,   90.0,   90.0,   0.0,    40.0,  0.0,    40.0,   95.0,   95.0,    0.0,    0.0};
+    // 로봇 고정했을 때 각 모터의 관절각      Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
+    const float initial_joint_angles[11] = {10.0,   90.0,   90.0,   0.0,    40.0,  0.0,    40.0,   95.0,   95.0,    0.0,    0.0};
 
     // 로봇의 관절각 범위
-    //                            Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
-    const float motorMaxArr[11] = {90.0,  150.0,  180.0,  90.0,   120.0,  90.0,   120.0,  135.0,  135.0,  135.0,  135.0};
-    const float motorMinArr[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
+    //                                 Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
+    const float joint_range_max[11] = {90.0,  150.0,  180.0,  90.0,   120.0,  90.0,   120.0,  135.0,  135.0,  135.0,  135.0};
+    const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
     can_frame frame;
     int des = 0;
