@@ -663,7 +663,6 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->motorCurrent = std::get<3>(parsedData);
 
                     tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
-
                     tMotor->recieveBuffer.push(frame);
 
                     appendToCSV_DATA(file_name, (float)tMotor->nodeId, tMotor->motorPosition, tMotor->motorCurrent);
@@ -728,14 +727,14 @@ bool CanManager::sendForCheck_Fixed(std::shared_ptr<GenericMotor> motor)
             motor->isfixed = true;
         }
 
-        // std::string file_name = "data";
         appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, motor->fixedMotorPosition,  motor->fixedMotorPosition - tMotor->motorPosition);
 
         // safety check
         float diff_angle = motor->fixedMotorPosition - tMotor->motorPosition;
         if (abs(diff_angle) > POS_DIFF_LIMIT)
         {
-            std::cout << "Go to Error state by safety check (Pos Diff) " << tMotor->myName << " (Fixed)\n";
+            std::cout << "\nMotor Fixed Error : Safety Check (" << tMotor->myName << ")\n";
+            std::cout << "Fixed Motor Position : " << motor->fixedMotorPosition << "rad\tCurrent Motor Position : " << tMotor->motorPosition << "rad\n";
             return false;
         }
         tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, motor->fixedMotorPosition);
@@ -825,8 +824,7 @@ bool CanManager::setCANFrame()
 
             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, desiredPosition);
 
-            // std::string file_name = "data";
-            appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, mData.position, mData.position - maxonMotor->motorPosition);
+            appendToCSV_DATA(file_name, (float)maxonMotor->nodeId + SEND_SIGN, desiredPosition, desiredPosition - maxonMotor->motorPosition);
         }
         else if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
         {
@@ -843,8 +841,7 @@ bool CanManager::setCANFrame()
             tservocmd.comm_can_set_pos(*tMotor, &tMotor->sendFrame, desiredPosition);
             tMotor->brakeState = tData.isBrake;
 
-            // std::string file_name = "data";
-            appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, tData.position, tData.position - tMotor->motorPosition);
+            appendToCSV_DATA(file_name, (float)tMotor->nodeId + SEND_SIGN, desiredPosition, desiredPosition - tMotor->motorPosition);
         }
     }
 
@@ -858,7 +855,7 @@ bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData t
 
     if (abs(diff_angle) > POS_DIFF_LIMIT)
     {
-        std::cout << "\nSet CAN Frame Error : safety check (" << tMotor->myName << ")" << endl;
+        std::cout << "\nSet CAN Frame Error : Safety Check (" << tMotor->myName << ")" << endl;
         std::cout << "Desired Joint Angle : " << tData.position * 180.0 / M_PI << "deg\tCurrent Joint Angle : " << tMotor->jointAngle * 180.0 / M_PI << "deg\n";
         isSafe = false;
     }
