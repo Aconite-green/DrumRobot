@@ -222,7 +222,6 @@ void PathManager::getMotorPos()
     // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
     for (auto &entry : motors)
     {
-        entry.second->prePos = entry.second->motorPosition;
         if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
         {
             c_MotorAngle[motor_mapping[entry.first]] = tMotor->jointAngle;

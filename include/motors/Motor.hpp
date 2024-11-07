@@ -40,9 +40,9 @@ public:
     float fixedMotorPosition;
     bool isfixed = false;
 
-    // Values
+    // parseSendCommand()
     float desPos, desVel, desTor;
-    float prePos;
+
     // int32_t spd = 0; // ERPM
     // int32_t acl = 0; // ERPA
 
@@ -71,8 +71,8 @@ class TMotor : public GenericMotor
 {
 public:
     TMotor(uint32_t nodeId, const std::string &motorType);
+    
     std::string motorType;
-
     // Gear ratio
     std::map<std::string, int> R_Ratio = {
         {"AK80_64", 64},
