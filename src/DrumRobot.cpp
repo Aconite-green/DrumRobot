@@ -492,7 +492,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
     {
         if (pathManager.line < pathManager.total)
         {
-            std::cout << "line : " << pathManager.line << ", total : " << pathManager.total << "\n";
+            std::cout << "\n//////////////////////////////// line : " << pathManager.line << ", total : " << pathManager.total << "\n";
             pathManager.PathLoopTask();
             pathManager.line++;
             state.perform = PerformSub::CheckBuf;
@@ -915,7 +915,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "p" && isReady)
         {
-            std::cout << "bpm : " << pathManager.bpm << std::endl;
+            std::cout << "\nbpm : " << pathManager.bpm << std::endl;
             state.main = Main::Perform;
             isReady = false;
 
