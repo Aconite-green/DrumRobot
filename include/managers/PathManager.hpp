@@ -157,7 +157,7 @@ private:
     VectorXd inst_now;      /// 연주 중 현재 위치하는 악기
     float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
     float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
-    float elbow_ready = 5 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
+    float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
     float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
 
     void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool brake_state);

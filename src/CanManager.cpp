@@ -858,20 +858,20 @@ bool CanManager::safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData t
 
     if (abs(diff_angle) > POS_DIFF_LIMIT)
     {
-        std::cout << "tData.position : " << tData.position << "motorPosition : " << tMotor -> motorPosition  << endl;
-        std::cout << "Go to Error state by safety check (Pos Diff : " << tMotor->myName << ")" << endl;
+        std::cout << "\nSet CAN Frame Error : safety check (" << tMotor->myName << ")" << endl;
+        std::cout << "Desired Joint Angle : " << tData.position * 180.0 / M_PI << "deg\tCurrent Joint Angle : " << tMotor->jointAngle * 180.0 / M_PI << "deg\n";
         isSafe = false;
     }
     else if (tMotor->rMin > tData.position)
     {
-        std::cout << "Go to Error state by safety check (Out of Range(Min) : " << tMotor->myName << ")" << endl;
-        std::cout << "coordinationPos : " << tData.position / M_PI * 180 << "deg\n";
+        std::cout << "\nSet CAN Frame Error : Out of Min Range (" << tMotor->myName << ")" << endl;
+        std::cout << "Desired Joint Angle : " << tData.position * 180.0 / M_PI << "deg\n";
         isSafe = false;
     }
     else if (tMotor->rMax < tData.position)
     {
-        std::cout << "Go to Error state by safety check (Out of Range(Max) : " << tMotor->myName << ")" << endl;
-        std::cout << "coordinationPos : " << tData.position / M_PI * 180 << "deg\n";
+        std::cout << "\nSet CAN Frame Error : Out of Max Range (" << tMotor->myName << ")" << endl;
+        std::cout << "Desired Joint Angle : " << tData.position * 180.0 / M_PI << "deg\n";
         isSafe = false;
     }
 
@@ -888,13 +888,13 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor)
         {
             if (tMotor->rMin > tMotor->jointAngle)
             {
-                std::cout << "Error For " << tMotor->myName << " (Out of Range : Min)\n";
-                std::cout << "coordinationPos : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
+                std::cout << "\nRead CAN Frame Error : Out of Min Range (" << tMotor->myName << ")" << endl;
+                std::cout << "Current Joint Angle : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
             }
             else
             {
-                std::cout << "Error For " << tMotor->myName << " (Out of Range : Max)\n";
-                std::cout << "coordinationPos : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
+                std::cout << "\nRead CAN Frame Error : Out of Max Range (" << tMotor->myName << ")" << endl;
+                std::cout << "Current Joint Angle : " << tMotor->jointAngle / M_PI * 180 << "deg\n";
             }
 
             isSafe = false;
@@ -904,7 +904,7 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor)
         {
             if (tMotor->currentErrorCnt > 10)
             {
-                std::cout << "Error For " << tMotor->myName << " (Limit Current)\n";
+                std::cout << "\nRead CAN Frame Error : Overcurrent (" << tMotor->myName << ")" << endl;
                 std::cout << "current : " << tMotor->motorCurrent << "A\n";
 
                 isSafe = false;
@@ -930,13 +930,13 @@ bool CanManager::safetyCheck_M(std::shared_ptr<GenericMotor> &motor)
         {
             if (maxonMotor->rMin > maxonMotor->jointAngle)
             {
-                std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Min)\n";
-                std::cout << "coordinationPos : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
+                std::cout << "\nRead CAN Frame Error : Out of Min Range (" << maxonMotor->myName << ")" << endl;
+                std::cout << "Current Joint Angle : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
             }
             else
             {
-                std::cout << "Error For " << maxonMotor->myName << " (Out of Range : Max)\n";
-                std::cout << "coordinationPos : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
+                std::cout << "\nRead CAN Frame Error : Out of Max Range (" << maxonMotor->myName << ")" << endl;
+                std::cout << "Current Joint Angle : " << maxonMotor->jointAngle / M_PI * 180 << "deg\n";
             }
 
             maxoncmd.getQuickStop(*maxonMotor, &maxonMotor->sendFrame);
