@@ -1395,6 +1395,15 @@ void PathManager::PathLoopTask()
         State = BB;
     }
 
+    float dt = canManager.deltaT;   // 0.005
+    float t = p2(0) - p1(0);
+    int n = t / dt;
+    VectorXd qt = VectorXd::Zero(9);
+    VectorXd Vmax = VectorXd::Zero(9);
+    const float acc_max = 100.0;    // rad/s^2
+    pair<float, float> qElbow;
+    pair<float, float> qWrist;
+
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
     VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
@@ -1408,43 +1417,29 @@ void PathManager::PathLoopTask()
     VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
     VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
-
+    
     wrist_addAngle = sts2wrist_fun(State);
     elbow_addAngle = sts2elbow_fun(State);
 
-    cout << "State :\n"
+    Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
+
+    // 출력
+    std::cout << "State :\n"
          << State << "\n";
-    cout << "wrist_addAngle :\n"
+    std::cout << "wrist_addAngle :\n"
          << wrist_addAngle << "\n";
-    cout << "elbow_addAngle :\n"
+    std::cout << "elbow_addAngle :\n"
          << elbow_addAngle << "\n";
 
-    cout << "p1 :\n"
-         << p1 << "\n";
-    cout << "p2 :\n"
-         << p2 << "\n";
-
-    cout << "qk1_06 :\n"
-         << qk1_06 << "\n";
-    cout << "qk2_06 :\n"
-         << qk2_06 << "\n";
-
-    VectorXd qt = VectorXd::Zero(9);
-    VectorXd Vmax = VectorXd::Zero(9);
-    const float acc_max = 100.0;    // rad/s^2
-    
-    float dt = canManager.deltaT;   // 0.005
-    float t = p2(0) - p1(0);
-    int n = t / dt;
-
-    pair<float, float> qElbow;
-    pair<float, float> qWrist;
-
-    Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
+    std::cout << "R : p1 -> p2\n"
+         << "(" << p1(1) << "," << p1(2) << "," << p1(3) << ") -> (" << p2(1) << "," << p2(2) << "," << p2(3) << ")\n";
+    std::cout << "L : p1 -> p2\n"
+         << "(" << p1(4) << "," << p1(5) << "," << p1(6) << ") -> (" << p2(4) << "," << p2(5) << "," << p2(6) << ")\n";
 
     for (int k = 0; k < 9; k++)
     {
-        cout << "Vmax_" << k << " : " << Vmax(k) << "rad/s\n";
+        std::cout << "Q1[" << k << "] : " << qk1_06[k]*180.0/M_PI <<  " [deg] -> Q2[" << k << "] : " << qk2_06[k]*180.0/M_PI << " [deg],\t";
+        std::cout << "Vmax[" << k << "] : " << Vmax(k) << "[rad/s]\n";
     }
 
     for (int i = 0; i < n; i++)
@@ -1498,14 +1493,14 @@ void PathManager::GetArr(vector<float> &arr)
     VectorXd Q2 = VectorXd::Zero(9);
     VectorXd Qi = VectorXd::Zero(9);
     VectorXd Vmax = VectorXd::Zero(9);
-    
-    getMotorPos();
 
     float dt = canManager.deltaT;   // 0.005
     float t = 3.0;                  // 3초동안 실행
     float extra_time = 1.0;         // 추가 시간 1초
     int n = (int)(t / dt);   
-    int n_p = (int)(extra_time / dt);  
+    int n_p = (int)(extra_time / dt); 
+
+    getMotorPos(); 
 
     for (int i = 0; i < 9; i++)
     {
