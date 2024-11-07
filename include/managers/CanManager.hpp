@@ -29,10 +29,6 @@
 #include "Motor.hpp"
 #include "CommandParser.hpp"
 
-// #define POS_LOOP 0
-// #define POS_SPD_LOOP 1
-// #define SPD_LOOP 2
-
 // position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 30.0*M_PI/180.0
 
@@ -50,6 +46,15 @@ public:
     CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
 
     ~CanManager();
+
+    std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
+    std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
+    std::vector<std::string> ifnames;
+    int errorCnt = 0;
+    int maxonCnt = 0;
+
+    // tMotor 제어 주기 결정
+    const float deltaT = 0.005;
 
     void initializeCAN();
 
@@ -86,12 +91,9 @@ public:
 
     void setSocketNonBlock();
     void setSocketBlock();
-    std::map<std::string, int> sockets;      ///< 모터와 통신하는 소켓의 맵.
-    std::map<std::string, bool> isConnected; ///< 모터의 연결 상태를 나타내는 맵.
-    int maxonCnt = 0;
-    // Functions for Thread Case
 
     bool setCANFrame();
+
     bool safetyCheck_Tmotor(std::shared_ptr<TMotor> tMotor, TMotorData tData);
     bool safetyCheck_T(std::shared_ptr<GenericMotor> &motor);
     bool safetyCheck_M(std::shared_ptr<GenericMotor> &motor);
@@ -110,9 +112,6 @@ public:
         {"R_foot", 9},
         {"L_foot", 10}};
 
-    std::vector<std::string> ifnames;
-    int errorCnt = 0;
-
     /*save csv/txt file*/
     std::chrono::high_resolution_clock::time_point start;  
     const std::string basePath = "../../DrumRobot_data/";  // 기본 경로
@@ -125,10 +124,6 @@ public:
 
     int get_com_number_by_hostname(); 
     void restCanPort(int com_number);
-
-    // tMotor 제어 모드/주기 결정
-    // int tMotor_control_mode = POS_LOOP;
-    const float deltaT = 0.005;
 
 private:
 

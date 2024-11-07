@@ -15,35 +15,6 @@ enum class Main
     Error
 };
 
-enum class HomeSub
-{
-    SelectMotorByUser,
-    MakeHomingOrderBuf,
-    GetSelectedMotor,
-    HomeTmotor,
-    HomeMaxon,
-    Done
-};
-
-enum class HomeTmotor
-{
-    SelectHMotor,
-    MoveToSensor,
-    SensorCheck,
-    FillBuf,
-    CheckBuf,
-    SetCANFrame,
-    SendCANFrameForZeroPos,
-    Done
-};
-
-enum class HomeMaxon
-{
-    StartHoming,
-    CheckHomeStatus,
-    Done
-};
-
 enum class PerformSub
 {
     TimeCheck,
@@ -91,18 +62,12 @@ enum class TestSub
 struct State
 {
     std::atomic<Main> main;
-    std::atomic<HomeSub> home;
-    std::atomic<HomeTmotor> homeTmotor;
-    std::atomic<HomeMaxon> homeMaxon;
     std::atomic<PerformSub> perform;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
     std::atomic<TestSub> test;
 
     State() : main(Main::SystemInit),
-              home(HomeSub::SelectMotorByUser),
-              homeTmotor(HomeTmotor::MoveToSensor),
-              homeMaxon(HomeMaxon::StartHoming),
               perform(PerformSub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck),

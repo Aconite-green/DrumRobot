@@ -138,11 +138,9 @@ private:
     const float joint_range_max[11] = {90.0,  150.0,  180.0,  90.0,   130.0,  90.0,   130.0,  135.0,  135.0,  135.0,  135.0};
     const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
-    can_frame frame;
-    int des = 0;
+    // maxon motor hit ?
     int act = 0;
     int cnt = 0;
-    int k = 0;
 
     // Receive Thread Loop 메소드들
     const int TIME_THRESHOLD_MS = 5;

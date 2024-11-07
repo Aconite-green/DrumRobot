@@ -23,8 +23,6 @@ public:
     void USBIO_4761_set(int num, bool state);
     void USBIO_4761_exit();
 
-    void USBIO_4761_testset(int val);
-
     bool useUSBIO = true;
 
 private:
