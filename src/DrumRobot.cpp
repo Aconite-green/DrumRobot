@@ -177,7 +177,7 @@ void DrumRobot::sendLoopForThread()
         case Main::Ideal:
         {
             bool isWriteError = false;
-            if (state.home == HomeSub::Done)
+            if (setInitialPosition)
             {
                if (!canManager.checkAllMotors_Fixed())
                {
@@ -333,11 +333,11 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::UpdateMotorInfo:
     {
         
-        // if (state.home != HomeSub::Done || state.main == Main::Test) // test 모드에서 에러 검출 안함
+        // if ((!setInitialPosition) || state.main == Main::Test) // test 모드에서 에러 검출 안함
         // {
         //     canManager.distributeFramesToMotors(false);
         // }
-        if (state.home != HomeSub::Done)    // test 모드에서 에러 검출함
+        if (!setInitialPosition)    // test 모드에서 에러 검출함
         {
             canManager.distributeFramesToMotors(false);
         }
@@ -780,7 +780,7 @@ void DrumRobot::displayAvailableCommands() const
 
     if (state.main == Main::Ideal)
     {
-        if (!(state.home == HomeSub::Done))
+        if (!setInitialPosition)
         {
             std::cout << "- o : Set Zero & Offset setting\n";
             std::cout << "- i : Offset setting\n";
@@ -824,7 +824,7 @@ bool DrumRobot::processInput(const std::string &input)
 {
     if (state.main == Main::Ideal)
     {
-        if((input == "o") && !(state.home == HomeSub::Done))
+        if((input == "o") && !(setInitialPosition))
         {
             // set zero
             for (const auto &motorPair : motors)
@@ -874,17 +874,17 @@ bool DrumRobot::processInput(const std::string &input)
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
-            state.home = HomeSub::Done;
+            setInitialPosition = true;
             flag_setting("isBack");
 
             return true;
         }
-        else if((input == "i") && !(state.home == HomeSub::Done))
+        else if((input == "i") && !(setInitialPosition))
         {
             homingMaxonEnable();
             homingSetMaxonMode("CSP");
 
-            state.home = HomeSub::Done;
+            setInitialPosition = true;
             flag_setting("isBack");
 
             return true;
@@ -923,7 +923,7 @@ bool DrumRobot::processInput(const std::string &input)
         }
         else if (input == "s")
         {
-            if (state.home != HomeSub::Done || isBack)
+            if ((!setInitialPosition) || isBack)
             {
                 state.main = Main::Shutdown;
 
@@ -938,7 +938,7 @@ bool DrumRobot::processInput(const std::string &input)
                 return true;
             }
         }
-        else if (input == "t" && state.home == HomeSub::Done)
+        else if (input == "t" && setInitialPosition)
         {
             state.main = Main::Test;
 
