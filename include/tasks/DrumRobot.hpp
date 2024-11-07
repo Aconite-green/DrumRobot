@@ -86,15 +86,16 @@ private:
     int kbhit();
 
     // 로봇 상태 플래그
+    bool setInitialPosition = false;
     bool getHome = false; ///< 홈 위치 플래그.
     bool isHome = false;
     bool isReady = false; ///< 준비 상태 플래그.
     bool getReady = false;
     bool isBack = false; ///< 되돌아가기 플래그.
     bool getBack = false;
-    bool sendCheckFrame = false;
-    void flag_setting(string flag);
     bool getBackAndShutdown = false;
+    void flag_setting(string flag);
+    
 
     // System Initialize 메소드들
     void initializeMotors();
