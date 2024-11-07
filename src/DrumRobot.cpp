@@ -1363,7 +1363,7 @@ void DrumRobot::motorSettingCmd()
         {
 
             // CSP Settings
-            maxoncmd.getCSVMode(*maxonMotor, &frame);
+            maxoncmd.getCSPMode(*maxonMotor, &frame);
             canManager.sendAndRecv(motor, frame);
 
             maxoncmd.getPosOffset(*maxonMotor, &frame);
