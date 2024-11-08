@@ -75,17 +75,17 @@ public:
     /////////////////////////////////////////////////////////////////////////// AddStance
     void GetArr(vector<float> &arr);
 
-    //   Ready Pos Array   : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      { 0    , 90    , 90    , 45    , 75    , 45    , 75    , 30      , 30 }      [deg]
-    vector<float> readyArr = {0, M_PI / 2.0, M_PI / 2.0, M_PI * 0.25, M_PI / 2.4, M_PI * 0.25, M_PI / 2.4, M_PI / 6.0, M_PI / 6.0};
+    //   Ready Pos Array   :  waist         , R_arm1        , L_arm1        , R_arm2        , R_arm3        , L_arm2        , L_arm3        , R_wrist       , L_wrist
+    //                       { 0            , 90            , 90            , 45            , 75            , 45            , 75            , 30            , 30         } [deg]
+    vector<float> readyArr = { 0            , M_PI / 2.0    , M_PI / 2.0    , M_PI * 0.25   , M_PI / 2.4    , M_PI * 0.25   , M_PI / 2.4    , M_PI / 6.0    , M_PI / 6.0 };
 
-    //   Home Pos Array    : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      { 0    , 135    , 45    , -45    , 90     , -45     , 90     , 90      , 90 }      [deg]
-    vector<float> homeArr = {0, M_PI * 0.75, M_PI * 0.25, -M_PI / 4.0, M_PI / 2.0, -M_PI / 4.0, M_PI / 2.0, M_PI / 2.0, M_PI / 2.0};
+    //   Home Pos Array    : waist          , R_arm1        , L_arm1        , R_arm2    , R_arm3            , L_arm2    , L_arm3            , R_wrist               , L_wrist
+    //                      { 10            , 90            , 90            , 0         , 120               , 0         , 120               , 95                    , 95                    } [deg]
+    vector<float> homeArr = { M_PI / 18.0   , M_PI / 2.0    , M_PI / 2.0    , 0         , M_PI * (2.0/3.0)  , 0         , M_PI * (2.0/3.0)  , M_PI * (95.0/180.0)   , M_PI * (95.0/180.0)   };
 
-    //   Back Pos Array    : waist, R_arm1, L_arm1, R_arm2, R_arm3, L_arm2, L_arm3, R_wrist, L_wrist
-    //                      { 0    , 135    , 45    , 0    , 0     , 0     , 0     , 90      , 90 }      [deg]
-    vector<float> backArr = {0, M_PI * 0.75, M_PI * 0.25, 0, 0, 0, 0, M_PI / 2.0, M_PI / 2.0};
+    //   Back Pos Array    : waist      , R_arm1        , L_arm1        , R_arm2    , R_arm3    , L_arm2    , L_arm3    , R_wrist       , L_wrist
+    //                      { 0         , 135           , 45            , 0         , 0         , 0         , 0         , 90            , 90         } [deg]
+    vector<float> backArr = { 0         ,M_PI * 0.75    , M_PI * 0.25   , 0         , 0         , 0         , 0         , M_PI / 2.0    , M_PI / 2.0 };
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -165,5 +165,6 @@ private:
 
     /////////////////////////////////////////////////////////////////////////// AddStance
     void getMotorPos();
-    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값.
+    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
+
 };

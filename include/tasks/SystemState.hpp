@@ -8,7 +8,7 @@ enum class Main
     Ideal,
     Test,
     Perform,
-    Check,
+    Play,
     Shutdown,
     Pause,
     AddStance,
