@@ -124,11 +124,11 @@ void GuiManager::guiThread()
         {
             break;
         }
-        case Main::AddStance:
+        case Main::Play:
         {
             break;
         }
-        case Main::Check:
+        case Main::AddStance:
         {
             break;
         }

@@ -15,6 +15,7 @@
 #include "../include/tasks/SystemState.hpp"
 #include "../include/managers/GuiManager.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
+#include "../include/tasks/Functions.hpp"
 
 using namespace std;
 
@@ -37,20 +38,24 @@ int main(int argc, char *argv[])
     // Create Share Resource
     State state;
     std::map<std::string, std::shared_ptr<GenericMotor>> motors;
-    
     USBIO usbio;
-    CanManager canManager(motors);
-    PathManager pathManager(state, canManager, motors);
-    TestManager testManager(state, canManager, motors, usbio);
 
-    DrumRobot drumRobot(state, canManager, pathManager, testManager, motors, usbio);
+    Functions fun(motors);
+    CanManager canManager(motors, fun);
+    PathManager pathManager(state, canManager, motors, fun);
+    TestManager testManager(state, canManager, motors, usbio, fun);
+
+    DrumRobot drumRobot(state, canManager, pathManager, testManager, motors, usbio, fun);
     GuiManager guiManager(state, canManager, motors);
 
     //shy-desktop -> 1반환
     //shy-MINIPC-VC66-C2 -> 2반환
-    int com_number = canManager.get_com_number_by_hostname();
+    // int com_number = canManager.get_com_number_by_hostname();
+    int com_number = fun.get_com_number_by_hostname();
+
     // 포트를 비활성화하고 다시 활성화
-    canManager.restCanPort(com_number);
+    // canManager.restCanPort(com_number);
+    fun.restCanPort(com_number);
 
     // Create Threads
     std::thread stateThread(&DrumRobot::stateMachine, &drumRobot);

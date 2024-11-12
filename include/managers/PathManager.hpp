@@ -5,6 +5,7 @@
 #include "../include/motors/CommandParser.hpp"
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
+#include "../include/tasks/Functions.hpp"
 
 #include <map>
 #include <memory>
@@ -55,7 +56,8 @@ public:
     
     PathManager(State &stateRef,
                 CanManager &canManagerRef,
-                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+                std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                Functions &funRef);
 
     
     /////////////////////////////////////////////////////////////////////////// Init
@@ -66,10 +68,24 @@ public:
 
     /////////////////////////////////////////////////////////////////////////// Perform
     void PathLoopTask();
+    void solveIK(VectorXd &pR1, VectorXd &pL1);
     
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
     float bpm = 50;         /// txt 악보의 BPM 정보.
+
+    // x, y, z 저장할 구조체
+    typedef struct {
+
+        // 오른팔 좌표
+        float pR[3]; // 0: x, 1: y, 2: z
+
+        // 왼팔 좌표
+        float pL[3]; // 0: x, 1: y, 2: z
+
+    }Pos;
+
+    queue<Pos> P; // 구조체 담아놓을 큐
 
 
     /////////////////////////////////////////////////////////////////////////// AddStance
@@ -102,6 +118,7 @@ private:
     State &state;                                                 ///< 시스템의 현재 상태입니다.
     CanManager &canManager;                                       ///< CAN 통신을 통한 모터 제어를 담당합니다.
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors; ///< 연결된 모터들의 정보입니다.
+    Functions &fun;
 
     map<std::string, int> motor_mapping = { ///< 각 관절에 해당하는 열 정보.
         {"waist", 0},
@@ -125,6 +142,17 @@ private:
     MatrixXd right_drum_position;                               ///< 오른팔의 각 악기별 위치 좌표 벡터.
     MatrixXd left_drum_position;                                ///< 왼팔의 각 악기별 위치 좌표 벡터.
     VectorXd part_length;
+
+    typedef struct{
+
+        float upperArm = 0.250;
+        float lowerArm = 0.328;
+        float stick = 0.325+0.048;
+        float waist = 0.520;
+        float height = 0.890-0.0605;
+
+    }PartLength;
+
     float s = 0.520;  ///< 허리 길이.
     float z0 = 0.890-0.0605; ///< 바닥부터 허리까지의 높이.
 
@@ -134,7 +162,6 @@ private:
     VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
-
     
     ///////////////////////////////////////////////////////////////////////////
     vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);  // 안쓰고 있음
@@ -146,7 +173,7 @@ private:
     VectorXd pos_madi_fun(VectorXd &A);
     MatrixXd sts2wrist_fun(MatrixXd &AA);
     MatrixXd sts2elbow_fun(MatrixXd &AA);
-    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0);
+    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
     float con_fun(float th_a, float th_b, int k, int n);
     pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
     pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
@@ -160,7 +187,7 @@ private:
     float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
     float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
 
-    void Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool brake_state);
+    void Motors_sendBuffer(VectorXd &Qi, bool brake_state);
 
 
     /////////////////////////////////////////////////////////////////////////// AddStance

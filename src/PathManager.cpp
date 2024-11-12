@@ -4,8 +4,9 @@
 // #include "../managers/PathManager.hpp"
 PathManager::PathManager(State &stateRef,
                          CanManager &canManagerRef,
-                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef)
-    : state(stateRef), canManager(canManagerRef), motors(motorsRef)
+                         std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
+                         Functions &funRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef), fun(funRef)
 {
 }
 
@@ -13,7 +14,7 @@ PathManager::PathManager(State &stateRef,
 /*                            SEND BUFFER TO MOTOR                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, VectorXd &Vi, pair<float, float> Si, bool brake_state)
+void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
 {
     for (auto &entry : motors)
     {
@@ -715,16 +716,17 @@ MatrixXd PathManager::sts2elbow_fun(MatrixXd &AA)
     return t_elbow_madi;
 }
 
-VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL, VectorXd &part_length, float s, float z0)
+VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL)
 {
     // float direction = 0.0 * M_PI;
+    PartLength part_length;
 
     float X1 = pR(0), Y1 = pR(1), z1 = pR(2);
     float X2 = pL(0), Y2 = pL(1), z2 = pL(2);
-    float r1 = part_length(0);
-    float r2 = part_length(1) + part_length(4);
-    float L1 = part_length(2);
-    float L2 = part_length(3) + part_length(5);
+    float r1 = part_length.upperArm;
+    float r2 = part_length.lowerArm + part_length.stick;
+    float L1 = part_length.upperArm;
+    float L2 = part_length.lowerArm + part_length.stick;
 
     int j = 0, m = 0;
     float the3[1351];
@@ -869,6 +871,7 @@ vector<float> PathManager::fkfun()
 {
     getMotorPos();
 
+    PartLength part_length;
     vector<float> P;
     vector<float> theta(9);
     for (auto &motorPair : motors)
@@ -886,7 +889,7 @@ vector<float> PathManager::fkfun()
             cout << name << " : " << theta[motor_mapping[name]] << "\n";
         }
     }
-    float r1 = part_length(0), r2 = part_length(1), l1 = part_length(2), l2 = part_length(3), stick = part_length(4);
+    float r1 = part_length.upperArm, r2 = part_length.lowerArm, l1 = part_length.upperArm, l2 = part_length.lowerArm, stick = part_length.stick;
 
     P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
@@ -1157,7 +1160,23 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
     return  Qi;
 }
 
+void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
+{
+    VectorXd qt(9);
 
+    VectorXd qk1_06 = ikfun_final(pR1, pL1);
+
+    for (int i = 0; i < 7; i++)
+    {
+        qt[i] = qk1_06[i];
+    }
+
+    qt[7] = 0;
+    qt[8] = 0;
+
+    Motors_sendBuffer(qt, false);
+
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                                  MAKE PATH                                 */
@@ -1322,7 +1341,7 @@ void PathManager::SetReadyAng()
 
     VectorXd pR = VectorXd::Map(p.data(), 3, 1);
     VectorXd pL = VectorXd::Map(p.data() + 3, 3, 1);
-    VectorXd qk = ikfun_final(pR, pL, part_length, s, z0);
+    VectorXd qk = ikfun_final(pR, pL);
 
     for (int i = 0; i < qk.size(); ++i)
     {
@@ -1406,16 +1425,16 @@ void PathManager::PathLoopTask()
     // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
     VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
     VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
-    VectorXd qk1_06 = ikfun_final(pR1, pL1, part_length, s, z0);
+    VectorXd qk1_06 = ikfun_final(pR1, pL1);
 
 
     VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
     VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
-    VectorXd qk2_06 = ikfun_final(pR2, pL2, part_length, s, z0);
+    VectorXd qk2_06 = ikfun_final(pR2, pL2);
 
     VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
     VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
-    VectorXd qk3_06 = ikfun_final(pR3, pL3, part_length, s, z0);
+    VectorXd qk3_06 = ikfun_final(pR3, pL3);
     
     wrist_addAngle = sts2wrist_fun(State);
     elbow_addAngle = sts2elbow_fun(State);
@@ -1470,11 +1489,11 @@ void PathManager::PathLoopTask()
         // for (int m = 0; m < 9; m++)
         // {
         //     std::string file_name = "desired_path";
-        //     canManager.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
+        //     fun.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
         // }
         
         // Command Buffer 쌓기
-        Motors_sendBuffer(qt, qv_in, wrist_state, false);
+        Motors_sendBuffer(qt, false);
     }
 }
 

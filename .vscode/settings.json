@@ -79,7 +79,8 @@
         "hash_map": "cpp",
         "alignedvector3": "cpp",
         "openglsupport": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "queue": "cpp"
     },
     "makefile.launchConfigurations": [
         {

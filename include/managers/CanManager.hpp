@@ -28,6 +28,7 @@
 
 #include "Motor.hpp"
 #include "CommandParser.hpp"
+#include "../include/tasks/Functions.hpp"
 
 // position loop mode 에서 step input 각도 제한
 #define POS_DIFF_LIMIT 30.0*M_PI/180.0
@@ -43,7 +44,7 @@ public:
     static const int ERR_SOCKET_CREATE_FAILURE = -1;
     static const int ERR_SOCKET_CONFIGURE_FAILURE = -2;
 
-    CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef);
+    CanManager(std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, Functions &funRef);
 
     ~CanManager();
 
@@ -112,22 +113,24 @@ public:
         {"R_foot", 9},
         {"L_foot", 10}};
 
-    /*save csv/txt file*/
-    std::chrono::high_resolution_clock::time_point start;  
-    const std::string basePath = "../../DrumRobot_data/";  // 기본 경로
-    std::string file_name = "data";
-    void openCSVFile();
-    void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
-    void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
-    void appendToCSV_time(const std::string& filename);
-    void appendToCSV_State(const std::string& filename, string state, string sub_state);
+    // /*save csv/txt file*/
+    // std::chrono::high_resolution_clock::time_point start;  
+    // const std::string basePath = "../../DrumRobot_data/";  // 기본 경로
+    // std::string file_name = "data";
+    // void openCSVFile();
+    // void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
+    // void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
+    // void appendToCSV_time(const std::string& filename);
+    // void appendToCSV_State(const std::string& filename, string state, string sub_state);
 
-    int get_com_number_by_hostname(); 
-    void restCanPort(int com_number);
+    // int get_com_number_by_hostname(); 
+    // void restCanPort(int com_number);
 
 private:
 
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
+    Functions &fun;
+    
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
     TMotorServoCommandParser tservocmd;

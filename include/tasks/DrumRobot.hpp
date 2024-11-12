@@ -30,7 +30,7 @@
 #include "../include/motors/Motor.hpp"
 #include "../include/managers/TestManager.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
-
+#include "../include/tasks/Functions.hpp"
 
 using namespace std;
 
@@ -43,7 +43,8 @@ public:
               PathManager &pathManagerRef,
               TestManager &testManagerRef,
               std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-              USBIO &usbioRef);
+              USBIO &usbioRef,
+              Functions &funRef);
 
     void stateMachine();
     void sendLoopForThread();
@@ -59,6 +60,7 @@ private:
     TestManager &testManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
     USBIO &usbio;
+    Functions &fun;
 
     // Parsing
     TMotorServoCommandParser tservocmd;
@@ -113,6 +115,7 @@ private:
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
+    void SendPlayProcess(int periodMicroSec);
     void SendAddStanceProcess(int periodMicroSec);
     void UnfixedMotor();
     void clearMotorsCommandBuffer();

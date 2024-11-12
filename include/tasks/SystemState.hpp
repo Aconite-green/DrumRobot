@@ -24,6 +24,15 @@ enum class PerformSub
     SendCANFrame
 };
 
+enum class PlaySub
+{
+    TimeCheck,
+    GeneratePath,
+    SolveIK,
+    SetCANFrame,
+    SendCANFrame
+};
+
 enum class AddStanceSub
 {
     TimeCheck,
@@ -63,12 +72,14 @@ struct State
 {
     std::atomic<Main> main;
     std::atomic<PerformSub> perform;
+    std::atomic<PlaySub> play;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
     std::atomic<TestSub> test;
 
     State() : main(Main::SystemInit),
               perform(PerformSub::TimeCheck),
+              play(PlaySub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck),
               test(TestSub::SelectParamByUser)

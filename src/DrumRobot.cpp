@@ -9,13 +9,15 @@ DrumRobot::DrumRobot(State &stateRef,
                      PathManager &pathManagerRef,
                      TestManager &testManagerRef,
                      std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef,
-                     USBIO &usbioRef)
+                     USBIO &usbioRef,
+                     Functions &funRef)
     : state(stateRef),
       canManager(canManagerRef),
       pathManager(pathManagerRef),
       testManager(testManagerRef),
       motors(motorsRef),
-      usbio(usbioRef)
+      usbio(usbioRef),
+      fun(funRef)
 {
     ReadStandard = chrono::system_clock::now();
     SendStandard = chrono::system_clock::now();
@@ -49,7 +51,7 @@ void DrumRobot::stateMachine()
             motorSettingCmd();
             canManager.setSocketNonBlock();
             usbio.USBIO_4761_init();
-            canManager.openCSVFile();
+            fun.openCSVFile();
 
             std::cout << "System Initialize Complete [ Press Enter ]\n";
             getchar();
@@ -391,6 +393,127 @@ void DrumRobot::ReadProcess(int periodMicroSec)
         }
         state.read = ReadSub::CheckMaxonControl;
         break;
+    }
+}
+
+void DrumRobot::SendPlayProcess(int periodMicroSec)
+{
+    auto currentTime = chrono::system_clock::now();
+    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
+
+    PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
+
+    switch (state.play.load())
+    {
+    case PlaySub::TimeCheck:
+    {
+        if (elapsed_time.count() >= periodMicroSec)
+        {
+            cnt++;
+            state.play = PlaySub::GeneratePath; // 주기가 되면 GeneratePath 상태로 진입
+            SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
+        }
+        break;
+    }
+    case PlaySub::GeneratePath:
+    {
+
+        if (pathManager.line >= pathManager.total)
+        {
+            std::cout << "Play is Over\n";
+            state.main = Main::AddStance;
+            state.play = PlaySub::TimeCheck;
+            flag_setting("getHome");
+        }
+        
+        if (pathManager.P.empty()) // P가 비어있으면 새로 생성
+        {
+            makeTrajectory();
+            pathManager.line++;
+        }
+        
+        nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
+        pathManager.P.pop(); // 앞에꺼 지움
+        
+        state.play = PlaySub::SolveIK;
+
+        break;
+    }
+    case PlaySub::SolveIK:
+    {   
+        VectorXd pR1;
+        VectorXd pL1;
+        
+        pathManager.solveIK(pR1, pL1);
+
+        //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
+        //solveIK 하면 command buffer에  하나 값 넣어줘야댐
+        // setCANFrame 함수로 가면 command buffer에 있는 젤 앞에 있는 값 써서 프레임 만들고 send에서 보냄
+        //IK 풀어서 setcanFrame에 넘기기
+        state.play = PlaySub::SetCANFrame;
+
+        break;
+    }
+    case PlaySub::SetCANFrame:
+    {
+        bool isSafe;
+        isSafe = canManager.setCANFrame();
+        if (!isSafe)
+        {
+            state.main = Main::Error;
+        }
+
+        state.play = PlaySub::SendCANFrame;
+        break;
+    }
+    case PlaySub::SendCANFrame:
+    {
+        bool isWriteError = false;
+        for (auto &motor_pair : motors)
+        {
+            shared_ptr<GenericMotor> motor = motor_pair.second;
+            if (!canManager.sendMotorFrame(motor))
+            {
+                isWriteError = true;
+            }
+
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            {
+                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
+            }
+        }
+        if (maxonMotorCount != 0)
+        {
+            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
+            if (!canManager.sendMotorFrame(virtualMaxonMotor))
+            {
+                isWriteError = true;
+            }
+        }
+        if (isWriteError)
+        {
+            state.main = Main::Error;
+        }
+        else
+        {
+            state.play = PlaySub::TimeCheck;
+        }
+
+        // brake
+        if (usbio.useUSBIO)
+        {
+            int cnt = 0;
+            while(!usbio.USBIO_4761_output())
+            {
+                cout << "brake Error\n";
+                usbio.USBIO_4761_init();
+                cnt++;
+                if (cnt >= 5) break;
+            }
+        }
+
+        break;
+    }
     }
 }
 

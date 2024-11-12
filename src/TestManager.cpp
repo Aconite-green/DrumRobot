@@ -4,8 +4,8 @@
 // #include "../managers/TestManager.hpp"
 using namespace std;
 
-TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, USBIO &usbioRef)
-    : state(stateRef), canManager(canManagerRef), motors(motorsRef), usbio(usbioRef)
+TestManager::TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, USBIO &usbioRef, Functions &funRef)
+    : state(stateRef), canManager(canManagerRef), motors(motorsRef), usbio(usbioRef), fun(funRef)
 {
 
 }

@@ -7,6 +7,7 @@
 #include "../include/motors/Motor.hpp"
 #include "../include/tasks/SystemState.hpp"
 #include "../include/USBIO_advantech/USBIO_advantech.hpp"
+#include "../include/tasks/Functions.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -34,7 +35,7 @@ using namespace std;
 class TestManager
 {
 public:
-    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, USBIO &usbioRef);
+    TestManager(State &stateRef, CanManager &canManagerRef, std::map<std::string, std::shared_ptr<GenericMotor>> &motorsRef, USBIO &usbioRef, Functions &funRef);
 
     void SendTestProcess();
     void MaxonEnable();
@@ -49,8 +50,8 @@ private:
     State &state;
     CanManager &canManager;
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;
-
     USBIO &usbio;
+    Functions &fun;
 
     TMotorCommandParser tmotorcmd;
     MaxonCommandParser maxoncmd;
