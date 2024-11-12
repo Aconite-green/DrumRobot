@@ -1497,6 +1497,11 @@ void PathManager::PathLoopTask()
     }
 }
 
+void PathManager::makeTrajectory()
+{
+    
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////
 /*                           AddStance FUNCTION                               */

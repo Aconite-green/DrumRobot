@@ -417,7 +417,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
     }
     case PlaySub::GeneratePath:
     {
-
         if (pathManager.line >= pathManager.total)
         {
             std::cout << "Play is Over\n";
@@ -428,7 +427,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
-            makeTrajectory();
+            pathManager.makeTrajectory();
             pathManager.line++;
         }
         

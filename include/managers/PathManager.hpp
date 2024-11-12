@@ -68,6 +68,7 @@ public:
 
     /////////////////////////////////////////////////////////////////////////// Perform
     void PathLoopTask();
+    void makeTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     
     int total = 0; ///< 악보의 전체 줄 수.
