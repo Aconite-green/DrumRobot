@@ -170,7 +170,7 @@ void DrumRobot::sendLoopForThread()
         case Main::Play:
         {
             UnfixedMotor();
-            SendPerformProcess(5000);
+            SendPlayProcess(5000);
             break;
         }
         case Main::AddStance:
@@ -423,6 +423,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
             state.main = Main::AddStance;
             state.play = PlaySub::TimeCheck;
             flag_setting("getHome");
+            pathManager.line = 0;
         }
         
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
@@ -870,6 +871,7 @@ void DrumRobot::displayAvailableCommands() const
             else if (isReady)
             {
                 std::cout << "- f : Start Drumming Old Version\n";
+                std::cout << "- p : Play Drum\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- h : Move to Home Pos\n";
                 std::cout << "- s : Shut down the system\n";
@@ -890,88 +892,88 @@ bool DrumRobot::processInput(const std::string &input)
         if(!setInitialPosition)
         {
             if((input == "o"))
-        {
-            // set zero
-            for (const auto &motorPair : motors)
             {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
+                // set zero
+                for (const auto &motorPair : motors)
                 {
-                    if (tMotor->myName == "waist")
+                    if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motorPair.second))
                     {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "R_arm1")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "L_arm1")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "R_arm2")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "L_arm2")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "R_arm3")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                    else if (tMotor->myName == "L_arm3")
-                    {
-                        tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
-                        canManager.sendMotorFrame(tMotor);
-                    }
-                }   
+                        if (tMotor->myName == "waist")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "R_arm1")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "L_arm1")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "R_arm2")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "L_arm2")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "R_arm3")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                        else if (tMotor->myName == "L_arm3")
+                        {
+                            tservocmd.comm_can_set_origin(*tMotor, &tMotor->sendFrame, 0);
+                            canManager.sendMotorFrame(tMotor);
+                        }
+                    }   
+                }
+                std::cout << "set zero and offset setting ~ ~ ~\n";
+                sleep(2);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
+
+                homingMaxonEnable();
+                homingSetMaxonMode("CSP");
+
+                setInitialPosition = true;
+                flag_setting("isHome");
+
+                return true;
             }
-            std::cout << "set zero and offset setting ~ ~ ~\n";
-            sleep(2);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
-
-            homingMaxonEnable();
-            homingSetMaxonMode("CSP");
-
-            setInitialPosition = true;
-            flag_setting("isHome");
-
-            return true;
-        }
             else if((input == "i") && !(setInitialPosition))
-        {
-            homingMaxonEnable();
-            homingSetMaxonMode("CSP");
+            {
+                homingMaxonEnable();
+                homingSetMaxonMode("CSP");
 
-            setInitialPosition = true;
-            flag_setting("isHome");
+                setInitialPosition = true;
+                flag_setting("isHome");
 
-            return true;
+                return true;
             }
         }
         else
         {
             if (input == "r" && isHome)
-        {
-            state.main = Main::AddStance;
-            flag_setting("getReady");
+            {
+                state.main = Main::AddStance;
+                flag_setting("getReady");
 
-            return true;
-        }
-            else if (input == "f" && isReady)
-        {
-            std::cout << "\nbpm : " << pathManager.bpm << std::endl;
-            state.main = Main::Perform;
-            isReady = false;
+                return true;
+            }
+                else if (input == "f" && isReady)
+            {
+                std::cout << "\nbpm : " << pathManager.bpm << std::endl;
+                state.main = Main::Perform;
+                isReady = false;
 
-            return true;
-        }
+                return true;
+            }
             else if (input == "p" && isReady)
             {
                 std::cout << "\nbpm : " << pathManager.bpm << std::endl;
@@ -1007,7 +1009,6 @@ bool DrumRobot::processInput(const std::string &input)
                 return true;
             }
         }
-        
     }
 
     return false;

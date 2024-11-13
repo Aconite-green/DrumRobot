@@ -1281,7 +1281,7 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
-    VectorXd q(9);
+    VectorXd q = VectorXd::Zero(9);
 
     VectorXd q_06 = ikfun_final(pR1, pL1);
 
@@ -1295,6 +1295,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     Motors_sendBuffer(q, false);
 
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string file_name = "solveIK";
+        fun.appendToCSV_DATA(file_name, m, q(m), 0);
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1620,8 +1626,11 @@ void PathManager::makeTrajectory()
     MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
 
-    VectorXd output1(9), output2(9);
-    VectorXd Pi_R(3), Pi_L(3), Pf_R(3), Pf_L(3);
+    VectorXd output1, output2;
+    VectorXd Pi_R = VectorXd::Zero(3);
+    VectorXd Pi_L = VectorXd::Zero(3);
+    VectorXd Pf_R = VectorXd::Zero(3);
+    VectorXd Pf_L = VectorXd::Zero(3);
     float ti = 0, tf = 0;
 
     float dt = canManager.deltaT;   // 0.005
