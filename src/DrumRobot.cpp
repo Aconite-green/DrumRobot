@@ -440,8 +440,14 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
     }
     case PlaySub::SolveIK:
     {   
-        VectorXd pR1;
-        VectorXd pL1;
+        VectorXd pR1(3);
+        VectorXd pL1(3);
+
+        for(int i = 0; i < 3; i++)
+        {
+            pR1(i) = nextPos.pR[i];
+            pL1(i) = nextPos.pL[i];
+        }
         
         pathManager.solveIK(pR1, pL1);
 
