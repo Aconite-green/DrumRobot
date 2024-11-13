@@ -195,4 +195,11 @@ private:
     void getMotorPos();
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 
+
+    /////////////////////////////////////////////////////////////////////////// Play
+    float PathManager::timeScaling(float ti, float tf, float tm, float sm);
+    void PathManager::makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h);
+
+    const bool XYZm = true;
+
 };

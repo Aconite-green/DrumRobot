@@ -53,6 +53,35 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
 
+float PathManager::timeScaling(float ti, float tf, float tm, float sm)
+{
+
+}
+
+void PathManager::makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h)
+{
+    float xi = Pi(0), xf = Pf(0);
+
+    if(XYZm)
+    {
+        // x, y, z 모두 중간점에서 정지
+        if (s < sm)
+        {
+            // x
+
+        }
+        else
+        {
+
+        }
+    }
+    else
+    {
+        // z 만 중간점에서 정지
+    }
+}
+
+
 // 손목 토크 제어 시 필요
 pair<float, float> PathManager::SetTorqFlag(MatrixXd &State, float t_now)
 {
@@ -1499,7 +1528,95 @@ void PathManager::PathLoopTask()
 
 void PathManager::makeTrajectory()
 {
-    
+    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
+    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
+    MatrixXd B;    // 크기가 19x3인 2차원 벡터
+    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+
+    VectorXd output1(9), output2(9);
+    VectorXd Pi_R(3), Pi_L(3), Pf_R(3), Pf_L(3);
+    float ti, tf;
+
+    float s = 0;
+    float tm, sm, h;
+
+    float dt = canManager.deltaT;   // 0.005
+    int n = (tf - ti) / dt;
+
+    Pos Ps;
+    float pRs[3];
+    float pLs[3];
+
+    // 연주 처음 시작할 때 Q1, Q2 계산
+    if (line == 0)
+    {
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+
+        VectorXd A1 = A30.col(0);
+        VectorXd A2 = A30.col(1);
+        output1 = pos_madi_fun(A1);
+        output2 = pos_madi_fun(A2);
+
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output1(4), output1(5), output1(6);
+    }
+    else if (line == 1)
+    {
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+
+        VectorXd A1 = A31.col(0);
+        VectorXd A2 = A31.col(1);
+        output1 = pos_madi_fun(A1);
+        output2 = pos_madi_fun(A2);
+
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output1(4), output1(5), output1(6);
+    }
+    else if (line > 1)
+    {
+        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
+        itms_fun(t2, inst2, B, BB, inst_now);
+
+        VectorXd B1 = B.col(0);
+        VectorXd B2 = B.col(1);
+        output1 = pos_madi_fun(B1);
+        output2 = pos_madi_fun(B2);
+
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output1(4), output1(5), output1(6);
+    }
+
+    tm = ti + 0.5*(tf - ti);
+    h = 0.1;
+    sm = 0.5;
+
+    for (int i = 0; i < n; i++)
+    {
+        s = timeScaling(ti, tf, tm, sm);
+        makePath(Pi_R, Pf_R, s, sm, h);
+        makePath(Pi_L, Pf_L, s, sm, h);
+
+        P.push(Ps);
+    }
 }
 
 
