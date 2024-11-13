@@ -79,10 +79,12 @@ public:
     typedef struct {
 
         // 오른팔 좌표
-        VectorXd pR; // 0: x, 1: y, 2: z
+        // VectorXd pR; // 0: x, 1: y, 2: z
+        float pR[3] = {0};
 
         // 왼팔 좌표
-        VectorXd pL; // 0: x, 1: y, 2: z
+        // VectorXd pL; // 0: x, 1: y, 2: z
+        float pL[3] = {0};
 
     }Pos;
 

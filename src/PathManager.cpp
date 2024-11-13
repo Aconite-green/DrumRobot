@@ -1142,8 +1142,6 @@ pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
-
-
 /////////////////////////////////////////////////////////////////////////////////
 /*                         POSITION LOOP MODE FUNCTION                        */
 ///////////////////////////////////////////////////////////////////////////////
@@ -1281,7 +1279,7 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
-    VectorXd q = VectorXd::Zero(9);
+    VectorXd q(9);
 
     VectorXd q_06 = ikfun_final(pR1, pL1);
 
@@ -1639,6 +1637,9 @@ void PathManager::makeTrajectory()
     Pos Pt;
     VectorXd Pt_R;
     VectorXd Pt_L;
+    // float Pt_R[3];
+    // float Pt_L[3];
+
     // s[0] : 3차 + 3차
     // s[1] : 3차
     float s[2] = {0};
@@ -1714,8 +1715,11 @@ void PathManager::makeTrajectory()
         Pt_R = makePath(Pi_R, Pf_R, s, sm, h);
         Pt_L = makePath(Pi_L, Pf_L, s, sm, h);
 
-        Pt.pR = Pt_R;
-        Pt.pL = Pt_L;
+        for (int i = 0; i < 3; i++)
+        {
+            Pt.pR[i] = Pt_R(i);
+            Pt.pL[i] = Pt_L(i);
+        }
         P.push(Pt);
     }
 }

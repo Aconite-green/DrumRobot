@@ -440,8 +440,20 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         break;
     }
     case PlaySub::SolveIK:
-    {   
-        pathManager.solveIK(nextPos.pR, nextPos.pL);
+    {
+        VectorXd pR1(3);
+        VectorXd pL1(3);
+
+        pR1 << nextPos.pR[0], nextPos.pR[1], nextPos.pR[2];
+        pL1 << nextPos.pL[0], nextPos.pL[1], nextPos.pL[2];
+
+        pathManager.solveIK(pR1, pL1);
+
+        // // 데이터 기록
+        // std::string fileName = "Path_R";
+        // fun.appendToCSV_DATA(fileName, nextPos.pR(0), nextPos.pR(1), nextPos.pR(2));
+        // fileName = "Path_L";
+        // fun.appendToCSV_DATA(fileName, nextPos.pR(0), nextPos.pR(1), nextPos.pR(2));
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
