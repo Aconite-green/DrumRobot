@@ -80,7 +80,8 @@
         "alignedvector3": "cpp",
         "openglsupport": "cpp",
         "strstream": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "mprealsupport": "cpp"
     },
     "makefile.launchConfigurations": [
         {
