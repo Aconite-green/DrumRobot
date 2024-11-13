@@ -440,16 +440,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
     }
     case PlaySub::SolveIK:
     {   
-        VectorXd pR1(3);
-        VectorXd pL1(3);
-
-        for(int i = 0; i < 3; i++)
-        {
-            pR1(i) = nextPos.pR[i];
-            pL1(i) = nextPos.pL[i];
-        }
-        
-        pathManager.solveIK(pR1, pL1);
+        pathManager.solveIK(nextPos.pR, nextPos.pL);
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐

@@ -22,7 +22,6 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
         {
             TMotorData newData;
             newData.position = Qi[motor_mapping[entry.first]];
-            // newData.spd = Vi(motor_mapping[entry.first]) * tMotor->R_Ratio[tMotor->motorType] * tMotor->PolePairs * 60 / 360; // [ERPM]
             newData.spd = 0;
             newData.acl = 0;
             newData.isBrake = brake_state;
@@ -32,18 +31,7 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
         {
             MaxonData newData;
             newData.position = Qi[motor_mapping[entry.first]];
-
-            // 토크 제어 시 WristState 사용
-            if (entry.first == "R_wrist")
-                newData.WristState = 0;
-            // newData.WristState = Si.first;
-            else if (entry.first == "L_wrist")
-                newData.WristState = 0;
-            // newData.WristState = Si.second;
-            else if (entry.first == "maxonForTest")
-                newData.WristState = 0;
-            // newData.WristState = Si.second;
-
+            newData.WristState = 0; // 토크 제어 시 WristState 사용
             maxonMotor->commandBuffer.push(newData);
         }
     }
@@ -1191,19 +1179,19 @@ VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, fl
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
-    VectorXd qt(9);
+    VectorXd q(9);
 
-    VectorXd qk1_06 = ikfun_final(pR1, pL1);
+    VectorXd q_06 = ikfun_final(pR1, pL1);
 
     for (int i = 0; i < 7; i++)
     {
-        qt[i] = qk1_06[i];
+        q(i) = q_06(i);
     }
 
-    qt[7] = 0;
-    qt[8] = 0;
+    q(7) = 0;
+    q(8) = 0;
 
-    Motors_sendBuffer(qt, false);
+    Motors_sendBuffer(q, false);
 
 }
 
@@ -1508,11 +1496,6 @@ void PathManager::PathLoopTask()
         qt(6) = qt(6) + qElbow.second;
         qt(7) = qWrist.first;
         qt(8) = qWrist.second;
-
-        // 사용 안함 (토크 제어할 때 사용)
-        pair<float, float> wrist_state = SetTorqFlag(State, t_now + dt * i); // -1. 1. 0.5 값 5ms단위로 전달
-        // 사용 안함 (POS-SPD LOOP MODE에서 사용) 
-        VectorXd qv_in = VectorXd::Zero(7);     
 
         // // 데이터 기록
         // for (int m = 0; m < 9; m++)

@@ -79,10 +79,10 @@ public:
     typedef struct {
 
         // 오른팔 좌표
-        float pR[3]; // 0: x, 1: y, 2: z
+        VectorXd pR; // 0: x, 1: y, 2: z
 
         // 왼팔 좌표
-        float pL[3]; // 0: x, 1: y, 2: z
+        VectorXd pL; // 0: x, 1: y, 2: z
 
     }Pos;
 
@@ -197,8 +197,8 @@ private:
 
 
     /////////////////////////////////////////////////////////////////////////// Play
-    float PathManager::timeScaling(float ti, float tf, float tm, float sm);
-    void PathManager::makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h);
+    float timeScaling(float ti, float tf, float tm, float sm);
+    void makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h);
 
     const bool XYZm = true;
 
