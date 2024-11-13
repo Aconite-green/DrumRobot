@@ -401,8 +401,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
     auto currentTime = chrono::system_clock::now();
     auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
 
-    PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
-
     switch (state.play.load())
     {
     case PlaySub::TimeCheck:
@@ -432,15 +430,16 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
             pathManager.line++;
         }
         
-        nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
-        pathManager.P.pop(); // 앞에꺼 지움
-        
         state.play = PlaySub::SolveIK;
 
         break;
     }
     case PlaySub::SolveIK:
     {
+        PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
+        nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
+        pathManager.P.pop(); // 앞에꺼 지움
+
         VectorXd pR1(3);
         VectorXd pL1(3);
 
@@ -448,12 +447,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         pL1 << nextPos.pL[0], nextPos.pL[1], nextPos.pL[2];
 
         pathManager.solveIK(pR1, pL1);
-
-        // // 데이터 기록
-        // std::string fileName = "Path_R";
-        // fun.appendToCSV_DATA(fileName, nextPos.pR(0), nextPos.pR(1), nextPos.pR(2));
-        // fileName = "Path_L";
-        // fun.appendToCSV_DATA(fileName, nextPos.pR(0), nextPos.pR(1), nextPos.pR(2));
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐

@@ -1721,6 +1721,12 @@ void PathManager::makeTrajectory()
             Pt.pL[i] = Pt_L(i);
         }
         P.push(Pt);
+
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
     }
 }
 
