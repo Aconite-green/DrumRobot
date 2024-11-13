@@ -197,8 +197,9 @@ private:
 
 
     /////////////////////////////////////////////////////////////////////////// Play
-    float timeScaling(float ti, float tf, float tm, float sm);
-    void makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h);
+    float timeScaling(float ti, float tf, float t, float tm, float sm);
+    float timeScaling_only3(float ti, float tf, float t);
+    VectorXd makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
 
     const bool XYZm = true;
 

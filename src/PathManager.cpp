@@ -41,32 +41,134 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
 
-float PathManager::timeScaling(float ti, float tf, float tm, float sm)
+float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
 {
+    float s;
 
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd x;
+
+    A.resize(4,4);
+    b.resize(4,1);
+
+    if (t < tm)
+    {
+        A << 1, ti, ti*ti, ti*ti*ti,
+        1, tm, tm*tm, tm*tm*tm,
+        0, 1, ti, 2*ti*ti,
+        0, 1, tm, 2*tm*tm;
+
+        b << 0, sm, 0, 0;
+
+        A_1 = A.inverse();
+        x = A_1 * b;
+
+        s = x(0,0) + x(1,0) * t + x(2,0) * t * t + x(3,0) * t * t * t;
+    }
+    else
+    {
+        A << 1, tm, tm*tm, tm*tm*tm,
+        1, tf, tf*tf, tf*tf*tf,
+        0, 1, tm, 2*tm*tm,
+        0, 1, tf, 2*tf*tf;
+
+        b << sm, 1, 0, 0;
+
+        A_1 = A.inverse();
+        x = A_1 * b;
+
+        s = x(0,0) + x(1,0) * t + x(2,0) * t * t + x(3,0) * t * t * t;
+    }
+
+    return s;
 }
 
-void PathManager::makePath(VectorXd Pi, VectorXd Pf, float s, float sm, float h)
+float PathManager::timeScaling_only3(float ti, float tf, float t)
+{
+    float s;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd x;
+
+    A.resize(4,4);
+    b.resize(4,1);
+
+    A << 1, ti, ti*ti, ti*ti*ti,
+    1, tf, tf*tf, tf*tf*tf,
+    0, 1, ti, 2*ti*ti,
+    0, 1, tf, 2*tf*tf;
+
+    b << 0, 1, 0, 0;
+
+    A_1 = A.inverse();
+    x = A_1 * b;
+
+    s = x(0,0) + x(1,0) * t + x(2,0) * t * t + x(3,0) * t * t * t;
+
+    return s;
+}
+
+VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
 {
     float xi = Pi(0), xf = Pf(0);
+    float yi = Pi(1), yf = Pf(1);
+    float zi = Pi(2), zf = Pf(2);
+
+    float xm = xi + (xf - xi) * sm;
+    float ym = yi + (yf - yi) * sm;
+    float zm = std::max(zi, zf) + h;
+
+    VectorXd Ps;
+    Ps.resize(3);
 
     if(XYZm)
     {
         // x, y, z 모두 중간점에서 정지
-        if (s < sm)
+
+        if (s[0] < sm)
         {
             // x
-
+            Ps(0) = xi + (xm - xi) * s[0] / sm;
+            // y
+            Ps(1) = yi + (ym - yi) * s[0] / sm;
+            // z
+            Ps(2) = zi + (zm - zi) * s[0] / sm;
         }
         else
         {
-
+            // x
+            Ps(0) = xm + (xf - xm) * (s[0] - sm) / (1 - sm);
+            // y
+            Ps(1) = ym + (yf - ym) * (s[0] - sm) / (1 - sm);
+            // z
+            Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
         }
     }
     else
     {
-        // z 만 중간점에서 정지
+        // z만 중간점에서 정지
+
+        // x
+        Ps(0) = xi + (xf - xi) * s[1];
+        // y
+        Ps(1) = yi + (yf - yi) * s[1];
+        if (s[0] < sm)
+        {
+            // z
+            Ps(2) = zi + (zm - zi) * s[0] / sm;
+        }
+        else
+        {
+            // z
+            Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
+        }
     }
+
+    return Ps;
 }
 
 
@@ -1370,7 +1472,7 @@ void PathManager::SetReadyAng()
 
 void PathManager::PathLoopTask()
 {
-    float t_now = time_arr[line];
+    // float t_now = time_arr[line];
 
     MatrixXd A30;  // 크기가 19x3인 2차원 벡터
     MatrixXd A31;  // 크기가 19x3인 2차원 벡터
@@ -1520,18 +1622,19 @@ void PathManager::makeTrajectory()
 
     VectorXd output1(9), output2(9);
     VectorXd Pi_R(3), Pi_L(3), Pf_R(3), Pf_L(3);
-    float ti, tf;
-
-    float s = 0;
-    float tm, sm, h;
+    float ti = 0, tf = 0;
 
     float dt = canManager.deltaT;   // 0.005
-    int n = (tf - ti) / dt;
+    int n;
 
-    Pos Ps;
-    float pRs[3];
-    float pLs[3];
-
+    Pos Pt;
+    VectorXd Pt_R;
+    VectorXd Pt_L;
+    // s[0] : 3차 + 3차
+    // s[1] : 3차
+    float s[2] = {0};
+    float tm, sm, h, t;
+    
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
     {
@@ -1588,17 +1691,23 @@ void PathManager::makeTrajectory()
         Pf_L << output1(4), output1(5), output1(6);
     }
 
+    n = (tf - ti) / dt;
     tm = ti + 0.5*(tf - ti);
     h = 0.1;
     sm = 0.5;
 
     for (int i = 0; i < n; i++)
     {
-        s = timeScaling(ti, tf, tm, sm);
-        makePath(Pi_R, Pf_R, s, sm, h);
-        makePath(Pi_L, Pf_L, s, sm, h);
+        t = ti + dt * n;
 
-        P.push(Ps);
+        s[0] = timeScaling(ti, tf, t, tm, sm);
+        s[1] = timeScaling_only3(ti, tf, t);
+        Pt_R = makePath(Pi_R, Pf_R, s, sm, h);
+        Pt_L = makePath(Pi_L, Pf_L, s, sm, h);
+
+        Pt.pR = Pt_R;
+        Pt.pL = Pt_L;
+        P.push(Pt);
     }
 }
 
