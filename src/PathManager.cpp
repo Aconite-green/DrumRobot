@@ -1633,17 +1633,7 @@ void PathManager::makeTrajectory()
 
     float dt = canManager.deltaT;   // 0.005
     int n;
-
-    Pos Pt;
-    VectorXd Pt_R;
-    VectorXd Pt_L;
-    // float Pt_R[3];
-    // float Pt_L[3];
-
-    // s[0] : 3차 + 3차
-    // s[1] : 3차
-    float s[2] = {0};
-    float tm, sm, h, t;
+    float tm, sm, h;
     
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
@@ -1708,7 +1698,12 @@ void PathManager::makeTrajectory()
 
     for (int i = 0; i < n; i++)
     {
-        t = ti + dt * n;
+        Pos Pt;
+        VectorXd Pt_R;
+        VectorXd Pt_L;
+        float t = ti + dt * i;
+        float s[2] = {0};   // s[0] : 3차 + 3차
+                            // s[1] : 3차
 
         s[0] = timeScaling(ti, tf, t, tm, sm);
         s[1] = timeScaling_only3(ti, tf, t);
