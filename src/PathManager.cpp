@@ -1661,7 +1661,7 @@ void PathManager::makeTrajectory()
         Pi_R << output1(1), output1(2), output1(3);
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output1(4), output1(5), output1(6);
+        Pf_L << output2(4), output2(5), output2(6);
     }
     else if (line == 1)
     {
@@ -1679,7 +1679,7 @@ void PathManager::makeTrajectory()
         Pi_R << output1(1), output1(2), output1(3);
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output1(4), output1(5), output1(6);
+        Pf_L << output2(4), output2(5), output2(6);
     }
     else if (line > 1)
     {
@@ -1697,7 +1697,7 @@ void PathManager::makeTrajectory()
         Pi_R << output1(1), output1(2), output1(3);
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output1(4), output1(5), output1(6);
+        Pf_L << output2(4), output2(5), output2(6);
     }
 
     n = (tf - ti) / dt;
@@ -1716,6 +1716,10 @@ void PathManager::makeTrajectory()
 
         s[0] = timeScaling(ti, tf, t, tm, sm);
         s[1] = timeScaling_only3(ti, tf, t);
+
+        // s[0] = (t - ti) / (tf - ti);
+        // s[1] = (t - ti) / (tf - ti);
+
         Pt_R = makePath(Pi_R, Pf_R, s, sm, h);
         Pt_L = makePath(Pi_L, Pf_L, s, sm, h);
 
@@ -1730,7 +1734,7 @@ void PathManager::makeTrajectory()
         fileName = "Trajectory_R";
         fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
         fileName = "Trajectory_L";
-        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
     }
 }
 
