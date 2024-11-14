@@ -113,19 +113,6 @@ public:
         {"R_foot", 9},
         {"L_foot", 10}};
 
-    // /*save csv/txt file*/
-    // std::chrono::high_resolution_clock::time_point start;  
-    // const std::string basePath = "../../DrumRobot_data/";  // 기본 경로
-    // std::string file_name = "data";
-    // void openCSVFile();
-    // void appendToCSV_DATA(const std::string& filename, float A_DATA, float B_DATA, float C_DATA);
-    // void appendToCSV_CAN(const std::string& filename, can_frame& c_frame);
-    // void appendToCSV_time(const std::string& filename);
-    // void appendToCSV_State(const std::string& filename, string state, string sub_state);
-
-    // int get_com_number_by_hostname(); 
-    // void restCanPort(int com_number);
-
 private:
 
     std::map<std::string, std::shared_ptr<GenericMotor>> &motors;

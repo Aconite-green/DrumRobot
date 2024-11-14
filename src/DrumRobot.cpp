@@ -29,8 +29,6 @@ DrumRobot::DrumRobot(State &stateRef,
 
 }
 
-// CanManager - safetyCheck_M, setMotorsSocket 에서 usleep() 함수 존재
-
 ////////////////////////////////////////////////////////////////////////////////
 /*                                SYSTEM LOOPS                                */
 ////////////////////////////////////////////////////////////////////////////////
@@ -399,21 +397,21 @@ void DrumRobot::ReadProcess(int periodMicroSec)
 void DrumRobot::SendPlayProcess(int periodMicroSec)
 {
     auto currentTime = chrono::system_clock::now();
-    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
+    auto elapsedTime = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
 
     switch (state.play.load())
     {
     case PlaySub::TimeCheck:
     {
-        if (elapsed_time.count() >= periodMicroSec)
+        if (elapsedTime.count() >= periodMicroSec)
         {
             cnt++;
-            state.play = PlaySub::GeneratePath; // 주기가 되면 GeneratePath 상태로 진입
-            SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
+            state.play = PlaySub::GenerateTrajectory;   // 주기가 되면 GenerateTrajectory 상태로 진입
+            SendStandard = currentTime;                 // 현재 시간으로 시간 객체 초기화
         }
         break;
     }
-    case PlaySub::GeneratePath:
+    case PlaySub::GenerateTrajectory:
     {
         if (pathManager.line >= pathManager.total)
         {
@@ -427,7 +425,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
             std::cout << "\n//////////////////////////////// line : " << pathManager.line << ", total : " << pathManager.total << "\n";
-            pathManager.makeTrajectory();
+            pathManager.generateTrajectory();
             pathManager.line++;
         }
         
@@ -441,13 +439,13 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
         pathManager.P.pop(); // 앞에꺼 지움
 
-        VectorXd pR1(3);
-        VectorXd pL1(3);
+        // VectorXd pR1(3);
+        // VectorXd pL1(3);
 
-        pR1 << nextPos.pR[0], nextPos.pR[1], nextPos.pR[2];
-        pL1 << nextPos.pL[0], nextPos.pL[1], nextPos.pL[2];
+        // pR1 << nextPos.pR[0], nextPos.pR[1], nextPos.pR[2];
+        // pL1 << nextPos.pL[0], nextPos.pL[1], nextPos.pL[2];
 
-        pathManager.solveIK(pR1, pL1);
+        pathManager.solveIK(nextPos.pR, nextPos.pL);
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
@@ -687,7 +685,7 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
     case AddStanceSub::CheckCommand:
     {
-        if (getHome || getReady)
+        if (getHome || getReady || getBackAndShutdown)
         {
             ClearBufferforRecord();
             clearMotorsCommandBuffer();
@@ -711,7 +709,7 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
             std::cout << "Get Home Pos Array ...\n";
             pathManager.GetArr(pathManager.homeArr);
         }
-        else if (getBack)
+        else if (getBackAndShutdown)
         {
             std::cout << "Get Back Pos Array ...\n";
             pathManager.GetArr(pathManager.backArr);
@@ -778,13 +776,6 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
                 state.main = Main::Ideal;
                 canManager.clearReadBuffers();
                 flag_setting("isReady");
-            }
-            else if (getBack)
-            {
-                state.addstance = AddStanceSub::CheckCommand;
-                state.main = Main::Ideal;
-                canManager.clearReadBuffers();
-                flag_setting("isBack");
             }
         }
         break;
@@ -944,8 +935,8 @@ bool DrumRobot::processInput(const std::string &input)
                 std::cout << "set zero and offset setting ~ ~ ~\n";
                 sleep(2);   // setZero 명령이 확실히 실행된 후 fixed 함수 실행
 
-                homingMaxonEnable();
-                homingSetMaxonMode("CSP");
+                maxonMotorEnable();
+                setMaxonMotorMode("CSP");
 
                 setInitialPosition = true;
                 flag_setting("isHome");
@@ -954,8 +945,8 @@ bool DrumRobot::processInput(const std::string &input)
             }
             else if((input == "i") && !(setInitialPosition))
             {
-                homingMaxonEnable();
-                homingSetMaxonMode("CSP");
+                maxonMotorEnable();
+                setMaxonMotorMode("CSP");
 
                 setInitialPosition = true;
                 flag_setting("isHome");
@@ -972,7 +963,7 @@ bool DrumRobot::processInput(const std::string &input)
 
                 return true;
             }
-                else if (input == "f" && isReady)
+            else if (input == "f" && isReady)
             {
                 std::cout << "\nbpm : " << pathManager.bpm << std::endl;
                 state.main = Main::Perform;
@@ -1002,9 +993,7 @@ bool DrumRobot::processInput(const std::string &input)
             else if (input == "s")
             {
                 state.main = Main::AddStance;
-                flag_setting("getBack");
-
-                getBackAndShutdown = true; // 켜면 back pos 이동 후 종료
+                flag_setting("getBackAndShutdown");
 
                 return true;
             }
@@ -1058,9 +1047,8 @@ void DrumRobot::checkUserInput()
             else if (input == 'e')
             {
                 std::cout << "Performance is interrupted!\n";
-                state.main = Main::AddStance;
-                flag_setting("getBack");
                 pathManager.line = 0;
+                state.main = Main::Shutdown;
             }
             else if (input == 'r')
                 state.main = Main::Perform;
@@ -1081,8 +1069,7 @@ void DrumRobot::checkUserInput()
         {
             if (input == 'e')
             {
-                state.main = Main::AddStance;
-                flag_setting("getBack");
+                state.main = Main::Shutdown;
                 pathManager.line = 0;
             }
             else if (input == 'h')
@@ -1577,8 +1564,7 @@ void DrumRobot::flag_setting(string flag)
     isReady = false;
     getHome = false;
     isHome = false;
-    getBack = false;
-    isBack = false;
+    getBackAndShutdown = false;
 
     // only one flag on
     if (flag == "getReady")
@@ -1597,13 +1583,9 @@ void DrumRobot::flag_setting(string flag)
     {
         isHome = true;
     }
-    else if (flag == "getBack")
+    else if (flag == "getBackAndShutdown")
     {
-        getHome = true;
-    }
-    else if (flag == "isBack")
-    {
-        isHome = true;
+        getBackAndShutdown = true;
     }
     else
     {
@@ -1612,10 +1594,10 @@ void DrumRobot::flag_setting(string flag)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                       Homing Process Function                               */
+/*                         Maxon Motor Function                               */
 /////////////////////////////////////////////////////////////////////////////////
 
-void DrumRobot::homingMaxonEnable()
+void DrumRobot::maxonMotorEnable()
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(2, 0);
@@ -1666,7 +1648,7 @@ void DrumRobot::homingMaxonEnable()
     }
 }
 
-void DrumRobot::homingSetMaxonMode(std::string targetMode)
+void DrumRobot::setMaxonMotorMode(std::string targetMode)
 {
     struct can_frame frame;
     canManager.setSocketsTimeout(0, 10000);

@@ -27,7 +27,7 @@ enum class PerformSub
 enum class PlaySub
 {
     TimeCheck,
-    GeneratePath,
+    GenerateTrajectory,
     SolveIK,
     SetCANFrame,
     SendCANFrame

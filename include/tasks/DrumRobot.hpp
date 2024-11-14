@@ -93,9 +93,7 @@ private:
     bool isHome = false;
     bool isReady = false; ///< 준비 상태 플래그.
     bool getReady = false;
-    bool isBack = false; ///< 되돌아가기 플래그.
-    bool getBack = false;
-    bool getBackAndShutdown = false;
+    bool getBackAndShutdown = false; ///< 되돌아가기 플래그.
     void flag_setting(string flag);
     
 
@@ -109,7 +107,6 @@ private:
     void setMaxonMode(std::string targetMode);
 
     // Send Thread Loop 메소드들
-    void save_to_txt_inputData(const string &csv_file_name);
     int writeFailCount;
     int maxonMotorCount = 0;
     void initializePathManager();
@@ -147,11 +144,10 @@ private:
     int cnt = 0;
 
     // Receive Thread Loop 메소드들
-    const int TIME_THRESHOLD_MS = 5;
     void ReadProcess(int periodMicroSec);
     bool dct_fun(float positions[], float vel_th);
 
-    // Maxon 모터 Homing 함수
-    void homingMaxonEnable();
-    void homingSetMaxonMode(std::string targetMode);
+    // Maxon 모터 초기화 함수
+    void maxonMotorEnable();
+    void setMaxonMotorMode(std::string targetMode);
 };

@@ -11,10 +11,10 @@ PathManager::PathManager(State &stateRef,
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*                            SEND BUFFER TO MOTOR                            */
+/*                         Stacking Command Buffer                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
+void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
 {
     for (auto &entry : motors)
     {
@@ -40,6 +40,153 @@ void PathManager::Motors_sendBuffer(VectorXd &Qi, bool brake_state)
 /////////////////////////////////////////////////////////////////////////////////
 /*                               SYSTEM FUNCTION                              */
 ///////////////////////////////////////////////////////////////////////////////
+
+VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
+{
+    VectorXd Vmax = VectorXd::Zero(9);
+
+    for (int i = 0; i < 9; i++)
+    {
+        float val;
+        float S = q2(i) - q1(i);
+
+        // 이동거리 양수로 변경
+        if (S < 0)
+        {
+            S = -1 * S;
+        }
+
+        if (S > t2*t2*acc/4)
+        {
+            // 가속도로 도달 불가능
+            // -1 반환
+            val = -1;
+        }
+        else
+        {
+            // 2차 방정식 계수
+            float A = 1/acc;
+            float B = -1*t2;
+            float C = S;
+
+            // 2차 방정식 해
+            float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
+            float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
+
+            if (sol1 >= 0 && sol1 <= acc*t2/2)
+            {
+                val = sol1;
+            }
+            else if (sol2 >= 0 && sol2 <= acc*t2/2)
+            {
+                val = sol2;
+            }
+            else
+            {
+                // 해가 범위 안에 없음
+                // -2 반환
+                val = -2;
+            }
+        }
+
+        Vmax(i) = val;
+    }
+
+    return Vmax;
+}
+
+VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
+{
+    VectorXd Qi = VectorXd::Zero(9);
+
+    for(int i = 0; i < 9; i++)
+    {
+        float val, S;
+        int sign;
+
+        S = q2(i) - q1(i);
+        
+        // 부호 확인, 이동거리 양수로 변경
+        if (S < 0)
+        {
+            S = -1 * S;
+            sign = -1;
+        }
+        else
+        {
+            sign = 1;
+        }
+
+
+        // 궤적 생성
+        if (S == 0)
+        {
+            // 정지
+            val = q1(i);
+        }
+        else if (Vmax(i) < 0)
+        {
+            // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
+            float acc_tri = 4 * S / t2 / t2;
+
+            if (t < t2/2)
+            {
+                val = q1(i) + sign * 0.5 * acc_tri * t * t;
+            }
+            else if (t < t2)
+            {
+                val = q2(i) - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
+            }
+            else
+            {
+                val = q2(i);
+            }
+        }
+        else
+        {
+            // 사다리꼴 프로파일
+            if (t < Vmax(i) / acc)
+            {
+                // 가속
+                val = q1(i) + sign * 0.5 * acc * t * t;
+            }
+            else if (t < S / Vmax(i))
+            {
+                // 등속
+                val = q1(i) + (sign * 0.5 * Vmax(i) * Vmax(i) / acc) + (sign * Vmax(i) * (t - Vmax(i) / acc));          
+            }
+            else if (t < Vmax(i) / acc + S / Vmax(i))
+            {
+                // 감속
+                val = q2(i) - sign * 0.5 * acc * (S / Vmax(i) + Vmax(i) / acc - t) * (S / Vmax(i) + Vmax(i) / acc - t);              
+            }
+            else 
+            {
+                val = q2(i);              
+            }
+        }
+
+        Qi(i) = val;
+    }
+
+    return  Qi;
+}
+
+void PathManager::getMotorPos()
+{
+    // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
+    for (auto &entry : motors)
+    {
+        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = tMotor->jointAngle;
+        }
+        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+        {
+            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->jointAngle;
+        }
+    }
+}
 
 float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
 {
@@ -180,189 +327,7 @@ VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, fl
     return Ps;
 }
 
-
-// 손목 토크 제어 시 필요
-pair<float, float> PathManager::SetTorqFlag(MatrixXd &State, float t_now)
-{
-    float q7_isTorq = 10.0;
-    float q8_isTorq = 10.0;
-
-    VectorXd time_madi = State.row(0);
-    VectorXd q7_state = State.row(1);
-    VectorXd q8_state = State.row(2);
-
-    if (time_madi(0) == 0) // 연주 시작 시
-    {
-        if (t_now < time_madi(1))
-        {
-            if (abs(t_now - time_madi(0)) < 0.001)
-            {
-                q7_isTorq = -0.5;
-                q8_isTorq = -0.5;
-            }
-            else
-            {
-                q7_isTorq = 0;
-                q8_isTorq = 0;
-            }
-        }
-        else if (t_now < time_madi(2))
-        {
-            if (q7_state(1) == -1)
-            {
-                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
-                    q7_isTorq = 2;
-                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q7_isTorq = -1;
-                else
-                    q7_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(1)) < 0.001)
-                    q7_isTorq = q7_state(1);
-                else
-                    q7_isTorq = 0;
-            }
-
-            if (q8_state(1) == -1)
-            {
-                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
-                    q8_isTorq = 2;
-                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q8_isTorq = -1;
-                else
-                    q8_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(1)) < 0.001)
-                    q8_isTorq = q8_state(1);
-                else
-                    q8_isTorq = 0;
-            }
-        }
-    }
-    else
-    {
-        if (t_now < time_madi(1))
-        {
-            if (q7_state(0) == -1)
-            {
-                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
-                    q7_isTorq = 2;
-                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q7_isTorq = -1;
-                else
-                    q7_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(0)) < 0.001)
-                    q7_isTorq = q7_state(0);
-                else
-                    q7_isTorq = 0;
-            }
-
-            if (q8_state(0) == -1)
-            {
-                if (abs(t_now - time_madi(0)) < 0.001) // 타격 전 대기
-                    q8_isTorq = 2;
-                else if (abs(t_now - (time_madi(1) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q8_isTorq = -1;
-                else
-                    q8_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(0)) < 0.001)
-                    q8_isTorq = q8_state(0);
-                else
-                    q8_isTorq = 0;
-            }
-        }
-        else if (t_now < time_madi(2))
-        {
-            if (q7_state(1) == -1)
-            {
-                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
-                    q7_isTorq = 2;
-                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q7_isTorq = -1;
-                else
-                    q7_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(1)) < 0.001)
-                    q7_isTorq = q7_state(1);
-                else
-                    q7_isTorq = 0;
-            }
-
-            if (q8_state(1) == -1)
-            {
-                if (abs(t_now - time_madi(1)) < 0.001) // 타격 전 대기
-                    q8_isTorq = 2;
-                else if (abs(t_now - (time_madi(2) - wrist_hit_time)) < 0.001) // 타격 시작
-                    q8_isTorq = -1;
-                else
-                    q8_isTorq = 0;
-            }
-            else
-            {
-                if (abs(t_now - time_madi(1)) < 0.001)
-                    q8_isTorq = q8_state(1);
-                else
-                    q8_isTorq = 0;
-            }
-        }
-    }
-
-    return std::make_pair(q7_isTorq, q8_isTorq);
-}
-
-
-vector<float> PathManager::connect(vector<float> &Q1, vector<float> &Q2, int k, int n)
-{
-    vector<float> Qi;
-    std::vector<float> A, B;
-
-    // Compute A and Bk
-    for (long unsigned int i = 0; i < Q1.size(); ++i)
-    {
-        A.push_back(0.5 * (Q1[i] - Q2[i]));
-        B.push_back(0.5 * (Q1[i] + Q2[i]));
-    }
-
-    // Compute Qi using the provided formula
-    for (long unsigned int i = 0; i < Q1.size(); ++i)
-    {
-        float val = A[i] * cos(M_PI * k / n) + B[i];
-        Qi.push_back(val);
-    }
-
-    return Qi;
-}
-
-
-void PathManager::getMotorPos()
-{
-    // 각 모터의 현재위치 값 불러오기 ** CheckMotorPosition 이후에 해야함(변수값을 불러오기만 해서 갱신 필요)
-    for (auto &entry : motors)
-    {
-        if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-        {
-            c_MotorAngle[motor_mapping[entry.first]] = tMotor->jointAngle;
-        }
-        if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-        {
-            c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->jointAngle;
-        }
-    }
-}
-
-string trimWhitespace(const std::string &str)
+string PathManager::trimWhitespace(const std::string &str)
 {
     size_t first = str.find_first_not_of(" \t");
     if (std::string::npos == first)
@@ -855,6 +820,8 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL)
     float r2 = part_length.lowerArm + part_length.stick;
     float L1 = part_length.upperArm;
     float L2 = part_length.lowerArm + part_length.stick;
+    float s = part_length.waist;
+    float z0 = part_length.height;
 
     int j = 0, m = 0;
     float the3[1351];
@@ -1018,6 +985,7 @@ vector<float> PathManager::fkfun()
         }
     }
     float r1 = part_length.upperArm, r2 = part_length.lowerArm, l1 = part_length.upperArm, l2 = part_length.lowerArm, stick = part_length.stick;
+    float s = part_length.waist, z0 = part_length.height;
 
     P.push_back(0.5 * s * cos(theta[0]) + r1 * sin(theta[3]) * cos(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * cos(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * cos(theta[0] + theta[1]));
     P.push_back(0.5 * s * sin(theta[0]) + r1 * sin(theta[3]) * sin(theta[0] + theta[1]) + r2 * sin(theta[3] + theta[4]) * sin(theta[0] + theta[1]) + stick * sin(theta[3] + theta[4] + theta[7]) * sin(theta[0] + theta[1]));
@@ -1029,15 +997,6 @@ vector<float> PathManager::fkfun()
     return P;
 }
 
-float PathManager::con_fun(float th_a, float th_b, int k, int n)
-{
-    float A, B;
-    A = 0.5 * (th_a - th_b);
-    B = 0.5 * (th_a + th_b);
-
-    return (A * cos(M_PI * k / n) + B);
-}
-
 float PathManager::con_fun_pos(float th_a, float th_b, float k, float n)
 {
     float A, B;
@@ -1045,79 +1004,6 @@ float PathManager::con_fun_pos(float th_a, float th_b, float k, float n)
     B = 0.5 * (th_a + th_b);
 
     return (A * cos(M_PI * k / n) + B);
-}
-
-pair<float, float> PathManager::iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t)
-{
-    float p_out, v_out /*, V1_out*/;
-
-    if ((qk2_06 - qk1_06) / (qk3_06 - qk2_06) > 0)
-    { // 방향 지속의 경우, 2차 함수
-        float c = qk1_06;
-        float b = qv_in;
-        float a = (qk2_06 - qk1_06 - qv_in * t1) / (t1 * t1);
-
-        p_out = a * t * t + b * t + c; // 위치
-        v_out = 2 * a * t + b;         // 속도
-        // V1_out = 2 * a * t1 + b; // t1 시점에서의 속도
-    }
-    else
-    { // 방향 전환의 경우, 3차 함수
-        float c = qv_in;
-        float d = qk1_06;
-
-        float T11 = t1 * t1 * t1;
-        float T12 = t1 * t1;
-        float T21 = 3 * t1 * t1;
-        float T22 = 2 * t1;
-
-        // 역행렬 계산을 위한 수식 처리
-        float det = T11 * T22 - T12 * T21;
-        float invT11 = T22 / det;
-        float invT12 = -T12 / det;
-        float invT21 = -T21 / det;
-        float invT22 = T11 / det;
-
-        float ANS1 = -c * t1 - d + qk2_06;
-        float ANS2 = -c;
-
-        // 행렬식을 이용한 계산
-        float a = invT11 * ANS1 + invT12 * ANS2;
-        float b = invT21 * ANS1 + invT22 * ANS2;
-
-        p_out = a * t * t * t + b * t * t + c * t + d; // 위치
-        v_out = 3 * a * t * t + 2 * b * t + c;         // 속도
-        // V1_out = 3 * a * t1 * t1 + 2 * b * t1 + c; // t1 시점에서의 속도
-    }
-
-    return std::make_pair(p_out, v_out);
-}
-
-pair<float, float> PathManager::qRL_fun(MatrixXd &t_madi, float t_now)
-{
-    float qR_t, qL_t;
-
-    VectorXd time_madi = t_madi.row(0);
-    VectorXd q7_madi = t_madi.row(1);
-    VectorXd q8_madi = t_madi.row(2);
-
-    if (t_now >= time_madi(0) && t_now < time_madi(1))
-    {
-        qR_t = q7_madi(1);
-        qL_t = q8_madi(1);
-    }
-    else if (t_now >= time_madi(1) && t_now < time_madi(2))
-    {
-        qR_t = q7_madi(2);
-        qL_t = q8_madi(2);
-    }
-    else
-    {
-        qR_t = q7_madi(2);
-        qL_t = q8_madi(2);
-    }
-
-    return std::make_pair(qR_t, qL_t);
 }
 
 pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
@@ -1151,139 +1037,110 @@ pair<float, float> PathManager::q78_fun(MatrixXd &t_madi, float t_now)
     return std::make_pair(qR_t, qL_t);
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-/*                         POSITION LOOP MODE FUNCTION                        */
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+/*                              Play FUNCTION                                 */
+////////////////////////////////////////////////////////////////////////////////
 
-VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
+void PathManager::generateTrajectory()
 {
-    VectorXd Vmax = VectorXd::Zero(9);
+    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
+    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
+    MatrixXd B;    // 크기가 19x3인 2차원 벡터
+    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
 
-    for (int i = 0; i < 9; i++)
+    VectorXd output1, output2;
+    VectorXd Pi_R = VectorXd::Zero(3);
+    VectorXd Pi_L = VectorXd::Zero(3);
+    VectorXd Pf_R = VectorXd::Zero(3);
+    VectorXd Pf_L = VectorXd::Zero(3);
+    float ti = 0, tf = 0;
+
+    float dt = canManager.deltaT;   // 0.005
+    int n;
+    float tm = 0.5, sm = 0.5, h = 0.1;
+    
+    // 연주 처음 시작할 때 Q1, Q2 계산
+    if (line == 0)
     {
-        float val;
-        float S = q2(i) - q1(i);
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
-        // 이동거리 양수로 변경
-        if (S < 0)
-        {
-            S = -1 * S;
-        }
+        VectorXd A1 = A30.col(0);
+        VectorXd A2 = A30.col(1);
+        output1 = pos_madi_fun(A1);
+        output2 = pos_madi_fun(A2);
 
-        if (S > t2*t2*acc/4)
-        {
-            // 가속도로 도달 불가능
-            // -1 반환
-            val = -1;
-        }
-        else
-        {
-            // 2차 방정식 계수
-            float A = 1/acc;
-            float B = -1*t2;
-            float C = S;
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output2(4), output2(5), output2(6);
+    }
+    else if (line == 1)
+    {
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
 
-            // 2차 방정식 해
-            float sol1 = (-B+sqrt(B*B-4*A*C))/2/A;
-            float sol2 = (-B-sqrt(B*B-4*A*C))/2/A;
+        VectorXd A1 = A31.col(0);
+        VectorXd A2 = A31.col(1);
+        output1 = pos_madi_fun(A1);
+        output2 = pos_madi_fun(A2);
 
-            if (sol1 >= 0 && sol1 <= acc*t2/2)
-            {
-                val = sol1;
-            }
-            else if (sol2 >= 0 && sol2 <= acc*t2/2)
-            {
-                val = sol2;
-            }
-            else
-            {
-                // 해가 범위 안에 없음
-                // -2 반환
-                val = -2;
-            }
-        }
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output2(4), output2(5), output2(6);
+    }
+    else if (line > 1)
+    {
+        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
+        itms_fun(t2, inst2, B, BB, inst_now);
 
-        Vmax(i) = val;
+        VectorXd B1 = B.col(0);
+        VectorXd B2 = B.col(1);
+        output1 = pos_madi_fun(B1);
+        output2 = pos_madi_fun(B2);
+
+        ti = output1(0);
+        tf = output2(0);
+        Pi_R << output1(1), output1(2), output1(3);
+        Pi_L << output1(4), output1(5), output1(6);
+        Pf_R << output2(1), output2(2), output2(3);
+        Pf_L << output2(4), output2(5), output2(6);
     }
 
-    return Vmax;
-}
-
-VectorXd PathManager::makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2)
-{
-    VectorXd Qi = VectorXd::Zero(9);
-
-    for(int i = 0; i < 9; i++)
+    n = (tf - ti) / dt;
+    for (int i = 0; i < n; i++)
     {
-        float val, S;
-        int sign;
+        Pos Pt;
+        float t = dt * i;
+        float s[2] = {0};   // s[0] : 3차 + 3차
+                            // s[1] : 3차
 
-        S = q2(i) - q1(i);
-        
-        // 부호 확인, 이동거리 양수로 변경
-        if (S < 0)
-        {
-            S = -1 * S;
-            sign = -1;
-        }
-        else
-        {
-            sign = 1;
-        }
+        s[0] = timeScaling(0.0f, tf-ti, t, tm*(tf-ti), sm);
+        s[1] = timeScaling_only3(0.0f, tf-ti, t);
 
+        Pt.pR = makePath(Pi_R, Pf_R, s, sm, h);
+        Pt.pL = makePath(Pi_L, Pf_L, s, sm, h);
 
-        // 궤적 생성
-        if (S == 0)
-        {
-            // 정지
-            val = q1(i);
-        }
-        else if (Vmax(i) < 0)
-        {
-            // Vmax 값을 구하지 못했을 때 삼각형 프로파일 생성
-            float acc_tri = 4 * S / t2 / t2;
+        P.push(Pt);
 
-            if (t < t2/2)
-            {
-                val = q1(i) + sign * 0.5 * acc_tri * t * t;
-            }
-            else if (t < t2)
-            {
-                val = q2(i) - sign * 0.5 * acc_tri * (t2 - t) * (t2 - t);
-            }
-            else
-            {
-                val = q2(i);
-            }
-        }
-        else
-        {
-            // 사다리꼴 프로파일
-            if (t < Vmax(i) / acc)
-            {
-                // 가속
-                val = q1(i) + sign * 0.5 * acc * t * t;
-            }
-            else if (t < S / Vmax(i))
-            {
-                // 등속
-                val = q1(i) + (sign * 0.5 * Vmax(i) * Vmax(i) / acc) + (sign * Vmax(i) * (t - Vmax(i) / acc));          
-            }
-            else if (t < Vmax(i) / acc + S / Vmax(i))
-            {
-                // 감속
-                val = q2(i) - sign * 0.5 * acc * (S / Vmax(i) + Vmax(i) / acc - t) * (S / Vmax(i) + Vmax(i) / acc - t);              
-            }
-            else 
-            {
-                val = q2(i);              
-            }
-        }
-
-        Qi(i) = val;
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        fileName = "S";
+        fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
-
-    return  Qi;
 }
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
@@ -1300,7 +1157,7 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
     q(7) = 0;
     q(8) = 0;
 
-    Motors_sendBuffer(q, false);
+    pushConmmandBuffer(q, false);
 
     // 데이터 기록
     for (int m = 0; m < 9; m++)
@@ -1310,15 +1167,221 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
     }
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-/*                                  MAKE PATH                                 */
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+/*                            Perform FUNCTION                                */
+////////////////////////////////////////////////////////////////////////////////
+
+void PathManager::PathLoopTask()
+{
+    // float t_now = time_arr[line];
+
+    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
+    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
+    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
+    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
+    MatrixXd B;    // 크기가 19x3인 2차원 벡터
+    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+    MatrixXd State(3, 4);
+
+    VectorXd p1(9), p2(9), p3(9);
+    MatrixXd wrist_addAngle(3, 3), elbow_addAngle(3, 3);
+
+    // 연주 처음 시작할 때 Q1, Q2 계산
+    if (line == 0)
+    {
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+
+        VectorXd A1 = A30.col(0);
+        VectorXd A2 = A30.col(1);
+        VectorXd A3 = A30.col(2);
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
+
+        State = AA40;
+    }
+    else if (line == 1)
+    {
+        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
+        MatrixXd inst2 = inst_arr.middleCols(0, 5);
+        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+
+        VectorXd A1 = A31.col(0);
+        VectorXd A2 = A31.col(1);
+        VectorXd A3 = A31.col(2);
+        p1 = pos_madi_fun(A1);
+        p2 = pos_madi_fun(A2);
+        p3 = pos_madi_fun(A3);
+
+        State = AA41;
+    }
+    else if (line > 1)
+    {
+        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
+        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
+        itms_fun(t2, inst2, B, BB, inst_now);
+
+        VectorXd B1 = B.col(0);
+        VectorXd B2 = B.col(1);
+        VectorXd B3 = B.col(2);
+        p1 = pos_madi_fun(B1);
+        p2 = pos_madi_fun(B2);
+        p3 = pos_madi_fun(B3);
+
+        State = BB;
+    }
+
+    float dt = canManager.deltaT;   // 0.005
+    float t = p2(0) - p1(0);
+    int n = t / dt;
+    VectorXd qt = VectorXd::Zero(9);
+    VectorXd Vmax = VectorXd::Zero(9);
+    const float acc_max = 100.0;    // rad/s^2
+    pair<float, float> qElbow;
+    pair<float, float> qWrist;
+
+    // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
+    VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
+    VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
+    VectorXd qk1_06 = ikfun_final(pR1, pL1);
+
+
+    VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
+    VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
+    VectorXd qk2_06 = ikfun_final(pR2, pL2);
+
+    VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
+    VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
+    VectorXd qk3_06 = ikfun_final(pR3, pL3);
+    
+    wrist_addAngle = sts2wrist_fun(State);
+    elbow_addAngle = sts2elbow_fun(State);
+
+    Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
+
+    // 출력
+    std::cout << "State :\n"
+         << State << "\n";
+    std::cout << "wrist_addAngle :\n"
+         << wrist_addAngle << "\n";
+    std::cout << "elbow_addAngle :\n"
+         << elbow_addAngle << "\n";
+
+    std::cout << "R : p1 -> p2\n"
+         << "(" << p1(1) << "," << p1(2) << "," << p1(3) << ") -> (" << p2(1) << "," << p2(2) << "," << p2(3) << ")\n";
+    std::cout << "L : p1 -> p2\n"
+         << "(" << p1(4) << "," << p1(5) << "," << p1(6) << ") -> (" << p2(4) << "," << p2(5) << "," << p2(6) << ")\n";
+
+    for (int k = 0; k < 9; k++)
+    {
+        std::cout << "Q1[" << k << "] : " << qk1_06[k]*180.0/M_PI <<  " [deg] -> Q2[" << k << "] : " << qk2_06[k]*180.0/M_PI << " [deg],\t";
+        std::cout << "Vmax[" << k << "] : " << Vmax(k) << "[rad/s]\n";
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        float t_step = dt*(i+1);
+        VectorXd qi = VectorXd::Zero(9);
+        
+        qi = makeProfile(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
+
+        for (int m = 0; m < 7; m++)
+        {
+            qt(m) = qi(m);
+        }
+
+        qElbow = q78_fun(elbow_addAngle, t_step + p1(0));
+        qWrist = q78_fun(wrist_addAngle, t_step + p1(0));
+        
+        qt(4) = qt(4) + qElbow.first;
+        qt(6) = qt(6) + qElbow.second;
+        qt(7) = qWrist.first;
+        qt(8) = qWrist.second;
+
+        // // 데이터 기록
+        // for (int m = 0; m < 9; m++)
+        // {
+        //     std::string file_name = "desired_path";
+        //     fun.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
+        // }
+        
+        // Command Buffer 쌓기
+        pushConmmandBuffer(qt, false);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*                           AddStance FUNCTION                               */
+////////////////////////////////////////////////////////////////////////////////
+
+void PathManager::GetArr(vector<float> &arr)
+{
+    const float acc_max = 100.0;    // rad/s^2
+    //vector<float> Qi;
+    //vector<float> Vmax;
+    VectorXd Q1 = VectorXd::Zero(9);
+    VectorXd Q2 = VectorXd::Zero(9);
+    VectorXd Qi = VectorXd::Zero(9);
+    VectorXd Vmax = VectorXd::Zero(9);
+
+    float dt = canManager.deltaT;   // 0.005
+    float t = 3.0;                  // 3초동안 실행
+    float extra_time = 1.0;         // 추가 시간 1초
+    int n = (int)(t / dt);   
+    int n_p = (int)(extra_time / dt); 
+
+    getMotorPos(); 
+
+    for (int i = 0; i < 9; i++)
+    {
+        Q1(i) = c_MotorAngle[i];
+        Q2(i) = arr[i];
+    }
+
+    Vmax = cal_Vmax(Q1, Q2, acc_max, t);
+
+    for (int k = 0; k < 9; k++)
+    {
+        cout << "Q1[" << k << "] : " << Q1[k]*180.0/M_PI <<  " [deg] -> Q2[" << k << "] : " << Q2[k]*180.0/M_PI << " [deg]" << endl;
+        cout << "Vmax[" << k << "] : " << Vmax(k) << "[rad/s]\n\n";
+    }
+
+    for (int k = 1; k <= n + n_p; ++k)
+    {
+        // Make Array
+        Qi = makeProfile(Q1, Q2, Vmax, acc_max, t*k/n, t);
+
+        // Send to Buffer
+        for (auto &entry : motors)
+        {
+            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
+            {
+                TMotorData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.spd = 0;
+                newData.acl = 0;
+                newData.isBrake = false;
+                tMotor->commandBuffer.push(newData);
+            }
+            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
+            {
+                MaxonData newData;
+                newData.position = Qi[motor_mapping[entry.first]];
+                newData.WristState = 0.5;
+                maxonMotor->commandBuffer.push(newData);
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*                            INIT FUNCTION                                   */
+////////////////////////////////////////////////////////////////////////////////
 
 void PathManager::GetDrumPositoin()
 {
-    part_length.resize(6);
-    part_length << 0.250, 0.328, 0.250, 0.328, 0.325+0.048, 0.325+0.048; ///< [오른팔 상완, 오른팔 하완, 왼팔 상완, 왼팔 하완, 스틱, 스틱]의 길이.
-
     ifstream inputFile("../include/managers/rT.txt");
 
     if (!inputFile.is_open())
@@ -1481,326 +1544,4 @@ void PathManager::SetReadyAng()
     }
     readyArr[7] = 0.0;
     readyArr[8] = 0.0;
-}
-
-void PathManager::PathLoopTask()
-{
-    // float t_now = time_arr[line];
-
-    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
-    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
-    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
-    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
-    MatrixXd B;    // 크기가 19x3인 2차원 벡터
-    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
-    MatrixXd State(3, 4);
-
-    VectorXd p1(9), p2(9), p3(9);
-    MatrixXd wrist_addAngle(3, 3), elbow_addAngle(3, 3);
-
-    // 연주 처음 시작할 때 Q1, Q2 계산
-    if (line == 0)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-
-        VectorXd A1 = A30.col(0);
-        VectorXd A2 = A30.col(1);
-        VectorXd A3 = A30.col(2);
-        p1 = pos_madi_fun(A1);
-        p2 = pos_madi_fun(A2);
-        p3 = pos_madi_fun(A3);
-
-        State = AA40;
-    }
-    else if (line == 1)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-
-        VectorXd A1 = A31.col(0);
-        VectorXd A2 = A31.col(1);
-        VectorXd A3 = A31.col(2);
-        p1 = pos_madi_fun(A1);
-        p2 = pos_madi_fun(A2);
-        p3 = pos_madi_fun(A3);
-
-        State = AA41;
-    }
-    else if (line > 1)
-    {
-        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
-        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
-        itms_fun(t2, inst2, B, BB, inst_now);
-
-        VectorXd B1 = B.col(0);
-        VectorXd B2 = B.col(1);
-        VectorXd B3 = B.col(2);
-        p1 = pos_madi_fun(B1);
-        p2 = pos_madi_fun(B2);
-        p3 = pos_madi_fun(B3);
-
-        State = BB;
-    }
-
-    float dt = canManager.deltaT;   // 0.005
-    float t = p2(0) - p1(0);
-    int n = t / dt;
-    VectorXd qt = VectorXd::Zero(9);
-    VectorXd Vmax = VectorXd::Zero(9);
-    const float acc_max = 100.0;    // rad/s^2
-    pair<float, float> qElbow;
-    pair<float, float> qWrist;
-
-    // ik함수삽입, p1, p2, p3가 ik로 각각 들어가고, q0~ q6까지의 마디점이 구해짐, 마디점이 바뀔때만 계산함
-    VectorXd pR1 = VectorXd::Map(p1.data() + 1, 3, 1);
-    VectorXd pL1 = VectorXd::Map(p1.data() + 4, 3, 1);
-    VectorXd qk1_06 = ikfun_final(pR1, pL1);
-
-
-    VectorXd pR2 = VectorXd::Map(p2.data() + 1, 3, 1);
-    VectorXd pL2 = VectorXd::Map(p2.data() + 4, 3, 1);
-    VectorXd qk2_06 = ikfun_final(pR2, pL2);
-
-    VectorXd pR3 = VectorXd::Map(p3.data() + 1, 3, 1);
-    VectorXd pL3 = VectorXd::Map(p3.data() + 4, 3, 1);
-    VectorXd qk3_06 = ikfun_final(pR3, pL3);
-    
-    wrist_addAngle = sts2wrist_fun(State);
-    elbow_addAngle = sts2elbow_fun(State);
-
-    Vmax = cal_Vmax(qk1_06, qk2_06, acc_max, t);
-
-    // 출력
-    std::cout << "State :\n"
-         << State << "\n";
-    std::cout << "wrist_addAngle :\n"
-         << wrist_addAngle << "\n";
-    std::cout << "elbow_addAngle :\n"
-         << elbow_addAngle << "\n";
-
-    std::cout << "R : p1 -> p2\n"
-         << "(" << p1(1) << "," << p1(2) << "," << p1(3) << ") -> (" << p2(1) << "," << p2(2) << "," << p2(3) << ")\n";
-    std::cout << "L : p1 -> p2\n"
-         << "(" << p1(4) << "," << p1(5) << "," << p1(6) << ") -> (" << p2(4) << "," << p2(5) << "," << p2(6) << ")\n";
-
-    for (int k = 0; k < 9; k++)
-    {
-        std::cout << "Q1[" << k << "] : " << qk1_06[k]*180.0/M_PI <<  " [deg] -> Q2[" << k << "] : " << qk2_06[k]*180.0/M_PI << " [deg],\t";
-        std::cout << "Vmax[" << k << "] : " << Vmax(k) << "[rad/s]\n";
-    }
-
-    for (int i = 0; i < n; i++)
-    {
-        float t_step = dt*(i+1);
-        VectorXd qi = VectorXd::Zero(9);
-        
-        qi = makeProfile(qk1_06, qk2_06, Vmax, acc_max, t_step, t);
-
-        for (int m = 0; m < 7; m++)
-        {
-            qt(m) = qi(m);
-        }
-
-        qElbow = q78_fun(elbow_addAngle, t_step + p1(0));
-        qWrist = q78_fun(wrist_addAngle, t_step + p1(0));
-        
-        qt(4) = qt(4) + qElbow.first;
-        qt(6) = qt(6) + qElbow.second;
-        qt(7) = qWrist.first;
-        qt(8) = qWrist.second;
-
-        // // 데이터 기록
-        // for (int m = 0; m < 9; m++)
-        // {
-        //     std::string file_name = "desired_path";
-        //     fun.appendToCSV_DATA(file_name, m, t_step + p1(0), qt(m));
-        // }
-        
-        // Command Buffer 쌓기
-        Motors_sendBuffer(qt, false);
-    }
-}
-
-void PathManager::makeTrajectory()
-{
-    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
-    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
-    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
-    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
-    MatrixXd B;    // 크기가 19x3인 2차원 벡터
-    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
-
-    VectorXd output1, output2;
-    VectorXd Pi_R = VectorXd::Zero(3);
-    VectorXd Pi_L = VectorXd::Zero(3);
-    VectorXd Pf_R = VectorXd::Zero(3);
-    VectorXd Pf_L = VectorXd::Zero(3);
-    float ti = 0, tf = 0;
-
-    float dt = canManager.deltaT;   // 0.005
-    int n;
-    float tm, sm, h;
-    
-    // 연주 처음 시작할 때 Q1, Q2 계산
-    if (line == 0)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-
-        VectorXd A1 = A30.col(0);
-        VectorXd A2 = A30.col(1);
-        output1 = pos_madi_fun(A1);
-        output2 = pos_madi_fun(A2);
-
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-    else if (line == 1)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-
-        VectorXd A1 = A31.col(0);
-        VectorXd A2 = A31.col(1);
-        output1 = pos_madi_fun(A1);
-        output2 = pos_madi_fun(A2);
-
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-    else if (line > 1)
-    {
-        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
-        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
-        itms_fun(t2, inst2, B, BB, inst_now);
-
-        VectorXd B1 = B.col(0);
-        VectorXd B2 = B.col(1);
-        output1 = pos_madi_fun(B1);
-        output2 = pos_madi_fun(B2);
-
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-
-    n = (tf - ti) / dt;
-    tm = ti + 0.5*(tf - ti);
-    h = 0.1;
-    sm = 0.5;
-
-    for (int i = 0; i < n; i++)
-    {
-        Pos Pt;
-        VectorXd Pt_R;
-        VectorXd Pt_L;
-        float t = ti + dt * i;
-        float s[2] = {0};   // s[0] : 3차 + 3차
-                            // s[1] : 3차
-
-        s[0] = timeScaling(0.0f, tf - ti, t - ti, tm - ti, sm);
-        s[1] = timeScaling_only3(0.0f, tf - ti, t - ti);
-
-        // s[0] = (t - ti) / (tf - ti);
-        // s[1] = (t - ti) / (tf - ti);
-
-        Pt_R = makePath(Pi_R, Pf_R, s, sm, h);
-        Pt_L = makePath(Pi_L, Pf_L, s, sm, h);
-
-        for (int i = 0; i < 3; i++)
-        {
-            Pt.pR[i] = Pt_R(i);
-            Pt.pL[i] = Pt_L(i);
-        }
-        P.push(Pt);
-
-        std::string fileName;
-        fileName = "Trajectory_R";
-        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-        fileName = "Trajectory_L";
-        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
-        fileName = "S";
-        fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
-    }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                           AddStance FUNCTION                               */
-///////////////////////////////////////////////////////////////////////////////
-
-void PathManager::GetArr(vector<float> &arr)
-{
-    const float acc_max = 100.0;    // rad/s^2
-    //vector<float> Qi;
-    //vector<float> Vmax;
-    VectorXd Q1 = VectorXd::Zero(9);
-    VectorXd Q2 = VectorXd::Zero(9);
-    VectorXd Qi = VectorXd::Zero(9);
-    VectorXd Vmax = VectorXd::Zero(9);
-
-    float dt = canManager.deltaT;   // 0.005
-    float t = 3.0;                  // 3초동안 실행
-    float extra_time = 1.0;         // 추가 시간 1초
-    int n = (int)(t / dt);   
-    int n_p = (int)(extra_time / dt); 
-
-    getMotorPos(); 
-
-    for (int i = 0; i < 9; i++)
-    {
-        Q1(i) = c_MotorAngle[i];
-        Q2(i) = arr[i];
-    }
-
-    Vmax = cal_Vmax(Q1, Q2, acc_max, t);
-
-    for (int k = 0; k < 9; k++)
-    {
-        cout << "Q1[" << k << "] : " << Q1[k]*180.0/M_PI <<  " [deg] -> Q2[" << k << "] : " << Q2[k]*180.0/M_PI << " [deg]" << endl;
-        cout << "Vmax[" << k << "] : " << Vmax(k) << "[rad/s]\n\n";
-    }
-
-    for (int k = 1; k <= n + n_p; ++k)
-    {
-        // Make Array
-        Qi = makeProfile(Q1, Q2, Vmax, acc_max, t*k/n, t);
-
-        // Send to Buffer
-        for (auto &entry : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(entry.second))
-            {
-                TMotorData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
-                newData.spd = 0;
-                newData.acl = 0;
-                newData.isBrake = false;
-                tMotor->commandBuffer.push(newData);
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(entry.second))
-            {
-                MaxonData newData;
-                newData.position = Qi[motor_mapping[entry.first]];
-                newData.WristState = 0.5;
-                maxonMotor->commandBuffer.push(newData);
-            }
-        }
-    }
 }

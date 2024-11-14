@@ -61,37 +61,39 @@ public:
 
     
     /////////////////////////////////////////////////////////////////////////// Init
+
     void GetDrumPositoin();
     void GetMusicSheet();
     void SetReadyAng();
 
-
-    /////////////////////////////////////////////////////////////////////////// Perform
-    void PathLoopTask();
-    void makeTrajectory();
-    void solveIK(VectorXd &pR1, VectorXd &pL1);
-    
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
-    float bpm = 50;         /// txt 악보의 BPM 정보.
+    float bpm = 0;         /// txt 악보의 BPM 정보.
+
+    /////////////////////////////////////////////////////////////////////////// Perform
+
+    void PathLoopTask();
+
+    /////////////////////////////////////////////////////////////////////////// Play
+
+    void generateTrajectory();
+    void solveIK(VectorXd &pR1, VectorXd &pL1);
 
     // x, y, z 저장할 구조체
     typedef struct {
 
         // 오른팔 좌표
-        // VectorXd pR; // 0: x, 1: y, 2: z
-        float pR[3] = {0};
+        VectorXd pR; // 0: x, 1: y, 2: z
 
         // 왼팔 좌표
-        // VectorXd pL; // 0: x, 1: y, 2: z
-        float pL[3] = {0};
+        VectorXd pL; // 0: x, 1: y, 2: z
 
     }Pos;
 
     queue<Pos> P; // 구조체 담아놓을 큐
 
-
     /////////////////////////////////////////////////////////////////////////// AddStance
+
     void GetArr(vector<float> &arr);
 
     //   Ready Pos Array   :  waist         , R_arm1        , L_arm1        , R_arm2        , R_arm3        , L_arm2        , L_arm3        , R_wrist       , L_wrist
@@ -106,8 +108,8 @@ public:
     //                      { 0         , 135           , 45            , 0         , 0         , 0         , 0         , 90            , 90         } [deg]
     vector<float> backArr = { 0         ,M_PI * 0.75    , M_PI * 0.25   , 0         , 0         , 0         , 0         , M_PI / 2.0    , M_PI / 2.0 };
 
+    /////////////////////////////////////////////////////////////////////////// 기타
 
-    ///////////////////////////////////////////////////////////////////////////
     vector<float> fkfun();
 
     /*토크 제어에서 사용됨*/
@@ -136,7 +138,20 @@ private:
         {"maxonForTest", 8}};
 
 
+    typedef struct{
+
+        float upperArm = 0.250;         ///< 상완 길이.
+        float lowerArm = 0.328;         ///< 하완 길이.
+        float stick = 0.325+0.048;      ///< 스틱 길이 + 브라켓 길이.
+        float waist = 0.520;            ///< 허리 길이.
+        float height = 0.890-0.0605;    ///< 바닥부터 허리까지의 높이.
+
+    }PartLength;
+
+
     /////////////////////////////////////////////////////////////////////////// Init
+    string trimWhitespace(const std::string &str);
+
     string score_path = "../include/codes/testTrajectory.txt";        /// 악보 txt 파일 주소
     vector<float> time_arr; /// txt 악보의 시간간격 정보.
     MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
@@ -144,65 +159,42 @@ private:
     VectorXd default_left;  /// 왼팔 시작 위치
     MatrixXd right_drum_position;                               ///< 오른팔의 각 악기별 위치 좌표 벡터.
     MatrixXd left_drum_position;                                ///< 왼팔의 각 악기별 위치 좌표 벡터.
-    VectorXd part_length;
 
-    typedef struct{
-
-        float upperArm = 0.250;
-        float lowerArm = 0.328;
-        float stick = 0.325+0.048;
-        float waist = 0.520;
-        float height = 0.890-0.0605;
-
-    }PartLength;
-
-    float s = 0.520;  ///< 허리 길이.
-    float z0 = 0.890-0.0605; ///< 바닥부터 허리까지의 높이.
-
-
-    ///////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////// AddStance
+    void getMotorPos();
     // q1[rad], q2[rad], acc[rad/s^2], t2[s]
     VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
-    
-    ///////////////////////////////////////////////////////////////////////////
-    vector<float> connect(vector<float> &Q1, vector<float> &Q2, int k, int n);  // 안쓰고 있음
-    pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
-    float con_fun_pos(float th_a, float th_b, float k, float n);
-    MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
-    void itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
-    void itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB, VectorXd &pre_inst);
-    VectorXd pos_madi_fun(VectorXd &A);
-    MatrixXd sts2wrist_fun(MatrixXd &AA);
-    MatrixXd sts2elbow_fun(MatrixXd &AA);
-    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
-    float con_fun(float th_a, float th_b, int k, int n);
-    pair<float, float> iconf_fun(float qk1_06, float qk2_06, float qk3_06, float qv_in, float t1, float t2, float t);
-    pair<float, float> qRL_fun(MatrixXd &t_madi, float t_now);
-    pair<float, float> SetTorqFlag(MatrixXd &State, float t_now);
 
-
-    /////////////////////////////////////////////////////////////////////////// Perform
-    VectorXd inst_now;      /// 연주 중 현재 위치하는 악기
-    float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
-    float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
-    float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
-    float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
-
-    void Motors_sendBuffer(VectorXd &Qi, bool brake_state);
-
-
-    /////////////////////////////////////////////////////////////////////////// AddStance
-    void getMotorPos();
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
-
 
     /////////////////////////////////////////////////////////////////////////// Play
     float timeScaling(float ti, float tf, float t, float tm, float sm);
     float timeScaling_only3(float ti, float tf, float t);
     VectorXd makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
 
-    const bool XYZm = true;
+    const bool XYZm = true; // 궤적 생성 중 정지 여부
+
+    /////////////////////////////////////////////////////////////////////////// Perform & Play
+    MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
+    void itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
+    void itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB, VectorXd &pre_inst);
+    VectorXd pos_madi_fun(VectorXd &A);
+    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
+    void pushConmmandBuffer(VectorXd &Qi, bool brake_state);
+    
+    VectorXd inst_now;      /// 연주 중 현재 위치하는 악기 저장
+
+    /////////////////////////////////////////////////////////////////////////// 손목
+    MatrixXd sts2wrist_fun(MatrixXd &AA);
+    MatrixXd sts2elbow_fun(MatrixXd &AA);
+    pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
+    float con_fun_pos(float th_a, float th_b, float k, float n);
+
+    float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
+    float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
+    float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
+    float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
 
 };
