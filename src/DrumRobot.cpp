@@ -426,6 +426,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
+            std::cout << "\n//////////////////////////////// line : " << pathManager.line << ", total : " << pathManager.total << "\n";
             pathManager.makeTrajectory();
             pathManager.line++;
         }

@@ -1714,8 +1714,8 @@ void PathManager::makeTrajectory()
         float s[2] = {0};   // s[0] : 3차 + 3차
                             // s[1] : 3차
 
-        s[0] = timeScaling(ti, tf, t, tm, sm);
-        s[1] = timeScaling_only3(ti, tf, t);
+        s[0] = timeScaling(0.0f, tf - ti, t - ti, tm - ti, sm);
+        s[1] = timeScaling_only3(0.0f, tf - ti, t - ti);
 
         // s[0] = (t - ti) / (tf - ti);
         // s[1] = (t - ti) / (tf - ti);
@@ -1735,6 +1735,8 @@ void PathManager::makeTrajectory()
         fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
         fileName = "Trajectory_L";
         fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        fileName = "S";
+        fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
 }
 
