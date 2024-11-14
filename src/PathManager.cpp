@@ -57,8 +57,8 @@ float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
     {
         A << 1, ti, ti*ti, ti*ti*ti,
         1, tm, tm*tm, tm*tm*tm,
-        0, 1, ti, 2*ti*ti,
-        0, 1, tm, 2*tm*tm;
+        0, 1, 2*ti, 3*ti*ti,
+        0, 1, 2*tm, 3*tm*tm;
 
         b << 0, sm, 0, 0;
 
@@ -71,8 +71,8 @@ float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
     {
         A << 1, tm, tm*tm, tm*tm*tm,
         1, tf, tf*tf, tf*tf*tf,
-        0, 1, tm, 2*tm*tm,
-        0, 1, tf, 2*tf*tf;
+        0, 1, 2*tm, 3*tm*tm,
+        0, 1, 2*tf, 3*tf*tf;
 
         b << sm, 1, 0, 0;
 
@@ -99,8 +99,8 @@ float PathManager::timeScaling_only3(float ti, float tf, float t)
 
     A << 1, ti, ti*ti, ti*ti*ti,
     1, tf, tf*tf, tf*tf*tf,
-    0, 1, ti, 2*ti*ti,
-    0, 1, tf, 2*tf*tf;
+    0, 1, 2*ti, 3*ti*ti,
+    0, 1, 2*tf, 3*tf*tf;
 
     b << 0, 1, 0, 0;
 
@@ -125,46 +125,55 @@ VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, fl
     VectorXd Ps;
     Ps.resize(3);
 
-    if(XYZm)
+    if (Pi == Pf)
     {
-        // x, y, z 모두 중간점에서 정지
-
-        if (s[0] < sm)
-        {
-            // x
-            Ps(0) = xi + (xm - xi) * s[0] / sm;
-            // y
-            Ps(1) = yi + (ym - yi) * s[0] / sm;
-            // z
-            Ps(2) = zi + (zm - zi) * s[0] / sm;
-        }
-        else
-        {
-            // x
-            Ps(0) = xm + (xf - xm) * (s[0] - sm) / (1 - sm);
-            // y
-            Ps(1) = ym + (yf - ym) * (s[0] - sm) / (1 - sm);
-            // z
-            Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
-        }
+        Ps(0) = xi;
+        Ps(1) = yi;
+        Ps(2) = zi;
     }
     else
     {
-        // z만 중간점에서 정지
-
-        // x
-        Ps(0) = xi + (xf - xi) * s[1];
-        // y
-        Ps(1) = yi + (yf - yi) * s[1];
-        if (s[0] < sm)
+        if(XYZm)
         {
-            // z
-            Ps(2) = zi + (zm - zi) * s[0] / sm;
+            // x, y, z 모두 중간점에서 정지
+
+            if (s[0] < sm)
+            {
+                // x
+                Ps(0) = xi + (xm - xi) * s[0] / sm;
+                // y
+                Ps(1) = yi + (ym - yi) * s[0] / sm;
+                // z
+                Ps(2) = zi + (zm - zi) * s[0] / sm;
+            }
+            else
+            {
+                // x
+                Ps(0) = xm + (xf - xm) * (s[0] - sm) / (1 - sm);
+                // y
+                Ps(1) = ym + (yf - ym) * (s[0] - sm) / (1 - sm);
+                // z
+                Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
+            }
         }
         else
         {
-            // z
-            Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
+            // z만 중간점에서 정지
+
+            // x
+            Ps(0) = xi + (xf - xi) * s[1];
+            // y
+            Ps(1) = yi + (yf - yi) * s[1];
+            if (s[0] < sm)
+            {
+                // z
+                Ps(2) = zi + (zm - zi) * s[0] / sm;
+            }
+            else
+            {
+                // z
+                Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
+            }
         }
     }
 
@@ -1296,8 +1305,8 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
     // 데이터 기록
     for (int m = 0; m < 9; m++)
     {
-        std::string file_name = "solveIK";
-        fun.appendToCSV_DATA(file_name, m, q(m), 0);
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
     }
 }
 
