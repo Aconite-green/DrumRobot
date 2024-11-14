@@ -144,7 +144,7 @@ private:
         float lowerArm = 0.328;         ///< 하완 길이.
         float stick = 0.325+0.048;      ///< 스틱 길이 + 브라켓 길이.
         float waist = 0.520;            ///< 허리 길이.
-        float height = 0.890-0.0605;    ///< 바닥부터 허리까지의 높이.
+        float height = 1.020-0.0605;    ///< 바닥부터 허리까지의 높이.
 
     }PartLength;
 

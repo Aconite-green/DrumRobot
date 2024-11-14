@@ -1138,8 +1138,8 @@ void PathManager::generateTrajectory()
         fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
         fileName = "Trajectory_L";
         fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
-        fileName = "S";
-        fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
+        // fileName = "S";
+        // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
 }
 
