@@ -1635,13 +1635,13 @@ void DrumRobot::maxonMotorEnable()
 
             usleep(100000);
 
-            maxoncmd.getStartHoming(*maxonMotor, &frame);
-            canManager.txFrame(motor, frame);
+            // maxoncmd.getStartHoming(*maxonMotor, &frame);
+            // canManager.txFrame(motor, frame);
 
-            maxoncmd.getSync(&frame);
-            canManager.txFrame(motor, frame);
+            // maxoncmd.getSync(&frame);
+            // canManager.txFrame(motor, frame);
 
-            usleep(100000);
+            // usleep(100000);
             
             std::cout << "Maxon Enabled(2) \n";
         }
