@@ -823,6 +823,10 @@ bool CanManager::safetyCheck_T(std::shared_ptr<GenericMotor> &motor)
                 tMotor->currentErrorCnt++;
             }
         }
+        else
+        {
+            tMotor->currentErrorCnt = 0;
+        }
     }
 
     return isSafe;

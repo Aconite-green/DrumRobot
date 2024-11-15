@@ -1058,7 +1058,7 @@ void PathManager::generateTrajectory()
     float ti = 0, tf = 0;
 
     float dt = canManager.deltaT;   // 0.005
-    int n;
+    float n;
     float tm = 0.5, sm = 0.5, h = 0.1;
     
     // 연주 처음 시작할 때 Q1, Q2 계산
@@ -1133,14 +1133,18 @@ void PathManager::generateTrajectory()
 
         P.push(Pt);
 
-        std::string fileName;
-        fileName = "Trajectory_R";
-        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-        fileName = "Trajectory_L";
-        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        // std::string fileName;
+        // fileName = "Trajectory_R";
+        // fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        // fileName = "Trajectory_L";
+        // fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
+
+    // command_cnt += n;
+    // std::string fileName = "CNT";
+    // fun.appendToCSV_DATA(fileName, n, tf, ti);
 }
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
@@ -1159,12 +1163,16 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // 데이터 기록
-    for (int m = 0; m < 9; m++)
-    {
-        std::string fileName = "solveIK_q" + to_string(m);
-        fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    }
+    // // 데이터 기록
+    // for (int m = 0; m < 9; m++)
+    // {
+    //     std::string fileName = "solveIK_q" + to_string(m);
+    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    // }
+
+    // command_cnt_ik++;
+    // std::string fileName = "CNT_IK";
+    // fun.appendToCSV_DATA(fileName, command_cnt_ik, P.size(), 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
