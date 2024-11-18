@@ -173,6 +173,7 @@ private:
     float timeScaling(float ti, float tf, float t, float tm, float sm);
     float timeScaling_only3(float ti, float tf, float t);
     VectorXd makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
+    void makeSinPath(float ti, float tf, float t);
 
     const bool XYZm = true; // 궤적 생성 중 정지 여부
 

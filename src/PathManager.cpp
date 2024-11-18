@@ -259,6 +259,11 @@ float PathManager::timeScaling_only3(float ti, float tf, float t)
     return s;
 }
 
+void PathManager::makeSinPath(float ti, float tf, float t, )
+{
+    
+}
+
 VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
 {
     float xi = Pi(0), xf = Pf(0);
