@@ -78,6 +78,7 @@ public:
 
     void generateTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
+    void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
 
     // x, y, z 저장할 구조체
     typedef struct {
@@ -87,6 +88,8 @@ public:
 
         // 왼팔 좌표
         VectorXd pL; // 0: x, 1: y, 2: z
+
+        VectorXd qLin;
 
     }Pos;
 
@@ -183,6 +186,8 @@ private:
     VectorXd makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
     VectorXd makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
 
+    VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
+
     const bool XYZm = false; // 궤적 생성 중 정지 여부
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
@@ -210,7 +215,7 @@ private:
 
     ///////////////////////////////////////////////////////////////////////////
 
-    int command_cnt = 0;
-    int command_cnt_ik = 0;
+    // 데이터 기록
+    VectorXd q_ik;
 
 };
