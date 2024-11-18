@@ -1452,7 +1452,7 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
                 // maxoncmd.getCurrentThresholdL(*maxonMotor, &frame);
@@ -1466,7 +1466,7 @@ void DrumRobot::motorSettingCmd()
                 maxoncmd.getHomeoffsetDistance(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
-                maxoncmd.getHomePosition(*maxonMotor, &frame, 95);
+                maxoncmd.getHomePosition(*maxonMotor, &frame, 0);
                 canManager.sendAndRecv(motor, frame);
 
                 // maxoncmd.getCurrentThresholdR(*maxonMotor, &frame);

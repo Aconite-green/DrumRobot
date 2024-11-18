@@ -421,6 +421,63 @@ VectorXd PathManager::makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, 
     return Ps;
 }
 
+void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
+{
+    HitRL A_RL;
+
+    float val = 0;
+    float hitR = 0;
+    float hitL = 0;
+
+    MatrixXd sts_R = AA.row(1);
+    MatrixXd sts_L = AA.row(2);
+
+    float t0 = tf - ti;
+    float t1 = 0.1 * t0;
+
+    float A1 = 0.1;
+    float w1 = (2 * M_PI) / (2 * t1);
+    float A2 = 1;
+    float w2 = (2 * M_PI) / (2 * (t0 + t1));
+
+
+    if (t < t1) // 타격
+    {
+        val = A1 * sin(w1 * (t + t1));
+    }
+    else if (t >= t1) // 스윙
+    {
+        val = A2 * sin(w2 * t);
+    }
+
+    if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
+    {
+        hitR = val;
+        hitL = 0;
+    }
+    else if (sts_R(0,1) != 1 && sts_L(0,1) == 1) // 왼손 히트
+    {
+        hitR = 0;
+        hitL = val;
+    }
+    else if (sts_R(0,1) == 1 && sts_L(0,1) == 1) // 둘 다 히트
+    {
+        hitR = val;
+        hitL = val;
+    }
+    else // 히트 x
+    {
+        hitR = 0;
+        hitL = 0;
+    }
+
+    A_RL.hitR = hitR;
+    A_RL.hitL = hitL;
+
+    Hit.push(A_RL);
+
+}
+
 string PathManager::trimWhitespace(const std::string &str)
 {
     size_t first = str.find_first_not_of(" \t");
@@ -1240,6 +1297,7 @@ void PathManager::generateTrajectory()
     MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
     MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+    MatrixXd State(3, 4);
 
     VectorXd output1, output2;
     VectorXd Pi_R = VectorXd::Zero(3);
@@ -1276,6 +1334,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = AA40;
     }
     else if (line == 1)
     {
@@ -1294,6 +1354,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = AA41;
     }
     else if (line > 1)
     {
@@ -1312,6 +1374,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = BB;
     }
 
     // q0
@@ -1333,6 +1397,8 @@ void PathManager::generateTrajectory()
 
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
+        
+        makeHitPath(ti, tf, t, State);
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
@@ -1350,6 +1416,8 @@ void PathManager::generateTrajectory()
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
+    HitRL CurRL;
+
     VectorXd q(9);
 
     VectorXd q_06 = ikfun_final(pR1, pL1);
@@ -1359,8 +1427,10 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
         q(i) = q_06(i);
     }
 
-    q(7) = 0;
-    q(8) = 0;
+    CurRL = Hit.front(); Hit.pop();
+    
+    q(7) = CurRL.hitR;
+    q(8) = CurRL.hitL;
 
     pushConmmandBuffer(q, false);
 
@@ -1375,6 +1445,8 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
 {
+    HitRL CurRL;
+
     VectorXd q(9);
 
     VectorXd q_06 = ikfun_fixed_waist(pR1, pL1, q_lin(0));
@@ -1384,8 +1456,10 @@ void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_li
         q(i) = q_06(i);
     }
 
-    q(7) = 0;
-    q(8) = 0;
+    CurRL = Hit.front(); Hit.pop();
+    
+    q(7) = CurRL.hitR;
+    q(8) = CurRL.hitL;
 
     pushConmmandBuffer(q, false);
 
