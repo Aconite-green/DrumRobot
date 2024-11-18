@@ -447,6 +447,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
 
         pathManager.solveIK(nextPos.pR, nextPos.pL);
 
+        pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
+
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
         // setCANFrame 함수로 가면 command buffer에 있는 젤 앞에 있는 값 써서 프레임 만들고 send에서 보냄

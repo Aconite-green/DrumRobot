@@ -1056,6 +1056,103 @@ VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL)
     return Qf;
 }
 
+VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
+{
+    PartLength part_length;
+
+    float XR = pR(0), YR = pR(1), ZR = pR(2);
+    float XL = pL(0), YL = pL(1), ZL = pL(2);
+    float R1 = part_length.upperArm;
+    float R2 = part_length.lowerArm + part_length.stick;
+    float L1 = part_length.upperArm;
+    float L2 = part_length.lowerArm + part_length.stick;
+    float s = part_length.waist;
+    float z0 = part_length.height;
+
+    VectorXd Qf(9);
+
+    float shoulderXR = 0.5 * s * cos(theta0);
+    float shoulderYR = 0.5 * s * sin(theta0);
+    float shoulderXL = -0.5 * s * cos(theta0);
+    float shoulderYL = -0.5 * s * sin(theta0);
+
+    float theta01 = atan2(YR - shoulderYR, XR - shoulderXR);
+    float theta1 = theta01 - theta0;
+
+    if (theta1 < 0 || theta1 > 150.0 * M_PI / 180.0) // the1 범위 : 0deg ~ 150deg
+    {
+        cout << "IKFUN (q1) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    float theta02 = atan2(YL - shoulderYL, XL - shoulderXL);
+    float theta2 = theta02 - theta0;
+
+    if (theta2 < 30 * M_PI / 180.0 || theta2 > M_PI) // the2 범위 : 30deg ~ 180deg
+    {
+        cout << "IKFUN (q2) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    float zeta = z0 - ZR;
+    float r2 = (YR - shoulderYR)*(YR - shoulderYR) + (XR - shoulderXR)*(XR - shoulderXR); // r^2
+
+    float x = zeta*zeta + r2 - R1*R1 - R2*R2;
+    float y = sqrt(4.0*R1*R1*R2*R2 - x*x);
+
+    float theta4 = atan2(y,x);
+
+    if (theta4 < 0 || theta4 > 140.0 * M_PI / 180.0) // the4 범위 : 0deg ~ 120deg
+    {
+        cout << "IKFUN (q4) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    float theta34 = atan2(sqrt(r2), zeta);
+    float theta3 = theta34 - atan2(R2*sin(theta4), R1 + R2*cos(theta4));
+
+    if (theta3 < -45.0 * M_PI / 180.0 || theta3 > 90.0 * M_PI / 180.0) // the3 범위 : -45deg ~ 90deg
+    {
+        cout << "IKFUN (q3) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    zeta = z0 - ZL;
+    r2 = (YL - shoulderYL)*(YL - shoulderYL) + (XL - shoulderXL)*(XL - shoulderXL); // r^2
+
+    x = zeta*zeta + r2 - L1*L1 - L2*L2;
+    y = sqrt(4.0*L1*L1*L2*L2 - x*x);
+
+    float theta6 = atan2(y,x);
+
+    if (theta6 < 0 || theta6 > 140.0 * M_PI / 180.0) // the6 범위 : 0deg ~ 120deg
+    {
+        cout << "IKFUN (q6) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    float theta56 = atan2(sqrt(r2), zeta);
+    float theta5 = theta56 - atan2(L2*sin(theta6), L1 + L2*cos(theta6));
+
+    if (theta5 < -45.0 * M_PI / 180.0 || theta5 > 90.0 * M_PI / 180.0) // the5 범위 : -45deg ~ 90deg
+    {
+        cout << "IKFUN (q5) is not solved!!\n";
+        state.main = Main::Error;
+    }
+
+    Qf(0) = theta0;
+    Qf(1) = theta1;
+    Qf(2) = theta2;
+    Qf(3) = theta3;
+    Qf(4) = theta4;
+    Qf(5) = theta5;
+    Qf(6) = theta6;
+    Qf(7) = 0.0;
+    Qf(8) = 0.0;
+
+    return Qf;
+}
+
 vector<float> PathManager::fkfun()
 {
     getMotorPos();
@@ -1154,6 +1251,12 @@ void PathManager::generateTrajectory()
     float dt = canManager.deltaT;   // 0.005
     float n;
     float tm = 0.5, sm = 0.5, h = 0.1;
+
+    // q0
+    const float acc_max = 100.0;    // rad/s^2
+    VectorXd Q1 = VectorXd::Zero(9);
+    VectorXd Q2 = VectorXd::Zero(9);
+    VectorXd Vmax = VectorXd::Zero(9);
     
     // 연주 처음 시작할 때 Q1, Q2 계산
     if (line == 0)
@@ -1211,6 +1314,12 @@ void PathManager::generateTrajectory()
         Pf_L << output2(4), output2(5), output2(6);
     }
 
+    // q0
+    Q1 = ikfun_final(Pi_R, Pi_L);
+    Q2 = ikfun_final(Pf_R, Pf_L);
+    Vmax = cal_Vmax(Q1, Q2, acc_max, tf-ti);
+
+    // trajectory
     n = (tf - ti) / dt;
     for (int i = 0; i < n; i++)
     {
@@ -1225,6 +1334,8 @@ void PathManager::generateTrajectory()
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
 
+        Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
+
         P.push(Pt);
 
         std::string fileName;
@@ -1235,10 +1346,6 @@ void PathManager::generateTrajectory()
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
-
-    // command_cnt += n;
-    // std::string fileName = "CNT";
-    // fun.appendToCSV_DATA(fileName, n, tf, ti);
 }
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
@@ -1257,16 +1364,37 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
+    // // 데이터 기록
+    // for (int m = 0; m < 9; m++)
+    // {
+    //     std::string fileName = "solveIK_q" + to_string(m);
+    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    // }
+    q_ik = q;
+}
+
+void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
+{
+    VectorXd q(9);
+
+    VectorXd q_06 = ikfun_fixed_waist(pR1, pL1, q_lin(0));
+
+    for (int i = 0; i < 7; i++)
+    {
+        q(i) = q_06(i);
+    }
+
+    q(7) = 0;
+    q(8) = 0;
+
+    pushConmmandBuffer(q, false);
+
     // 데이터 기록
     for (int m = 0; m < 9; m++)
     {
         std::string fileName = "solveIK_q" + to_string(m);
-        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+        fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
     }
-
-    // command_cnt_ik++;
-    // std::string fileName = "CNT_IK";
-    // fun.appendToCSV_DATA(fileName, command_cnt_ik, P.size(), 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
