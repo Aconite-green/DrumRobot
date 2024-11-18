@@ -90,7 +90,14 @@ public:
 
     }Pos;
 
+    // 타격 각도 저장할 구조체
+    typedef struct {
+        float hitR; // 오른손 타격 각도
+        float hitL; // 왼손 타격 각도
+    }HitRL;
+
     queue<Pos> P; // 구조체 담아놓을 큐
+    queue<HitRL> Hit; // 타격 시 각도값 받는 큐
 
     /////////////////////////////////////////////////////////////////////////// AddStance
 
@@ -152,7 +159,7 @@ private:
     /////////////////////////////////////////////////////////////////////////// Init
     string trimWhitespace(const std::string &str);
 
-    string score_path = "../include/codes/testTrajectory.txt";        /// 악보 txt 파일 주소
+    string score_path = "../include/codes/testTrajectory_2.txt";        /// 악보 txt 파일 주소
     vector<float> time_arr; /// txt 악보의 시간간격 정보.
     MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right; /// 오른팔 시작 위치
@@ -166,16 +173,17 @@ private:
     VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
-
+    void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 
     /////////////////////////////////////////////////////////////////////////// Play
-    float timeScaling(float ti, float tf, float t, float tm, float sm);
-    float timeScaling_only3(float ti, float tf, float t);
-    VectorXd makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
-    void makeSinPath(float ti, float tf, float t);
 
-    const bool XYZm = true; // 궤적 생성 중 정지 여부
+    float timeScaling_33(float ti, float tf, float t, float tm, float sm);
+    float timeScaling_3(float ti, float tf, float t);
+    VectorXd makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
+    VectorXd makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
+
+    const bool XYZm = false; // 궤적 생성 중 정지 여부
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
     MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);

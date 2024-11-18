@@ -188,7 +188,7 @@ void PathManager::getMotorPos()
     }
 }
 
-float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
+float PathManager::timeScaling_33(float ti, float tf, float t, float tm, float sm)
 {
     float s;
 
@@ -232,7 +232,7 @@ float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
     return s;
 }
 
-float PathManager::timeScaling_only3(float ti, float tf, float t)
+float PathManager::timeScaling_3(float ti, float tf, float t)
 {
     float s;
 
@@ -259,12 +259,7 @@ float PathManager::timeScaling_only3(float ti, float tf, float t)
     return s;
 }
 
-void PathManager::makeSinPath(float ti, float tf, float t, )
-{
-    
-}
-
-VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
+VectorXd PathManager::makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
 {
     float xi = Pi(0), xf = Pf(0);
     float yi = Pi(1), yf = Pf(1);
@@ -330,6 +325,157 @@ VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, fl
     }
 
     return Ps;
+}
+
+VectorXd PathManager::makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
+{
+    float xi = Pi(0), xf = Pf(0);
+    float yi = Pi(1), yf = Pf(1);
+    float zi = Pi(2), zf = Pf(2);
+
+    float xm = xi + (xf - xi) * sm;
+    float ym = yi + (yf - yi) * sm;
+    float zm = std::max(zi, zf) + h;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd x;
+
+    VectorXd Ps;
+    Ps.resize(3);
+
+    A.resize(3,3);
+    b.resize(3,1);
+
+    if (Pi == Pf)
+    {
+        Ps(0) = xi;
+        Ps(1) = yi;
+        Ps(2) = zi;
+    }
+    else
+    {
+        if (s[0] < sm)
+        {
+            if(XYZm)
+            {
+                // x, y, z 모두 중간점에서 정지
+                // x
+                Ps(0) = xi + (xm - xi) * s[0] / sm;
+                // y
+                Ps(1) = yi + (ym - yi) * s[0] / sm;
+            }
+            else
+            {
+                // z 만 중간점에서 정지
+                // x
+                Ps(0) = xi + (xf - xi) * s[1];
+                // y
+                Ps(1) = yi + (yf - yi) * s[1];
+            }
+
+            A << 1, 0, 0,
+            1, sm, sm*sm,
+            0, 1, 2*sm;
+
+            b << zi, zm, 0;
+
+            A_1 = A.inverse();
+            x = A_1 * b;
+
+            Ps(2) = x(0,0) + x(1,0) * s[0] + x(2,0) * s[0] * s[0];
+        }
+        else
+        {
+            if(XYZm)
+            {
+                // x, y, z 모두 중간점에서 정지
+                // x
+                Ps(0) = xm + (xf - xm) * (s[0] - sm) / (1 - sm);
+                // y
+                Ps(1) = ym + (yf - ym) * (s[0] - sm) / (1 - sm);
+            }
+            else
+            {
+                // z 만 중간점에서 정지
+                // x
+                Ps(0) = xi + (xf - xi) * s[1];
+                // y
+                Ps(1) = yi + (yf - yi) * s[1];
+            }
+
+            A << 1, sm, sm*sm,
+            1, 1, 1,
+            0, 1, 2*sm;
+
+            b << zm, zf, 0;
+
+            A_1 = A.inverse();
+            x = A_1 * b;
+
+            Ps(2) = x(0,0) + x(1,0) * s[0] + x(2,0) * s[0] * s[0];
+        }
+    }
+
+    return Ps;
+}
+
+void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
+{
+    HitRL A_RL;
+
+    float val = 0;
+    float hitR = 0;
+    float hitL = 0;
+
+    MatrixXd sts_R = AA.row(1);
+    MatrixXd sts_L = AA.row(2);
+
+    float t0 = tf - ti;
+    float t1 = 0.1 * t0;
+
+    float A1 = 0.1;
+    float w1 = (2 * M_PI) / (2 * t1);
+    float A2 = 1;
+    float w2 = (2 * M_PI) / (2 * (t0 + t1));
+
+
+    if (t < t1) // 타격
+    {
+        val = A1 * sin(w1 * (t + t1));
+    }
+    else if (t >= t1) // 스윙
+    {
+        val = A2 * sin(w2 * t);
+    }
+
+    if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
+    {
+        hitR = val;
+        hitL = 0;
+    }
+    else if (sts_R(0,1) != 1 && sts_L(0,1) == 1) // 왼손 히트
+    {
+        hitR = 0;
+        hitL = val;
+    }
+    else if (sts_R(0,1) == 1 && sts_L(0,1) == 1) // 둘 다 히트
+    {
+        hitR = val;
+        hitL = val;
+    }
+    else // 히트 x
+    {
+        hitR = 0;
+        hitL = 0;
+    }
+
+    A_RL.hitR = hitR;
+    A_RL.hitL = hitL;
+
+    Hit.push(A_RL);
+
 }
 
 string PathManager::trimWhitespace(const std::string &str)
@@ -1054,6 +1200,7 @@ void PathManager::generateTrajectory()
     MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
     MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
+    MatrixXd State(3, 4);
 
     VectorXd output1, output2;
     VectorXd Pi_R = VectorXd::Zero(3);
@@ -1084,6 +1231,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = AA40;
     }
     else if (line == 1)
     {
@@ -1102,6 +1251,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = AA41;
     }
     else if (line > 1)
     {
@@ -1120,6 +1271,8 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
+
+        State = BB;
     }
 
     n = (tf - ti) / dt;
@@ -1130,19 +1283,21 @@ void PathManager::generateTrajectory()
         float s[2] = {0};   // s[0] : 3차 + 3차
                             // s[1] : 3차
 
-        s[0] = timeScaling(0.0f, tf-ti, t, tm*(tf-ti), sm);
-        s[1] = timeScaling_only3(0.0f, tf-ti, t);
+        s[0] = timeScaling_33(0.0f, tf-ti, t, tm*(tf-ti), sm);
+        s[1] = timeScaling_3(0.0f, tf-ti, t);
 
-        Pt.pR = makePath(Pi_R, Pf_R, s, sm, h);
-        Pt.pL = makePath(Pi_L, Pf_L, s, sm, h);
+        Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
+        Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
+
+        makeHitPath(ti, tf, t, State);
 
         P.push(Pt);
 
-        // std::string fileName;
-        // fileName = "Trajectory_R";
-        // fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-        // fileName = "Trajectory_L";
-        // fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
@@ -1154,6 +1309,8 @@ void PathManager::generateTrajectory()
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
+    HitRL CurRL;
+
     VectorXd q(9);
 
     VectorXd q_06 = ikfun_final(pR1, pL1);
@@ -1163,17 +1320,19 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
         q(i) = q_06(i);
     }
 
-    q(7) = 0;
-    q(8) = 0;
+    CurRL = Hit.front(); Hit.pop();
+    
+    q(7) = CurRL.hitR;
+    q(8) = CurRL.hitL;
 
     pushConmmandBuffer(q, false);
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    // }
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    }
 
     // command_cnt_ik++;
     // std::string fileName = "CNT_IK";
