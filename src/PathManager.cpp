@@ -436,9 +436,9 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
     float t1 = 0.1 * t0;
 
     float A1 = 0.1;
-    float w1 = (2 * M_PI) / (2 * t1);
+    float w1 =  M_PI / t1;
     float A2 = 1;
-    float w2 = (2 * M_PI) / (2 * (t0 + t1));
+    float w2 =  M_PI / (t0 - t1);
 
 
     if (t < t1) // 타격
@@ -447,7 +447,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
     }
     else if (t >= t1) // 스윙
     {
-        val = A2 * sin(w2 * t);
+        val = A2 * sin(w2 * (t - t1));
     }
 
     if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
