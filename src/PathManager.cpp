@@ -1445,8 +1445,6 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
 {
-    HitRL CurRL;
-
     VectorXd q(9);
 
     VectorXd q_06 = ikfun_fixed_waist(pR1, pL1, q_lin(0));
@@ -1456,10 +1454,8 @@ void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_li
         q(i) = q_06(i);
     }
 
-    CurRL = Hit.front(); Hit.pop();
-    
-    q(7) = CurRL.hitR;
-    q(8) = CurRL.hitL;
+    q(7) = 0.0;
+    q(8) = 0.0;
 
     pushConmmandBuffer(q, false);
 
