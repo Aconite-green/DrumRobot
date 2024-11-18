@@ -188,7 +188,7 @@ void PathManager::getMotorPos()
     }
 }
 
-float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
+float PathManager::timeScaling_33(float ti, float tf, float t, float tm, float sm)
 {
     float s;
 
@@ -232,7 +232,7 @@ float PathManager::timeScaling(float ti, float tf, float t, float tm, float sm)
     return s;
 }
 
-float PathManager::timeScaling_only3(float ti, float tf, float t)
+float PathManager::timeScaling_3(float ti, float tf, float t)
 {
     float s;
 
@@ -259,7 +259,7 @@ float PathManager::timeScaling_only3(float ti, float tf, float t)
     return s;
 }
 
-VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
+VectorXd PathManager::makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
 {
     float xi = Pi(0), xf = Pf(0);
     float yi = Pi(1), yf = Pf(1);
@@ -321,6 +321,100 @@ VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s[], float sm, fl
                 // z
                 Ps(2) = zm + (zf - zm) * (s[0] - sm) / (1 - sm);
             }
+        }
+    }
+
+    return Ps;
+}
+
+VectorXd PathManager::makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)
+{
+    float xi = Pi(0), xf = Pf(0);
+    float yi = Pi(1), yf = Pf(1);
+    float zi = Pi(2), zf = Pf(2);
+
+    float xm = xi + (xf - xi) * sm;
+    float ym = yi + (yf - yi) * sm;
+    float zm = std::max(zi, zf) + h;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd x;
+
+    VectorXd Ps;
+    Ps.resize(3);
+
+    A.resize(3,3);
+    b.resize(3,1);
+
+    if (Pi == Pf)
+    {
+        Ps(0) = xi;
+        Ps(1) = yi;
+        Ps(2) = zi;
+    }
+    else
+    {
+        if (s[0] < sm)
+        {
+            if(XYZm)
+            {
+                // x, y, z 모두 중간점에서 정지
+                // x
+                Ps(0) = xi + (xm - xi) * s[0] / sm;
+                // y
+                Ps(1) = yi + (ym - yi) * s[0] / sm;
+            }
+            else
+            {
+                // z 만 중간점에서 정지
+                // x
+                Ps(0) = xi + (xf - xi) * s[1];
+                // y
+                Ps(1) = yi + (yf - yi) * s[1];
+            }
+
+            A << 1, 0, 0,
+            1, sm, sm*sm,
+            0, 1, 2*sm;
+
+            b << zi, zm, 0;
+
+            A_1 = A.inverse();
+            x = A_1 * b;
+
+            Ps(2) = x(0,0) + x(1,0) * s[0] + x(2,0) * s[0] * s[0];
+        }
+        else
+        {
+            if(XYZm)
+            {
+                // x, y, z 모두 중간점에서 정지
+                // x
+                Ps(0) = xm + (xf - xm) * (s[0] - sm) / (1 - sm);
+                // y
+                Ps(1) = ym + (yf - ym) * (s[0] - sm) / (1 - sm);
+            }
+            else
+            {
+                // z 만 중간점에서 정지
+                // x
+                Ps(0) = xi + (xf - xi) * s[1];
+                // y
+                Ps(1) = yi + (yf - yi) * s[1];
+            }
+
+            A << 1, sm, sm*sm,
+            1, 1, 1,
+            0, 1, 2*sm;
+
+            b << zm, zf, 0;
+
+            A_1 = A.inverse();
+            x = A_1 * b;
+
+            Ps(2) = x(0,0) + x(1,0) * s[0] + x(2,0) * s[0] * s[0];
         }
     }
 
@@ -1125,19 +1219,19 @@ void PathManager::generateTrajectory()
         float s[2] = {0};   // s[0] : 3차 + 3차
                             // s[1] : 3차
 
-        s[0] = timeScaling(0.0f, tf-ti, t, tm*(tf-ti), sm);
-        s[1] = timeScaling_only3(0.0f, tf-ti, t);
+        s[0] = timeScaling_33(0.0f, tf-ti, t, tm*(tf-ti), sm);
+        s[1] = timeScaling_3(0.0f, tf-ti, t);
 
-        Pt.pR = makePath(Pi_R, Pf_R, s, sm, h);
-        Pt.pL = makePath(Pi_L, Pf_L, s, sm, h);
+        Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
+        Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
 
         P.push(Pt);
 
-        // std::string fileName;
-        // fileName = "Trajectory_R";
-        // fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-        // fileName = "Trajectory_L";
-        // fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
@@ -1163,12 +1257,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    // }
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    }
 
     // command_cnt_ik++;
     // std::string fileName = "CNT_IK";
