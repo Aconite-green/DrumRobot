@@ -1538,12 +1538,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    // }
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    }
     q_ik = q;
 }
 
