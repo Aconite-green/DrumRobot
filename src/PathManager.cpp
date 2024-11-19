@@ -452,23 +452,114 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
 
     if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
     {
-        hitR = val;
-        hitL = 0;
+        if (t < t1)
+        {
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = 0;
+            }
+
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = 0;
+            }
+        }
+        else
+        {
+            hitR = val; hitL = 0;
+            prevR = 1; prevL = 0;
+        }
+        
     }
     else if (sts_R(0,1) != 1 && sts_L(0,1) == 1) // 왼손 히트
     {
-        hitR = 0;
-        hitL = val;
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = 0;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = 0;
+            }
+        }
+        else
+        {
+            hitR = 0; hitL = val;
+            prevR = 0; prevL = 1;
+        }
     }
     else if (sts_R(0,1) == 1 && sts_L(0,1) == 1) // 둘 다 히트
     {
-        hitR = val;
-        hitL = val;
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = 0;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = 0;
+            }
+        }
+        else
+        {
+            hitR = val;
+            hitL = val;
+            prevR = 1; prevL = 1;
+        }
     }
     else // 히트 x
     {
-        hitR = 0;
-        hitL = 0;
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = 0;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = 0;
+            }
+        }
+        else
+        {
+            hitR = 0; hitL = 0;
+            prevR = 0; prevL = 0;
+        }
     }
 
     A_RL.hitR = hitR;
@@ -1434,12 +1525,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    // }
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    }
     q_ik = q;
 }
 

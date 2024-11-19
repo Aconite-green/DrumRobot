@@ -99,6 +99,10 @@ public:
         float hitL; // 왼손 타격 각도
     }HitRL;
 
+    // 이전에 타격이었는지 확인
+    bool prevR = 0; 
+    bool prevL = 0;
+
     queue<Pos> P; // 구조체 담아놓을 큐
     queue<HitRL> Hit; // 타격 시 각도값 받는 큐
 

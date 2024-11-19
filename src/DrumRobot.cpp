@@ -447,7 +447,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
 
         pathManager.solveIK(nextPos.pR, nextPos.pL);
 
-        pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
+        // pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
@@ -1222,7 +1222,7 @@ void DrumRobot::initializeMotors()
             // 각 모터 이름에 따른 멤버 변수 설정
             if (motor_pair.first == "R_wrist")
             {
-                maxonMotor->cwDir = -1.0f;
+                maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -108deg
                 maxonMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 135deg
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword
