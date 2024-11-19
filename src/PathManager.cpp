@@ -434,20 +434,33 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
 
     float t0 = tf - ti;
     float t1 = 0.1 * t0;
+    float t2 = 0.3 * t0;
+    float tm = 0.6 * (t0 - t1) + t1;
 
-    float A1 = 0.1;
-    float w1 =  M_PI / t1;
+    float A1 = wristReadyAng;
+    float w1 = (3 * M_PI) / (2 * t1);
     float A2 = 1;
-    float w2 =  M_PI / (t0 - t1);
+    float w2 = M_PI / (2 * (tm - t2));
+    float A3 = 1.1;
+    float w3 = M_PI / (2 * (t0 - tm));
 
 
-    if (t < t1) // 타격
+
+    if (t < t1) // 접촉
     {
-        val = A1 * sin(w1 * (t + t1));
+        val = -1.0 * A1 * sin(w1 * t);
     }
-    else if (t >= t1) // 스윙
+    else if (t >= t1 && t < t2) // 대기
     {
-        val = A2 * sin(w2 * (t - t1));
+        val = wristReadyAng;
+    }
+    else if (t >= t2 && t < tm) // 스윙
+    {
+        val = A2 * sin(w2 * (t - t2)) + wristReadyAng;
+    }
+    else if (t >= tm) // 타격
+    {
+        val = A3 * cos(w3 * (t - tm));
     }
 
     if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
@@ -460,7 +473,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitR = 0;
+                hitR = wristReadyAng;
             }
 
             if (prevL)
@@ -469,12 +482,12 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitL = 0;
+                hitL = wristReadyAng;
             }
         }
         else
         {
-            hitR = val; hitL = 0;
+            hitR = val; hitL = wristReadyAng;
             prevR = 1; prevL = 0;
         }
         
@@ -489,7 +502,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitL = 0;
+                hitL = wristReadyAng;
             }
             if (prevR)
             {
@@ -497,12 +510,12 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitR = 0;
+                hitR = wristReadyAng;
             }
         }
         else
         {
-            hitR = 0; hitL = val;
+            hitR = wristReadyAng; hitL = val;
             prevR = 0; prevL = 1;
         }
     }
@@ -516,7 +529,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitL = 0;
+                hitL = wristReadyAng;
             }
             if (prevR)
             {
@@ -524,7 +537,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitR = 0;
+                hitR = wristReadyAng;
             }
         }
         else
@@ -544,7 +557,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitL = 0;
+                hitL = wristReadyAng;
             }
             if (prevR)
             {
@@ -552,12 +565,12 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
             }
             else
             {
-                hitR = 0;
+                hitR = wristReadyAng;
             }
         }
         else
         {
-            hitR = 0; hitL = 0;
+            hitR = wristReadyAng; hitL = wristReadyAng;
             prevR = 0; prevL = 0;
         }
     }
@@ -1933,6 +1946,6 @@ void PathManager::SetReadyAng()
     {
         readyArr[i] = qk(i);
     }
-    readyArr[7] = 0.0;
-    readyArr[8] = 0.0;
+    readyArr[7] = wristReadyAng;
+    readyArr[8] = wristReadyAng;
 }
