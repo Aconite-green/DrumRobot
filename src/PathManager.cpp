@@ -320,7 +320,7 @@ void PathManager::generateTrajectory()
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
         
-        makeHitPath(ti, tf, t, State);
+        makeHitPath_test(ti, tf, t, State);
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
@@ -1008,16 +1008,18 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     MatrixXd sts_L = AA.row(2);
 
     float t0 = tf - ti;
-    float t1 = 0.07 * t0;
-    float t2 = 0.3 * t0;
-    float tm = 0.8 * (t0 - t1) + t1;
+    float t1 = 0.1 * t0;
+    float t2 = 0.15 * t0;
+    float t3 = 0.4 * t0;
+    float tm = 0.8 * t0;
 
-    float A1 = wristReadyAng;
-    float w1 = (3 * M_PI) / (2 * t1);
-    float A2 = 1;
-    float w2 = M_PI / (2 * (tm - t2));
-    float A3 = A2 + wristReadyAng;
-    float w3 = M_PI / (2 * (t0 - tm));
+    float A1 = 0.15;
+    float Am = 0.7;
+    
+    float w1 = M_PI / t1;
+    float w2 = M_PI / (2 * (t2 - t1));
+    float w3 = M_PI / (2 * (tm - t3));
+    float w4 = M_PI / (2 * (t0 - tm));
 
 
 
@@ -1027,20 +1029,24 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     }
     else if (t >= t1 && t < t2) // 대기
     {
+        val = wristReadyAng * sin(w2 * (t - t1));
+    }
+    else if (t >= t2 && t < t3) // 스윙
+    {
         val = wristReadyAng;
     }
-    else if (t >= t2 && t < tm) // 스윙
+    else if (t >= t3 && t < tm) // 대기
     {
-        val = A2 * sin(w2 * (t - t2)) + wristReadyAng;
+        val = (Am - wristReadyAng) * sin(w3 * (t - t3)) + wristReadyAng;
     }
     else if (t >= tm) // 타격
     {
-        val = A3 * cos(w3 * (t - tm));
+        val = Am * cos(w4 * (t - tm));
     }
 
     if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
     {
-        if (t < t1)
+        if (t < t2)
         {
             if (prevR)
             {
@@ -1069,7 +1075,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     }
     else if (sts_R(0,1) != 1 && sts_L(0,1) == 1) // 왼손 히트
     {
-        if (t < t1)
+        if (t < t2)
         {
             if (prevL)
             {
@@ -1096,7 +1102,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     }
     else if (sts_R(0,1) == 1 && sts_L(0,1) == 1) // 둘 다 히트
     {
-        if (t < t1)
+        if (t < t2)
         {
             if (prevL)
             {
@@ -1124,7 +1130,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     }
     else // 히트 x
     {
-        if (t < t1)
+        if (t < t2)
         {
             if (prevL)
             {
