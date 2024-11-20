@@ -214,96 +214,54 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
 
 void PathManager::generateTrajectory()
 {
-    MatrixXd A30;  // 크기가 19x3인 2차원 벡터
-    MatrixXd A31;  // 크기가 19x3인 2차원 벡터
-    MatrixXd AA40; // 크기가 3x4인 2차원 벡터
-    MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
-    MatrixXd B;    // 크기가 19x3인 2차원 벡터
-    MatrixXd BB;   // 크기가 3x4인 2차원 벡터
-    MatrixXd State(3, 2);
-
-    VectorXd output1, output2;
-    VectorXd Pi_R = VectorXd::Zero(3);
-    VectorXd Pi_L = VectorXd::Zero(3);
-    VectorXd Pf_R = VectorXd::Zero(3);
-    VectorXd Pf_L = VectorXd::Zero(3);
-    float ti = 0, tf = 0;
-
+    // parameter
+    float tm = 0.5, sm = 0.5, h = 0.1;
     float dt = canManager.deltaT;   // 0.005
     float n;
-    float tm = 0.5, sm = 0.5, h = 0.1;
+
+    // inst
+    std::vector<float> t(time_arr.begin() + line, time_arr.begin() + line + 2);
+    MatrixXd inst = inst_arr.middleCols(line, 2);
+    VectorXd inst_i = inst.col(0);
+    VectorXd inst_f = inst.col(1);
+
+    // position, state
+    MatrixXd State(3, 2);
+    VectorXd Pi(6), Pf(6);
+    VectorXd Pi_R(3);
+    VectorXd Pi_L(3);
+    VectorXd Pf_R(3);
+    VectorXd Pf_L(3);
+    float ti = 0, tf = 0;
 
     // q0
     const float acc_max = 100.0;    // rad/s^2
-    VectorXd Q1 = VectorXd::Zero(9);
-    VectorXd Q2 = VectorXd::Zero(9);
-    VectorXd Vmax = VectorXd::Zero(9);
-    
-    // 연주 처음 시작할 때 Q1, Q2 계산
-    if (line == 0)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
+    VectorXd Q1(9);
+    VectorXd Q2(9);
+    VectorXd Vmax(9);
 
-        VectorXd A1 = A30.col(0);
-        VectorXd A2 = A30.col(1);
-        output1 = pos_madi_fun(A1);
-        output2 = pos_madi_fun(A2);
+    // position, state
+    getState(t, inst, State);
+    Pi = getInstrumentPosition(inst_i);
+    Pf = getInstrumentPosition(inst_f);
+    ti = t[0];
+    tf = t[1];
 
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-    else if (line == 1)
-    {
-        std::vector<float> t2(time_arr.begin(), time_arr.begin() + 5);
-        MatrixXd inst2 = inst_arr.middleCols(0, 5);
-        itms0_fun(t2, inst2, A30, A31, AA40, AA41);
-
-        VectorXd A1 = A31.col(0);
-        VectorXd A2 = A31.col(1);
-        output1 = pos_madi_fun(A1);
-        output2 = pos_madi_fun(A2);
-
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-    else if (line > 1)
-    {
-        std::vector<float> t2(time_arr.begin() + line - 1, time_arr.begin() + line + 4);
-        MatrixXd inst2 = inst_arr.middleCols(line - 1, 5);
-        itms_fun(t2, inst2, B, BB, inst_now);
-
-        VectorXd B1 = B.col(0);
-        VectorXd B2 = B.col(1);
-        output1 = pos_madi_fun(B1);
-        output2 = pos_madi_fun(B2);
-
-        ti = output1(0);
-        tf = output2(0);
-        Pi_R << output1(1), output1(2), output1(3);
-        Pi_L << output1(4), output1(5), output1(6);
-        Pf_R << output2(1), output2(2), output2(3);
-        Pf_L << output2(4), output2(5), output2(6);
-    }
-
-    // state
-    std::vector<float> t3(time_arr.begin() + line, time_arr.begin() + line + 1);
-    MatrixXd inst3 = inst_arr.middleCols(line, 2);
-    getState(t3, inst3, State);
+    Pi_R << Pi(0), Pi(1), Pi(2);
+    Pi_L << Pi(3), Pi(4), Pi(5);
+    Pf_R << Pf(0), Pf(1), Pf(2);
+    Pf_L << Pf(3), Pf(4), Pf(5);
 
     // q0
     Q1 = ikfun_final(Pi_R, Pi_L);
     Q2 = ikfun_final(Pf_R, Pf_L);
     Vmax = cal_Vmax(Q1, Q2, acc_max, tf-ti);
+
+    std::cout << "\nti : " << ti << "\ttf : " << tf
+    << "\nPi_R" << Pi_R
+    << "\nPi_L" << Pi_L
+    << "\nPf_R" << Pf_R
+    << "\nPf_L" << Pf_L;
 
     // trajectory
     n = (tf - ti) / dt;
@@ -1172,6 +1130,35 @@ void PathManager::getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state)
 
     state.resize(3, 2);
     state << t3[0], t3[1], norm_R0, norm_R1, norm_L0, norm_L1;
+}
+
+VectorXd PathManager::getInstrumentPosition(VectorXd &A)
+{
+    VectorXd inst_right = A.segment(0, 9);
+    VectorXd inst_left = A.segment(9, 9);
+
+    if (inst_right.sum() == 0)
+    {
+        inst_right = inst_now_R;
+    }
+
+    if (inst_left.sum() == 0)
+    {
+        inst_left = inst_now_L; 
+    }
+
+    VectorXd inst_p(18);
+    inst_p << inst_right,
+        inst_left;
+
+    MatrixXd combined(6, 18);
+    combined << right_drum_position, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_drum_position;
+    MatrixXd p = combined * inst_p;
+
+    inst_now_R = inst_right;
+    inst_now_L = inst_left;
+
+    return p;
 }
 
 VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
