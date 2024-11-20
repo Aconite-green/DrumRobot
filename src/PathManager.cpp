@@ -974,13 +974,13 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     float t3 = 0.4 * t0;
     float tm = 0.8 * t0;
 
-    float A1 = 0.15;
-    float Am = 0.7;
+    float A1 = 0.15;    // 타격 시 내려가는 정도
+    float Am = (4 * t0) / 3 + wristReadyAng; // 스윙 시에 올라가는 정도
     
-    float w1 = M_PI / t1;
-    float w2 = M_PI / (2 * (t2 - t1));
-    float w3 = M_PI / (2 * (tm - t3));
-    float w4 = M_PI / (2 * (t0 - tm));
+    float w1 = M_PI / t1;   // 0 ~ t1
+    float w2 = M_PI / (2 * (t2 - t1));  // t1 ~ t2
+    float w3 = M_PI / (2 * (tm - t3));  // t3 ~ tm
+    float w4 = M_PI / (2 * (t0 - tm));  // tm ~ t0
 
 
 
