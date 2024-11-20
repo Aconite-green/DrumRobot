@@ -95,6 +95,9 @@ void PathManager::GetMusicSheet()
     default_right << 0, 0, 1, 0, 0, 0, 0, 0, 0;
     default_left << 0, 0, 1, 0, 0, 0, 0, 0, 0;
 
+    inst_now_R = default_right;
+    inst_now_L = default_left;
+
     ifstream file(score_path);
     if (!file.is_open())
         cerr << "Error opening file." << endl;
