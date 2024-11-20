@@ -196,7 +196,7 @@ private:
 
     VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
 
-    void getState(vector<float> &t2, MatrixXd &inst2, MatrixXd &state);
+    void getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state);
 
     const bool XYZm = true; // 궤적 생성 중 정지 여부
 

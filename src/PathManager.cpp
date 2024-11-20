@@ -125,17 +125,17 @@ void PathManager::GetMusicSheet()
         }
         else
         {
-            VectorXd inst_arr_R = VectorXd::Zero(9), inst_arr_L = VectorXd::Zero(9);
+            VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
             VectorXd inst_col = VectorXd::Zero(18);
 
             if (columns[2] != "0")
-                inst_arr_R(instrument_mapping[columns[2]]) = 1.0;
+                inst_R(instrument_mapping[columns[2]]) = 1.0;
             if (columns[3] != "0")
-                inst_arr_L(instrument_mapping[columns[3]]) = 1.0;
+                inst_L(instrument_mapping[columns[3]]) = 1.0;
 
             time += stod(columns[1]) * 100.0 / bpm;
             time_arr.push_back(time);
-            inst_col << inst_arr_R, inst_arr_L;
+            inst_col << inst_R, inst_L;
             inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
             inst_arr.col(inst_arr.cols() - 1) = inst_col;
         }
@@ -155,7 +155,8 @@ void PathManager::GetMusicSheet()
     inst_arr.col(inst_arr.cols() - 2) = inst_col;
     inst_arr.col(inst_arr.cols() - 3) = inst_col;
 
-    total = time_arr.size() - 3;
+    // total = time_arr.size() - 3;
+    total = lineIndex - 1;
 }
 
 void PathManager::SetReadyAng()
@@ -219,7 +220,7 @@ void PathManager::generateTrajectory()
     MatrixXd AA41; // 크기가 3x4인 2차원 벡터 // 3x3
     MatrixXd B;    // 크기가 19x3인 2차원 벡터
     MatrixXd BB;   // 크기가 3x4인 2차원 벡터
-    MatrixXd State(3, 4);
+    MatrixXd State(3, 2);
 
     VectorXd output1, output2;
     VectorXd Pi_R = VectorXd::Zero(3);
@@ -256,8 +257,6 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
-
-        getState(t2, inst2, State);
     }
     else if (line == 1)
     {
@@ -276,8 +275,6 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
-
-        getState(t2, inst2, State);
     }
     else if (line > 1)
     {
@@ -296,9 +293,12 @@ void PathManager::generateTrajectory()
         Pi_L << output1(4), output1(5), output1(6);
         Pf_R << output2(1), output2(2), output2(3);
         Pf_L << output2(4), output2(5), output2(6);
-
-        getState(t2, inst2, State);
     }
+
+    // state
+    std::vector<float> t3(time_arr.begin() + line, time_arr.begin() + line + 1);
+    MatrixXd inst3 = inst_arr.middleCols(line, 2);
+    getState(t3, inst3, State);
 
     // q0
     Q1 = ikfun_final(Pi_R, Pi_L);
@@ -1157,9 +1157,15 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
 
 }
 
-void PathManager::getState(vector<float> &t2, MatrixXd &inst2, MatrixXd &state)
+void PathManager::getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state)
 {
+    float norm_R0 = inst3.block(0, 0, 9, 1).norm();
+    float norm_L0 = inst3.block(9, 0, 9, 1).norm();
+    float norm_R1 = inst3.block(0, 1, 9, 1).norm();
+    float norm_L1 = inst3.block(9, 1, 9, 1).norm();
 
+    state.resize(3, 2);
+    state << t3[0], t3[1], norm_R0, norm_R1, norm_L0, norm_L1;
 }
 
 VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
@@ -2079,7 +2085,7 @@ void PathManager::getMotorPos()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*                               SYSTEM FUNCTION                              */
+/*                            SYSTEM FUNCTION                                 */
 ////////////////////////////////////////////////////////////////////////////////
 
 string PathManager::trimWhitespace(const std::string &str)
