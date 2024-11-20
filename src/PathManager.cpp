@@ -582,6 +582,167 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
 
 }
 
+void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
+{
+    HitRL A_RL;
+
+    float val = 0;
+    float hitR = 0;
+    float hitL = 0;
+
+    MatrixXd sts_R = AA.row(1);
+    MatrixXd sts_L = AA.row(2);
+
+    float t0 = tf - ti;
+    float t1 = 0.07 * t0;
+    float t2 = 0.3 * t0;
+    float tm = 0.8 * (t0 - t1) + t1;
+
+    float A1 = wristReadyAng;
+    float w1 = (3 * M_PI) / (2 * t1);
+    float A2 = 1;
+    float w2 = M_PI / (2 * (tm - t2));
+    float A3 = A2 + wristReadyAng;
+    float w3 = M_PI / (2 * (t0 - tm));
+
+
+
+    if (t < t1) // 접촉
+    {
+        val = -1.0 * A1 * sin(w1 * t);
+    }
+    else if (t >= t1 && t < t2) // 대기
+    {
+        val = wristReadyAng;
+    }
+    else if (t >= t2 && t < tm) // 스윙
+    {
+        val = A2 * sin(w2 * (t - t2)) + wristReadyAng;
+    }
+    else if (t >= tm) // 타격
+    {
+        val = A3 * cos(w3 * (t - tm));
+    }
+
+    if(sts_R(0,1) == 1 && sts_L(0,1) != 1) // 오른손 히트
+    {
+        if (t < t1)
+        {
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = wristReadyAng;
+            }
+
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = wristReadyAng;
+            }
+        }
+        else
+        {
+            hitR = val; hitL = wristReadyAng;
+            prevR = 1; prevL = 0;
+        }
+        
+    }
+    else if (sts_R(0,1) != 1 && sts_L(0,1) == 1) // 왼손 히트
+    {
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = wristReadyAng;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = wristReadyAng;
+            }
+        }
+        else
+        {
+            hitR = wristReadyAng; hitL = val;
+            prevR = 0; prevL = 1;
+        }
+    }
+    else if (sts_R(0,1) == 1 && sts_L(0,1) == 1) // 둘 다 히트
+    {
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = wristReadyAng;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = wristReadyAng;
+            }
+        }
+        else
+        {
+            hitR = val;
+            hitL = val;
+            prevR = 1; prevL = 1;
+        }
+    }
+    else // 히트 x
+    {
+        if (t < t1)
+        {
+            if (prevL)
+            {
+                hitL = val;
+            }
+            else
+            {
+                hitL = wristReadyAng;
+            }
+            if (prevR)
+            {
+                hitR = val;
+            }
+            else
+            {
+                hitR = wristReadyAng;
+            }
+        }
+        else
+        {
+            hitR = wristReadyAng; hitL = wristReadyAng;
+            prevR = 0; prevL = 0;
+        }
+    }
+
+    A_RL.hitR = hitR;
+    A_RL.hitL = hitL;
+
+    Hit.push(A_RL);
+
+}
+
 string PathManager::trimWhitespace(const std::string &str)
 {
     size_t first = str.find_first_not_of(" \t");
