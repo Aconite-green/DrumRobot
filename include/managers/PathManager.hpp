@@ -168,7 +168,7 @@ private:
     /////////////////////////////////////////////////////////////////////////// Init
     string trimWhitespace(const std::string &str);
 
-    string score_path = "../include/codes/testTrajectory.txt";        /// 악보 txt 파일 주소
+    string score_path = "../include/codes/testTrajectory_2.txt";        /// 악보 txt 파일 주소
     vector<float> time_arr; /// txt 악보의 시간간격 정보.
     MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right; /// 오른팔 시작 위치
@@ -188,7 +188,6 @@ private:
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 
     /////////////////////////////////////////////////////////////////////////// Play
-
     float timeScaling_33(float ti, float tf, float t, float tm, float sm);
     float timeScaling_3(float ti, float tf, float t);
     VectorXd makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
@@ -197,6 +196,10 @@ private:
     VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
 
     void getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state);
+    VectorXd getInstrumentPosition(VectorXd &A);
+
+    VectorXd inst_now_R;
+    VectorXd inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
 
     const bool XYZm = true; // 궤적 생성 중 정지 여부
 
