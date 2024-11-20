@@ -1014,7 +1014,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     float tm = 0.8 * t0;
 
     float A1 = 0.15;
-    float Am = 0.7;
+    float Am = (4 * t0) / 3 + wristReadyAng;
     
     float w1 = M_PI / t1;
     float w2 = M_PI / (2 * (t2 - t1));

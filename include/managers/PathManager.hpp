@@ -103,7 +103,7 @@ public:
     bool prevR = 0; 
     bool prevL = 0;
 
-    float wristReadyAng = 0.3;
+    float wristReadyAng = 0.2;
 
     queue<Pos> P; // 구조체 담아놓을 큐
     queue<HitRL> Hit; // 타격 시 각도값 받는 큐
