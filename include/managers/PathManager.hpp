@@ -168,7 +168,7 @@ private:
     /////////////////////////////////////////////////////////////////////////// Init
     string trimWhitespace(const std::string &str);
 
-    string score_path = "../include/codes/testTrajectory_2.txt";        /// 악보 txt 파일 주소
+    string score_path = "../include/codes/testTrajectory.txt";        /// 악보 txt 파일 주소
     vector<float> time_arr; /// txt 악보의 시간간격 정보.
     MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
     VectorXd default_right; /// 오른팔 시작 위치
