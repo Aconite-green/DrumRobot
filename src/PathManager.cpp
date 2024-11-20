@@ -433,15 +433,15 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
     MatrixXd sts_L = AA.row(2);
 
     float t0 = tf - ti;
-    float t1 = 0.1 * t0;
+    float t1 = 0.07 * t0;
     float t2 = 0.3 * t0;
-    float tm = 0.6 * (t0 - t1) + t1;
+    float tm = 0.8 * (t0 - t1) + t1;
 
     float A1 = wristReadyAng;
     float w1 = (3 * M_PI) / (2 * t1);
     float A2 = 1;
     float w2 = M_PI / (2 * (tm - t2));
-    float A3 = 1.1;
+    float A3 = A2 + wristReadyAng;
     float w3 = M_PI / (2 * (t0 - tm));
 
 
