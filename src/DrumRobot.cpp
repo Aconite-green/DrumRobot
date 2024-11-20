@@ -420,11 +420,12 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
             state.play = PlaySub::TimeCheck;
             flag_setting("getHome");
             pathManager.line = 0;
+            usleep(500000);     // 0.5s
         }
         
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
-            std::cout << "\n//////////////////////////////// line : " << pathManager.line << ", total : " << pathManager.total << "\n";
+            std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
             pathManager.generateTrajectory();
             pathManager.line++;
         }
