@@ -196,6 +196,8 @@ private:
 
     VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
 
+    void getState(vector<float> &t2, MatrixXd &inst2, MatrixXd &state);
+
     const bool XYZm = true; // 궤적 생성 중 정지 여부
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
@@ -218,7 +220,6 @@ private:
     float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
     float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
     float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
-
 
 
     ///////////////////////////////////////////////////////////////////////////
