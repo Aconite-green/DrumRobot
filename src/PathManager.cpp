@@ -971,7 +971,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     float tm = 0.8 * t0;
 
     float A1 = 0.15;    // 타격 시 내려가는 정도
-    float Am = (4 * t0) / 3 + wristReadyAng; // 스윙 시에 올라가는 정도
+    float Am = t0 + wristReadyAng; // 스윙 시에 올라가는 정도
     
     float w1 = M_PI / t1;   // 0 ~ t1
     float w2 = M_PI / (2 * (t2 - t1));  // t1 ~ t2
