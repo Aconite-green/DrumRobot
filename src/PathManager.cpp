@@ -211,7 +211,7 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////    
 /*                       Play (Task Space Trajectory)                         */
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -261,10 +261,10 @@ void PathManager::generateTrajectory()
     Vmax = cal_Vmax(Q1, Q2, acc_max, tf-ti);
 
     std::cout << "\nti : " << ti << "\ttf : " << tf
-    << "\nPi_R" << Pi_R
-    << "\nPi_L" << Pi_L
-    << "\nPf_R" << Pf_R
-    << "\nPf_L" << Pf_L;
+    << "\nPi_R\n" << Pi_R
+    << "\nPi_L\n" << Pi_L
+    << "\nPf_R\n" << Pf_R
+    << "\nPf_L\n" << Pf_L << std::endl;
 
     // trajectory
     n = (tf - ti) / dt;
@@ -323,30 +323,26 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
         std::string fileName = "solveIK_q" + to_string(m);
         fun.appendToCSV_DATA(fileName, m, q(m), 0);
     }
-    q_ik = q;
 }
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
 {
-    VectorXd q(9);
+    VectorXd q = ikfun_fixed_waist(pR1, pL1, q_lin(0));
+    HitRL CurRL;
 
-    VectorXd q_06 = ikfun_fixed_waist(pR1, pL1, q_lin(0));
+    CurRL = Hit.front(); Hit.pop();
+    
+    q(7) = CurRL.hitR;
+    q(8) = CurRL.hitL;
 
-    for (int i = 0; i < 7; i++)
-    {
-        q(i) = q_06(i);
-    }
-
-    q(7) = 0.0;
-    q(8) = 0.0;
-
-    // pushConmmandBuffer(q, false);
+    pushConmmandBuffer(q, false);
 
     // 데이터 기록
     for (int m = 0; m < 9; m++)
     {
         std::string fileName = "solveIK_q" + to_string(m);
-        fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
+        // fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
+        fun.appendToCSV_DATA(fileName, m, q(m), q_lin(m));
     }
 }
 
@@ -1166,6 +1162,7 @@ VectorXd PathManager::getInstrumentPosition(VectorXd &A)
 
 VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
 {
+    VectorXd Qf;
     PartLength part_length;
 
     float XR = pR(0), YR = pR(1), ZR = pR(2);
@@ -1176,8 +1173,6 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
     float L2 = part_length.lowerArm + part_length.stick;
     float s = part_length.waist;
     float z0 = part_length.height;
-
-    VectorXd Qf(9);
 
     float shoulderXR = 0.5 * s * cos(theta0);
     float shoulderYR = 0.5 * s * sin(theta0);
@@ -1248,15 +1243,8 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
         state.main = Main::Error;
     }
 
-    Qf(0) = theta0;
-    Qf(1) = theta1;
-    Qf(2) = theta2;
-    Qf(3) = theta3;
-    Qf(4) = theta4;
-    Qf(5) = theta5;
-    Qf(6) = theta6;
-    Qf(7) = 0.0;
-    Qf(8) = 0.0;
+    Qf.resize(9);
+    Qf << theta0, theta1, theta2, theta3, theta4, theta5, theta6, 0.0, 0.0;
 
     return Qf;
 }

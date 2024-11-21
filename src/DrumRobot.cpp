@@ -438,17 +438,15 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
     {
         PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
-        pathManager.P.pop(); // 앞에꺼 지움
+        pathManager.P.pop(); // 앞에꺼 지움000
 
-        // VectorXd pR1(3);
-        // VectorXd pL1(3);
+        // std::cout << "\nR\n" << nextPos.pR
+        // << "\nL\n" << nextPos.pL
+        // << "\nq\n" << nextPos.qLin;
 
-        // pR1 << nextPos.pR[0], nextPos.pR[1], nextPos.pR[2];
-        // pL1 << nextPos.pL[0], nextPos.pL[1], nextPos.pL[2];
+        // pathManager.solveIK(nextPos.pR, nextPos.pL);
 
-        pathManager.solveIK(nextPos.pR, nextPos.pL);
-
-        // pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
+        pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
@@ -1223,7 +1221,7 @@ void DrumRobot::initializeMotors()
             // 각 모터 이름에 따른 멤버 변수 설정
             if (motor_pair.first == "R_wrist")
             {
-                maxonMotor->cwDir = 1.0f;
+                maxonMotor->cwDir = -1.0f;
                 maxonMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -108deg
                 maxonMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 135deg
                 maxonMotor->txPdoIds[0] = 0x207; // Controlword

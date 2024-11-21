@@ -201,7 +201,7 @@ private:
     VectorXd inst_now_R;
     VectorXd inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
 
-    const bool XYZm = true; // 궤적 생성 중 정지 여부
+    const bool XYZm = false; // 궤적 생성 중 정지 여부
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
     MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
@@ -226,8 +226,4 @@ private:
 
 
     ///////////////////////////////////////////////////////////////////////////
-
-    // 데이터 기록
-    VectorXd q_ik;
-
 };
