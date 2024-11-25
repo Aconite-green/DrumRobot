@@ -112,6 +112,8 @@ public:
 
     void GetArr(vector<float> &arr);
 
+    vector<float> makeHomeArr(int cnt);
+
     //   Ready Pos Array   :  waist         , R_arm1        , L_arm1        , R_arm2        , R_arm3        , L_arm2        , L_arm3        , R_wrist       , L_wrist
     //                       { 0            , 90            , 90            , 45            , 75            , 45            , 75            , 30            , 30         } [deg]
     vector<float> readyArr = { 0            , M_PI / 2.0    , M_PI / 2.0    , M_PI * 0.25   , M_PI / 2.4    , M_PI * 0.25   , M_PI / 2.4    , M_PI / 6.0    , M_PI / 6.0 };
@@ -177,13 +179,13 @@ private:
     MatrixXd left_drum_position;                                ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
     /////////////////////////////////////////////////////////////////////////// AddStance
-    void getMotorPos();
     // q1[rad], q2[rad], acc[rad/s^2], t2[s]
     VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
     void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
     void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity);
+    void getMotorPos();
 
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 

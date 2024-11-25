@@ -140,7 +140,7 @@ void DrumRobot::sendLoopForThread()
         case Main::Ideal:
         {
             bool isWriteError = false;
-            if (setInitialPosition)
+            if (settingInitPos)
             {
                if (!canManager.checkAllMotors_Fixed())
                {
@@ -287,11 +287,11 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     case ReadSub::UpdateMotorInfo:
     {
         
-        // if ((!setInitialPosition) || state.main == Main::Test) // test 모드에서 에러 검출 안함
+        // if ((!settingInitPos) || state.main == Main::Test) // test 모드에서 에러 검출 안함
         // {
         //     canManager.distributeFramesToMotors(false);
         // }
-        if (!setInitialPosition)    // test 모드에서 에러 검출함
+        if (!settingInitPos)    // test 모드에서 에러 검출함
         {
             canManager.distributeFramesToMotors(false);
         }
@@ -418,7 +418,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
             std::cout << "Play is Over\n";
             state.main = Main::AddStance;
             state.play = PlaySub::TimeCheck;
-            flag_setting("getHome");
+            addStanceFlagSetting("goToHome");
             pathManager.line = 0;
             usleep(500000);     // 0.5s
         }
@@ -604,7 +604,7 @@ void DrumRobot::SendPerformProcess(int periodMicroSec)
                 std::cout << "Performance is Over\n";
                 state.main = Main::AddStance;
                 state.perform = PerformSub::TimeCheck;
-                flag_setting("getHome");
+                addStanceFlagSetting("goToHome");
                 pathManager.line = 0;
             }
             else
@@ -686,7 +686,7 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
     case AddStanceSub::CheckCommand:
     {
-        if (getHome || getReady || getBackAndShutdown)
+        if (goToHome || goToReady || goToShutdown)
         {
             ClearBufferforRecord();
             clearMotorsCommandBuffer();
@@ -700,17 +700,19 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     }
     case AddStanceSub::FillBuf:
     {
-        if (getReady)
+        if (goToReady)
         {
             std::cout << "Get Ready Pos Array ...\n";
             pathManager.GetArr(pathManager.readyArr);
         }
-        else if (getHome)
+        else if (goToHome)
         {
-            std::cout << "Get Home Pos Array ...\n";
-            pathManager.GetArr(pathManager.homeArr);
+            hommingCnt++;
+            vector<float> home_arr = pathManager.makeHomeArr(hommingCnt);
+            std::cout << "Get Home Pos Array " << hommingCnt << "...\n";
+            pathManager.GetArr(home_arr);
         }
-        else if (getBackAndShutdown)
+        else if (goToShutdown)
         {
             std::cout << "Get Back Pos Array ...\n";
             pathManager.GetArr(pathManager.backArr);
@@ -760,23 +762,30 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
         }
         else
         {
-            if (getBackAndShutdown)
+            if (goToShutdown)
             {
                 state.main = Main::Shutdown;
             }
-            else if (getHome)
+            else if (goToHome)
             {
-                state.addstance = AddStanceSub::CheckCommand;
-                state.main = Main::Ideal;
-                canManager.clearReadBuffers();
-                flag_setting("isHome");
+                if (hommingCnt >= 2)
+                {
+                    state.addstance = AddStanceSub::CheckCommand;
+                    state.main = Main::Ideal;
+                    canManager.clearReadBuffers();
+                    robotFlagSetting("isHome");
+                }
+                else
+                {
+                    state.addstance = AddStanceSub::FillBuf;
+                }
             }
-            else if (getReady)
+            else if (goToReady)
             {
                 state.addstance = AddStanceSub::CheckCommand;
                 state.main = Main::Ideal;
                 canManager.clearReadBuffers();
-                flag_setting("isReady");
+                robotFlagSetting("isReady");
             }
         }
         break;
@@ -853,7 +862,7 @@ void DrumRobot::displayAvailableCommands() const
 
     if (state.main == Main::Ideal)
     {
-        if (!setInitialPosition)
+        if (!settingInitPos)
         {
             std::cout << "- o : Set Zero & Offset setting\n";
             std::cout << "- i : Offset setting\n";
@@ -872,8 +881,11 @@ void DrumRobot::displayAvailableCommands() const
                 std::cout << "- p : Play Drum\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- h : Move to Home Pos\n";
-                std::cout << "- s : Shut down the system\n";
-
+            }
+            else if (isRestart)
+            {
+                std::cout << "- h : Move to Home Pos\n";
+                std::cout << "- t : Start Test\n";
             }
         }
     }
@@ -887,9 +899,9 @@ bool DrumRobot::processInput(const std::string &input)
 {
     if (state.main == Main::Ideal)
     {
-        if(!setInitialPosition)
+        if (!settingInitPos)
         {
-            if((input == "o"))
+            if (input == "o")
             {
                 // set zero
                 for (const auto &motorPair : motors)
@@ -939,18 +951,18 @@ bool DrumRobot::processInput(const std::string &input)
                 maxonMotorEnable();
                 setMaxonMotorMode("CSP");
 
-                setInitialPosition = true;
-                flag_setting("isHome");
+                settingInitPos = true;
+                robotFlagSetting("isHome");
 
                 return true;
             }
-            else if(input == "i")
+            else if (input == "i")
             {
                 maxonMotorEnable();
                 setMaxonMotorMode("CSP");
 
-                setInitialPosition = true;
-                flag_setting("isHome");
+                settingInitPos = true;
+                robotFlagSetting("isRestart");
 
                 return true;
             }
@@ -960,7 +972,8 @@ bool DrumRobot::processInput(const std::string &input)
             if (input == "r" && isHome)
             {
                 state.main = Main::AddStance;
-                flag_setting("getReady");
+                robotFlagSetting("MOVING");
+                addStanceFlagSetting("goToReady");
 
                 return true;
             }
@@ -968,7 +981,7 @@ bool DrumRobot::processInput(const std::string &input)
             {
                 std::cout << "\nbpm : " << pathManager.bpm << std::endl;
                 state.main = Main::Perform;
-                isReady = false;
+                robotFlagSetting("MOVING");
 
                 return true;
             }
@@ -976,22 +989,27 @@ bool DrumRobot::processInput(const std::string &input)
             {
                 std::cout << "\nbpm : " << pathManager.bpm << std::endl;
                 state.main = Main::Play;
-                isReady = false;
+                robotFlagSetting("MOVING");
 
                 return true;
             }
-            else if (input == "h" && isReady)
+            else if (input == "h")
             {
-                state.main = Main::AddStance;
-                flag_setting("getHome");
+                if (isReady || isRestart)
+                {
+                    state.main = Main::AddStance;
+                    robotFlagSetting("MOVING");
+                    addStanceFlagSetting("goToHome");
 
-                return true;
+                    return true;
 
+                }
             }
             else if (input == "s" && isHome)
             {
                 state.main = Main::AddStance;
-                flag_setting("getBackAndShutdown");
+                robotFlagSetting("MOVING");
+                addStanceFlagSetting("goToShutdown");
 
                 return true;
             }
@@ -1001,6 +1019,13 @@ bool DrumRobot::processInput(const std::string &input)
 
                 return true;
             }
+        }
+    }
+    else
+    {
+        if (input == "s")
+        {
+            state.main = Main::Shutdown;
         }
     }
 
@@ -1055,7 +1080,7 @@ void DrumRobot::checkUserInput()
             else if (input == 'h')
             {
                 state.main = Main::AddStance;
-                flag_setting("getHome");
+                addStanceFlagSetting("goToHome");
             }
         }
         else if (state.main == Main::Error)
@@ -1073,7 +1098,7 @@ void DrumRobot::checkUserInput()
             else if (input == 'h')
             {
                 state.main = Main::AddStance;
-                flag_setting("getHome");
+                addStanceFlagSetting("goToHome");
             }
             else if (input == 's')
                 state.main = Main::Shutdown;
@@ -1556,38 +1581,64 @@ bool DrumRobot::dct_fun(float positions[], float vel_th)
 /*                            flag setting                                     */
 /////////////////////////////////////////////////////////////////////////////////
 
-void DrumRobot::flag_setting(string flag)
+void DrumRobot::robotFlagSetting(string flag)
 {
-    getReady = false;
-    isReady = false;
-    getHome = false;
-    isHome = false;
-    getBackAndShutdown = false;
 
-    // only one flag on
-    if (flag == "getReady")
+    if (flag == "MOVING")
     {
-        getReady = true;
-    }
-    else if (flag == "isReady")
-    {
-        isReady = true;
-    }
-    else if (flag == "getHome")
-    {
-        getHome = true;
+        isHome = false;
+        isReady = false;
+        isRestart = false;
     }
     else if (flag == "isHome")
     {
         isHome = true;
+        isReady = false;
+        isRestart = false;
     }
-    else if (flag == "getBackAndShutdown")
+    else if (flag == "isReady")
     {
-        getBackAndShutdown = true;
+        isHome = false;
+        isReady = true;
+        isRestart = false;
+    }
+    else if (flag == "isRestart")
+    {
+        isHome = false;
+        isReady = false;
+        isRestart = true;
     }
     else
     {
-        cout << "flag error\n";
+        cout << "Invalid flag\n";
+    }
+}
+
+void DrumRobot::addStanceFlagSetting(string flag)
+{
+    if (flag == "goToReady")
+    {
+        goToReady = true;
+        goToHome = false;
+        goToShutdown = false;
+    }
+    else if (flag == "goToHome")
+    {
+        goToReady = false;
+        goToHome = true;
+        goToShutdown = false;
+
+        hommingCnt = 0;
+    }
+    else if (flag == "goToShutdown")
+    {
+        goToReady = false;
+        goToHome = false;
+        goToShutdown = true;
+    }
+    else
+    {
+        cout << "Invalid flag\n";
     }
 }
 

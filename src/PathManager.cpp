@@ -281,7 +281,7 @@ void PathManager::generateTrajectory()
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
         
-        makeHitPath_test(ti, tf, t, State, 0.8);
+        makeHitPath_test(ti, tf, t, State, 0.6);
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
@@ -968,7 +968,7 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, fl
     float t1 = 0.1 * t0;
     float t2 = 0.15 * t0;
     float t3 = 0.4 * t0;
-    float tm = 0.85 * t0;
+    float tm = 0.8 * t0;
 
     float A1 = 0.15;    // 타격 시 내려가는 정도
     float Am = (t0 + wristReadyAng) * intensity; // 스윙 시에 올라가는 정도
@@ -2066,6 +2066,51 @@ void PathManager::getMotorPos()
             c_MotorAngle[motor_mapping[entry.first]] = maxonMotor->jointAngle;
         }
     }
+}
+
+vector<float> PathManager::makeHomeArr(int cnt)
+{
+    vector<float> home_arr = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    if (cnt == 1)
+    {
+        getMotorPos();
+
+        for (int i = 0; i < 9; i++)
+        {
+            home_arr[i] = c_MotorAngle[i];
+        }
+        home_arr[1] = 135 * M_PI / 180.0;
+        home_arr[2] = 45 * M_PI / 180.0;
+        home_arr[7] = 90 * M_PI / 180.0;
+        home_arr[8] = 90 * M_PI / 180.0;
+    }
+    // else if (cnt == 2)
+    // {
+    //     getMotorPos();
+
+    //     for (int i = 0; i < 9; i++)
+    //     {
+    //         home_arr[i] = c_MotorAngle[i];
+    //     }
+    //     home_arr[1] = 135 * M_PI / 180.0;
+    //     home_arr[2] = 45 * M_PI / 180.0;
+    //     home_arr[7] = 90 * M_PI / 180.0;
+    //     home_arr[8] = 90 * M_PI / 180.0;
+    // }
+    else if (cnt == 2)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            home_arr[i] = homeArr[i];
+        }
+    }
+    else
+    {
+        std::cout << "Invalid Home Cnt";
+    }
+
+    return home_arr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
