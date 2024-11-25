@@ -285,6 +285,17 @@ void PathManager::generateTrajectory()
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
+        // brake
+        for (int j = 0; j < 8; j++)
+        {
+            Pt.brakeState[j] = false;
+        }
+
+        if (i < n*0.1 || i > n*0.9)
+        {
+            Pt.brakeState[0] = true;
+        }
+        
         P.push(Pt);
 
         // std::string fileName;

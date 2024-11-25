@@ -444,9 +444,20 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         // << "\nL\n" << nextPos.pL
         // << "\nq\n" << nextPos.qLin;
 
-        // pathManager.solveIK(nextPos.pR, nextPos.pL);
+        for (int i = 0; i < 8; i++)
+        {
+            usbio.USBIO_4761_set(i, nextPos.brakeState[i]);
+        }
 
-        pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
+        bool fixedWaist = true;
+        if (fixedWaist)
+        {
+            pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
+        }
+        else
+        {
+            pathManager.solveIK(nextPos.pR, nextPos.pL);
+        }
 
         //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
         //solveIK 하면 command buffer에  하나 값 넣어줘야댐
@@ -479,10 +490,10 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
                 isWriteError = true;
             }
 
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
-            }
+            // if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
+            // {
+            //     usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
+            // }
         }
         if (maxonMotorCount != 0)
         {

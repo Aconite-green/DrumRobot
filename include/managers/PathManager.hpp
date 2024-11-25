@@ -91,6 +91,8 @@ public:
 
         VectorXd qLin;
 
+        bool brakeState[8];
+
     }Pos;
 
     // 타격 각도 저장할 구조체
