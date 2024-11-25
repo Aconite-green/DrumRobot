@@ -944,7 +944,7 @@ bool DrumRobot::processInput(const std::string &input)
 
                 return true;
             }
-            else if((input == "i") && !(setInitialPosition))
+            else if(input == "i")
             {
                 maxonMotorEnable();
                 setMaxonMotorMode("CSP");
@@ -980,18 +980,15 @@ bool DrumRobot::processInput(const std::string &input)
 
                 return true;
             }
-            else if (input == "h")
+            else if (input == "h" && isReady)
             {
-                if (isReady)
-                {
-                    state.main = Main::AddStance;
-                    flag_setting("getHome");
+                state.main = Main::AddStance;
+                flag_setting("getHome");
 
-                    return true;
-                }
+                return true;
 
             }
-            else if (input == "s")
+            else if (input == "s" && isHome)
             {
                 state.main = Main::AddStance;
                 flag_setting("getBackAndShutdown");
@@ -1632,7 +1629,7 @@ void DrumRobot::maxonMotorEnable()
             maxoncmd.getSync(&frame);
             canManager.txFrame(motor, frame);
             
-            std::cout << "Maxon Enabled(1) \n";
+            std::cout << "Maxon Enabled\n";
 
             usleep(100000);
 
@@ -1644,7 +1641,7 @@ void DrumRobot::maxonMotorEnable()
 
             // usleep(100000);
             
-            std::cout << "Maxon Enabled(2) \n";
+            // std::cout << "Maxon Enabled(2) \n";
         }
     }
 }

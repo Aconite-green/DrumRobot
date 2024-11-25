@@ -218,7 +218,7 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
 void PathManager::generateTrajectory()
 {
     // parameter
-    float tm = 0.5, sm = 0.5, h = 0.1;
+    float tm = 0.8, sm = 0.5, h = 0.1;
     float dt = canManager.deltaT;   // 0.005
     float n;
 
@@ -287,11 +287,11 @@ void PathManager::generateTrajectory()
 
         P.push(Pt);
 
-        std::string fileName;
-        fileName = "Trajectory_R";
-        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-        fileName = "Trajectory_L";
-        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        // std::string fileName;
+        // fileName = "Trajectory_R";
+        // fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        // fileName = "Trajectory_L";
+        // fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
@@ -317,12 +317,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // 데이터 기록
-    for (int m = 0; m < 9; m++)
-    {
-        std::string fileName = "solveIK_q" + to_string(m);
-        fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    }
+    // // 데이터 기록
+    // for (int m = 0; m < 9; m++)
+    // {
+    //     std::string fileName = "solveIK_q" + to_string(m);
+    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    // }
 }
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
@@ -337,13 +337,13 @@ void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_li
 
     pushConmmandBuffer(q, false);
 
-    // 데이터 기록
-    for (int m = 0; m < 9; m++)
-    {
-        std::string fileName = "solveIK_q" + to_string(m);
-        // fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
-        fun.appendToCSV_DATA(fileName, m, q(m), q_lin(m));
-    }
+    // // 데이터 기록
+    // for (int m = 0; m < 9; m++)
+    // {
+    //     std::string fileName = "solveIK_q" + to_string(m);
+    //     // fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
+    //     fun.appendToCSV_DATA(fileName, m, q(m), q_lin(m));
+    // }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
