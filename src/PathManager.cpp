@@ -281,7 +281,7 @@ void PathManager::generateTrajectory()
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
         
-        makeHitPath_test(ti, tf, t, State);
+        makeHitPath_test(ti, tf, t, State, 0.8);
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
@@ -953,7 +953,7 @@ void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
 
 }
 
-void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
+void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity)
 {
     HitRL A_RL;
 
@@ -968,10 +968,10 @@ void PathManager::makeHitPath_test(float ti, float tf, float t, MatrixXd &AA)
     float t1 = 0.1 * t0;
     float t2 = 0.15 * t0;
     float t3 = 0.4 * t0;
-    float tm = 0.8 * t0;
+    float tm = 0.85 * t0;
 
     float A1 = 0.15;    // 타격 시 내려가는 정도
-    float Am = t0 + wristReadyAng; // 스윙 시에 올라가는 정도
+    float Am = (t0 + wristReadyAng) * intensity; // 스윙 시에 올라가는 정도
     
     float w1 = M_PI / t1;   // 0 ~ t1
     float w2 = M_PI / (2 * (t2 - t1));  // t1 ~ t2

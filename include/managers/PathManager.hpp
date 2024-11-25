@@ -183,7 +183,7 @@ private:
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
     void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
-    void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA);
+    void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity);
 
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 
