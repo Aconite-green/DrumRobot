@@ -308,6 +308,18 @@ void PathManager::generateTrajectory()
     }
 }
 
+// read music sheet 
+
+void PathManager::readMeasure()
+{
+    
+}
+
+void PathManager::parseMeasure()
+{
+
+}
+
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
     HitRL CurRL;

@@ -30,7 +30,8 @@ enum class PlaySub
     GenerateTrajectory,
     SolveIK,
     SetCANFrame,
-    SendCANFrame
+    SendCANFrame,
+    ReadMusicSheet
 };
 
 enum class AddStanceSub

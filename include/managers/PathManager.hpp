@@ -75,7 +75,8 @@ public:
     void PathLoopTask();
 
     /////////////////////////////////////////////////////////////////////////// Play
-
+    void readMeasure();
+    void parseMeasure();
     void generateTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
