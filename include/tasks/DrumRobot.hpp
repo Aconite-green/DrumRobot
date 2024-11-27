@@ -117,7 +117,7 @@ private:
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
-    void SendPlayProcess(int periodMicroSec);
+    void SendPlayProcess(int periodMicroSec, string basePath);
     void SendAddStanceProcess(int periodMicroSec);
     void UnfixedMotor();
     void clearMotorsCommandBuffer();
@@ -155,4 +155,9 @@ private:
     // Maxon 모터 초기화 함수
     void maxonMotorEnable();
     void setMaxonMotorMode(std::string targetMode);
+
+    //play 관련 전역변수들
+    string basePath;
+    int fileIndex;
+    bool openFlag;
 };

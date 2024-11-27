@@ -168,7 +168,7 @@ void DrumRobot::sendLoopForThread()
         case Main::Play:
         {
             UnfixedMotor();
-            SendPlayProcess(5000);
+            SendPlayProcess(5000, basePath);
             break;
         }
         case Main::AddStance:
@@ -394,7 +394,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     }
 }
 
-void DrumRobot::SendPlayProcess(int periodMicroSec)
+void DrumRobot::SendPlayProcess(int periodMicroSec, string basePath)
 {
     auto currentTime = chrono::system_clock::now();
     auto elapsedTime = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
@@ -406,10 +406,26 @@ void DrumRobot::SendPlayProcess(int periodMicroSec)
         if (elapsedTime.count() >= periodMicroSec)
         {
             cnt++;
-            state.play = PlaySub::GenerateTrajectory;   // 주기가 되면 GenerateTrajectory 상태로 진입
+            state.play = PlaySub::ReadMusicSheet;   // 주기가 되면 GenerateTrajectory 상태로 진입
             SendStandard = currentTime;                 // 현재 시간으로 시간 객체 초기화
         }
         break;
+    }
+    case PlaySub::ReadMusicSheet:
+    {
+        if(openFlag ==1)
+        {
+            std::string currentFile = basePath + std::to_string(fileIndex) + ".txt";
+            std:;ifstream inputFile(currentFile);
+
+            if(!inputFile.is_open())
+            {
+                std::cout << "PlaySub -> No file found: " << currentFile << std::endl;
+                state.play = PlaySub::TimeCheck; 
+                state.main = Main::Ideal;
+            }
+        }
+        state.play = PlaySub::ReadMusicSheet; 
     }
     case PlaySub::GenerateTrajectory:
     {
@@ -998,7 +1014,10 @@ bool DrumRobot::processInput(const std::string &input)
             }
             else if (input == "p" && isReady)
             {
-                std::cout << "\nbpm : " << pathManager.bpm << std::endl;
+                std::cout << "enter music name : ";
+                std::cin >> basePath;
+                fileIndex = 0;
+                openFlag = 1;
                 state.main = Main::Play;
                 robotFlagSetting("MOVING");
 
