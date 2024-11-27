@@ -69,6 +69,7 @@ public:
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
     float bpm = 0;         /// txt 악보의 BPM 정보.
+    vector<vector<string>> line_col;    // 변환하기 전 악보
 
     /////////////////////////////////////////////////////////////////////////// Perform
 

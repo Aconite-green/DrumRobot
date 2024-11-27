@@ -141,6 +141,8 @@ void PathManager::GetMusicSheet()
             inst_col << inst_R, inst_L;
             inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
             inst_arr.col(inst_arr.cols() - 1) = inst_col;
+
+            line_col.push_back(columns); // lineIndex 1부터 저장
         }
 
         lineIndex++;
@@ -214,6 +216,8 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
 ////////////////////////////////////////////////////////////////////////////////    
 /*                       Play (Task Space Trajectory)                         */
 ////////////////////////////////////////////////////////////////////////////////
+
+
 
 void PathManager::generateTrajectory()
 {
