@@ -1267,7 +1267,7 @@ void DrumRobot::initializeMotors()
             }
             else if (motor_pair.first == "L_wrist")
             {
-                maxonMotor->cwDir = -1.0f;
+                maxonMotor->cwDir = 1.0f;
                 maxonMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -108deg
                 maxonMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 135deg
                 maxonMotor->txPdoIds[0] = 0x208; // Controlword

@@ -281,7 +281,7 @@ void PathManager::generateTrajectory()
         Pt.pR = makePath_2(Pi_R, Pf_R, s, sm, h);
         Pt.pL = makePath_2(Pi_L, Pf_L, s, sm, h);
         
-        makeHitPath_test(ti, tf, t, State, 0.6);
+        makeHitPath_test(ti, tf, t, State, 0.8);
 
         Pt.qLin = makeProfile(Q1, Q2, Vmax, acc_max, t, tf-ti);
 
@@ -291,7 +291,6 @@ void PathManager::generateTrajectory()
             Pt.brakeState[j] = false;
         }
 
-        
         if (i < n*0.1 || i > n*0.9)
         {
             Pt.brakeState[0] = true;
