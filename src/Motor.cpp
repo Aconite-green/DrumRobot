@@ -43,6 +43,24 @@ void TMotor::clearCommandBuffer(){
     }
 }
 
+float TMotor::jointAngleToMotorPosition(float jointAngle)
+{
+    float motorPosition;
+    
+    motorPosition = (jointAngle - initialJointAngle) * cwDir / timingBeltRatio;
+
+    return motorPosition;
+}
+
+float TMotor::motorPositionToJointAngle(float motorPosition)
+{
+    float jointAngle;
+    
+    jointAngle = motorPosition * cwDir * timingBeltRatio + initialJointAngle;
+
+    return jointAngle;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // maxonMotor
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,4 +85,22 @@ void MaxonMotor::clearWrist_BackArr(){
     {
         wrist_BackArr.pop();
     }
+}
+
+float MaxonMotor::jointAngleToMotorPosition(float jointAngle)
+{
+    float motorPosition;
+    
+    motorPosition = (jointAngle - initialJointAngle) * cwDir;
+
+    return motorPosition;
+}
+
+float MaxonMotor::motorPositionToJointAngle(float motorPosition)
+{
+    float jointAngle;
+    
+    jointAngle = motorPosition * cwDir + initialJointAngle;
+
+    return jointAngle;
 }
