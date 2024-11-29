@@ -1265,7 +1265,6 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
 bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum)
 {
     string line;
-    float threshold = 2.4;
 
     while(getline(inputFile, line))
     {
@@ -1325,56 +1324,44 @@ void PathManager::parseMeasure(float &timeSum)
         // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
 
     float sum = 0;
-
+    //threshold/2
     VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
     VectorXd inst_next = VectorXd::Zero(18);
 
-    if(!Q.empty())
+    while(sum >= threshold/2)
     {
-        for (int i = 0; i < Q.size(); i++)
-        {
-            vector<string> curLine = Q.front();
-            Q.pop();
-            Q.push(curLine);
-
-            if((inst_next.array() != 0).any()) continue;
-            
-            sum += stof(curLine[1]);
-            
-            if (curLine[2] != "0" || curLine[3] != "0") 
-            {
-                cout << "parsed line : " << '\n';
-                for (int j = 0; j < curLine.size(); j++)
-                {
-                    cout << curLine[j] << '\t';
-                }
-                cout << '\n';
-                cout << "------------------------------------------";
-                cout << '\n' << '\n';
-                
-                if (curLine[2] != "0")
-                {
-                    inst_R(instrument_mapping[curLine[2]]) = 1.0;
-                    detect_time_R = play_time + sum;
-                }
-
-                if (curLine[3] != "0")
-                {
-                    inst_L(instrument_mapping[curLine[3]]) = 1.0;
-                    detect_time_L = play_time + sum;
-                }
-
-            }
-            else
-            {
-                inst_next << inst_R, inst_L; 
-            }
-        }
-        vector<string> column = Q.front();
-        timeSum -= stof(column[1]);
-        play_time += stof(column[1]);
+        vector<string> curLine = Q.front();
         Q.pop();
+        Q.push(curLine);
+        sum += stof(curLine[1]);
+
+        //오른손
+        if (curLine[2] != "0" && !(inst_R.array() != 0).any())
+        {
+            inst_R(instrument_mapping[curLine[2]]) = 1.0;
+            //detect_time_R =
+            sum = 0;
+        }
+        //왼손
+        if (curLine[3] != "0" && !(inst_L.array() != 0).any())
+        {
+            inst_L(instrument_mapping[curLine[3]]) = 1.0;
+            //detect_time_L =
+            sum = 0;
+        }
+        //오른손 왼손 둘다 타격 감지
+        if((inst_R.array() != 0).any()&&(inst_L.array() != 0).any())
+        {
+            break;
+        }
+
     }
+
+    inst_next << inst_R, inst_L;
+    vector<string> column = Q.front();
+    timeSum -= stof(column[1]);
+    play_time = stof(column[1]);
+    Q.pop(); 
 
     float time = sum * 100.0 / bpm;
 }

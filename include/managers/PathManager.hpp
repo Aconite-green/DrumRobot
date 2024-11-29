@@ -226,8 +226,6 @@ private:
     
     VectorXd inst_now;      /// 연주 중 현재 위치하는 악기 저장
 
-    float play_time;
-    float detect_time_R,  detect_time_L;
 
     /////////////////////////////////////////////////////////////////////////// 손목
     MatrixXd sts2wrist_fun(MatrixXd &AA);
@@ -242,4 +240,8 @@ private:
 
 
     ///////////////////////////////////////////////////////////////////////////
+
+    float threshold = 4.8;
+    float play_time;
+    float detect_time_R, detect_time_L; 
 };
