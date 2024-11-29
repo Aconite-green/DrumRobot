@@ -1347,7 +1347,7 @@ void PathManager::parseMeasure(float &timeSum)
                     cout << curLine[j] << '\t';
                 }
                 cout << '\n';
-                cout << "---------------------------------------------";
+                cout << "------------------------------------------";
                 cout << '\n' << '\n';
                 
                 if (curLine[2] != "0")
