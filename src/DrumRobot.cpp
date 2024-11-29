@@ -1206,6 +1206,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "waist";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 29.8;  // [A]    // ak10-9
+                tMotor->useFourBarLinkage = false;
             }
             else if (motor_pair.first == "R_arm1")
             {
@@ -1216,6 +1217,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "R_arm1";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = false;
             }
             else if (motor_pair.first == "L_arm1")
             {
@@ -1226,6 +1228,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "L_arm1";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = false;
             }
             else if (motor_pair.first == "R_arm2")
             {
@@ -1236,6 +1239,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "R_arm2";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = false;
             }
             else if (motor_pair.first == "R_arm3")
             {
@@ -1246,6 +1250,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "R_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = true;
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -1256,6 +1261,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "L_arm2";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = false;
             }
             else if (motor_pair.first == "L_arm3")
             {
@@ -1266,6 +1272,7 @@ void DrumRobot::initializeMotors()
                 tMotor->myName = "L_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
+                tMotor->useFourBarLinkage = true;
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))

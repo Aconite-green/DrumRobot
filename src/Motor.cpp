@@ -46,8 +46,23 @@ void TMotor::clearCommandBuffer(){
 float TMotor::jointAngleToMotorPosition(float jointAngle)
 {
     float motorPosition;
-    
-    motorPosition = (jointAngle - initialJointAngle) * cwDir / timingBeltRatio;
+
+    if (useFourBarLinkage)
+    {
+        float L1 = 1.1, L2 = 1.1, L3 = 1.1, L4 = 1.1;
+
+        float alpha = M_PI - jointAngle;
+        float L = sqrt(L1*L1 + L4*L4 - 2*L1*L4*cos(alpha));
+
+        float beta = acos((L1*L1 + L*L - L4*L4)/(2*L1*L));
+        float gamma = acos((L2*L2 + L*L - L3*L3)/(2*L2*L));
+
+        motorPosition = (beta + gamma - initialMotorAngle) * cwDir;
+    }
+    else
+    {
+        motorPosition = (jointAngle - initialJointAngle) * cwDir;
+    }
 
     return motorPosition;
 }
@@ -55,8 +70,23 @@ float TMotor::jointAngleToMotorPosition(float jointAngle)
 float TMotor::motorPositionToJointAngle(float motorPosition)
 {
     float jointAngle;
-    
-    jointAngle = motorPosition * cwDir * timingBeltRatio + initialJointAngle;
+
+    if (useFourBarLinkage)
+    {
+        float L1 = 1.1, L2 = 1.1, L3 = 1.1, L4 = 1.1;
+
+        float alpha = motorPosition * cwDir + initialMotorAngle;
+        float L = sqrt(L1*L1 + L2*L2 - 2*L1*L2*cos(alpha));
+
+        float beta = acos((L1*L1 + L*L - L2*L2)/(2*L1*L));
+        float gamma = acos((L4*L4 + L*L - L3*L3)/(2*L4*L));
+
+        jointAngle = M_PI - (beta + gamma);
+    }
+    else
+    {
+        jointAngle = motorPosition * cwDir + initialJointAngle;
+    }
 
     return jointAngle;
 }

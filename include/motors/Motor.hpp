@@ -96,6 +96,8 @@ public:
 
     void clearCommandBuffer();
 
+    bool useFourBarLinkage;
+    float initialMotorAngle;
     float jointAngleToMotorPosition(float jointAngle);
     float motorPositionToJointAngle(float motorPosition);
 
