@@ -69,15 +69,15 @@ public:
     int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
     float bpm = 0;         /// txt 악보의 BPM 정보.
-    vector<vector<string>> line_col;    // 변환하기 전 악보
+    queue<vector<string>> Q; // 읽은 악보 저장한 큐
 
     /////////////////////////////////////////////////////////////////////////// Perform
 
     void PathLoopTask();
 
     /////////////////////////////////////////////////////////////////////////// Play
-    void readMeasure();
-    void parseMeasure();
+    bool readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum);
+    void parseMeasure(float &timeSum);
     void generateTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
@@ -169,6 +169,13 @@ private:
         float height = 1.020-0.0605;    ///< 바닥부터 허리까지의 높이.
 
     }PartLength;
+
+    typedef struct{
+
+        VectorXd inst_next;  // 다음 이동
+        float time; // 총 이동 시간
+
+    }ParsedLine;
 
 
     /////////////////////////////////////////////////////////////////////////// Init

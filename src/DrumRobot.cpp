@@ -168,7 +168,7 @@ void DrumRobot::sendLoopForThread()
         case Main::Play:
         {
             UnfixedMotor();
-            SendPlayProcess(5000, basePath);
+            SendPlayProcess(5000, musicName);
             break;
         }
         case Main::AddStance:
@@ -394,7 +394,7 @@ void DrumRobot::ReadProcess(int periodMicroSec)
     }
 }
 
-void DrumRobot::SendPlayProcess(int periodMicroSec, string basePath)
+void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
 {
     auto currentTime = chrono::system_clock::now();
     auto elapsedTime = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
@@ -413,19 +413,44 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string basePath)
     }
     case PlaySub::ReadMusicSheet:
     {
-        if(openFlag ==1)
-        {
-            std::string currentFile = basePath + std::to_string(fileIndex) + ".txt";
-            std:;ifstream inputFile(currentFile);
+    
+        sleep(2);
 
-            if(!inputFile.is_open())
+        // 파일을 처음 열 때만
+        if (openFlag == 1)
+        {
+            openFlag = 0; // 파일 열기 상태 초기화
+            std::string currentFile = basePath + musicName + std::to_string(fileIndex) + ".txt";
+            inputFile.open(currentFile); // 파일 열기
+            
+            if (!inputFile.is_open()) // 파일 열기 실패
             {
-                std::cout << "PlaySub -> No file found: " << currentFile << std::endl;
+                std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
+                robotFlagSetting("isReady");
                 state.play = PlaySub::TimeCheck; 
                 state.main = Main::Ideal;
+                break; // 파일 열지 못했으므로 상태 변경 후 종료
             }
         }
-        state.play = PlaySub::ReadMusicSheet; 
+
+        // 파일에서 한 줄을 성공적으로 읽은 경우
+        if (pathManager.readMeasure(inputFile, BPMFlag, timeSum) == true)
+        {
+            // 경로 생성 완료 후 다음 상태로 전환
+            pathManager.parseMeasure(timeSum); // 후속 작업
+            state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+            break;  // 상태 전환 후 종료
+        }
+        // 파일 끝에 도달한 경우
+        else
+        {
+            inputFile.close(); // 파일 닫기
+            fileIndex++;       // 다음 파일로 이동
+            openFlag = 1;      // 파일 열 준비
+        }
+
+        break;
+    
     }
     case PlaySub::GenerateTrajectory:
     {
@@ -1015,7 +1040,9 @@ bool DrumRobot::processInput(const std::string &input)
             else if (input == "p" && isReady)
             {
                 std::cout << "enter music name : ";
-                std::cin >> basePath;
+                std::getline(std::cin, musicName);
+                
+
                 fileIndex = 0;
                 openFlag = 1;
                 state.main = Main::Play;
@@ -1071,8 +1098,10 @@ void DrumRobot::idealStateRoutine()
     displayAvailableCommands();
 
     std::string input;
+
     std::cout << "Enter command: ";
     std::getline(std::cin, input);
+
 
     if (!processInput(input))
         std::cout << "Invalid command or not allowed in current state!\n";

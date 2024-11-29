@@ -141,8 +141,6 @@ void PathManager::GetMusicSheet()
             inst_col << inst_R, inst_L;
             inst_arr.conservativeResize(inst_arr.rows(), inst_arr.cols() + 1);
             inst_arr.col(inst_arr.cols() - 1) = inst_col;
-
-            line_col.push_back(columns); // lineIndex 1부터 저장
         }
 
         lineIndex++;
@@ -310,18 +308,6 @@ void PathManager::generateTrajectory()
         // fileName = "S";
         // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
     }
-}
-
-// read music sheet 
-
-void PathManager::readMeasure()
-{
-    
-}
-
-void PathManager::parseMeasure()
-{
-
 }
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
@@ -1275,6 +1261,115 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
 
     return Qf;
 }
+
+bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum)
+{
+    string line;
+    float threshold = 2.4;
+
+    while(getline(inputFile, line))
+    {
+        istringstream iss(line);
+        string item;
+
+        vector<string> columns;
+        while (getline(iss, item, '\t'))
+        {
+            item = trimWhitespace(item);
+            columns.push_back(item);
+        }
+
+        if (!BPMFlag)
+        { // 첫번째 행엔 bpm에 대한 정보
+            //cout << "music";
+            bpm = stod(columns[0].substr(4));
+            //cout << "bpm = " << bpm << "\n";
+            BPMFlag = 1;
+        }
+        else
+        {
+            Q.push(columns);
+            timeSum += stof(columns[1]);
+            if(timeSum >= threshold)
+            {
+                // Q에 있는 요소들 출력
+                queue<vector<string>> tempQ = Q; // 큐 복사본 사용
+                while (!tempQ.empty())
+                {
+                    vector<string> current = tempQ.front();
+                    tempQ.pop();
+
+                    // 요소 출력 (탭으로 구분)
+                    for (size_t i = 0; i < current.size(); ++i)
+                    {
+                        cout << current[i];
+                        if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
+                            cout << '\t';
+                    }
+                    cout << '\n'; // 다음 요소로 넘어갈 때 개행
+                }
+                cout << '\n'; // 한 반복 끝날 때 개행 두 번
+
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void PathManager::parseMeasure(float &timeSum)
+{
+    map<string, int> instrument_mapping = {
+        {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
+        // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
+
+    float sum = 0;
+
+    VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
+    VectorXd inst_next = VectorXd::Zero(18);
+
+    if(!Q.empty())
+    {
+        for (int i = 0; i < Q.size(); i++)
+        {
+            vector<string> curLine = Q.front(); Q.pop();
+            Q.push(curLine);
+
+            if((inst_next.array() != 0).any()) continue;
+
+            sum += stof(curLine[1]);
+            
+            if (curLine[2] != "0" || curLine[3] != "0") 
+            {
+                cout << "parsed line : " << '\n';
+                for (int j = 0; j < curLine.size(); j++)
+                {
+                    cout << curLine[j] << '\t';
+                }
+                cout << '\n';
+                cout << "---------------------------------------------";
+                cout << '\n' << '\n';
+                
+                if (curLine[2] != "0")
+                    inst_R(instrument_mapping[curLine[2]]) = 1.0;
+                if (curLine[3] != "0")
+                    inst_L(instrument_mapping[curLine[3]]) = 1.0;
+                inst_next << inst_R, inst_L;
+            }
+            else
+            {
+                inst_next << inst_R, inst_L;
+            }
+        }
+        vector<string> column = Q.front();
+        timeSum -= stof(column[1]);
+        Q.pop();
+    }
+
+    float time = sum * 100.0 / bpm;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /*                            Perform FUNCTION                                */

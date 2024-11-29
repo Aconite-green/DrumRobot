@@ -117,7 +117,7 @@ private:
     void initializePathManager();
     void clearMotorsSendBuffer();
     void SendPerformProcess(int periodMicroSec);
-    void SendPlayProcess(int periodMicroSec, string basePath);
+    void SendPlayProcess(int periodMicroSec, string musicName);
     void SendAddStanceProcess(int periodMicroSec);
     void UnfixedMotor();
     void clearMotorsCommandBuffer();
@@ -157,7 +157,11 @@ private:
     void setMaxonMotorMode(std::string targetMode);
 
     //play 관련 전역변수들
-    string basePath;
+    std::string basePath = "/home/shy/DrumRobot/include/codes/";
+    string musicName;
     int fileIndex;
+    bool BPMFlag;
+    float timeSum = 0.0;
     bool openFlag;
+    std::ifstream inputFile; 
 };
