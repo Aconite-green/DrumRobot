@@ -1285,6 +1285,7 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum
             bpm = stod(columns[0].substr(4));
             //cout << "bpm = " << bpm << "\n";
             BPMFlag = 1;
+            play_time = 0;
         }
         else
         {
@@ -1332,11 +1333,12 @@ void PathManager::parseMeasure(float &timeSum)
     {
         for (int i = 0; i < Q.size(); i++)
         {
-            vector<string> curLine = Q.front(); Q.pop();
+            vector<string> curLine = Q.front();
+            Q.pop();
             Q.push(curLine);
 
             if((inst_next.array() != 0).any()) continue;
-
+            
             sum += stof(curLine[1]);
             
             if (curLine[2] != "0" || curLine[3] != "0") 
@@ -1351,18 +1353,26 @@ void PathManager::parseMeasure(float &timeSum)
                 cout << '\n' << '\n';
                 
                 if (curLine[2] != "0")
+                {
                     inst_R(instrument_mapping[curLine[2]]) = 1.0;
+                    detect_time_R = play_time + sum;
+                }
+
                 if (curLine[3] != "0")
+                {
                     inst_L(instrument_mapping[curLine[3]]) = 1.0;
-                inst_next << inst_R, inst_L;
+                    detect_time_L = play_time + sum;
+                }
+
             }
             else
             {
-                inst_next << inst_R, inst_L;
+                inst_next << inst_R, inst_L; 
             }
         }
         vector<string> column = Q.front();
         timeSum -= stof(column[1]);
+        play_time += stof(column[1]);
         Q.pop();
     }
 

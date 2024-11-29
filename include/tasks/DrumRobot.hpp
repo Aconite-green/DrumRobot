@@ -165,4 +165,5 @@ private:
     float timeSum = 0.0;
     bool openFlag;
     std::ifstream inputFile; 
+    
 };
