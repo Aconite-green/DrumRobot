@@ -96,6 +96,11 @@ public:
 
     void clearCommandBuffer();
 
+    bool useFourBarLinkage;
+    float initialMotorAngle;
+    float jointAngleToMotorPosition(float jointAngle);
+    float motorPositionToJointAngle(float motorPosition);
+
 private:
 };
 
@@ -136,6 +141,9 @@ public:
     queue<float> wrist_BackArr;
     void clearCommandBuffer();
     void clearWrist_BackArr();
+
+    float jointAngleToMotorPosition(float jointAngle);
+    float motorPositionToJointAngle(float motorPosition);
 };
 
 #endif // MOTOR_H
