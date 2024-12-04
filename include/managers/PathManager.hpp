@@ -76,8 +76,8 @@ public:
     void PathLoopTask();
 
     /////////////////////////////////////////////////////////////////////////// Play
-    bool readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum);
-    void parseMeasure(float &timeSum);
+    bool readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
+    void parseMeasure(double &timeSum);
     void generateTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
@@ -240,8 +240,14 @@ private:
 
 
     ///////////////////////////////////////////////////////////////////////////
-
-    float threshold = 4.8;
-    float play_time;
-    float detect_time_R, detect_time_L; 
+    double total_time =0.0;
+    double threshold = 2.4;
+    double play_time;
+    double prev_time = 0;
+    double detect_time_R=0;
+    double detect_time_L=0;
+    double current_time_R=0;
+    double current_time_L=0;
+    double moving_start_R=0;
+    double moving_start_L=0;
 };
