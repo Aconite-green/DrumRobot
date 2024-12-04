@@ -1271,12 +1271,15 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
         {
             istringstream iss(line);
             string item;
+            int cnt = 0;
 
             vector<string> columns;
             while (getline(iss, item, '\t'))
             {
+                if(cnt >= 8) break;
                 item = trimWhitespace(item);
                 columns.push_back(item);
+                cnt++;
             }
 
             if (!BPMFlag)
@@ -1326,7 +1329,6 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
 
     void PathManager::parseMeasure(double &timeSum)
     {
-        cout << "-------------------------\n";
         // 지금 들어온 Q 맨 앞에 값이 현재 시간임
         vector<string> curLine = Q.front(); 
         current_time_R = stod(curLine[8]);  
