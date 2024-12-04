@@ -215,7 +215,68 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi, bool brake_state)
 /*                       Play (Task Space Trajectory)                         */
 ////////////////////////////////////////////////////////////////////////////////
 
+void PathManager::seonwoo_generateTrajectory()
+{
+    // position
+    VectorXd Pi(6), Pf(6);
+    VectorXd Pi_R(3);
+    VectorXd Pi_L(3);
+    VectorXd Pf_R(3);
+    VectorXd Pf_L(3);
 
+    float n, sR, sL;
+    float dt = canManager.deltaT;
+
+    // position
+    Pi = getInstrumentPosition(seonwoo_inst_i);
+    Pf = getInstrumentPosition(seonwoo_inst_f);
+
+    Pi_R << Pi(0), Pi(1), Pi(2);
+    Pi_L << Pi(3), Pi(4), Pi(5);
+    Pf_R << Pf(0), Pf(1), Pf(2);
+    Pf_L << Pf(3), Pf(4), Pf(5);
+
+    std::cout << "\nPi_R\n" << Pi_R
+    << "\nPi_L\n" << Pi_L
+    << "\nPf_R\n" << Pf_R
+    << "\nPf_L\n" << Pf_L << std::endl;
+
+    // trajectory
+    n = (seonwoo_t2-seonwoo_t1) / dt;
+    for (int i = 0; i < n; i++)
+    {
+        Pos Pt;
+        float t_R = dt * i + seonwoo_t1 - seonwoo_tR_i;
+        float t_L = dt * i + seonwoo_t1 - seonwoo_tL_i;
+
+        sR = timeScaling_3(0.0f, seonwoo_tR_f-seonwoo_tR_i, t_R);
+        sL = timeScaling_3(0.0f, seonwoo_tL_f-seonwoo_tL_i, t_L);
+
+        Pt.pR = seonwoo_makePath(Pi_R, Pf_R, sR);
+        Pt.pL = seonwoo_makePath(Pi_L, Pf_L, sL);
+
+        // brake
+        for (int j = 0; j < 8; j++)
+        {
+            Pt.brakeState[j] = false;
+        }
+
+        if (i < n*0.1 || i > n*0.9)
+        {
+            Pt.brakeState[0] = true;
+        }
+        
+        P.push(Pt);
+
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        // fileName = "S";
+        // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
+    }
+}
 
 void PathManager::generateTrajectory()
 {
@@ -623,7 +684,7 @@ float PathManager::timeScaling_3(float ti, float tf, float t)
     MatrixXd A;
     MatrixXd b;
     MatrixXd A_1;
-    MatrixXd x;
+    MatrixXd sol;
 
     A.resize(4,4);
     b.resize(4,1);
@@ -636,9 +697,9 @@ float PathManager::timeScaling_3(float ti, float tf, float t)
     b << 0, 1, 0, 0;
 
     A_1 = A.inverse();
-    x = A_1 * b;
+    sol = A_1 * b;
 
-    s = x(0,0) + x(1,0) * t + x(2,0) * t * t + x(3,0) * t * t * t;
+    s = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
 
     return s;
 }
@@ -799,6 +860,65 @@ VectorXd PathManager::makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, 
             x = A_1 * b;
 
             Ps(2) = x(0,0) + x(1,0) * s[0] + x(2,0) * s[0] * s[0];
+        }
+    }
+
+    return Ps;
+}
+
+VectorXd PathManager::seonwoo_makePath(VectorXd Pi, VectorXd Pf, float s)    // 경로 2차 함수
+{
+    float xi = Pi(0), xf = Pf(0);
+    float yi = Pi(1), yf = Pf(1);
+    float zi = Pi(2), zf = Pf(2);
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd sol;
+
+    VectorXd Ps;
+    Ps.resize(3);
+
+    A.resize(3,3);
+    b.resize(3,1);
+
+    if (Pi == Pf)
+    {
+        Ps(0) = xi;
+        Ps(1) = yi;
+        Ps(2) = zi;
+    }
+    else
+    {
+        Ps(0) = xi + s * (xf - xi);
+        Ps(1) = yi + s * (yf - yi);
+
+        if (zi > zf)
+        {
+            A << 1, 0, 0,
+                1, 1, 1,
+                0, 1, 0;
+
+            b << zi, zf, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            Ps(2) = sol(0,0) + sol(1,0) * s + sol(2,0) * s * s;
+        }
+        else
+        {
+            A << 1, 0, 0,
+                1, 1, 1,
+                0, 1, 2;
+
+            b << zi, zf, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            Ps(2) = sol(0,0) + sol(1,0) * s + sol(2,0) * s * s;
         }
     }
 

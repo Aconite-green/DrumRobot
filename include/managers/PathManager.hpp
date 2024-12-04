@@ -83,9 +83,13 @@ public:
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
 
     // SeonWoo
-    VectorXd SeonWoo_inst_i, SeonWoo_inst_f;
-    VectorXd SeonWoo_state;
-    float SeonWoo_ti, SeonWoo_tf, SeonWoo_t1, SeonWoo_t2;
+    void seonwoo_generateTrajectory();
+
+    VectorXd seonwoo_inst_i, seonwoo_inst_f;
+    VectorXd seonwoo_state;
+    float seonwoo_tR_i, seonwoo_tR_f;
+    float seonwoo_tL_i, seonwoo_tL_f;
+    float seonwoo_t1, seonwoo_t2;
 
     // x, y, z 저장할 구조체
     typedef struct {
@@ -220,6 +224,9 @@ private:
     VectorXd inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
 
     const bool XYZm = false; // 궤적 생성 중 정지 여부
+    
+    // SeonWoo
+    VectorXd seonwoo_makePath(VectorXd Pi, VectorXd Pf, float s);
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
     MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
