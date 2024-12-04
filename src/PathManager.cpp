@@ -643,7 +643,7 @@ float PathManager::timeScaling_3(float ti, float tf, float t)
     return s;
 }
 
-VectorXd PathManager::makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)    // 경로 1차 함수d
+VectorXd PathManager::makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h)    // 경로 1차 함수
 {
     float xi = Pi(0), xf = Pf(0);
     float yi = Pi(1), yf = Pf(1);

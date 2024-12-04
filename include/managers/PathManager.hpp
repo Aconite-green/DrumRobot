@@ -82,6 +82,11 @@ public:
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
 
+    // SeonWoo
+    VectorXd SeonWoo_inst_i, SeonWoo_inst_f;
+    VectorXd SeonWoo_state;
+    float SeonWoo_ti, SeonWoo_tf, SeonWoo_t1, SeonWoo_t2;
+
     // x, y, z 저장할 구조체
     typedef struct {
 
