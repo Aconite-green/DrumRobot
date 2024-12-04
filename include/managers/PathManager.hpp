@@ -242,7 +242,6 @@ private:
     ///////////////////////////////////////////////////////////////////////////
     double total_time =0.0;
     double threshold = 2.4;
-    double play_time;
     double prev_time = 0;
     double detect_time_R=0;
     double detect_time_L=0;

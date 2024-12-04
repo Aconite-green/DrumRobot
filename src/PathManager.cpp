@@ -1288,7 +1288,6 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             bpm = stod(columns[0].substr(4));
             cout << "bpm = " << bpm << "\n";
             BPMFlag = 1;
-            play_time = 0;
         }
         else
         {
@@ -1387,7 +1386,6 @@ void PathManager::parseMeasure(double &timeSum)
     inst_next << inst_R, inst_L;
     vector<string> column = Q.front();
     timeSum -= stod(column[1]);
-    prev_time = stod(column[1]);
     Q.pop();
 
     std::cout << "------------------------현재시간-----------------------" << std::endl;
