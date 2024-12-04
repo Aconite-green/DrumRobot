@@ -162,8 +162,9 @@ private:
     string musicName;
     int fileIndex;
     bool BPMFlag;
-    float timeSum = 0.0;
+    double timeSum = 0.0;
     bool openFlag;
     std::ifstream inputFile; 
+    
     
 };

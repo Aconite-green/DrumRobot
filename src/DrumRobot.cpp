@@ -407,7 +407,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         {
             cnt++;
             state.play = PlaySub::ReadMusicSheet;   // 주기가 되면 GenerateTrajectory 상태로 진입
-            SendStandard = currentTime;                 // 현재 시간으로 시간 객체 초기화
+            SendStandard = currentTime;             // 현재 시간으로 시간 객체 초기화
         }
         break;
     }
@@ -415,7 +415,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
     
         sleep(2);
-
         // 파일을 처음 열 때만
         if (openFlag == 1)
         {
@@ -432,7 +431,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 break; // 파일 열지 못했으므로 상태 변경 후 종료
             }
         }
-
         // 파일에서 한 줄을 성공적으로 읽은 경우
         if (pathManager.readMeasure(inputFile, BPMFlag, timeSum) == true)
         {
@@ -1042,7 +1040,7 @@ bool DrumRobot::processInput(const std::string &input)
                 std::cout << "enter music name : ";
                 std::getline(std::cin, musicName);
                 
-
+                BPMFlag = 0;
                 fileIndex = 0;
                 openFlag = 1;
                 state.main = Main::Play;

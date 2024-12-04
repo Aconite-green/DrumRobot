@@ -1262,109 +1262,138 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
     return Qf;
 }
 
-bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, float &timeSum)
-{
-    string line;
-
-    while(getline(inputFile, line))
+    bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum)
     {
-        istringstream iss(line);
-        string item;
+        string line;
 
-        vector<string> columns;
-        while (getline(iss, item, '\t'))
-        {
-            item = trimWhitespace(item);
-            columns.push_back(item);
-        }
 
-        if (!BPMFlag)
-        { // 첫번째 행엔 bpm에 대한 정보
-            //cout << "music";
-            bpm = stod(columns[0].substr(4));
-            //cout << "bpm = " << bpm << "\n";
-            BPMFlag = 1;
-            play_time = 0;
-        }
-        else
+        while(getline(inputFile, line))
         {
-            Q.push(columns);
-            timeSum += stof(columns[1]);
-            if(timeSum >= threshold)
+            istringstream iss(line);
+            string item;
+
+            vector<string> columns;
+            while (getline(iss, item, '\t'))
             {
-                // Q에 있는 요소들 출력
-                queue<vector<string>> tempQ = Q; // 큐 복사본 사용
-                while (!tempQ.empty())
+                item = trimWhitespace(item);
+                columns.push_back(item);
+            }
+
+            if (!BPMFlag)
+            { // 첫번째 행엔 bpm에 대한 정보
+                cout << "music";
+                bpm = stod(columns[0].substr(4));
+                cout << "bpm = " << bpm << "\n";
+                BPMFlag = 1;
+                play_time = 0;
+            }
+            else
+            {
+                timeSum += stod(columns[1]);
+                total_time += stod(columns[1]);
+                columns.push_back(to_string(total_time));
+
+                // 큐에 저장
+                Q.push(columns);
+
+
+                if(timeSum >= threshold)
                 {
-                    vector<string> current = tempQ.front();
-                    tempQ.pop();
-
-                    // 요소 출력 (탭으로 구분)
-                    for (size_t i = 0; i < current.size(); ++i)
+                    // Q에 있는 요소들 출력
+                    queue<vector<string>> tempQ = Q; // 큐 복사본 사용
+                    while (!tempQ.empty())
                     {
-                        cout << current[i];
-                        if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
-                            cout << '\t';
-                    }
-                    cout << '\n'; // 다음 요소로 넘어갈 때 개행
-                }
-                cout << '\n'; // 한 반복 끝날 때 개행 두 번
+                        vector<string> current = tempQ.front();
+                        tempQ.pop();
 
-                return true;
+                        // 요소 출력 (탭으로 구분)
+                        for (size_t i = 0; i < current.size(); ++i)
+                        {
+                            cout << current[i];
+                            if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
+                                cout << '\t';
+                        }
+                        cout << '\n'; // 다음 요소로 넘어갈 때 개행
+                    }
+                    cout << '\n'; // 한 반복 끝날 때 개행 두 번
+
+                    return true;
+                }
             }
         }
+        return false;
     }
-    return false;
-}
 
-void PathManager::parseMeasure(float &timeSum)
-{
-    map<string, int> instrument_mapping = {
-        {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
-        // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
-
-    float sum = 0;
-    //threshold/2
-    VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
-    VectorXd inst_next = VectorXd::Zero(18);
-
-    while(sum >= threshold/2)
+    void PathManager::parseMeasure(double &timeSum)
     {
-        vector<string> curLine = Q.front();
-        Q.pop();
-        Q.push(curLine);
-        sum += stof(curLine[1]);
+        cout << "-------------------------\n";
+        // 지금 들어온 Q 맨 앞에 값이 현재 시간임
+        vector<string> curLine = Q.front(); 
+        current_time_R = stod(curLine[8]);  
+        current_time_L = stod(curLine[8]); 
 
-        //오른손
-        if (curLine[2] != "0" && !(inst_R.array() != 0).any())
+        // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
+        if (detect_time_R <= current_time_R)
         {
-            inst_R(instrument_mapping[curLine[2]]) = 1.0;
-            //detect_time_R =
-            sum = 0;
+            moving_start_R = current_time_R - stod(curLine[1]);
         }
-        //왼손
-        if (curLine[3] != "0" && !(inst_L.array() != 0).any())
+        if (detect_time_L <= current_time_L)
         {
-            inst_L(instrument_mapping[curLine[3]]) = 1.0;
-            //detect_time_L =
-            sum = 0;
+            moving_start_L = current_time_L - stod(curLine[1]);
         }
-        //오른손 왼손 둘다 타격 감지
-        if((inst_R.array() != 0).any()&&(inst_L.array() != 0).any())
+
+
+        map<string, int> instrument_mapping = {
+            {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
+            // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
+
+        float sum = 0;
+        //threshold/2
+        VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
+        VectorXd inst_next = VectorXd::Zero(18);
+
+        // 큐를 전부 순회
+        for (size_t i = 0; i < Q.size(); ++i)
         {
-            break;
+            curLine = Q.front();
+            Q.pop();
+            Q.push(curLine); // 현재 데이터를 다시 큐 끝에 삽입
+            sum += stod(curLine[1]); // 합계 갱신
+
+            // 오른손 타격 감지
+            if (curLine[2] != "0" && !(inst_R.array() != 0).any())
+            {
+                inst_R(instrument_mapping[curLine[2]]) = 1.0; // 해당 악기 상태 활성화
+                detect_time_R = stof(curLine[8]); // 오른손 타격 시간 갱신
+            }
+
+            // 왼손 타격 감지
+            if (curLine[3] != "0" && !(inst_L.array() != 0).any())
+            {
+                inst_L(instrument_mapping[curLine[3]]) = 1.0; // 해당 악기 상태 활성화
+                detect_time_L = stof(curLine[8]); // 왼손 타격 시간 갱신
+            }
+
+            // 양손 모두 타격 감지
+            if ((inst_R.array() != 0).any() && (inst_L.array() != 0).any())
+            {
+                continue; // 둘 다 타격이 감지되면 다음 루프로 넘어감
+            }
         }
+
+        //결론적으로 움직일 위치와 현재 오른손 시간 현재 왼손 시간 타격할 오른손 시간 타격할 왼손 시간 움직이기 시작한 왼손 시간 움직이긴 시작한 오른손 시간 정보를 다음 함수에 넘겨주는 구조가 될 예정
+        inst_next << inst_R, inst_L;
+        vector<string> column = Q.front();
+        timeSum -= stod(column[1]);
+        prev_time = stod(column[1]);
+        Q.pop();
+
+        std::cout << "------------------------현재시간-----------------------" << std::endl;
+        std::cout << "오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " 현재시간 --> "  << current_time_R << " 타격감지시간 --> " << detect_time_R << std::endl;
+        std::cout << "왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " 현재시간 --> "  << current_time_L << " 타격감지시간 --> " << detect_time_L <<  std::endl;
+        std::cout << "-----------------------------------------------------" << std::endl;
 
     }
-
-    inst_next << inst_R, inst_L;
-    vector<string> column = Q.front();
-    timeSum -= stof(column[1]);
-    play_time = stof(column[1]);
-    Q.pop(); 
-
-    float time = sum * 100.0 / bpm;
-}
 
 
 
