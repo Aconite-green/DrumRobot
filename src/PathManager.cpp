@@ -227,6 +227,9 @@ void PathManager::seonwoo_generateTrajectory()
     float n, sR, sL;
     float dt = canManager.deltaT;
 
+    // state
+    seonwoo_getState();
+
     // position
     Pi = getInstrumentPosition(seonwoo_inst_i);
     Pf = getInstrumentPosition(seonwoo_inst_f);
@@ -255,15 +258,16 @@ void PathManager::seonwoo_generateTrajectory()
         Pt.pR = seonwoo_makePath(Pi_R, Pf_R, sR);
         Pt.pL = seonwoo_makePath(Pi_L, Pf_L, sL);
 
+        Pt.waist_q = 0.0;
+
+        HitParameter param;
+        Pt.add_qR = makeHitTrajetory(seonwoo_state(0), 0.0f, seonwoo_tR_f-seonwoo_tR_i, t_R, param);
+        Pt.add_qL = makeHitTrajetory(seonwoo_state(1), 0.0f, seonwoo_tL_f-seonwoo_tL_i, t_L, param);
+
         // brake
         for (int j = 0; j < 8; j++)
         {
-            Pt.brakeState[j] = false;
-        }
-
-        if (i < n*0.1 || i > n*0.9)
-        {
-            Pt.brakeState[0] = true;
+            Pt.brake_state[j] = false;
         }
         
         P.push(Pt);
@@ -351,12 +355,12 @@ void PathManager::generateTrajectory()
         // brake
         for (int j = 0; j < 8; j++)
         {
-            Pt.brakeState[j] = false;
+            Pt.brake_state[j] = false;
         }
 
         if (i < n*0.1 || i > n*0.9)
         {
-            Pt.brakeState[0] = true;
+            Pt.brake_state[0] = true;
         }
         
         P.push(Pt);
@@ -373,7 +377,7 @@ void PathManager::generateTrajectory()
 
 void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 {
-    HitRL CurRL;
+    // HitRL CurRL;
 
     VectorXd q(9);
 
@@ -384,19 +388,19 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
         q(i) = q_06(i);
     }
 
-    CurRL = Hit.front(); Hit.pop();
+    // CurRL = Hit.front(); Hit.pop();
     
-    q(7) = CurRL.hitR;
-    q(8) = CurRL.hitL;
+    // q(7) = CurRL.hitR;
+    // q(8) = CurRL.hitL;
 
     pushConmmandBuffer(q, false);
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    // }
+    // 데이터 기록
+    for (int m = 0; m < 9; m++)
+    {
+        std::string fileName = "solveIK_q" + to_string(m);
+        fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    }
 }
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
@@ -925,6 +929,332 @@ VectorXd PathManager::seonwoo_makePath(VectorXd Pi, VectorXd Pf, float s)    // 
     return Ps;
 }
 
+VectorXd PathManager::makeHitTrajetory(int state, float ti, float tf, float t, HitParameter param)
+{
+    VectorXd addAngle;
+    addAngle.resize(2);    // wrist, elbow
+
+    if (state == 1)
+    {
+        // Contact - Lift - Hit
+        addAngle(0) = makeWristAngleCLH(ti, tf, t, param);
+        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+    }
+    else if (state == 2)
+    {
+        // Stay - Lift - Hit
+        addAngle(0) = makeWristAngleSLH(ti, tf, t, param);
+        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+    }
+    else if (state == 3)
+    {
+        // Contact - Stay
+        addAngle(0) = makeWristAngleCS(ti, tf, t, param);
+        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+    }
+    else
+    {
+        // Stay
+        addAngle(0) = param.wristStayAngle;
+        addAngle(1) = param.elbowStayAngle;
+    }
+   
+    return addAngle;
+}
+
+float PathManager::makeWristAngleCLH(float ti, float tf, float t, HitParameter param)
+{
+    float wrist_q;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd sol;
+
+    float t_contact = 0.2 * (tf - ti);
+    float t_lift = 0.6 * (tf - ti);
+    float t_end = tf - ti;    // t_hit
+    float hit_angle = param.wristHitAngle;
+    float lift_angle = param.wristLiftAngle;
+
+    if (t < t_contact)
+    {
+        A.resize(3,3);
+        b.resize(3,1);
+
+        A << 1, 0, 0,
+            1, t_contact, t_contact*t_contact,
+            0, 1, 2*t_contact;
+
+        b << 0, hit_angle, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+    }
+    else if (t < t_lift)
+    {
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
+            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+            0, 1, 2*t_contact, 3*t_contact*t_contact,
+            0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+        b << hit_angle, lift_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+    }
+    else if (t < t_end)
+    {
+        A.resize(3,3);
+        b.resize(3,1);
+
+        A << 1, t_lift, t_lift*t_lift,
+            1, t_end, t_end*t_end,
+            0, 1, 2*t_lift;
+
+        b << lift_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+    }
+    else
+    {
+        wrist_q = 0.0;
+    }
+
+    return wrist_q;
+}
+
+float PathManager::makeWristAngleSLH(float ti, float tf, float t, HitParameter param)
+{
+    float wrist_q;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd sol;
+
+    float t_lift = 0.6 * (tf - ti);
+    float t_end = tf - ti;    // t_hit
+    float stay_angle = param.wristStayAngle;
+    float lift_angle = param.wristLiftAngle;
+
+    if (t < t_lift)
+    {
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, 0, 0, 0,
+            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+            0, 1, 0, 0,
+            0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+        b << stay_angle, lift_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+    }
+    else if (t < t_end)
+    {
+        A.resize(3,3);
+        b.resize(3,1);
+
+        A << 1, t_lift, t_lift*t_lift,
+            1, t_end, t_end*t_end,
+            0, 1, 2*t_lift;
+
+        b << lift_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+    }
+    else
+    {
+        wrist_q = 0.0;
+    }
+
+    return wrist_q;
+}
+
+float PathManager::makeWristAngleCS(float ti, float tf, float t, HitParameter param)
+{
+    float wrist_q;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd sol;
+    
+    float t_contact = 0.2 * (tf - ti);
+    float t_lift = 0.6 * (tf - ti);   // t_stay
+    float hit_angle = param.wristHitAngle;
+    float stay_angle = param.wristStayAngle;
+
+    if (t < t_contact)
+    {
+        A.resize(3,3);
+        b.resize(3,1);
+
+        A << 1, 0, 0,
+            1, t_contact, t_contact*t_contact,
+            0, 1, 2*t_contact;
+
+        b << 0, hit_angle, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+    }
+    else if (t < t_lift)
+    {
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
+            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+            0, 1, 2*t_contact, 3*t_contact*t_contact,
+            0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+        b << hit_angle, stay_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+    }
+    else
+    {
+        wrist_q = stay_angle;
+    }
+
+    return wrist_q;
+}
+
+float PathManager::makeElbowAngle(float ti, float tf, float t, HitParameter param)
+{
+    float wrist_q;
+
+    MatrixXd A;
+    MatrixXd b;
+    MatrixXd A_1;
+    MatrixXd sol;
+
+    float t_lift = 0.5 * (tf - ti);
+    float t_end = tf - ti;    // t_hit
+    float lift_angle = param.elbowLiftAngle;
+    float start_angle = 0.0;
+    float end_angle = 0.0;
+
+    if (t < t_lift)
+    {
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, 0, 0, 0,
+            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+            0, 1, 0, 0,
+            0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+        b << start_angle, lift_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+    }
+    else if (t < t_end)
+    {
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+            1, t_end, t_end*t_end, t_end*t_end*t_end,
+            0, 1, 2*t_lift, 3*t_lift*t_lift,
+            0, 1, 2*t_end, 3*t_end*t_end;
+
+        b << lift_angle, end_angle, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+    }
+    else
+    {
+        wrist_q = end_angle;
+    }
+
+    return wrist_q;
+}
+
+void PathManager::seonwoo_getState()
+{
+    float norm_R_i = seonwoo_inst_i.block(0, 0, 9, 1).norm();
+    float norm_L_i = seonwoo_inst_i.block(9, 0, 9, 1).norm();
+    float norm_R_f = seonwoo_inst_f.block(0, 0, 9, 1).norm();
+    float norm_L_f = seonwoo_inst_f.block(9, 0, 9, 1).norm();
+
+    if (norm_R_i == 1 && norm_R_f == 1)
+    {
+        seonwoo_state(0) = 1;
+        inst_now_R = seonwoo_inst_f.block(0, 0, 9, 1);
+    }
+    else if (norm_R_i == 0 && norm_R_f == 1)
+    {
+        seonwoo_state(0) = 2;
+        seonwoo_inst_i.block(0, 0, 9, 1) = inst_now_R;
+        inst_now_R = seonwoo_inst_f.block(0, 0, 9, 1);
+    }
+    else if (norm_R_i == 1 && norm_R_f == 0)
+    {
+        seonwoo_state(0) = 3;
+        seonwoo_inst_f.block(0, 0, 9, 1) = inst_now_R;
+    }
+    else if (norm_R_i == 0 && norm_R_f == 0)
+    {
+        seonwoo_state(0) = 0;
+        seonwoo_inst_i.block(0, 0, 9, 1) = inst_now_R;
+        seonwoo_inst_f.block(0, 0, 9, 1) = inst_now_R;
+    }
+
+    if (norm_L_i == 1 && norm_L_f == 1)
+    {
+        seonwoo_state(1) = 1;
+        inst_now_L = seonwoo_inst_f.block(9, 0, 9, 1);
+    }
+    else if (norm_L_i == 0 && norm_L_f == 1)
+    {
+        seonwoo_state(1) = 2;
+        seonwoo_inst_i.block(9, 0, 9, 1) = inst_now_L;
+        inst_now_L = seonwoo_inst_f.block(9, 0, 9, 1);
+    }
+    else if (norm_L_i == 1 && norm_L_f == 0)
+    {
+        seonwoo_state(1) = 3;
+        seonwoo_inst_f.block(9, 0, 9, 1) = inst_now_L;
+    }
+    else if (norm_L_i == 0 && norm_L_f == 0)
+    {
+        seonwoo_state(1) = 0;
+        seonwoo_inst_i.block(9, 0, 9, 1) = inst_now_L;
+        seonwoo_inst_f.block(9, 0, 9, 1) = inst_now_L;
+    }
+}
+
 void PathManager::makeHitPath(float ti, float tf, float t, MatrixXd &AA)
 {
     HitRL A_RL;
@@ -1406,7 +1736,7 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
         { // 첫번째 행엔 bpm에 대한 정보
             cout << "music";
             bpm = stod(columns[0].substr(4));
-            cout << "bpm = " << bpm << "\n";
+            cout << " bpm = " << bpm << "\n";
             BPMFlag = 1;
         }
         else
