@@ -85,9 +85,14 @@ public:
     // SeonWoo
     void seonwoo_generateTrajectory();
 
+<<<<<<< HEAD
     VectorXd seonwoo_inst_i;
     VectorXd seonwoo_inst_f;
     VectorXd seonwoo_state;
+=======
+    VectorXd seonwoo_inst_i, seonwoo_inst_f;
+    VectorXd seonwoo_state = VectorXd::Zero(2);
+>>>>>>> 6787e6db25d6e6a5b8eb8264b4036d912d5bd054
     float seonwoo_tR_i, seonwoo_tR_f;
     float seonwoo_tL_i, seonwoo_tL_f;
     float seonwoo_t1, seonwoo_t2; 
@@ -103,9 +108,29 @@ public:
 
         VectorXd qLin;
 
-        bool brakeState[8];
+        // 허리 각도
+        float waist_q;
+
+        // 손목 각도, 팔꿈치 추가 각도
+        VectorXd add_qR;
+        VectorXd add_qL;
+
+        // 브레이크
+        bool brake_state[8];
 
     }Pos;
+
+    // 타격 궤적 생성 파라미터
+    typedef struct {
+
+        float wristStayAngle = 10.0 * M_PI / 180.0;
+        float wristHitAngle = -5.0 * M_PI / 180.0;
+        float wristLiftAngle = 25.0 * M_PI / 180.0;
+
+        float elbowStayAngle = 3.0 * M_PI / 180.0;
+        float elbowLiftAngle = 6.0 * M_PI / 180.0;
+
+    }HitParameter;
 
     // 타격 각도 저장할 구조체
     typedef struct {
@@ -228,6 +253,12 @@ private:
     
     // SeonWoo
     VectorXd seonwoo_makePath(VectorXd Pi, VectorXd Pf, float s);
+    VectorXd makeHitTrajetory(int state, float ti, float tf, float t, HitParameter parameters);
+    float makeWristAngleCLH(float ti, float tf, float t, HitParameter parameters);
+    float makeWristAngleSLH(float ti, float tf, float t, HitParameter parameters);
+    float makeWristAngleCS(float ti, float tf, float t, HitParameter parameters);
+    float makeElbowAngle(float ti, float tf, float t, HitParameter parameters);
+    void seonwoo_getState();
 
     /////////////////////////////////////////////////////////////////////////// Perform & Play
     MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);

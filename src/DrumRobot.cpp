@@ -465,7 +465,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
             std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
-            pathManager.generateTrajectory();
+            pathManager.seonwoo_generateTrajectory();
+            // pathManager.generateTrajectory();
             pathManager.line++;
         }
         
@@ -485,10 +486,10 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
 
         for (int i = 0; i < 8; i++)
         {
-            usbio.USBIO_4761_set(i, nextPos.brakeState[i]);
+            usbio.USBIO_4761_set(i, nextPos.brake_state[i]);
         }
 
-        bool fixedWaist = true;
+        bool fixedWaist = false;
         if (fixedWaist)
         {
             pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
