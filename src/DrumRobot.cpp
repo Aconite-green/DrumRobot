@@ -415,6 +415,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
+            sleep(2);
             // 파일을 처음 열 때만
             if (openFlag == 1)
             {
@@ -459,32 +460,17 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 break;
             }
         }
+            state.play = PlaySub::SolveIK;
 
-        state.play = PlaySub::SolveIK;
-
-        break;
+            break;
+        
     
     }
     case PlaySub::GenerateTrajectory:
     {
-        // if (pathManager.line >= pathManager.total)
-        // {
-        //     std::cout << "Play is Over\n";
-        //     state.main = Main::AddStance;
-        //     state.play = PlaySub::TimeCheck;
-        //     addStanceFlagSetting("goToHome");
-        //     pathManager.line = 0;
-        //     usleep(500000);     // 0.5s
-        // }
-        
-        // if (pathManager.P.empty()) // P가 비어있으면 새로 생성
-        // {
-        //     std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
-        //     pathManager.generateTrajectory();
-        //     pathManager.line++;
-        // }
 
         pathManager.seonwoo_generateTrajectory();
+
         pathManager.line++;
         
         state.play = PlaySub::SolveIK;
@@ -495,7 +481,9 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
-        pathManager.P.pop(); // 앞에꺼 지움000
+        pathManager.P.pop(); // 앞에꺼 지움
+        sleep(1);
+
 
         // std::cout << "\nR\n" << nextPos.pR
         // << "\nL\n" << nextPos.pL
