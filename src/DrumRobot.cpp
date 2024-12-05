@@ -432,6 +432,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                     break; // 파일 열지 못했으므로 상태 변경 후 종료
                 }
             }
+
+            std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << "\n";
             // 파일에서 한 줄을 성공적으로 읽은 경우
             if (pathManager.readMeasure(inputFile, BPMFlag, timeSum) == true)
             {
@@ -446,6 +448,9 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 inputFile.close(); // 파일 닫기
                 fileIndex++;       // 다음 파일로 이동
                 openFlag = 1;      // 파일 열 준비
+
+                state.play = PlaySub::ReadMusicSheet;
+                break;
             }
         }
             state.play = PlaySub::SolveIK;
@@ -456,23 +461,10 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::GenerateTrajectory:
     {
-        // if (pathManager.line >= pathManager.total)
-        // {
-        //     std::cout << "Play is Over\n";
-        //     state.main = Main::AddStance;
-        //     state.play = PlaySub::TimeCheck;
-        //     addStanceFlagSetting("goToHome");
-        //     pathManager.line = 0;
-        //     usleep(500000);     // 0.5s
-        // }
-        
-        if (pathManager.P.empty()) // P가 비어있으면 새로 생성
-        {
-            std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
-            pathManager.seonwoo_generateTrajectory();
-            // pathManager.generateTrajectory();
-            pathManager.line++;
-        }
+
+        pathManager.seonwoo_generateTrajectory();
+
+        pathManager.line++;
         
         state.play = PlaySub::SolveIK;
 
