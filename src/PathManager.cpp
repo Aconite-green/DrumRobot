@@ -395,12 +395,12 @@ void PathManager::solveIK(VectorXd &pR1, VectorXd &pL1)
 
     pushConmmandBuffer(q, false);
 
-    // 데이터 기록
-    for (int m = 0; m < 9; m++)
-    {
-        std::string fileName = "solveIK_q" + to_string(m);
-        fun.appendToCSV_DATA(fileName, m, q(m), 0);
-    }
+    // // 데이터 기록
+    // for (int m = 0; m < 9; m++)
+    // {
+    //     std::string fileName = "solveIK_q" + to_string(m);
+    //     fun.appendToCSV_DATA(fileName, m, q(m), 0);
+    // }
 }
 
 void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
@@ -1863,11 +1863,11 @@ void PathManager::parseMeasure(double &timeSum)
 
     Q.pop();
     line_n++;
-    std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
-    std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
-    std::cout << "// 왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_L << " \t //" <<  std::endl;
-    std::cout << "// 이전 악기 --> \t" << seonwoo_inst_i.transpose() << "    다음 악기 --> " << seonwoo_inst_f.transpose() << " \t\t //" << std::endl;
-    std::cout << "--------------------------------------------------------------------------------------------------------------------" << std::endl << std::endl;
+    // std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
+    // std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
+    // std::cout << "// 왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_L << " \t //" <<  std::endl;
+    // std::cout << "// 이전 악기 --> \t" << seonwoo_inst_i.transpose() << "    다음 악기 --> " << seonwoo_inst_f.transpose() << " \t\t //" << std::endl;
+    // std::cout << "--------------------------------------------------------------------------------------------------------------------" << std::endl << std::endl;
 
 }
 

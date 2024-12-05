@@ -413,62 +413,70 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::ReadMusicSheet:
     {
-    
-        sleep(2);
-        // 파일을 처음 열 때만
-        if (openFlag == 1)
+        if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
-            openFlag = 0; // 파일 열기 상태 초기화
-            std::string currentFile = basePath + musicName + std::to_string(fileIndex) + ".txt";
-            inputFile.open(currentFile); // 파일 열기
-            
-            if (!inputFile.is_open()) // 파일 열기 실패
+            // 파일을 처음 열 때만
+            if (openFlag == 1)
             {
-                std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
-                robotFlagSetting("isReady");
-                state.play = PlaySub::TimeCheck; 
-                state.main = Main::Ideal;
-                break; // 파일 열지 못했으므로 상태 변경 후 종료
+                openFlag = 0; // 파일 열기 상태 초기화
+                std::string currentFile = basePath + musicName + std::to_string(fileIndex) + ".txt";
+                inputFile.open(currentFile); // 파일 열기
+                
+                if (!inputFile.is_open()) // 파일 열기 실패
+                {
+                    std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
+                    robotFlagSetting("isReady");
+                    state.play = PlaySub::TimeCheck; 
+                    state.main = Main::Ideal;
+                    break; // 파일 열지 못했으므로 상태 변경 후 종료
+                }
+            }
+            // 파일에서 한 줄을 성공적으로 읽은 경우
+            if (pathManager.readMeasure(inputFile, BPMFlag, timeSum) == true)
+            {
+                // 경로 생성 완료 후 다음 상태로 전환
+                pathManager.parseMeasure(timeSum); // 후속 작업
+                state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+                break;  // 상태 전환 후 종료
+            }
+            // 파일 끝에 도달한 경우
+            else
+            {
+                inputFile.close(); // 파일 닫기
+                fileIndex++;       // 다음 파일로 이동
+                openFlag = 1;      // 파일 열 준비
             }
         }
-        // 파일에서 한 줄을 성공적으로 읽은 경우
-        if (pathManager.readMeasure(inputFile, BPMFlag, timeSum) == true)
-        {
-            // 경로 생성 완료 후 다음 상태로 전환
-            pathManager.parseMeasure(timeSum); // 후속 작업
-            state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
-            break;  // 상태 전환 후 종료
-        }
-        // 파일 끝에 도달한 경우
-        else
-        {
-            inputFile.close(); // 파일 닫기
-            fileIndex++;       // 다음 파일로 이동
-            openFlag = 1;      // 파일 열 준비
-        }
+
+        state.play = PlaySub::SolveIK;
 
         break;
     
     }
     case PlaySub::GenerateTrajectory:
     {
-        if (pathManager.line >= pathManager.total)
-        {
-            std::cout << "Play is Over\n";
-            state.main = Main::AddStance;
-            state.play = PlaySub::TimeCheck;
-            addStanceFlagSetting("goToHome");
-            pathManager.line = 0;
-            usleep(500000);     // 0.5s
-        }
+        // if (pathManager.line >= pathManager.total)
+        // {
+        //     std::cout << "Play is Over\n";
+        //     state.main = Main::AddStance;
+        //     state.play = PlaySub::TimeCheck;
+        //     addStanceFlagSetting("goToHome");
+        //     pathManager.line = 0;
+        //     usleep(500000);     // 0.5s
+        // }
         
-        if (pathManager.P.empty()) // P가 비어있으면 새로 생성
-        {
-            std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
-            pathManager.seonwoo_generateTrajectory();
-            // pathManager.generateTrajectory();
-            pathManager.line++;
-        }
+        // if (pathManager.P.empty()) // P가 비어있으면 새로 생성
+        // {
+        //     std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
+        //     pathManager.seonwoo_generateTrajectory();
+        //     // pathManager.generateTrajectory();
+        //     pathManager.line++;
+        // }
+
+        std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << ", total : " << pathManager.total << "\n";
+        pathManager.seonwoo_generateTrajectory();
+        // pathManager.generateTrajectory();
+        pathManager.line++;
         
         state.play = PlaySub::SolveIK;
 
