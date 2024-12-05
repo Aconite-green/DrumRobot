@@ -414,7 +414,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     case PlaySub::ReadMusicSheet:
     {
     
-        sleep(2);
+        // sleep(2);
         // 파일을 처음 열 때만
         if (openFlag == 1)
         {
@@ -468,6 +468,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
             pathManager.seonwoo_generateTrajectory();
             // pathManager.generateTrajectory();
             pathManager.line++;
+            sleep(2);
         }
         
         state.play = PlaySub::SolveIK;
@@ -479,6 +480,9 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
         pathManager.P.pop(); // 앞에꺼 지움000
+        cout << "pop";
+        sleep(1);
+
 
         // std::cout << "\nR\n" << nextPos.pR
         // << "\nL\n" << nextPos.pL
