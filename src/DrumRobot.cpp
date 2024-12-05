@@ -424,10 +424,17 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 
                 if (!inputFile.is_open()) // 파일 열기 실패
                 {
-                    std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
-                    robotFlagSetting("isReady");
-                    state.play = PlaySub::TimeCheck; 
-                    state.main = Main::Ideal;
+                    // std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
+                    // robotFlagSetting("isReady");
+                    // state.play = PlaySub::TimeCheck; 
+                    // state.main = Main::Ideal;
+
+                    std::cout << "Play is Over\n";
+                    state.main = Main::AddStance;
+                    state.play = PlaySub::TimeCheck;
+                    addStanceFlagSetting("goToHome");
+                    pathManager.line = 0;
+                    usleep(500000);     // 0.5s
                     break; // 파일 열지 못했으므로 상태 변경 후 종료
                 }
             }
