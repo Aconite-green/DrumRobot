@@ -1045,7 +1045,8 @@ bool DrumRobot::processInput(const std::string &input)
                 openFlag = 1;
                 state.main = Main::Play;
                 robotFlagSetting("MOVING");
-
+                pathManager.seonwoo_inst_i = VectorXd::Zero(18);
+                pathManager.seonwoo_inst_f = VectorXd::Zero(18);
                 return true;
             }
             else if (input == "h")

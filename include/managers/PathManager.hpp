@@ -85,11 +85,12 @@ public:
     // SeonWoo
     void seonwoo_generateTrajectory();
 
-    VectorXd seonwoo_inst_i, seonwoo_inst_f;
+    VectorXd seonwoo_inst_i;
+    VectorXd seonwoo_inst_f;
     VectorXd seonwoo_state;
     float seonwoo_tR_i, seonwoo_tR_f;
     float seonwoo_tL_i, seonwoo_tL_f;
-    float seonwoo_t1, seonwoo_t2;
+    float seonwoo_t1, seonwoo_t2; 
 
     // x, y, z 저장할 구조체
     typedef struct {
@@ -252,13 +253,13 @@ private:
 
 
     ///////////////////////////////////////////////////////////////////////////
-    double total_time =0.0;
     double threshold = 2.4;
-    double prev_time = 0;
+    double total_time =0.0;
     double detect_time_R=0;
     double detect_time_L=0;
-    double current_time_R=0;
-    double current_time_L=0;
+    double current_time=0;
     double moving_start_R=0;
     double moving_start_L=0;
+    int line_n =0; 
+    vector<string> prev_col = { "0","0","0","0","0","0","0","0" };
 };

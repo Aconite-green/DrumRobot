@@ -1386,7 +1386,6 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
 {
     string line;
 
-
     while(getline(inputFile, line))
     {
         istringstream iss(line);
@@ -1412,12 +1411,11 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
         else
         {
             timeSum += stod(columns[1]);
-            total_time += stod(columns[1]);
             columns.push_back(to_string(total_time));
+            total_time += stod(columns[1]);
 
             // 큐에 저장
             Q.push(columns);
-
 
             if(timeSum >= threshold)
             {
@@ -1448,30 +1446,47 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
 
 void PathManager::parseMeasure(double &timeSum)
 {
-    // 지금 들어온 Q 맨 앞에 값이 현재 시간임
-    vector<string> curLine = Q.front(); 
-    current_time_R = stod(curLine[8]);  
-    current_time_L = stod(curLine[8]); 
-
-    // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
-    if (detect_time_R <= current_time_R)
-    {
-        moving_start_R = current_time_R - stod(curLine[1]);
-    }
-    if (detect_time_L <= current_time_L)
-    {
-        moving_start_L = current_time_L - stod(curLine[1]);
-    }
-
 
     map<string, int> instrument_mapping = {
-        {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
-        // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
+    {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
+    // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
+    
+    // 지금 들어온 Q 맨 앞에 값이 현재 시간임
+    vector<string> curLine = Q.front(); 
+    current_time = stod(curLine[8]);  
+    
+    // 이전 위치에 대한 업데이트
+    if(prev_col[2] != "0" || prev_col[3] != "0")
+        {
+            VectorXd inst_R_prev = VectorXd::Zero(9), inst_L_prev = VectorXd::Zero(9);
+            if (prev_col[2] != "0")
+            {
+                inst_R_prev(instrument_mapping[prev_col[2]]) = 1.0; // 해당 악기 상태 활성화
+            }
+
+            if (prev_col[3] != "0")
+            {
+                inst_L_prev(instrument_mapping[prev_col[3]]) = 1.0; // 해당 악기 상태 활성화
+            }
+                seonwoo_inst_i << inst_R_prev, inst_L_prev;
+        }
+
+    // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
+    if (detect_time_R <= current_time)
+    {
+        moving_start_R = current_time;
+
+    }
+    if (detect_time_L <= current_time)
+    {
+        moving_start_L = current_time;
+    }
 
     float sum = 0;
+    float make_time = 0;
     //threshold/2
     VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
-    VectorXd inst_next = VectorXd::Zero(18);
+    // VectorXd inst_next = VectorXd::Zero(18);
 
     // 큐를 전부 순회
     for (size_t i = 0; i < Q.size(); ++i)
@@ -1485,14 +1500,14 @@ void PathManager::parseMeasure(double &timeSum)
         if (curLine[2] != "0" && !(inst_R.array() != 0).any())
         {
             inst_R(instrument_mapping[curLine[2]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_R = stof(curLine[8]); // 오른손 타격 시간 갱신
+            detect_time_R = stof(curLine[1]) + stof(curLine[8]); // 오른손 타격 시간 갱신
         }
 
         // 왼손 타격 감지
         if (curLine[3] != "0" && !(inst_L.array() != 0).any())
         {
             inst_L(instrument_mapping[curLine[3]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_L = stof(curLine[8]); // 왼손 타격 시간 갱신
+            detect_time_L = stof(curLine[1]) + stof(curLine[8]); // 왼손 타격 시간 갱신
         }
 
         // 양손 모두 타격 감지
@@ -1503,15 +1518,26 @@ void PathManager::parseMeasure(double &timeSum)
     }
 
     //결론적으로 움직일 위치와 현재 오른손 시간 현재 왼손 시간 타격할 오른손 시간 타격할 왼손 시간 움직이기 시작한 왼손 시간 움직이긴 시작한 오른손 시간 정보를 다음 함수에 넘겨주는 구조가 될 예정
-    inst_next << inst_R, inst_L;
-    vector<string> column = Q.front();
-    timeSum -= stod(column[1]);
-    Q.pop();
+    seonwoo_inst_f << inst_R, inst_L;
+    prev_col = Q.front();
+    timeSum -= stod(prev_col[1]);
 
-    std::cout << "------------------------현재시간-----------------------" << std::endl;
-    std::cout << "오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " 현재시간 --> "  << current_time_R << " 타격감지시간 --> " << detect_time_R << std::endl;
-    std::cout << "왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " 현재시간 --> "  << current_time_L << " 타격감지시간 --> " << detect_time_L <<  std::endl;
-    std::cout << "-----------------------------------------------------" << std::endl;
+    make_time = current_time + stod(prev_col[1]);
+
+    seonwoo_tR_i = moving_start_R;
+    seonwoo_tL_i = moving_start_L;
+    seonwoo_tR_f = detect_time_R;
+    seonwoo_tL_f = detect_time_L;
+    seonwoo_t1 = current_time;
+    seonwoo_t2 = make_time;
+
+    Q.pop();
+    line_n++;
+    std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
+    std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
+    std::cout << "// 왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_L << " \t //" <<  std::endl;
+    std::cout << "// 이전 악기 --> \t" << seonwoo_inst_i.transpose() << "    다음 악기 --> " << seonwoo_inst_f.transpose() << " \t\t //" << std::endl;
+    std::cout << "--------------------------------------------------------------------------------------------------------------------" << std::endl << std::endl;
 
 }
 
