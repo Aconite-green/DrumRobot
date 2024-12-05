@@ -85,14 +85,9 @@ public:
     // SeonWoo
     void seonwoo_generateTrajectory();
 
-<<<<<<< HEAD
-    VectorXd seonwoo_inst_i;
-    VectorXd seonwoo_inst_f;
-    VectorXd seonwoo_state;
-=======
     VectorXd seonwoo_inst_i, seonwoo_inst_f;
     VectorXd seonwoo_state = VectorXd::Zero(2);
->>>>>>> 6787e6db25d6e6a5b8eb8264b4036d912d5bd054
+
     float seonwoo_tR_i, seonwoo_tR_f;
     float seonwoo_tL_i, seonwoo_tL_f;
     float seonwoo_t1, seonwoo_t2; 
