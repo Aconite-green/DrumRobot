@@ -742,9 +742,9 @@ bool CanManager::setCANFrame()
             TMotorData tData = tMotor->commandBuffer.front();
             float desiredPosition;
 
-            desiredPosition = (tData.position - tMotor->initialJointAngle) * tMotor->cwDir / tMotor->timingBeltRatio;
             tMotor->commandBuffer.pop();
-
+            desiredPosition = (tData.position - tMotor->initialJointAngle) * tMotor->cwDir / tMotor->timingBeltRatio;
+            
             if(!safetyCheck_Tmotor(tMotor, tData))
             {
                 return false;

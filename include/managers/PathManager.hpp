@@ -63,34 +63,25 @@ public:
     /////////////////////////////////////////////////////////////////////////// Init
 
     void GetDrumPositoin();
-    void GetMusicSheet();
     void SetReadyAng();
 
-    int total = 0; ///< 악보의 전체 줄 수.
     int line = 0;  ///< 연주를 진행하고 있는 줄.
-    float bpm = 0;         /// txt 악보의 BPM 정보.
-    queue<vector<string>> Q; // 읽은 악보 저장한 큐
-
-    /////////////////////////////////////////////////////////////////////////// Perform
-
-    void PathLoopTask();
-
-    /////////////////////////////////////////////////////////////////////////// Play
+    
+    /////////////////////////////////////////////////////////////////////////// Read & Parse Measure
     bool readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
     void parseMeasure(double &timeSum);
+
+    float bpm = 0;         /// txt 악보의 BPM 정보.
+    queue<vector<string>> Q; // 읽은 악보 저장한 큐
+    
+    /////////////////////////////////////////////////////////////////////////// Play
+    
     void generateTrajectory();
     void solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
 
     // SeonWoo
     void seonwoo_generateTrajectory();
-
-    VectorXd seonwoo_inst_i, seonwoo_inst_f;
-    VectorXd seonwoo_state = VectorXd::Zero(2);
-
-    float seonwoo_tR_i, seonwoo_tR_f;
-    float seonwoo_tL_i, seonwoo_tL_f;
-    float seonwoo_t1, seonwoo_t2; 
 
     // x, y, z 저장할 구조체
     typedef struct {
@@ -200,20 +191,8 @@ private:
 
     }PartLength;
 
-    typedef struct{
-
-        VectorXd inst_next;  // 다음 이동
-        float time; // 총 이동 시간
-
-    }ParsedLine;
-
-
     /////////////////////////////////////////////////////////////////////////// Init
-    string trimWhitespace(const std::string &str);
-
-    string score_path = "../include/codes/testTrajectory_2.txt";        /// 악보 txt 파일 주소
-    vector<float> time_arr; /// txt 악보의 시간간격 정보.
-    MatrixXd inst_arr;      /// txt 악보의 오른팔 / 왼팔이 치는 악기.
+    
     VectorXd default_right; /// 오른팔 시작 위치
     VectorXd default_left;  /// 왼팔 시작 위치
     MatrixXd right_drum_position;                               ///< 오른팔의 각 악기별 위치 좌표 벡터.
@@ -224,8 +203,6 @@ private:
     VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
-    void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
-    void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity);
     void getMotorPos();
 
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
@@ -235,6 +212,9 @@ private:
     float timeScaling_3(float ti, float tf, float t);
     VectorXd makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
     VectorXd makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
+
+    void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
+    void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity);
 
     VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
 
@@ -255,30 +235,21 @@ private:
     float makeElbowAngle(float ti, float tf, float t, HitParameter parameters);
     void seonwoo_getState();
 
-    /////////////////////////////////////////////////////////////////////////// Perform & Play
-    MatrixXd tms_fun(float t2_a, float t2_b, VectorXd &inst2_a, VectorXd &inst2_b);
-    void itms0_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &A30, MatrixXd &A31, MatrixXd &AA40, MatrixXd &AA41);
-    void itms_fun(vector<float> &t2, MatrixXd &inst2, MatrixXd &B, MatrixXd &BB, VectorXd &pre_inst);
-    VectorXd pos_madi_fun(VectorXd &A);
+    VectorXd seonwoo_inst_i = VectorXd::Zero(18);
+    VectorXd seonwoo_inst_f = VectorXd::Zero(18);
+    VectorXd seonwoo_state = VectorXd::Zero(2);
+
+    float seonwoo_tR_i, seonwoo_tR_f;
+    float seonwoo_tL_i, seonwoo_tL_f;
+
+    float seonwoo_t1, seonwoo_t2;
+
     VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
-    void pushConmmandBuffer(VectorXd &Qi, bool brake_state);
-    
-    VectorXd inst_now;      /// 연주 중 현재 위치하는 악기 저장
+    void pushConmmandBuffer(VectorXd &Qi);
 
+    /////////////////////////////////////////////////////////////////////////// Read & Parse Measure
+    string trimWhitespace(const std::string &str);
 
-    /////////////////////////////////////////////////////////////////////////// 손목
-    MatrixXd sts2wrist_fun(MatrixXd &AA);
-    MatrixXd sts2elbow_fun(MatrixXd &AA);
-    pair<float, float> q78_fun(MatrixXd &t_madi, float t_now);
-    float con_fun_pos(float th_a, float th_b, float k, float n);
-
-    float wrist_ready = 30 * M_PI / 180.0;                // 타격 시 들어올리는 손목 각도 (-1)
-    float wrist_stanby = 10 * M_PI / 180.0;                 // 대기 시 들어올리는 손목 각도 (-0.5)
-    float elbow_ready = 15 * M_PI / 180.0;                  // 타격 시 들어올리는 팔꿈치 각도 (-1)
-    float elbow_stanby = 5 * M_PI / 180.0;                  // 대기 시 들어올리는 팔꿈치 각도 (-0.5)
-
-
-    ///////////////////////////////////////////////////////////////////////////
     double threshold = 2.4;
     double total_time =0.0;
     double detect_time_R=0;

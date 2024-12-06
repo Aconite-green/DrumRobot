@@ -62,11 +62,6 @@ void DrumRobot::stateMachine()
             idealStateRoutine();
             break;
         }
-        case Main::Perform:
-        {
-            checkUserInput();
-            break;
-        }
         case Main::Play:
         {
             checkUserInput();
@@ -159,12 +154,6 @@ void DrumRobot::sendLoopForThread()
             usleep(5000);   // sendLoopForThread() 주기가 100us 라서 delay 필요
             break;
         }
-        case Main::Perform:
-        {
-            UnfixedMotor();
-            SendPerformProcess(5000);
-            break;
-        }
         case Main::Play:
         {
             UnfixedMotor();
@@ -225,11 +214,6 @@ void DrumRobot::recvLoopForThread()
         case Main::Ideal:
         {
             ReadProcess(5000); /*5ms*/
-            break;
-        }
-        case Main::Perform:
-        {
-            ReadProcess(5000);
             break;
         }
         case Main::Play:
@@ -415,7 +399,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         if (pathManager.P.empty()) // P가 비어있으면 새로 생성
         {
-            sleep(2);
             // 파일을 처음 열 때만
             if (openFlag == 1)
             {
@@ -460,10 +443,10 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 break;
             }
         }
-            state.play = PlaySub::SolveIK;
 
-            break;
-        
+        state.play = PlaySub::SolveIK;
+
+        break;
     
     }
     case PlaySub::GenerateTrajectory:
@@ -482,32 +465,19 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
         pathManager.P.pop(); // 앞에꺼 지움
-        sleep(1);
-
 
         // std::cout << "\nR\n" << nextPos.pR
         // << "\nL\n" << nextPos.pL
         // << "\nq\n" << nextPos.qLin;
 
+        pathManager.solveIK(nextPos.pR, nextPos.pL);
+
+        // brake
         for (int i = 0; i < 8; i++)
         {
             usbio.USBIO_4761_set(i, nextPos.brake_state[i]);
         }
 
-        bool fixedWaist = false;
-        if (fixedWaist)
-        {
-            pathManager.solveIKFixedWaist(nextPos.pR, nextPos.pL, nextPos.qLin);
-        }
-        else
-        {
-            pathManager.solveIK(nextPos.pR, nextPos.pL);
-        }
-
-        //IK 하기 전에 다음 위치 목표 x,y,z 값 받아와야댐
-        //solveIK 하면 command buffer에  하나 값 넣어줘야댐
-        // setCANFrame 함수로 가면 command buffer에 있는 젤 앞에 있는 값 써서 프레임 만들고 send에서 보냄
-        //IK 풀어서 setcanFrame에 넘기기
         state.play = PlaySub::SetCANFrame;
 
         break;
@@ -534,11 +504,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
             {
                 isWriteError = true;
             }
-
-            // if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            // {
-            //     usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
-            // }
         }
         if (maxonMotorCount != 0)
         {
@@ -555,164 +520,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         else
         {
             state.play = PlaySub::TimeCheck;
-        }
-
-        // brake
-        if (usbio.useUSBIO)
-        {
-            int cnt = 0;
-            while(!usbio.USBIO_4761_output())
-            {
-                cout << "brake Error\n";
-                usbio.USBIO_4761_init();
-                cnt++;
-                if (cnt >= 5) break;
-            }
-        }
-
-        break;
-    }
-    }
-}
-
-void DrumRobot::SendPerformProcess(int periodMicroSec)
-{
-    auto currentTime = chrono::system_clock::now();
-    auto elapsed_time = chrono::duration_cast<chrono::microseconds>(currentTime - SendStandard);
-
-    switch (state.perform.load())
-    {
-    case PerformSub::TimeCheck:
-    {
-        if (elapsed_time.count() >= periodMicroSec)
-        {
-            cnt++;
-            state.perform = PerformSub::CheckBuf; // 주기가 되면 ReadCANFrame 상태로 진입
-            SendStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
-        }
-        break;
-    }
-    case PerformSub::CheckBuf:
-    {
-        bool motor_connected = false;
-
-        for (const auto &motor_pair : motors)
-        {
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                motor_connected = true;
-                if (tMotor->commandBuffer.size() < 10)
-                    state.perform = PerformSub::GeneratePath;
-                else
-                    state.perform = PerformSub::SetCANFrame;
-            }
-            else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-            {
-                motor_connected = true;
-                if (maxonMotor->commandBuffer.size() < 10)
-                    state.perform = PerformSub::GeneratePath;
-                else
-                    state.perform = PerformSub::SetCANFrame;
-            }
-        }
-
-        if(!motor_connected)
-        {
-            // 모터 연결 안됨 -> 프로그램만 실행
-            state.perform = PerformSub::GeneratePath;
-        }
-        break;
-    }
-    case PerformSub::GeneratePath:
-    {
-        if (pathManager.line < pathManager.total)
-        {
-            std::cout << "\n//////////////////////////////// line : " << pathManager.line << ", total : " << pathManager.total << "\n";
-            pathManager.PathLoopTask();
-            pathManager.line++;
-            state.perform = PerformSub::CheckBuf;
-        }
-        else
-        {
-            bool allBuffersEmpty = true;
-            for (const auto &motor_pair : motors)
-            {
-                if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-                {
-                    if (!tMotor->commandBuffer.empty())
-                    {
-                        allBuffersEmpty = false;
-                        break;
-                    }
-                }
-                else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor_pair.second))
-                {
-                    if (!maxonMotor->commandBuffer.empty())
-                    {
-                        allBuffersEmpty = false;
-                        break;
-                    }
-                }
-            }
-
-            if (allBuffersEmpty)
-            {
-                std::cout << "Performance is Over\n";
-                state.main = Main::AddStance;
-                state.perform = PerformSub::TimeCheck;
-                addStanceFlagSetting("goToHome");
-                pathManager.line = 0;
-            }
-            else
-            {
-                state.perform = PerformSub::SetCANFrame;
-            }
-        }
-        break;
-    }
-    case PerformSub::SetCANFrame:
-    {
-        bool isSafe;
-        isSafe = canManager.setCANFrame();
-        if (!isSafe)
-        {
-            state.main = Main::Error;
-        }
-
-        state.perform = PerformSub::SendCANFrame;
-        break;
-    }
-    case PerformSub::SendCANFrame:
-    {
-        bool isWriteError = false;
-        for (auto &motor_pair : motors)
-        {
-            shared_ptr<GenericMotor> motor = motor_pair.second;
-            if (!canManager.sendMotorFrame(motor))
-            {
-                isWriteError = true;
-            }
-
-            if (std::shared_ptr<TMotor> tMotor = std::dynamic_pointer_cast<TMotor>(motor_pair.second))
-            {
-                usbio.USBIO_4761_set(motor_mapping[motor_pair.first], tMotor->brakeState);
-            }
-        }
-        if (maxonMotorCount != 0)
-        {
-            maxoncmd.getSync(&virtualMaxonMotor->sendFrame);
-            if (!canManager.sendMotorFrame(virtualMaxonMotor))
-            {
-                isWriteError = true;
-            }
-        }
-        if (isWriteError)
-        {
-            state.main = Main::Error;
-        }
-        else
-        {
-            state.perform = PerformSub::TimeCheck;
         }
 
         // brake
@@ -933,7 +740,6 @@ void DrumRobot::displayAvailableCommands() const
             }
             else if (isReady)
             {
-                std::cout << "- f : Start Drumming Old Version\n";
                 std::cout << "- p : Play Drum\n";
                 std::cout << "- t : Start Test\n";
                 std::cout << "- h : Move to Home Pos\n";
@@ -1033,14 +839,6 @@ bool DrumRobot::processInput(const std::string &input)
 
                 return true;
             }
-            else if (input == "f" && isReady)
-            {
-                std::cout << "\nbpm : " << pathManager.bpm << std::endl;
-                state.main = Main::Perform;
-                robotFlagSetting("MOVING");
-
-                return true;
-            }
             else if (input == "p" && isReady)
             {
                 std::cout << "enter music name : ";
@@ -1051,8 +849,6 @@ bool DrumRobot::processInput(const std::string &input)
                 openFlag = 1;
                 state.main = Main::Play;
                 robotFlagSetting("MOVING");
-                pathManager.seonwoo_inst_i = VectorXd::Zero(18);
-                pathManager.seonwoo_inst_f = VectorXd::Zero(18);
                 return true;
             }
             else if (input == "h")
@@ -1120,7 +916,7 @@ void DrumRobot::checkUserInput()
     if (kbhit())
     {
         char input = getchar();
-        if (state.main == Main::Perform || state.main == Main::Pause)
+        if (state.main == Main::Play || state.main == Main::Pause)
         {
             if (input == 'q')
             {
@@ -1138,7 +934,7 @@ void DrumRobot::checkUserInput()
                 state.main = Main::Shutdown;
             }
             else if (input == 'r')
-                state.main = Main::Perform;
+                state.main = Main::Play;
             else if (input == 's')
                 state.main = Main::Shutdown;
             else if (input == 'h')
@@ -1589,7 +1385,6 @@ void DrumRobot::motorSettingCmd()
 void DrumRobot::initializePathManager()
 {
     pathManager.GetDrumPositoin();
-    pathManager.GetMusicSheet();
     pathManager.SetReadyAng();
 }
 

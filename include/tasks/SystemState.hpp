@@ -7,21 +7,11 @@ enum class Main
     SystemInit,
     Ideal,
     Test,
-    Perform,
     Play,
     Shutdown,
     Pause,
     AddStance,
     Error
-};
-
-enum class PerformSub
-{
-    TimeCheck,
-    CheckBuf,
-    GeneratePath,
-    SetCANFrame,
-    SendCANFrame
 };
 
 enum class PlaySub
@@ -72,14 +62,12 @@ enum class TestSub
 struct State
 {
     std::atomic<Main> main;
-    std::atomic<PerformSub> perform;
     std::atomic<PlaySub> play;
     std::atomic<AddStanceSub> addstance;
     std::atomic<ReadSub> read;
     std::atomic<TestSub> test;
 
     State() : main(Main::SystemInit),
-              perform(PerformSub::TimeCheck),
               play(PlaySub::TimeCheck),
               addstance(AddStanceSub::CheckCommand),
               read(ReadSub::TimeCheck),
