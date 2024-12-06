@@ -470,7 +470,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         // << "\nL\n" << nextPos.pL
         // << "\nq\n" << nextPos.qLin;
 
-        pathManager.solveIK(nextPos.pR, nextPos.pL);
+        pathManager.seonwoo_solveIK(nextPos.pR, nextPos.pL);
 
         // brake
         for (int i = 0; i < 8; i++)
@@ -1385,7 +1385,7 @@ void DrumRobot::motorSettingCmd()
 void DrumRobot::initializePathManager()
 {
     pathManager.GetDrumPositoin();
-    pathManager.SetReadyAng();
+    pathManager.SetReadyAngle();
 }
 
 void DrumRobot::clearMotorsSendBuffer()

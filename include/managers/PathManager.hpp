@@ -63,7 +63,7 @@ public:
     /////////////////////////////////////////////////////////////////////////// Init
 
     void GetDrumPositoin();
-    void SetReadyAng();
+    void SetReadyAngle();
 
     int line = 0;  ///< 연주를 진행하고 있는 줄.
     
@@ -76,8 +76,7 @@ public:
     
     /////////////////////////////////////////////////////////////////////////// Play
     
-    void generateTrajectory();
-    void solveIK(VectorXd &pR1, VectorXd &pL1);
+    void seonwoo_solveIK(VectorXd &pR1, VectorXd &pL1);
     void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
 
     // SeonWoo
@@ -208,32 +207,28 @@ private:
     vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
 
     /////////////////////////////////////////////////////////////////////////// Play
-    float timeScaling_33(float ti, float tf, float t, float tm, float sm);
-    float timeScaling_3(float ti, float tf, float t);
-    VectorXd makePath_1(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
-    VectorXd makePath_2(VectorXd Pi, VectorXd Pf, float s[], float sm, float h);
-
-    void makeHitPath(float ti, float tf, float t, MatrixXd &AA);
-    void makeHitPath_test(float ti, float tf, float t, MatrixXd &AA, float intensity);
+    double timeScaling(double ti, double tf, double t);
+    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
 
     VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
 
     void getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state);
-    VectorXd getInstrumentPosition(VectorXd &A);
-
-    VectorXd inst_now_R;
-    VectorXd inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
+    VectorXd getTargetPosition(VectorXd &inst_vector);
 
     const bool XYZm = false; // 궤적 생성 중 정지 여부
     
     // SeonWoo
-    VectorXd seonwoo_makePath(VectorXd Pi, VectorXd Pf, float s);
+    VectorXd seonwoo_makePath(VectorXd Pi, VectorXd Pf, double s);
     VectorXd makeHitTrajetory(int state, float ti, float tf, float t, HitParameter parameters);
     float makeWristAngleCLH(float ti, float tf, float t, HitParameter parameters);
     float makeWristAngleSLH(float ti, float tf, float t, HitParameter parameters);
     float makeWristAngleCS(float ti, float tf, float t, HitParameter parameters);
     float makeElbowAngle(float ti, float tf, float t, HitParameter parameters);
-    void seonwoo_getState();
+    void seonwoo_getInstrument();
+
+    float seonwoo_q0_t1, seonwoo_q0_t2;
+    VectorXd seonwoo_inst_now_R;
+    VectorXd seonwoo_inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
 
     VectorXd seonwoo_inst_i = VectorXd::Zero(18);
     VectorXd seonwoo_inst_f = VectorXd::Zero(18);
@@ -244,19 +239,19 @@ private:
 
     float seonwoo_t1, seonwoo_t2;
 
-    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
+    
     void pushConmmandBuffer(VectorXd &Qi);
 
     /////////////////////////////////////////////////////////////////////////// Read & Parse Measure
     string trimWhitespace(const std::string &str);
 
     double threshold = 2.4;
-    double total_time =0.0;
-    double detect_time_R=0;
-    double detect_time_L=0;
-    double current_time=0;
-    double moving_start_R=0;
-    double moving_start_L=0;
-    int line_n =0; 
+    double total_time = 0.0;
+    double detect_time_R = 0;
+    double detect_time_L = 0;
+    double current_time = 0;
+    double moving_start_R = 0;
+    double moving_start_L = 0;
+    int line_n = 0; 
     vector<string> prev_col = { "0","0","0","0","0","0","0","0" };
 };
