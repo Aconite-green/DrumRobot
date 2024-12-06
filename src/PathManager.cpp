@@ -1532,7 +1532,7 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
 
 void PathManager::parseMeasure(double &timeSum)
 {
-
+    sleep(1);
     map<string, int> instrument_mapping = {
     {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
     // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
@@ -1618,6 +1618,12 @@ void PathManager::parseMeasure(double &timeSum)
     seonwoo_t2 = make_time;
 
     Q.pop();
+
+    seonwoo_hitR << stod(prev_col[2]), stod(Q.front()[2]);
+    seonwoo_hitL << stod(prev_col[3]), stod(Q.front()[3]);
+    
+    //cout << "Right : " << seonwoo_hitR.transpose() << "\tLeft : " << seonwoo_hitL.transpose() << "\n";
+
     line_n++;
     // std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
     // std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
