@@ -466,9 +466,9 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
         nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
         pathManager.P.pop(); // 앞에꺼 지움
 
-        // std::cout << "\nR\n" << nextPos.pR
-        // << "\nL\n" << nextPos.pL
-        // << "\nq\n" << nextPos.qLin;
+        std::cout << "\nR\n" << nextPos.pR
+        << "\nL\n" << nextPos.pL
+        << "\nq\n" << nextPos.qLin;
 
         pathManager.seonwoo_solveIK(nextPos.pR, nextPos.pL);
 

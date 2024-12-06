@@ -238,6 +238,9 @@ private:
     float seonwoo_tL_i, seonwoo_tL_f;
 
     float seonwoo_t1, seonwoo_t2;
+    
+    VectorXd seonwoo_hitR = VectorXd::Zero(2);
+    VectorXd seonwoo_hitL = VectorXd::Zero(2);
 
     
     void pushConmmandBuffer(VectorXd &Qi);
