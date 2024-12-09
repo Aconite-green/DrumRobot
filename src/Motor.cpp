@@ -93,7 +93,6 @@ float TMotor::motorPositionToJointAngle(float motorPosition)
 
 void TMotor::setInitialMotorAngle(float jointAngle)
 {
-    float motorPosition;
 
     if (useFourBarLinkage)
     {
