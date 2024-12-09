@@ -978,6 +978,8 @@ void PathManager::parseMeasure(double &timeSum)
 
     Q.pop();
 
+    
+    // 현재, 다음 라인이 타격인지 아닌지 체크
     seonwoo_hitR << stod(prev_col[2]), stod(Q.front()[2]);
     seonwoo_hitL << stod(prev_col[3]), stod(Q.front()[3]);
     
