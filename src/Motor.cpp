@@ -91,6 +91,28 @@ float TMotor::motorPositionToJointAngle(float motorPosition)
     return jointAngle;
 }
 
+void TMotor::setInitialMotorAngle(float jointAngle)
+{
+    float motorPosition;
+
+    if (useFourBarLinkage)
+    {
+        float L1 = 0.15, L2 = 0.03, L3 = 0.15, L4 = 0.015;
+
+        float alpha = M_PI - jointAngle;
+        float L = sqrt(L1*L1 + L4*L4 - 2*L1*L4*cos(alpha));
+
+        float beta = acos((L1*L1 + L*L - L4*L4)/(2*L1*L));
+        float gamma = acos((L2*L2 + L*L - L3*L3)/(2*L2*L));
+
+        initialMotorAngle = beta + gamma;
+    }
+    else
+    {
+        initialMotorAngle = 0;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // maxonMotor
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

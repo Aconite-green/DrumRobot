@@ -97,6 +97,7 @@ public:
     float initialMotorAngle;    // Four Bar Linkage 사용시 모터의 초기 위치
     float jointAngleToMotorPosition(float jointAngle);
     float motorPositionToJointAngle(float motorPosition);
+    void setInitialMotorAngle(float jointAngle);
 
 private:
 };
