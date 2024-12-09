@@ -288,93 +288,9 @@ void DrumRobot::ReadProcess(int periodMicroSec)
             }
         }
 
-        // if (maxonMotorCount == 0)
-        // {
-        //     state.read = ReadSub::TimeCheck;
-        // }
-        // else
-        // {
-        //     for (auto &motor_pair : motors)
-        //     {
-        //         auto &motor = motor_pair.second;
-        //         if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-        //         {
-        //             maxonMotor->checked = false;
-        //         }
-        //     }
-        //     state.read = ReadSub::CheckMaxonControl;
-        // }
         state.read = ReadSub::TimeCheck;
         break;
     }
-    case ReadSub::CheckMaxonControl:
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                if (maxonMotor->hitting && !maxonMotor->checked)
-                {
-                    state.read = ReadSub::CheckDrumHit;
-                    break;
-                }
-                else if (maxonMotor->positioning && !maxonMotor->checked)
-                {
-                    state.read = ReadSub::CheckReachedPosition;
-                    break;
-                }
-                else
-                {
-                    state.read = ReadSub::TimeCheck;
-                }
-            }
-        }
-        break;
-    case ReadSub::CheckDrumHit:
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                if (maxonMotor->hitting)
-                {
-                    if (dct_fun(maxonMotor->positionValues, 0))
-                    {
-                        act = cnt;
-                        cout << "Read : Htting True!!!!!!!!!!!!!!!!!\n";
-                        maxonMotor->positioning = true;
-                        maxonMotor->hitting = false;
-                    } /*
-                    else
-                        cout << "Read : Htting..\n";*/
-                    maxonMotor->checked = true;
-                }
-            }
-        }
-        state.read = ReadSub::CheckMaxonControl;
-        break;
-    case ReadSub::CheckReachedPosition:
-        for (auto &motor_pair : motors)
-        {
-            auto &motor = motor_pair.second;
-            if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
-            {
-                if (maxonMotor->positioning)
-                {
-                    if (pathManager.wrist_targetPos < maxonMotor->motorPosition)
-                    {
-                        cout << "Read : Positioning True!!!!!!!!!!!!!!!!!!!\n";
-                        maxonMotor->atPosition = true; // 여기서 pathManager 에서 접근
-                        maxonMotor->positioning = false;
-                    } /*
-                     else
-                         cout << "Read : Positioning..\n";*/
-                    maxonMotor->checked = true;
-                }
-            }
-        }
-        state.read = ReadSub::CheckMaxonControl;
-        break;
     }
 }
 
@@ -389,7 +305,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         if (elapsedTime.count() >= periodMicroSec)
         {
-            cnt++;
             state.play = PlaySub::ReadMusicSheet;   // 주기가 되면 GenerateTrajectory 상태로 진입
             SendStandard = currentTime;             // 현재 시간으로 시간 객체 초기화
         }
@@ -397,7 +312,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::ReadMusicSheet:
     {
-        if (pathManager.P.empty()) // P가 비어있으면 새로 생성
+        if (pathManager.brake_buffer.empty()) // brake_buffer 비어있음 -> P_buffer, q_buffer 비어있음 -> 새로 생성
         {
             // 파일을 처음 열 때만
             if (openFlag == 1)
@@ -408,11 +323,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 
                 if (!inputFile.is_open()) // 파일 열기 실패
                 {
-                    // std::cout << "File not found or cannot be opened: " << currentFile << std::endl;
-                    // robotFlagSetting("isReady");
-                    // state.play = PlaySub::TimeCheck; 
-                    // state.main = Main::Ideal;
-
                     std::cout << "Play is Over\n";
                     state.main = Main::AddStance;
                     state.play = PlaySub::TimeCheck;
@@ -451,8 +361,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::GenerateTrajectory:
     {
-
-        pathManager.seonwoo_generateTrajectory();
+        pathManager.generateTrajectory();
 
         pathManager.line++;
         
@@ -462,20 +371,16 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::SolveIK:
     {
-        PathManager::Pos nextPos; // IK 풀 때 들어갈 다음 xyz
-        nextPos = pathManager.P.front(); // P의 맨 앞 값을 다음 목표 위치로
-        pathManager.P.pop(); // 앞에꺼 지움
-
-        std::cout << "\nR\n" << nextPos.pR
-        << "\nL\n" << nextPos.pL
-        << "\nq\n" << nextPos.qLin;
-
-        pathManager.seonwoo_solveIK(nextPos.pR, nextPos.pL);
+        pathManager.solveIK();
 
         // brake
+        PathManager::Brake next_brake;
+        next_brake = pathManager.brake_buffer.front();
+        pathManager.brake_buffer.pop();
+
         for (int i = 0; i < 8; i++)
         {
-            usbio.USBIO_4761_set(i, nextPos.brake_state[i]);
+            usbio.USBIO_4761_set(i, next_brake.state[i]);
         }
 
         state.play = PlaySub::SetCANFrame;
@@ -589,7 +494,6 @@ void DrumRobot::SendAddStanceProcess(int periodMicroSec)
     {
         if (elapsed_time.count() >= periodMicroSec)
         {
-            cnt++;
             state.addstance = AddStanceSub::CheckBuf;
             addStandard = currentTime;           // 현재 시간으로 시간 객체 초기화
         }
@@ -1030,7 +934,6 @@ void DrumRobot::initializeMotors()
             if (motor_pair.first == "waist")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->timingBeltRatio = 1.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -90deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->myName = "waist";
@@ -1041,7 +944,6 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->timingBeltRatio = 1.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f;   // 0deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 150deg
                 tMotor->myName = "R_arm1";
@@ -1052,7 +954,6 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_arm1")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->timingBeltRatio = 1.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f;  // 30deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 180deg
                 tMotor->myName = "L_arm1";
@@ -1063,7 +964,6 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_arm2")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->timingBeltRatio = 1.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -60deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->myName = "R_arm2";
@@ -1074,18 +974,17 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "R_arm3")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->timingBeltRatio = 3.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -30deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 130deg
                 tMotor->myName = "R_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
                 tMotor->useFourBarLinkage = true;
+                tMotor->initialMotorAngle = tMotor->jointAngleToMotorPosition(tMotor->initialJointAngle);
             }
             else if (motor_pair.first == "L_arm2")
             {
                 tMotor->cwDir = -1.0f;
-                tMotor->timingBeltRatio = 1.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -60deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f;  // 90deg
                 tMotor->myName = "L_arm2";
@@ -1096,13 +995,13 @@ void DrumRobot::initializeMotors()
             else if (motor_pair.first == "L_arm3")
             {
                 tMotor->cwDir = 1.0f;
-                tMotor->timingBeltRatio = 3.0f;
                 tMotor->rMin = joint_range_min[can_id] * M_PI / 180.0f; // -30 deg
                 tMotor->rMax = joint_range_max[can_id] * M_PI / 180.0f; // 130 deg
                 tMotor->myName = "L_arm3";
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
                 tMotor->useFourBarLinkage = true;
+                tMotor->initialMotorAngle = tMotor->jointAngleToMotorPosition(tMotor->initialJointAngle);
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
@@ -1415,32 +1314,6 @@ void DrumRobot::UnfixedMotor()
 {
     for (auto motor_pair : motors)
         motor_pair.second->isfixed = false;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/*                                 Recive Thread Loop                          */
-/////////////////////////////////////////////////////////////////////////////////
-
-bool DrumRobot::dct_fun(float positions[], float vel_th)
-{
-    // 포지션 배열에서 각각의 값을 추출합니다.
-    float the_k = positions[3]; // 가장 최신 값
-    float the_k_1 = positions[2];
-    float the_k_2 = positions[1];
-    float the_k_3 = positions[0]; // 가장 오래된 값
-
-    float ang_k = (the_k + the_k_1) / 2;
-    float ang_k_1 = (the_k_1 + the_k_2) / 2;
-    float ang_k_2 = (the_k_2 + the_k_3) / 2;
-    float vel_k = ang_k - ang_k_1;
-    float vel_k_1 = ang_k_1 - ang_k_2;
-
-    if (vel_k > vel_k_1 && vel_k > vel_th && ang_k < 0.05)
-        return true;
-    else if (ang_k < -0.25)
-        return true;
-    else
-        return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

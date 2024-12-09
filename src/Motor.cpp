@@ -49,7 +49,7 @@ float TMotor::jointAngleToMotorPosition(float jointAngle)
 
     if (useFourBarLinkage)
     {
-        float L1 = 1.1, L2 = 1.1, L3 = 1.1, L4 = 1.1;
+        float L1 = 0.15, L2 = 0.03, L3 = 0.15, L4 = 0.015;
 
         float alpha = M_PI - jointAngle;
         float L = sqrt(L1*L1 + L4*L4 - 2*L1*L4*cos(alpha));
@@ -73,7 +73,7 @@ float TMotor::motorPositionToJointAngle(float motorPosition)
 
     if (useFourBarLinkage)
     {
-        float L1 = 1.1, L2 = 1.1, L3 = 1.1, L4 = 1.1;
+        float L1 = 0.15, L2 = 0.03, L3 = 0.15, L4 = 0.015;
 
         float alpha = motorPosition * cwDir + initialMotorAngle;
         float L = sqrt(L1*L1 + L2*L2 - 2*L1*L2*cos(alpha));

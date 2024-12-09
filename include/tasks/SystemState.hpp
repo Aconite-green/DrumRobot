@@ -38,10 +38,7 @@ enum class ReadSub
 {
     TimeCheck,
     ReadCANFrame,
-    UpdateMotorInfo,
-    CheckMaxonControl,
-    CheckDrumHit,
-    CheckReachedPosition
+    UpdateMotorInfo
 };
 
 enum class TestSub

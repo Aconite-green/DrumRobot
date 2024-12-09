@@ -81,9 +81,6 @@ public:
     };
     const int PolePairs = 21;
 
-    // timing belt
-    float timingBeltRatio;
-
     // current [A]
     float currentLimit;
     float motorCurrent;
@@ -97,7 +94,7 @@ public:
     void clearCommandBuffer();
 
     bool useFourBarLinkage;
-    float initialMotorAngle;
+    float initialMotorAngle;    // Four Bar Linkage 사용시 모터의 초기 위치
     float jointAngleToMotorPosition(float jointAngle);
     float motorPositionToJointAngle(float motorPosition);
 

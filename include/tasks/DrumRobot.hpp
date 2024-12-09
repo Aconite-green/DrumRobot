@@ -101,7 +101,6 @@ private:
     void addStanceFlagSetting(string flag);
     int hommingCnt = 0;
     
-
     // System Initialize 메소드들
     void initializeMotors();
     void initializecanManager();
@@ -145,13 +144,8 @@ private:
     const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,    0.0,  -60.0,    0.0,    0.0,    0.0,  -90.0,  -90.0};
     // const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
-    // maxon motor hit ?
-    int act = 0;
-    int cnt = 0;
-
     // Receive Thread Loop 메소드들
     void ReadProcess(int periodMicroSec);
-    bool dct_fun(float positions[], float vel_th);
 
     // Maxon 모터 초기화 함수
     void maxonMotorEnable();

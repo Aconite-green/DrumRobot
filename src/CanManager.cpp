@@ -573,7 +573,8 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     tMotor->motorVelocity = std::get<2>(parsedData);
                     tMotor->motorCurrent = std::get<3>(parsedData);
 
-                    tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
+                    // tMotor->jointAngle = std::get<1>(parsedData) * tMotor->cwDir * tMotor->timingBeltRatio + tMotor->initialJointAngle;
+                    tMotor->jointAngle = tMotor->motorPositionToJointAngle(std::get<1>(parsedData));
                     tMotor->recieveBuffer.push(frame);
 
                     fun.appendToCSV_DATA(fun.file_name, (float)tMotor->nodeId, tMotor->motorPosition, tMotor->motorCurrent);
@@ -604,7 +605,8 @@ bool CanManager::distributeFramesToMotors(bool setlimit)
                     maxonMotor->positionValues[maxonMotor->posIndex % 4] = std::get<1>(parsedData);
                     maxonMotor->posIndex++;
 
-                    maxonMotor->jointAngle = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
+                    // maxonMotor->jointAngle = std::get<1>(parsedData) * maxonMotor->cwDir + maxonMotor->initialJointAngle;
+                    maxonMotor->jointAngle = maxonMotor->motorPositionToJointAngle(std::get<1>(parsedData));
                     maxonMotor->recieveBuffer.push(frame);
 
                     fun.appendToCSV_DATA(fun.file_name, (float)maxonMotor->nodeId, maxonMotor->motorPosition, maxonMotor->motorTorque);
@@ -731,7 +733,8 @@ bool CanManager::setCANFrame()
             float desiredPosition;
 
             maxonMotor->commandBuffer.pop();
-            desiredPosition = (mData.position - maxonMotor->initialJointAngle) * maxonMotor->cwDir;
+            // desiredPosition = (mData.position - maxonMotor->initialJointAngle) * maxonMotor->cwDir;
+            desiredPosition = maxonMotor->jointAngleToMotorPosition(mData.position);
 
             maxoncmd.getTargetPosition(*maxonMotor, &maxonMotor->sendFrame, desiredPosition);
 
@@ -743,8 +746,9 @@ bool CanManager::setCANFrame()
             float desiredPosition;
 
             tMotor->commandBuffer.pop();
-            desiredPosition = (tData.position - tMotor->initialJointAngle) * tMotor->cwDir / tMotor->timingBeltRatio;
-            
+            // desiredPosition = (tData.position - tMotor->initialJointAngle) * tMotor->cwDir / tMotor->timingBeltRatio;
+            desiredPosition = tMotor->jointAngleToMotorPosition(tData.position);
+
             if(!safetyCheck_Tmotor(tMotor, tData))
             {
                 return false;
