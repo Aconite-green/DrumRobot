@@ -222,8 +222,8 @@ void PathManager::generateTrajectory()
         
         // wrist & elbow
         HitParameter param;
-        qt.add_qR = makeHitTrajetory(t1, t2, t, VectorXd::Zero(2), param);
-        qt.add_qL = makeHitTrajetory(t1, t2, t, VectorXd::Zero(2), param);
+        qt.add_qR = makeHitTrajetory(t1, t2, t, hit_state_R, param);
+        qt.add_qL = makeHitTrajetory(t1, t2, t, hit_state_L, param);
 
         // brake
         for (int j = 0; j < 8; j++)
@@ -670,12 +670,12 @@ VectorXd PathManager::makeHitTrajetory(float t1, float t2, float t, VectorXd hit
     }
     else if (hitState(1) == 0)
     {
-        // Stay - Lift - Hit
+        // Contact - Stay
         state = 1;
     }
     else if (hitState(0) == 0)
     {
-        // Contact - Stay
+        // Stay - Lift - Hit
         state = 2;
     }
     else
@@ -711,47 +711,6 @@ float PathManager::makeWristAngle(float t1, float t2, float t, int state, HitPar
         wrist_q = param.wristStayAngle;
     }
     else if (state == 1)
-    {
-        // Stay - Lift - Hit
-        if (t < t_lift)
-        {
-            A.resize(4,4);
-            b.resize(4,1);
-
-            A << 1, 0, 0, 0,
-                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-                0, 1, 0, 0,
-                0, 1, 2*t_lift, 3*t_lift*t_lift;
-
-            b << param.wristStayAngle, param.wristLiftAngle, 0, 0;
-
-            A_1 = A.inverse();
-            sol = A_1 * b;
-
-            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
-        }
-        else if (t < t_hit)
-        {
-            A.resize(3,3);
-            b.resize(3,1);
-
-            A << 1, t_lift, t_lift*t_lift,
-                1, t_hit, t_hit*t_hit,
-                0, 1, 2*t_lift;
-
-            b << param.wristLiftAngle, 0, 0;
-
-            A_1 = A.inverse();
-            sol = A_1 * b;
-
-            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
-        }
-        else
-        {
-            wrist_q = 0.0;
-        }
-    }
-    else if (state == 2)
     {
         // Contact - Stay
         if (t < t_contact)
@@ -790,6 +749,47 @@ float PathManager::makeWristAngle(float t1, float t2, float t, int state, HitPar
         else
         {
             wrist_q = param.wristStayAngle;
+        }
+    }
+    else if (state == 2)
+    {
+        // Stay - Lift - Hit
+        if (t < t_lift)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, 0, 0, 0,
+                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                0, 1, 0, 0,
+                0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+            b << param.wristStayAngle, param.wristLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else if (t < t_hit)
+        {
+            A.resize(3,3);
+            b.resize(3,1);
+
+            A << 1, t_lift, t_lift*t_lift,
+                1, t_hit, t_hit*t_hit,
+                0, 1, 2*t_lift;
+
+            b << param.wristLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        }
+        else
+        {
+            wrist_q = 0.0;
         }
     }
     else if (state == 3)
@@ -873,6 +873,31 @@ float PathManager::makeElbowAngle(float t1, float t2, float t, int state, HitPar
     }
     else if (state == 1)
     {
+        // Contact - Stay
+        if (t < t_stay)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, 0, 0, 0,
+                1, t_stay, t_stay*t_stay, t_stay*t_stay*t_stay,
+                0, 1, 0, 0,
+                0, 1, 2*t_stay, 3*t_stay*t_stay;
+
+            b << 0, param.elbowStayAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else
+        {
+            elbow_q = param.elbowStayAngle;
+        }
+    }
+    else if (state == 2)
+    {
         // Stay - Lift - Hit
         if (t < t_lift)
         {
@@ -911,31 +936,6 @@ float PathManager::makeElbowAngle(float t1, float t2, float t, int state, HitPar
         else
         {
             elbow_q = 0.0;
-        }
-    }
-    else if (state == 2)
-    {
-        // Contact - Stay
-        if (t < t_stay)
-        {
-            A.resize(4,4);
-            b.resize(4,1);
-
-            A << 1, 0, 0, 0,
-                1, t_stay, t_stay*t_stay, t_stay*t_stay*t_stay,
-                0, 1, 0, 0,
-                0, 1, 2*t_stay, 3*t_stay*t_stay;
-
-            b << 0, param.elbowStayAngle, 0, 0;
-
-            A_1 = A.inverse();
-            sol = A_1 * b;
-
-            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
-        }
-        else
-        {
-            elbow_q = param.elbowStayAngle;
         }
     }
     else if (state == 3)
