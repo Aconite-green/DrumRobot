@@ -387,14 +387,14 @@ void PathManager::parseMeasure(double &timeSum)
         if (curLine[2] != "0" && !(inst_R.array() != 0).any())
         {
             inst_R(instrument_mapping[curLine[2]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_R = stof(curLine[1]) + stof(curLine[8]); // 오른손 타격 시간 갱신
+            detect_time_R = stod(curLine[1]) + stod(curLine[8]); // 오른손 타격 시간 갱신
         }
 
         // 왼손 타격 감지
         if (curLine[3] != "0" && !(inst_L.array() != 0).any())
         {
             inst_L(instrument_mapping[curLine[3]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_L = stof(curLine[1]) + stof(curLine[8]); // 왼손 타격 시간 갱신
+            detect_time_L = stod(curLine[1]) + stod(curLine[8]); // 왼손 타격 시간 갱신
         }
 
         // 양손 모두 타격 감지
