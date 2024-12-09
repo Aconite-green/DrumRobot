@@ -64,73 +64,23 @@ public:
 
     void GetDrumPositoin();
     void SetReadyAngle();
-
-    int line = 0;  ///< 연주를 진행하고 있는 줄.
-    
-    /////////////////////////////////////////////////////////////////////////// Read & Parse Measure
-    bool readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
-    void parseMeasure(double &timeSum);
-
-    float bpm = 0;         /// txt 악보의 BPM 정보.
-    queue<vector<string>> Q; // 읽은 악보 저장한 큐
     
     /////////////////////////////////////////////////////////////////////////// Play
     
-    void seonwoo_solveIK(VectorXd &pR1, VectorXd &pL1);
-    void solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin);
+    bool readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
+    void parseMeasure(double &timeSum);
 
-    // SeonWoo
-    void seonwoo_generateTrajectory();
+    void generateTrajectory();
+    void solveIK();
 
-    // x, y, z 저장할 구조체
+    // 브레이크 저장할 구조체
     typedef struct {
-
-        // 오른팔 좌표
-        VectorXd pR; // 0: x, 1: y, 2: z
-
-        // 왼팔 좌표
-        VectorXd pL; // 0: x, 1: y, 2: z
-
-        VectorXd qLin;
-
-        // 허리 각도
-        float waist_q;
-
-        // 손목 각도, 팔꿈치 추가 각도
-        VectorXd add_qR;
-        VectorXd add_qL;
-
         // 브레이크
-        bool brake_state[8];
+        bool state[8];
+    }Brake;
 
-    }Pos;
-
-    // 타격 궤적 생성 파라미터
-    typedef struct {
-
-        float wristStayAngle = 10.0 * M_PI / 180.0;
-        float wristHitAngle = -5.0 * M_PI / 180.0;
-        float wristLiftAngle = 25.0 * M_PI / 180.0;
-
-        float elbowStayAngle = 3.0 * M_PI / 180.0;
-        float elbowLiftAngle = 6.0 * M_PI / 180.0;
-
-    }HitParameter;
-
-    // 타격 각도 저장할 구조체
-    typedef struct {
-        float hitR; // 오른손 타격 각도
-        float hitL; // 왼손 타격 각도
-    }HitRL;
-
-    // 이전에 타격이었는지 확인
-    bool prevR = 0; 
-    bool prevL = 0;
-
-    float wristReadyAng = 0.2;
-
-    queue<Pos> P; // 구조체 담아놓을 큐
-    queue<HitRL> Hit; // 타격 시 각도값 받는 큐
+    queue<Brake> brake_buffer;
+    int line = 0;  ///< 연주를 진행하고 있는 줄.
 
     /////////////////////////////////////////////////////////////////////////// AddStance
 
@@ -152,11 +102,8 @@ public:
 
     /////////////////////////////////////////////////////////////////////////// 기타
 
+    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
     vector<float> fkfun();
-
-    /*토크 제어에서 사용됨*/
-    float wrist_targetPos = M_PI / 18.0;    // 타격 후 제어 변환 기준 각도
-    float wrist_hit_time = 0.1;     // 타격하는데 걸리는 시간
 
 private:
     TMotorCommandParser TParser; ///< T 모터 명령어 파서.
@@ -197,56 +144,11 @@ private:
     MatrixXd right_drum_position;                               ///< 오른팔의 각 악기별 위치 좌표 벡터.
     MatrixXd left_drum_position;                                ///< 왼팔의 각 악기별 위치 좌표 벡터.
 
-    /////////////////////////////////////////////////////////////////////////// AddStance
-    // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
-    // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
-    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
-    void getMotorPos();
-
-    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
-
-    /////////////////////////////////////////////////////////////////////////// Play
-    double timeScaling(double ti, double tf, double t);
-    VectorXd ikfun_final(VectorXd &pR, VectorXd &pL);
-
-    VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
-
-    void getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state);
-    VectorXd getTargetPosition(VectorXd &inst_vector);
-
-    const bool XYZm = false; // 궤적 생성 중 정지 여부
-    
-    // SeonWoo
-    VectorXd seonwoo_makePath(VectorXd Pi, VectorXd Pf, double s);
-    VectorXd makeHitTrajetory(int state, float ti, float tf, float t, HitParameter parameters);
-    float makeWristAngleCLH(float ti, float tf, float t, HitParameter parameters);
-    float makeWristAngleSLH(float ti, float tf, float t, HitParameter parameters);
-    float makeWristAngleCS(float ti, float tf, float t, HitParameter parameters);
-    float makeElbowAngle(float ti, float tf, float t, HitParameter parameters);
-    void seonwoo_getInstrument();
-
-    float seonwoo_q0_t1, seonwoo_q0_t2;
-    VectorXd seonwoo_inst_now_R;
-    VectorXd seonwoo_inst_now_L;      /// 연주 중 현재 위치하는 악기 저장
-
-    VectorXd seonwoo_inst_i = VectorXd::Zero(18);
-    VectorXd seonwoo_inst_f = VectorXd::Zero(18);
-    VectorXd seonwoo_state = VectorXd::Zero(2);
-
-    float seonwoo_tR_i, seonwoo_tR_f;
-    float seonwoo_tL_i, seonwoo_tL_f;
-
-    float seonwoo_t1, seonwoo_t2;
-    
-    VectorXd seonwoo_hitR = VectorXd::Zero(2);
-    VectorXd seonwoo_hitL = VectorXd::Zero(2);
-
-    
-    void pushConmmandBuffer(VectorXd &Qi);
-
     /////////////////////////////////////////////////////////////////////////// Read & Parse Measure
     string trimWhitespace(const std::string &str);
+
+    float bpm = 0;         /// txt 악보의 BPM 정보.
+    queue<vector<string>> Q; // 읽은 악보 저장한 큐
 
     double threshold = 2.4;
     double total_time = 0.0;
@@ -256,5 +158,74 @@ private:
     double moving_start_R = 0;
     double moving_start_L = 0;
     int line_n = 0; 
-    vector<string> prev_col = { "0","0","0","0","0","0","0","0" };
+    vector<string> prev_col = { "0","0","1","1","0","0","0","0" };  // default 악기 위치로 맞추기
+
+    /////////////////////////////////////////////////////////////////////////// Play (make trajectory)
+    // x, y, z 저장할 구조체
+    typedef struct {
+        // 오른팔 좌표
+        VectorXd pR; // 0: x, 1: y, 2: z
+        // 왼팔 좌표
+        VectorXd pL; // 0: x, 1: y, 2: z
+    }Position;
+
+    // 허리 각도와 손목, 팔꿈치 각도 저장할 구조체
+    typedef struct {
+        // 허리 각도
+        float q0;
+        // 손목 각도, 팔꿈치 추가 각도
+        VectorXd add_qR;
+        VectorXd add_qL;
+    }AddAngle;
+
+    queue<Position> P_buffer;
+    queue<AddAngle> q_buffer;
+
+    void getInstrument();
+    VectorXd getTargetPosition(VectorXd &inst_vector);
+    float timeScaling(float ti, float tf, float t);
+    VectorXd makePath(VectorXd Pi, VectorXd Pf, float s);
+
+    VectorXd pre_inst_R = VectorXd::Zero(9);
+    VectorXd pre_inst_L = VectorXd::Zero(9);      /// 연주 중 현재 위치하는 악기 저장
+
+    VectorXd inst_i = VectorXd::Zero(18);   // 전체 궤적에서 출발 악기
+    VectorXd inst_f = VectorXd::Zero(18);   // 전체 궤적에서 도착 악기
+
+    float t_i_R, t_f_R;       // 전체 궤적에서 출발 시간, 도착 시간
+    float t_i_L, t_f_L;
+    float t1, t2;           // 궤적 생성 시간
+
+    // 타격 궤적 생성 파라미터
+    typedef struct {
+
+        float wristStayAngle = 10.0 * M_PI / 180.0;
+        float wristContactAngle = -5.0 * M_PI / 180.0;
+        float wristLiftAngle = 25.0 * M_PI / 180.0;
+
+        float elbowStayAngle = 3.0 * M_PI / 180.0;
+        float elbowLiftAngle = 6.0 * M_PI / 180.0;
+
+    }HitParameter;
+
+    VectorXd makeHitTrajetory(float t1, float t2, float t, VectorXd hitState, HitParameter param);
+    float makeElbowAngle(float t1, float t2, float t, int state, HitParameter param);
+    float makeWristAngle(float t1, float t2, float t, int state, HitParameter param);
+    
+    VectorXd hit_state_R = VectorXd::Zero(2);
+    VectorXd hit_state_L = VectorXd::Zero(2);
+
+    /////////////////////////////////////////////////////////////////////////// Play (solve IK)
+    VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
+    void pushConmmandBuffer(VectorXd &Qi);
+
+    /////////////////////////////////////////////////////////////////////////// AddStance
+    // q1[rad], q2[rad], acc[rad/s^2], t2[s]
+    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
+    // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
+    VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
+    void getMotorPos();
+
+    vector<float> c_MotorAngle = {0, 0, 0, 0, 0, 0, 0, 0, 0}; ///< 경로 생성 시 사용되는 현재 모터 위치 값
+    
 };

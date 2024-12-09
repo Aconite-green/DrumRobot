@@ -108,15 +108,16 @@ void PathManager::SetReadyAngle()
     {
         readyArr[i] = qk(i);
     }
-    readyArr[7] = wristReadyAng;
-    readyArr[8] = wristReadyAng;
+    HitParameter param;
+    readyArr[7] = param.wristStayAngle;
+    readyArr[8] = param.wristStayAngle;
 }
 
 ////////////////////////////////////////////////////////////////////////////////    
-/*                       Play (Task Space Trajectory)                         */
+/*                                  Play                                      */
 ////////////////////////////////////////////////////////////////////////////////
 
-void PathManager::seonwoo_generateTrajectory()
+void PathManager::generateTrajectory()
 {
     // position
     VectorXd Pi(6), Pf(6);
@@ -125,17 +126,20 @@ void PathManager::seonwoo_generateTrajectory()
     VectorXd Pf_R(3);
     VectorXd Pf_L(3);
 
-    double n, s_R, s_L;
-    double delta_t_measure_R = seonwoo_tR_f - seonwoo_tR_i;
-    double delta_t_measure_L = seonwoo_tL_f - seonwoo_tL_i;
-    double dt = canManager.deltaT;
+    float n, s_R, s_L;
+    float delta_t_measure_R = t_f_R - t_i_R;
+    float delta_t_measure_L = t_f_L - t_i_L;
+    float dt = canManager.deltaT;
+
+    // waist
+    float q0_t1 = 0.0, q0_t2 = 0.2;
 
     // state
-    seonwoo_getInstrument();
+    getInstrument();
 
     // position
-    Pi = getTargetPosition(seonwoo_inst_i);
-    Pf = getTargetPosition(seonwoo_inst_f);
+    Pi = getTargetPosition(inst_i);
+    Pf = getTargetPosition(inst_f);
 
     Pi_R << Pi(0), Pi(1), Pi(2);
     Pi_L << Pi(3), Pi(4), Pi(5);
@@ -148,71 +152,109 @@ void PathManager::seonwoo_generateTrajectory()
     << "\nPf_L\n" << Pf_L << std::endl;
 
     // trajectory
-    n = (seonwoo_t2 - seonwoo_t1) / dt;
+    n = (t2 - t1) / dt;
     for (int i = 0; i < n; i++)
     {
-        Pos Pt;
-        double t_R = dt * i + seonwoo_t1 - seonwoo_tR_i;
-        double t_L = dt * i + seonwoo_t1 - seonwoo_tL_i;
-
+        Position Pt;
+        float t_R = dt * i + t1 - t_i_R;
+        float t_L = dt * i + t1 - t_i_L;
+        
         s_R = timeScaling(0.0f, delta_t_measure_R, t_R);
         s_L = timeScaling(0.0f, delta_t_measure_L, t_L);
 
-        Pt.pR = seonwoo_makePath(Pi_R, Pf_R, s_R);
-        Pt.pL = seonwoo_makePath(Pi_L, Pf_L, s_L);
-
-        if (i == 0)
-        {
-            VectorXd q_t1 = ikfun_final(Pt.pR, Pt.pL);
-            seonwoo_q0_t1 = q_t1(0);
-        }
-        else if (i == n - 1)
-        {
-            VectorXd q_t2 = ikfun_final(Pt.pR, Pt.pL);
-            seonwoo_q0_t2 = q_t2(0);
-        }
-
-        Pt.waist_q = 0.0;
-
-        HitParameter param;
-        Pt.add_qR = makeHitTrajetory(seonwoo_state(0), 0.0f, delta_t_measure_R, t_R, param);
-        Pt.add_qL = makeHitTrajetory(seonwoo_state(1), 0.0f, delta_t_measure_L, t_L, param);
-
-        // brake
-        for (int j = 0; j < 8; j++)
-        {
-            Pt.brake_state[j] = false;
-        }
+        Pt.pR = makePath(Pi_R, Pf_R, s_R);
+        Pt.pL = makePath(Pi_L, Pf_L, s_L);
         
-        P.push(Pt);
+        P_buffer.push(Pt);
 
         std::string fileName;
         fileName = "Trajectory_R";
         fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
         fileName = "Trajectory_L";
         fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
-        // fileName = "S";
-        // fun.appendToCSV_DATA(fileName, s[0], s[1], 0);
+        fileName = "S_R";
+        fun.appendToCSV_DATA(fileName, t_R, s_R, delta_t_measure_R);
+        fileName = "S_L";
+        fun.appendToCSV_DATA(fileName, t_L, s_L, delta_t_measure_L);
+
+        // waist
+        if (i == 0)
+        {
+            VectorXd q_t1 = ikfun_final(Pt.pR, Pt.pL);
+            q0_t1 = q_t1(0);
+        }
+        else if (i + 1 >= n)
+        {
+            VectorXd q_t2 = ikfun_final(Pt.pR, Pt.pL);
+            q0_t2 = q_t2(0);
+        }
+    }
+
+    // waist, wrist, elbow & brake
+    for (int i = 0; i < n; i++)
+    {
+        AddAngle qt;
+        Brake brake_t;
+        float t = dt * i;
+        
+        // waist
+        MatrixXd A;
+        MatrixXd b;
+        MatrixXd A_1;
+        MatrixXd sol;
+
+        float t21 = t2 - t1;
+
+        A.resize(4,4);
+        b.resize(4,1);
+
+        A << 1, 0, 0, 0,
+            1, t21, t21*t21, t21*t21*t21,
+            0, 1, 0, 0,
+            0, 1, 2*t21, 3*t21*t21;
+
+        b << q0_t1, q0_t2, 0, 0;
+
+        A_1 = A.inverse();
+        sol = A_1 * b;
+
+        qt.q0 = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        
+        // wrist & elbow
+        HitParameter param;
+        qt.add_qR = makeHitTrajetory(t1, t2, t, VectorXd::Zero(2), param);
+        qt.add_qL = makeHitTrajetory(t1, t2, t, VectorXd::Zero(2), param);
+
+        // brake
+        for (int j = 0; j < 8; j++)
+        {
+            brake_t.state[j] = false;
+        }
+
+        q_buffer.push(qt);
+        brake_buffer.push(brake_t);
     }
 }
 
-void PathManager::seonwoo_solveIK(VectorXd &pR1, VectorXd &pL1)
+void PathManager::solveIK()
 {
-    // HitRL CurRL;
+    VectorXd q;
+    Position nextP;
+    AddAngle nextQ;
 
-    VectorXd q(9);
+    nextP = P_buffer.front();
+    P_buffer.pop();
 
-    VectorXd q_06 = ikfun_final(pR1, pL1);
+    nextQ = q_buffer.front();
+    q_buffer.pop();
 
-    for (int i = 0; i < 7; i++)
-    {
-        q(i) = q_06(i);
-    }
+    q = ikfun_fixed_waist(nextP.pR, nextP.pL, nextQ.q0);
 
-    // CurRL = Hit.front(); Hit.pop();
-    
-    // q(7) = CurRL.hitR;
-    // q(8) = CurRL.hitL;
+    q(4) += nextQ.add_qR(1);
+    q(6) += nextQ.add_qL(1);
+
+    q(7) = nextQ.add_qR(0);
+    q(8) = nextQ.add_qL(0);
 
     pushConmmandBuffer(q);
 
@@ -224,29 +266,177 @@ void PathManager::seonwoo_solveIK(VectorXd &pR1, VectorXd &pL1)
     }
 }
 
-void PathManager::solveIKFixedWaist(VectorXd &pR1, VectorXd &pL1, VectorXd &q_lin)
+bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum)
 {
-    VectorXd q = ikfun_fixed_waist(pR1, pL1, q_lin(0));
-    HitRL CurRL;
+    string line;
 
-    CurRL = Hit.front(); Hit.pop();
+    while(getline(inputFile, line))
+    {
+        istringstream iss(line);
+        string item;
+        int cnt = 0;
+
+        vector<string> columns;
+        while (getline(iss, item, '\t'))
+        {
+            if(cnt >= 8) break;
+            item = trimWhitespace(item);
+            columns.push_back(item);
+            cnt++;
+        }
+
+        if (!BPMFlag)
+        { // 첫번째 행엔 bpm에 대한 정보
+            cout << "music";
+            bpm = stod(columns[0].substr(4));
+            cout << " bpm = " << bpm << "\n";
+            BPMFlag = 1;
+
+            pre_inst_R << default_right;
+            pre_inst_L << default_left;
+        }
+        else
+        {
+            timeSum += stod(columns[1]);
+            columns.push_back(to_string(total_time));
+            total_time += stod(columns[1]);
+
+            // 큐에 저장
+            Q.push(columns);
+
+            if(timeSum >= threshold)
+            {
+                // Q에 있는 요소들 출력
+                queue<vector<string>> tempQ = Q; // 큐 복사본 사용
+                while (!tempQ.empty())
+                {
+                    vector<string> current = tempQ.front();
+                    tempQ.pop();
+
+                    // 요소 출력 (탭으로 구분)
+                    for (size_t i = 0; i < current.size(); ++i)
+                    {
+                        cout << current[i];
+                        if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
+                            cout << '\t';
+                    }
+                    cout << '\n'; // 다음 요소로 넘어갈 때 개행
+                }
+                cout << '\n'; // 한 반복 끝날 때 개행 두 번
+
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void PathManager::parseMeasure(double &timeSum)
+{
+    map<string, int> instrument_mapping = {
+    {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
+    // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
     
-    q(7) = CurRL.hitR;
-    q(8) = CurRL.hitL;
+    // 지금 들어온 Q 맨 앞에 값이 현재 시간임
+    vector<string> curLine = Q.front(); 
+    current_time = stod(curLine[8]);  
+    
+    // 이전 위치에 대한 업데이트
+    if(prev_col[2] != "0" || prev_col[3] != "0")
+    {
+        VectorXd inst_R_prev = VectorXd::Zero(9), inst_L_prev = VectorXd::Zero(9);
+        if (prev_col[2] != "0")
+        {
+            inst_R_prev(instrument_mapping[prev_col[2]]) = 1.0; // 해당 악기 상태 활성화
+        }
 
-    pushConmmandBuffer(q);
+        if (prev_col[3] != "0")
+        {
+            inst_L_prev(instrument_mapping[prev_col[3]]) = 1.0; // 해당 악기 상태 활성화
+        }
 
-    // // 데이터 기록
-    // for (int m = 0; m < 9; m++)
-    // {
-    //     std::string fileName = "solveIK_q" + to_string(m);
-    //     // fun.appendToCSV_DATA(fileName, q_ik(m), q(m), q_lin(m));
-    //     fun.appendToCSV_DATA(fileName, m, q(m), q_lin(m));
-    // }
+        inst_i << inst_R_prev, inst_L_prev;
+    }
+
+    // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
+    if (detect_time_R <= current_time)
+    {
+        moving_start_R = current_time;
+
+    }
+    if (detect_time_L <= current_time)
+    {
+        moving_start_L = current_time;
+    }
+
+    float sum = 0;
+    float make_time = 0;
+    //threshold/2
+    VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
+    // VectorXd inst_next = VectorXd::Zero(18);
+
+    // 큐를 전부 순회
+    for (size_t i = 0; i < Q.size(); ++i)
+    {
+        curLine = Q.front();
+        Q.pop();
+        Q.push(curLine); // 현재 데이터를 다시 큐 끝에 삽입
+        sum += stod(curLine[1]); // 합계 갱신
+
+        // 오른손 타격 감지
+        if (curLine[2] != "0" && !(inst_R.array() != 0).any())
+        {
+            inst_R(instrument_mapping[curLine[2]]) = 1.0; // 해당 악기 상태 활성화
+            detect_time_R = stof(curLine[1]) + stof(curLine[8]); // 오른손 타격 시간 갱신
+        }
+
+        // 왼손 타격 감지
+        if (curLine[3] != "0" && !(inst_L.array() != 0).any())
+        {
+            inst_L(instrument_mapping[curLine[3]]) = 1.0; // 해당 악기 상태 활성화
+            detect_time_L = stof(curLine[1]) + stof(curLine[8]); // 왼손 타격 시간 갱신
+        }
+
+        // 양손 모두 타격 감지
+        if ((inst_R.array() != 0).any() && (inst_L.array() != 0).any())
+        {
+            continue; // 둘 다 타격이 감지되면 다음 루프로 넘어감
+        }
+    }
+
+    //결론적으로 움직일 위치와 현재 오른손 시간 현재 왼손 시간 타격할 오른손 시간 타격할 왼손 시간 움직이기 시작한 왼손 시간 움직이긴 시작한 오른손 시간 정보를 다음 함수에 넘겨주는 구조가 될 예정
+    inst_f << inst_R, inst_L;
+
+    prev_col = Q.front();
+    timeSum -= stod(prev_col[1]);
+
+    make_time = current_time + stod(prev_col[1]);
+
+    t_i_R = moving_start_R;
+    t_i_L = moving_start_L;
+    t_f_R = detect_time_R;
+    t_f_L = detect_time_L;
+    t1 = current_time;
+    t2 = make_time;
+
+    Q.pop();
+
+    hit_state_R << stod(prev_col[2]), stod(Q.front()[2]);
+    hit_state_L << stod(prev_col[3]), stod(Q.front()[3]);
+    
+    // cout << "Right : " << hit_state_R.transpose() << "\tLeft : " << hit_state_L.transpose() << "\n";
+
+    line_n++;
+    std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
+    std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
+    std::cout << "// 왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_L << " \t //" <<  std::endl;
+    std::cout << "// 이전 악기 --> \t" << inst_i.transpose() << "    다음 악기 --> " << inst_f.transpose() << " \t\t //" << std::endl;
+    std::cout << "--------------------------------------------------------------------------------------------------------------------" << std::endl << std::endl;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*                               AddStance                                    */
+/*                                AddStance                                   */
 ////////////////////////////////////////////////////////////////////////////////
 
 void PathManager::GetArr(vector<float> &arr)
@@ -310,12 +500,99 @@ void PathManager::GetArr(vector<float> &arr)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*                              Play FUNCTION                                 */
+/*                         Read & Parse Measure                               */
 ////////////////////////////////////////////////////////////////////////////////
 
-double PathManager::timeScaling(double ti, double tf, double t)
+string PathManager::trimWhitespace(const std::string &str)
 {
-    double s;
+    size_t first = str.find_first_not_of(" \t");
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(" \t");
+    return str.substr(first, (last - first + 1));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*                            Make Trajectory                                 */
+////////////////////////////////////////////////////////////////////////////////
+
+void PathManager::getInstrument()
+{
+    float norm_R_i = inst_i.block(0, 0, 9, 1).norm();
+    float norm_L_i = inst_i.block(9, 0, 9, 1).norm();
+    float norm_R_f = inst_f.block(0, 0, 9, 1).norm();
+    float norm_L_f = inst_f.block(9, 0, 9, 1).norm();
+
+    if (norm_R_f == 0 && norm_R_i == 0)
+    {
+        inst_i.block(0, 0, 9, 1) = pre_inst_R;
+        inst_f.block(0, 0, 9, 1) = pre_inst_R;
+    }
+    else if (norm_R_f == 0 && norm_R_i == 1)
+    {
+        inst_f.block(0, 0, 9, 1) = pre_inst_R;
+    }
+    else if (norm_R_f == 1 && norm_R_i == 0)
+    {
+        inst_i.block(0, 0, 9, 1) = pre_inst_R;
+        pre_inst_R = inst_f.block(0, 0, 9, 1);
+    }
+    else if (norm_R_f == 1 && norm_R_i == 1)
+    {
+        pre_inst_R = inst_f.block(0, 0, 9, 1);
+    }
+
+    if (norm_L_f == 0 && norm_L_i == 0)
+    {
+        inst_i.block(9, 0, 9, 1) = pre_inst_L;
+        inst_f.block(9, 0, 9, 1) = pre_inst_L;
+    }
+    else if (norm_L_f == 0 && norm_L_i == 1)
+    {
+        inst_f.block(9, 0, 9, 1) = pre_inst_L;
+    }
+    else if (norm_L_f == 1 && norm_L_i == 0)
+    {
+        inst_i.block(9, 0, 9, 1) = pre_inst_L;
+        pre_inst_L = inst_f.block(9, 0, 9, 1);
+    }
+    else if (norm_L_f == 1 && norm_L_i == 1)
+    {
+        pre_inst_L = inst_f.block(9, 0, 9, 1);
+    }
+}
+
+VectorXd PathManager::getTargetPosition(VectorXd &inst_vector)
+{
+    VectorXd inst_right = inst_vector.segment(0, 9);
+    VectorXd inst_left = inst_vector.segment(9, 9);
+
+    if (inst_right.sum() == 0)
+    {
+        std::cout << "Right Instrument Vector Error!!\n";
+    }
+
+    if (inst_left.sum() == 0)
+    {
+        std::cout << "Left Instrument Vector Error!!\n";
+    }
+
+    VectorXd inst_p(18);
+    inst_p << inst_right,
+        inst_left;
+
+    MatrixXd combined(6, 18);
+    combined << right_drum_position, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_drum_position;
+    MatrixXd p = combined * inst_p;
+
+    return p;
+}
+
+float PathManager::timeScaling(float ti, float tf, float t)
+{
+    float s;
 
     MatrixXd A;
     MatrixXd b;
@@ -340,13 +617,13 @@ double PathManager::timeScaling(double ti, double tf, double t)
     return s;
 }
 
-VectorXd PathManager::seonwoo_makePath(VectorXd Pi, VectorXd Pf, double s)
+VectorXd PathManager::makePath(VectorXd Pi, VectorXd Pf, float s)
 {
-    double degree = 2.0;
+    float degree = 2.0;
 
-    double xi = Pi(0), xf = Pf(0);
-    double yi = Pi(1), yf = Pf(1);
-    double zi = Pi(2), zf = Pf(2);
+    float xi = Pi(0), xf = Pf(0);
+    float yi = Pi(1), yf = Pf(1);
+    float zi = Pi(2), zf = Pf(2);
 
     VectorXd Ps;
     Ps.resize(3);
@@ -364,15 +641,15 @@ VectorXd PathManager::seonwoo_makePath(VectorXd Pi, VectorXd Pf, double s)
 
         if (zi > zf)
         {
-            double a = zf - zi;
-            double b = zi;
+            float a = zf - zi;
+            float b = zi;
 
             Ps(2) = a*std::pow(s, degree) + b;
         }
         else
         {
-            double a = (zi - zf) * std::pow(-1, degree);
-            double b = zf;
+            float a = (zi - zf) * std::pow(-1, degree);
+            float b = zf;
 
             Ps(2) = a*std::pow(s-1, degree) + b;
         }
@@ -381,362 +658,335 @@ VectorXd PathManager::seonwoo_makePath(VectorXd Pi, VectorXd Pf, double s)
     return Ps;
 }
 
-VectorXd PathManager::makeHitTrajetory(int state, float ti, float tf, float t, HitParameter param)
+VectorXd PathManager::makeHitTrajetory(float t1, float t2, float t, VectorXd hitState, HitParameter param)
 {
     VectorXd addAngle;
-    addAngle.resize(2);    // wrist, elbow
+    int state;
 
-    if (state == 1)
+    if (hitState(0) == 0 && hitState(1) == 0)
     {
-        // Contact - Lift - Hit
-        addAngle(0) = makeWristAngleCLH(ti, tf, t, param);
-        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+        // Stay
+        state = 0;
     }
-    else if (state == 2)
+    else if (hitState(1) == 0)
     {
         // Stay - Lift - Hit
-        addAngle(0) = makeWristAngleSLH(ti, tf, t, param);
-        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+        state = 1;
     }
-    else if (state == 3)
+    else if (hitState(0) == 0)
     {
         // Contact - Stay
-        addAngle(0) = makeWristAngleCS(ti, tf, t, param);
-        addAngle(1) = makeElbowAngle(ti, tf, t, param);
+        state = 2;
     }
     else
     {
-        // Stay
-        addAngle(0) = param.wristStayAngle;
-        addAngle(1) = param.elbowStayAngle;
+        // Contact - Lift - Hit
+        state = 3;
     }
+
+    addAngle.resize(2);    // wrist, elbow
+    addAngle(0) = makeWristAngle(t1, t2, t, state, param);
+    addAngle(1) = makeElbowAngle(t1, t2, t, state, param);
    
     return addAngle;
 }
 
-float PathManager::makeWristAngleCLH(float ti, float tf, float t, HitParameter param)
+float PathManager::makeWristAngle(float t1, float t2, float t, int state, HitParameter param)
 {
-    float wrist_q;
+    float wrist_q = 0.0;
+
+    float t_contact = 0.2 * (t2 - t1);
+    float t_lift = 0.6 * (t2 - t1);
+    float t_stay = 0.5 * (t2 - t1);
+    float t_hit = t2 - t1;
 
     MatrixXd A;
     MatrixXd b;
     MatrixXd A_1;
     MatrixXd sol;
 
-    float t_contact = 0.2 * (tf - ti);
-    float t_lift = 0.6 * (tf - ti);
-    float t_end = tf - ti;    // t_hit
-    float hit_angle = param.wristHitAngle;
-    float lift_angle = param.wristLiftAngle;
-
-    if (t < t_contact)
+    if (state == 0)
     {
-        A.resize(3,3);
-        b.resize(3,1);
-
-        A << 1, 0, 0,
-            1, t_contact, t_contact*t_contact,
-            0, 1, 2*t_contact;
-
-        b << 0, hit_angle, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        // Stay
+        wrist_q = param.wristStayAngle;
     }
-    else if (t < t_lift)
+    else if (state == 1)
     {
-        A.resize(4,4);
-        b.resize(4,1);
+        // Stay - Lift - Hit
+        if (t < t_lift)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
 
-        A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
-            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-            0, 1, 2*t_contact, 3*t_contact*t_contact,
-            0, 1, 2*t_lift, 3*t_lift*t_lift;
+            A << 1, 0, 0, 0,
+                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                0, 1, 0, 0,
+                0, 1, 2*t_lift, 3*t_lift*t_lift;
 
-        b << hit_angle, lift_angle, 0, 0;
+            b << param.wristStayAngle, param.wristLiftAngle, 0, 0;
 
-        A_1 = A.inverse();
-        sol = A_1 * b;
+            A_1 = A.inverse();
+            sol = A_1 * b;
 
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else if (t < t_hit)
+        {
+            A.resize(3,3);
+            b.resize(3,1);
+
+            A << 1, t_lift, t_lift*t_lift,
+                1, t_hit, t_hit*t_hit,
+                0, 1, 2*t_lift;
+
+            b << param.wristLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        }
+        else
+        {
+            wrist_q = 0.0;
+        }
     }
-    else if (t < t_end)
+    else if (state == 2)
     {
-        A.resize(3,3);
-        b.resize(3,1);
+        // Contact - Stay
+        if (t < t_contact)
+        {
+            A.resize(3,3);
+            b.resize(3,1);
 
-        A << 1, t_lift, t_lift*t_lift,
-            1, t_end, t_end*t_end,
-            0, 1, 2*t_lift;
+            A << 1, 0, 0,
+                1, t_contact, t_contact*t_contact,
+                0, 1, 2*t_contact;
 
-        b << lift_angle, 0, 0;
+            b << 0, param.wristContactAngle, 0;
 
-        A_1 = A.inverse();
-        sol = A_1 * b;
+            A_1 = A.inverse();
+            sol = A_1 * b;
 
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        }
+        else if (t < t_stay)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
+                1, t_stay, t_stay*t_stay, t_stay*t_stay*t_stay,
+                0, 1, 2*t_contact, 3*t_contact*t_contact,
+                0, 1, 2*t_stay, 3*t_stay*t_stay;
+
+            b << param.wristContactAngle, param.wristStayAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else
+        {
+            wrist_q = param.wristStayAngle;
+        }
     }
-    else
+    else if (state == 3)
     {
-        wrist_q = 0.0;
+        // Contact - Lift - Hit
+        if (t < t_contact)
+        {
+            A.resize(3,3);
+            b.resize(3,1);
+
+            A << 1, 0, 0,
+                1, t_contact, t_contact*t_contact,
+                0, 1, 2*t_contact;
+
+            b << 0, param.wristContactAngle, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        }
+        else if (t < t_lift)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
+                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                0, 1, 2*t_contact, 3*t_contact*t_contact,
+                0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+            b << param.wristContactAngle, param.wristLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else if (t < t_hit)
+        {
+            A.resize(3,3);
+            b.resize(3,1);
+
+            A << 1, t_lift, t_lift*t_lift,
+                1, t_hit, t_hit*t_hit,
+                0, 1, 2*t_lift;
+
+            b << param.wristLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+        }
+        else
+        {
+            wrist_q = 0.0;
+        }
     }
 
     return wrist_q;
 }
 
-float PathManager::makeWristAngleSLH(float ti, float tf, float t, HitParameter param)
+float PathManager::makeElbowAngle(float t1, float t2, float t, int state, HitParameter param)
 {
-    float wrist_q;
+    float elbow_q = 0.0;
+
+    float t_lift = 0.5 * (t2 - t1);
+    float t_stay = 0.5 * (t2 - t1);
+    float t_hit = t2 - t1;
 
     MatrixXd A;
     MatrixXd b;
     MatrixXd A_1;
     MatrixXd sol;
 
-    float t_lift = 0.6 * (tf - ti);
-    float t_end = tf - ti;    // t_hit
-    float stay_angle = param.wristStayAngle;
-    float lift_angle = param.wristLiftAngle;
-
-    if (t < t_lift)
+    if (state == 0)
     {
-        A.resize(4,4);
-        b.resize(4,1);
-
-        A << 1, 0, 0, 0,
-            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-            0, 1, 0, 0,
-            0, 1, 2*t_lift, 3*t_lift*t_lift;
-
-        b << stay_angle, lift_angle, 0, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        // Stay
+        elbow_q = param.elbowStayAngle;
     }
-    else if (t < t_end)
+    else if (state == 1)
     {
-        A.resize(3,3);
-        b.resize(3,1);
+        // Stay - Lift - Hit
+        if (t < t_lift)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
 
-        A << 1, t_lift, t_lift*t_lift,
-            1, t_end, t_end*t_end,
-            0, 1, 2*t_lift;
+            A << 1, 0, 0, 0,
+                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                0, 1, 0, 0,
+                0, 1, 2*t_lift, 3*t_lift*t_lift;
 
-        b << lift_angle, 0, 0;
+            b << param.elbowStayAngle, param.elbowLiftAngle, 0, 0;
 
-        A_1 = A.inverse();
-        sol = A_1 * b;
+            A_1 = A.inverse();
+            sol = A_1 * b;
 
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else if (t < t_hit)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                1, t_hit, t_hit*t_hit, t_hit*t_hit*t_hit,
+                0, 1, 2*t_lift, 3*t_lift*t_lift,
+                0, 1, 2*t_hit, 3*t_hit*t_hit;
+
+            b << param.elbowLiftAngle, 0, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else
+        {
+            elbow_q = 0.0;
+        }
     }
-    else
+    else if (state == 2)
     {
-        wrist_q = 0.0;
+        // Contact - Stay
+        if (t < t_stay)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, 0, 0, 0,
+                1, t_stay, t_stay*t_stay, t_stay*t_stay*t_stay,
+                0, 1, 0, 0,
+                0, 1, 2*t_stay, 3*t_stay*t_stay;
+
+            b << 0, param.elbowStayAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else
+        {
+            elbow_q = param.elbowStayAngle;
+        }
+    }
+    else if (state == 3)
+    {
+        // Contact - Lift - Hit
+        if (t < t_lift)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, 0, 0, 0,
+                1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                0, 1, 0, 0,
+                0, 1, 2*t_lift, 3*t_lift*t_lift;
+
+            b << 0, param.elbowLiftAngle, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else if (t < t_hit)
+        {
+            A.resize(4,4);
+            b.resize(4,1);
+
+            A << 1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
+                1, t_hit, t_hit*t_hit, t_hit*t_hit*t_hit,
+                0, 1, 2*t_lift, 3*t_lift*t_lift,
+                0, 1, 2*t_hit, 3*t_hit*t_hit;
+
+            b << param.elbowLiftAngle, 0, 0, 0;
+
+            A_1 = A.inverse();
+            sol = A_1 * b;
+
+            elbow_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        }
+        else
+        {
+            elbow_q = 0.0;
+        }
     }
 
-    return wrist_q;
+    return elbow_q;
 }
 
-float PathManager::makeWristAngleCS(float ti, float tf, float t, HitParameter param)
-{
-    float wrist_q;
-
-    MatrixXd A;
-    MatrixXd b;
-    MatrixXd A_1;
-    MatrixXd sol;
-    
-    float t_contact = 0.2 * (tf - ti);
-    float t_lift = 0.6 * (tf - ti);   // t_stay
-    float hit_angle = param.wristHitAngle;
-    float stay_angle = param.wristStayAngle;
-
-    if (t < t_contact)
-    {
-        A.resize(3,3);
-        b.resize(3,1);
-
-        A << 1, 0, 0,
-            1, t_contact, t_contact*t_contact,
-            0, 1, 2*t_contact;
-
-        b << 0, hit_angle, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t;
-    }
-    else if (t < t_lift)
-    {
-        A.resize(4,4);
-        b.resize(4,1);
-
-        A << 1, t_contact, t_contact*t_contact, t_contact*t_contact*t_contact,
-            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-            0, 1, 2*t_contact, 3*t_contact*t_contact,
-            0, 1, 2*t_lift, 3*t_lift*t_lift;
-
-        b << hit_angle, stay_angle, 0, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
-    }
-    else
-    {
-        wrist_q = stay_angle;
-    }
-
-    return wrist_q;
-}
-
-float PathManager::makeElbowAngle(float ti, float tf, float t, HitParameter param)
-{
-    float wrist_q;
-
-    MatrixXd A;
-    MatrixXd b;
-    MatrixXd A_1;
-    MatrixXd sol;
-
-    float t_lift = 0.5 * (tf - ti);
-    float t_end = tf - ti;    // t_hit
-    float lift_angle = param.elbowLiftAngle;
-    float start_angle = 0.0;
-    float end_angle = 0.0;
-
-    if (t < t_lift)
-    {
-        A.resize(4,4);
-        b.resize(4,1);
-
-        A << 1, 0, 0, 0,
-            1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-            0, 1, 0, 0,
-            0, 1, 2*t_lift, 3*t_lift*t_lift;
-
-        b << start_angle, lift_angle, 0, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
-    }
-    else if (t < t_end)
-    {
-        A.resize(4,4);
-        b.resize(4,1);
-
-        A << 1, t_lift, t_lift*t_lift, t_lift*t_lift*t_lift,
-            1, t_end, t_end*t_end, t_end*t_end*t_end,
-            0, 1, 2*t_lift, 3*t_lift*t_lift,
-            0, 1, 2*t_end, 3*t_end*t_end;
-
-        b << lift_angle, end_angle, 0, 0;
-
-        A_1 = A.inverse();
-        sol = A_1 * b;
-
-        wrist_q = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
-    }
-    else
-    {
-        wrist_q = end_angle;
-    }
-
-    return wrist_q;
-}
-
-void PathManager::seonwoo_getInstrument()
-{
-    float norm_R_i = seonwoo_inst_i.block(0, 0, 9, 1).norm();
-    float norm_L_i = seonwoo_inst_i.block(9, 0, 9, 1).norm();
-    float norm_R_f = seonwoo_inst_f.block(0, 0, 9, 1).norm();
-    float norm_L_f = seonwoo_inst_f.block(9, 0, 9, 1).norm();
-
-    if (norm_R_f == 0 && norm_R_i == 0)
-    {
-        seonwoo_inst_i.block(0, 0, 9, 1) = seonwoo_inst_now_R;
-        seonwoo_inst_f.block(0, 0, 9, 1) = seonwoo_inst_now_R;
-    }
-    else if (norm_R_f == 0 && norm_R_i == 1)
-    {
-        seonwoo_inst_f.block(0, 0, 9, 1) = seonwoo_inst_now_R;
-    }
-    else if (norm_R_f == 1 && norm_R_i == 0)
-    {
-        seonwoo_inst_i.block(0, 0, 9, 1) = seonwoo_inst_now_R;
-        seonwoo_inst_now_R = seonwoo_inst_f.block(0, 0, 9, 1);
-    }
-    else if (norm_R_f == 1 && norm_R_i == 1)
-    {
-        seonwoo_inst_now_R = seonwoo_inst_f.block(0, 0, 9, 1);
-    }
-
-    if (norm_L_f == 0 && norm_L_i == 0)
-    {
-        seonwoo_inst_i.block(9, 0, 9, 1) = seonwoo_inst_now_L;
-        seonwoo_inst_f.block(9, 0, 9, 1) = seonwoo_inst_now_L;
-    }
-    else if (norm_L_f == 0 && norm_L_i == 1)
-    {
-        seonwoo_inst_f.block(9, 0, 9, 1) = seonwoo_inst_now_L;
-    }
-    else if (norm_L_f == 1 && norm_L_i == 0)
-    {
-        seonwoo_inst_i.block(9, 0, 9, 1) = seonwoo_inst_now_L;
-        seonwoo_inst_now_L = seonwoo_inst_f.block(9, 0, 9, 1);
-    }
-    else if (norm_L_f == 1 && norm_L_i == 1)
-    {
-        seonwoo_inst_now_L = seonwoo_inst_f.block(9, 0, 9, 1);
-    }
-}
-
-void PathManager::getState(vector<float> &t3, MatrixXd &inst3, MatrixXd &state)
-{
-    float norm_R0 = inst3.block(0, 0, 9, 1).norm();
-    float norm_L0 = inst3.block(9, 0, 9, 1).norm();
-    float norm_R1 = inst3.block(0, 1, 9, 1).norm();
-    float norm_L1 = inst3.block(9, 1, 9, 1).norm();
-
-    state.resize(3, 2);
-    state << t3[0], t3[1], norm_R0, norm_R1, norm_L0, norm_L1;
-}
-
-VectorXd PathManager::getTargetPosition(VectorXd &inst_vector)
-{
-    VectorXd inst_right = inst_vector.segment(0, 9);
-    VectorXd inst_left = inst_vector.segment(9, 9);
-
-    if (inst_right.sum() == 0)
-    {
-        std::cout << "Right Instrument Vector Error!!\n";
-        state.main = Main::Error;
-    }
-
-    if (inst_left.sum() == 0)
-    {
-        std::cout << "Left Instrument Vector Error!!\n";
-        state.main = Main::Error;
-    }
-
-    VectorXd inst_p(18);
-    inst_p << inst_right,
-        inst_left;
-
-    MatrixXd combined(6, 18);
-    combined << right_drum_position, MatrixXd::Zero(3, 9), MatrixXd::Zero(3, 9), left_drum_position;
-    MatrixXd p = combined * inst_p;
-
-    return p;
-}
+////////////////////////////////////////////////////////////////////////////////
+/*                                Solve IK                                    */
+////////////////////////////////////////////////////////////////////////////////
 
 VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
 {
@@ -795,6 +1045,9 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
     if (theta3 < -45.0 * M_PI / 180.0 || theta3 > 90.0 * M_PI / 180.0) // the3 범위 : -45deg ~ 90deg
     {
         std::cout << "IKFUN (q3) is not solved!!\n";
+        std::cout << "q3 : " << theta3 * 180.0 / M_PI << "\n";
+        std::cout << "pR : \n" << pR << "\n";
+        std::cout << "pL : \n" << pL << "\n";
         state.main = Main::Error;
     }
 
@@ -823,324 +1076,6 @@ VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0
 
     Qf.resize(9);
     Qf << theta0, theta1, theta2, theta3, theta4, theta5, theta6, 0.0, 0.0;
-
-    return Qf;
-}
-
-bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum)
-{
-    string line;
-
-    while(getline(inputFile, line))
-    {
-        istringstream iss(line);
-        string item;
-        int cnt = 0;
-
-        vector<string> columns;
-        while (getline(iss, item, '\t'))
-        {
-            if(cnt >= 8) break;
-            item = trimWhitespace(item);
-            columns.push_back(item);
-            cnt++;
-        }
-
-        if (!BPMFlag)
-        { // 첫번째 행엔 bpm에 대한 정보
-            cout << "music";
-            bpm = stod(columns[0].substr(4));
-            cout << " bpm = " << bpm << "\n";
-            BPMFlag = 1;
-        }
-        else
-        {
-            timeSum += stod(columns[1]);
-            columns.push_back(to_string(total_time));
-            total_time += stod(columns[1]);
-
-            // 큐에 저장
-            Q.push(columns);
-
-            if(timeSum >= threshold)
-            {
-                // Q에 있는 요소들 출력
-                queue<vector<string>> tempQ = Q; // 큐 복사본 사용
-                while (!tempQ.empty())
-                {
-                    vector<string> current = tempQ.front();
-                    tempQ.pop();
-
-                    // 요소 출력 (탭으로 구분)
-                    for (size_t i = 0; i < current.size(); ++i)
-                    {
-                        cout << current[i];
-                        if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
-                            cout << '\t';
-                    }
-                    cout << '\n'; // 다음 요소로 넘어갈 때 개행
-                }
-                cout << '\n'; // 한 반복 끝날 때 개행 두 번
-
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-void PathManager::parseMeasure(double &timeSum)
-{
-    sleep(1);
-    map<string, int> instrument_mapping = {
-    {"1", 2}, {"2", 5}, {"3", 6}, {"4", 8}, {"5", 3}, {"6", 1}, {"7", 0}, {"8", 7}, {"11", 2}, {"51", 2}, {"61", 2}, {"71", 2}, {"81", 2}, {"91", 2}};
-    // S        FT          MT       HT        HH        R         RC        LC         S          S          S          S          S           S
-    
-    // 지금 들어온 Q 맨 앞에 값이 현재 시간임
-    vector<string> curLine = Q.front(); 
-    current_time = stod(curLine[8]);  
-    
-    // 이전 위치에 대한 업데이트
-    if(prev_col[2] != "0" || prev_col[3] != "0")
-        {
-            VectorXd inst_R_prev = VectorXd::Zero(9), inst_L_prev = VectorXd::Zero(9);
-            if (prev_col[2] != "0")
-            {
-                inst_R_prev(instrument_mapping[prev_col[2]]) = 1.0; // 해당 악기 상태 활성화
-            }
-
-            if (prev_col[3] != "0")
-            {
-                inst_L_prev(instrument_mapping[prev_col[3]]) = 1.0; // 해당 악기 상태 활성화
-            }
-                seonwoo_inst_i << inst_R_prev, inst_L_prev;
-        }
-
-    // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
-    if (detect_time_R <= current_time)
-    {
-        moving_start_R = current_time;
-
-    }
-    if (detect_time_L <= current_time)
-    {
-        moving_start_L = current_time;
-    }
-
-    float sum = 0;
-    float make_time = 0;
-    //threshold/2
-    VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
-    // VectorXd inst_next = VectorXd::Zero(18);
-
-    // 큐를 전부 순회
-    for (size_t i = 0; i < Q.size(); ++i)
-    {
-        curLine = Q.front();
-        Q.pop();
-        Q.push(curLine); // 현재 데이터를 다시 큐 끝에 삽입
-        sum += stod(curLine[1]); // 합계 갱신
-
-        // 오른손 타격 감지
-        if (curLine[2] != "0" && !(inst_R.array() != 0).any())
-        {
-            inst_R(instrument_mapping[curLine[2]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_R = stof(curLine[1]) + stof(curLine[8]); // 오른손 타격 시간 갱신
-        }
-
-        // 왼손 타격 감지
-        if (curLine[3] != "0" && !(inst_L.array() != 0).any())
-        {
-            inst_L(instrument_mapping[curLine[3]]) = 1.0; // 해당 악기 상태 활성화
-            detect_time_L = stof(curLine[1]) + stof(curLine[8]); // 왼손 타격 시간 갱신
-        }
-
-        // 양손 모두 타격 감지
-        if ((inst_R.array() != 0).any() && (inst_L.array() != 0).any())
-        {
-            continue; // 둘 다 타격이 감지되면 다음 루프로 넘어감
-        }
-    }
-
-    //결론적으로 움직일 위치와 현재 오른손 시간 현재 왼손 시간 타격할 오른손 시간 타격할 왼손 시간 움직이기 시작한 왼손 시간 움직이긴 시작한 오른손 시간 정보를 다음 함수에 넘겨주는 구조가 될 예정
-    seonwoo_inst_f << inst_R, inst_L;
-    prev_col = Q.front();
-    timeSum -= stod(prev_col[1]);
-
-    make_time = current_time + stod(prev_col[1]);
-
-    seonwoo_tR_i = moving_start_R;
-    seonwoo_tL_i = moving_start_L;
-    seonwoo_tR_f = detect_time_R;
-    seonwoo_tL_f = detect_time_L;
-    seonwoo_t1 = current_time;
-    seonwoo_t2 = make_time;
-
-    Q.pop();
-
-    seonwoo_hitR << stod(prev_col[2]), stod(Q.front()[2]);
-    seonwoo_hitL << stod(prev_col[3]), stod(Q.front()[3]);
-    
-    //cout << "Right : " << seonwoo_hitR.transpose() << "\tLeft : " << seonwoo_hitL.transpose() << "\n";
-
-    line_n++;
-    // std::cout << "-----------------------------------------------------현재라인 : " << line_n << "----------------------------------------------------" << std::endl;
-    // std::cout << "// 오른손 타격할 악기 --> \t" << inst_R.transpose() << "    움직임 시작 시간 --> " << moving_start_R << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_R << " \t //" << std::endl;
-    // std::cout << "// 왼손 타격할 악기 --> \t" << inst_L.transpose() << "    움직임 시작 시간 --> " << moving_start_L << " \t현재시간 --> "  << current_time <<  " \t궤적시간 --> "  << make_time << " \t타격감지시간 --> " << detect_time_L << " \t //" <<  std::endl;
-    // std::cout << "// 이전 악기 --> \t" << seonwoo_inst_i.transpose() << "    다음 악기 --> " << seonwoo_inst_f.transpose() << " \t\t //" << std::endl;
-    // std::cout << "--------------------------------------------------------------------------------------------------------------------" << std::endl << std::endl;
-
-}
-
-VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL)
-{
-    // float direction = 0.0 * M_PI;
-    PartLength part_length;
-
-    float X1 = pR(0), Y1 = pR(1), z1 = pR(2);
-    float X2 = pL(0), Y2 = pL(1), z2 = pL(2);
-    float r1 = part_length.upperArm;
-    float r2 = part_length.lowerArm + part_length.stick;
-    float L1 = part_length.upperArm;
-    float L2 = part_length.lowerArm + part_length.stick;
-    float s = part_length.waist;
-    float z0 = part_length.height;
-
-    int j = 0, m = 0;
-    float the3[1351];
-    float zeta = z0 - z2;
-    VectorXd Qf(9);
-    MatrixXd Q_arr(7,1);
-    // float the0_f = 0;
-
-    // the3 배열 초기화
-    for (int i = 0; i < 1351; ++i)
-        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
-
-    for (int i = 0; i < 1351; ++i)
-    {
-        float det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
-
-        if (det_the4 < 1 && det_the4 > -1)
-        {
-            float the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
-            float the4 = the34 - the3[i];
-
-            if (the4 >= 0 && the4 < 120.0 * M_PI / 180.0) // the4 범위 : 0deg ~ 120deg
-            {
-                float r = r1 * sin(the3[i]) + r2 * sin(the34);
-                float det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
-
-                if (det_the1 < 1 && det_the1 > -1)
-                {
-                    float the1 = acos(det_the1);
-                    if (the1 > 0 && the1 < 150.0 * M_PI / 180.0) // the1 범위 : 0deg ~ 150deg
-                    {
-                        float alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
-                        float det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
-
-                        if (det_the0 < 1 && det_the0 > -1)
-                        {
-                            float the0 = asin(det_the0) - alpha;
-                            if (the0 > -M_PI / 3.0 && the0 < M_PI / 3.0) // the0 범위 : -60deg ~ 60deg
-                            {
-                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
-                                float det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
-
-                                if (det_the2 < 1 && det_the2 > -1)
-                                {
-                                    float the2 = acos(det_the2) - the0;
-                                    if (the2 > 30 * M_PI / 180.0 && the2 < M_PI) // the2 범위 : 30deg ~ 180deg
-                                    {
-                                        float Lp = sqrt(L * L + zeta * zeta);
-                                        float det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
-
-                                        if (det_the6 < 1 && det_the6 > -1)
-                                        {
-                                            float the6 = acos(det_the6);
-                                            if (the6 >= 0 && the6 < 120.0 * M_PI / 180.0) // the6 범위 : 0deg ~ 120deg
-                                            {
-                                                float T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
-                                                float det_the5 = L * L + zeta * zeta - T * T;
-
-                                                if (det_the5 > 0)
-                                                {
-                                                    float sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
-                                                    sol /= (L * L + zeta * zeta);
-                                                    float the5 = asin(sol);
-                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
-                                                    {
-                                                        // if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
-                                                        // {
-                                                        //     Qf(0) = the0;
-                                                        //     Qf(1) = the1;
-                                                        //     Qf(2) = the2;
-                                                        //     Qf(3) = the3[i];
-                                                        //     Qf(4) = the4;
-                                                        //     Qf(5) = the5;
-                                                        //     Qf(6) = the6;
-                                                        //     the0_f = the0;
-                                                        //     j = 1;
-                                                        // }
-                                                        if (j == 0)
-                                                        {
-                                                            Q_arr(0,0) = the0;
-                                                            Q_arr(1,0) = the1;
-                                                            Q_arr(2,0) = the2;
-                                                            Q_arr(3,0) = the3[i];
-                                                            Q_arr(4,0) = the4;
-                                                            Q_arr(5,0) = the5;
-                                                            Q_arr(6,0) = the6;
-
-                                                            j = 1;
-                                                        }
-                                                        else
-                                                        {
-                                                            Q_arr.conservativeResize(Q_arr.rows(), Q_arr.cols() + 1);
-
-                                                            Q_arr(0,j) = the0;
-                                                            Q_arr(1,j) = the1;
-                                                            Q_arr(2,j) = the2;
-                                                            Q_arr(3,j) = the3[i];
-                                                            Q_arr(4,j) = the4;
-                                                            Q_arr(5,j) = the5;
-                                                            Q_arr(6,j) = the6;
-
-                                                            j++;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (j == 0)
-    {
-        cout << "IKFUN is not solved!!\n";
-        state.main = Main::Error;
-    }
-    else
-    {
-        m = j/2;
-        // std::cout << "j = " << j << ", m = " << m << std::endl;
-        for (int i = 0; i < 7; i++)
-        {
-            Qf(i) = Q_arr(i,m);
-
-            // std::cout << "Q(" << i << ") = " << Qf(i) << std::endl;
-        }
-    }
-
-    Qf(7) = 0.0;
-    Qf(8) = 0.0;
 
     return Qf;
 }
@@ -1367,15 +1302,157 @@ vector<float> PathManager::makeHomeArr(int cnt)
 /*                            SYSTEM FUNCTION                                 */
 ////////////////////////////////////////////////////////////////////////////////
 
-string PathManager::trimWhitespace(const std::string &str)
+VectorXd PathManager::ikfun_final(VectorXd &pR, VectorXd &pL)
 {
-    size_t first = str.find_first_not_of(" \t");
-    if (std::string::npos == first)
+    // float direction = 0.0 * M_PI;
+    PartLength part_length;
+
+    float X1 = pR(0), Y1 = pR(1), z1 = pR(2);
+    float X2 = pL(0), Y2 = pL(1), z2 = pL(2);
+    float r1 = part_length.upperArm;
+    float r2 = part_length.lowerArm + part_length.stick;
+    float L1 = part_length.upperArm;
+    float L2 = part_length.lowerArm + part_length.stick;
+    float s = part_length.waist;
+    float z0 = part_length.height;
+
+    int j = 0, m = 0;
+    float the3[1351];
+    float zeta = z0 - z2;
+    VectorXd Qf(9);
+    MatrixXd Q_arr(7,1);
+    // float the0_f = 0;
+
+    // the3 배열 초기화
+    for (int i = 0; i < 1351; ++i)
+        the3[i] = -M_PI / 4.0 + i * M_PI / 1350.0 * (3.0 / 4.0); // the3 범위 : -45deg ~ 90deg
+
+    for (int i = 0; i < 1351; ++i)
     {
-        return str;
+        float det_the4 = (z0 - z1 - r1 * cos(the3[i])) / r2;
+
+        if (det_the4 < 1 && det_the4 > -1)
+        {
+            float the34 = acos((z0 - z1 - r1 * cos(the3[i])) / r2);
+            float the4 = the34 - the3[i];
+
+            if (the4 >= 0 && the4 < 120.0 * M_PI / 180.0) // the4 범위 : 0deg ~ 120deg
+            {
+                float r = r1 * sin(the3[i]) + r2 * sin(the34);
+                float det_the1 = (X1 * X1 + Y1 * Y1 - r * r - s * s / 4.0) / (s * r);
+
+                if (det_the1 < 1 && det_the1 > -1)
+                {
+                    float the1 = acos(det_the1);
+                    if (the1 > 0 && the1 < 150.0 * M_PI / 180.0) // the1 범위 : 0deg ~ 150deg
+                    {
+                        float alpha = asin(X1 / sqrt(X1 * X1 + Y1 * Y1));
+                        float det_the0 = (s / 4.0 + (X1 * X1 + Y1 * Y1 - r * r) / s) / sqrt(X1 * X1 + Y1 * Y1);
+
+                        if (det_the0 < 1 && det_the0 > -1)
+                        {
+                            float the0 = asin(det_the0) - alpha;
+                            if (the0 > -M_PI / 3.0 && the0 < M_PI / 3.0) // the0 범위 : -60deg ~ 60deg
+                            {
+                                float L = sqrt((X2 - 0.5 * s * cos(the0 + M_PI)) * (X2 - 0.5 * s * cos(the0 + M_PI)) + (Y2 - 0.5 * s * sin(the0 + M_PI)) * (Y2 - 0.5 * s * sin(the0 + M_PI)));
+                                float det_the2 = (X2 - 0.5 * s * cos(the0 + M_PI)) / L;
+
+                                if (det_the2 < 1 && det_the2 > -1)
+                                {
+                                    float the2 = acos(det_the2) - the0;
+                                    if (the2 > 30 * M_PI / 180.0 && the2 < M_PI) // the2 범위 : 30deg ~ 180deg
+                                    {
+                                        float Lp = sqrt(L * L + zeta * zeta);
+                                        float det_the6 = (Lp * Lp - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+
+                                        if (det_the6 < 1 && det_the6 > -1)
+                                        {
+                                            float the6 = acos(det_the6);
+                                            if (the6 >= 0 && the6 < 120.0 * M_PI / 180.0) // the6 범위 : 0deg ~ 120deg
+                                            {
+                                                float T = (zeta * zeta + L * L + L1 * L1 - L2 * L2) / (L1 * 2);
+                                                float det_the5 = L * L + zeta * zeta - T * T;
+
+                                                if (det_the5 > 0)
+                                                {
+                                                    float sol = T * L - zeta * sqrt(L * L + zeta * zeta - T * T);
+                                                    sol /= (L * L + zeta * zeta);
+                                                    float the5 = asin(sol);
+                                                    if (the5 > -M_PI / 4 && the5 < M_PI / 2) // the5 범위 : -45deg ~ 90deg
+                                                    {
+                                                        // if (j == 0 || fabs(the0 - direction) < fabs(the0_f - direction))
+                                                        // {
+                                                        //     Qf(0) = the0;
+                                                        //     Qf(1) = the1;
+                                                        //     Qf(2) = the2;
+                                                        //     Qf(3) = the3[i];
+                                                        //     Qf(4) = the4;
+                                                        //     Qf(5) = the5;
+                                                        //     Qf(6) = the6;
+                                                        //     the0_f = the0;
+                                                        //     j = 1;
+                                                        // }
+                                                        if (j == 0)
+                                                        {
+                                                            Q_arr(0,0) = the0;
+                                                            Q_arr(1,0) = the1;
+                                                            Q_arr(2,0) = the2;
+                                                            Q_arr(3,0) = the3[i];
+                                                            Q_arr(4,0) = the4;
+                                                            Q_arr(5,0) = the5;
+                                                            Q_arr(6,0) = the6;
+
+                                                            j = 1;
+                                                        }
+                                                        else
+                                                        {
+                                                            Q_arr.conservativeResize(Q_arr.rows(), Q_arr.cols() + 1);
+
+                                                            Q_arr(0,j) = the0;
+                                                            Q_arr(1,j) = the1;
+                                                            Q_arr(2,j) = the2;
+                                                            Q_arr(3,j) = the3[i];
+                                                            Q_arr(4,j) = the4;
+                                                            Q_arr(5,j) = the5;
+                                                            Q_arr(6,j) = the6;
+
+                                                            j++;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    size_t last = str.find_last_not_of(" \t");
-    return str.substr(first, (last - first + 1));
+
+    if (j == 0)
+    {
+        cout << "IKFUN is not solved!!\n";
+        state.main = Main::Error;
+    }
+    else
+    {
+        m = j/2;
+        // std::cout << "j = " << j << ", m = " << m << std::endl;
+        for (int i = 0; i < 7; i++)
+        {
+            Qf(i) = Q_arr(i,m);
+
+            // std::cout << "Q(" << i << ") = " << Qf(i) << std::endl;
+        }
+    }
+
+    Qf(7) = 0.0;
+    Qf(8) = 0.0;
+
+    return Qf;
 }
 
 vector<float> PathManager::fkfun()
