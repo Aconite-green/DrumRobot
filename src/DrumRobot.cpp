@@ -980,7 +980,7 @@ void DrumRobot::initializeMotors()
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
                 tMotor->useFourBarLinkage = true;
-                tMotor->initialMotorAngle = tMotor->jointAngleToMotorPosition(tMotor->initialJointAngle);
+                tMotor->setInitialMotorAngle(tMotor->initialJointAngle);
             }
             else if (motor_pair.first == "L_arm2")
             {
@@ -1001,7 +1001,7 @@ void DrumRobot::initializeMotors()
                 tMotor->initialJointAngle = initial_joint_angles[can_id] * M_PI / 180.0f;
                 tMotor->currentLimit = 23.2;  // [A]    // ak70-10
                 tMotor->useFourBarLinkage = true;
-                tMotor->initialMotorAngle = tMotor->jointAngleToMotorPosition(tMotor->initialJointAngle);
+                tMotor->setInitialMotorAngle(tMotor->initialJointAngle);
             }
         }
         else if (std::shared_ptr<MaxonMotor> maxonMotor = std::dynamic_pointer_cast<MaxonMotor>(motor))
