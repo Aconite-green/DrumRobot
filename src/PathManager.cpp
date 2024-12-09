@@ -359,12 +359,12 @@ void PathManager::parseMeasure(double &timeSum)
     }
 
     // 들어왔을 때 현재 시간이 detect_timeR이나 detect_timeL보다 크거나 같으면 움직이기 시작하는 시간을 현재 시간으로 설정
-    if (detect_time_R <= current_time)
+    if (std::round(detect_time_R * 100000) / 100000 <= std::round(current_time * 100000) / 100000)
     {
         moving_start_R = current_time;
-
     }
-    if (detect_time_L <= current_time)
+
+    if (std::round(detect_time_L * 100000) / 100000 <= std::round(current_time * 100000) / 100000)
     {
         moving_start_L = current_time;
     }
