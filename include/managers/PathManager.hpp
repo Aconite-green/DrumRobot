@@ -71,6 +71,9 @@ public:
     bool readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
     void parseMeasure(double &timeSum);
 
+    bool innu_readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum);
+    void innu_parseMeasure(double &timeSum);
+
     void generateTrajectory();
     void solveIK();
 
