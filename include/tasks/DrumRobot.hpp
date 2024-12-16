@@ -141,8 +141,8 @@ private:
     // 로봇의 관절각 범위
     //                                 Waist   Rarm1   Larm1   Rarm2   Rarm3   Larm2   Larm3   Rwrist  Lwrist  Rfoot   Lfoot   [deg]
     const float joint_range_max[11] = {90.0,  150.0,  180.0,  90.0,   130.0,  90.0,   130.0,  135.0,  135.0,  135.0,  135.0};
-    const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,    0.0,  -60.0,    0.0,    0.0,    0.0,  -90.0,  -90.0};
-    // const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
+    // const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,    0.0,  -60.0,    0.0,    0.0,    0.0,  -90.0,  -90.0};
+    const float joint_range_min[11] = {-90.0, 0.0,    30.0,   -60.0,  -30.0,  -60.0,  -30.0,  -108.0, -108.0, -90.0,  -90.0};
 
     // Receive Thread Loop 메소드들
     void ReadProcess(int periodMicroSec);
@@ -152,8 +152,8 @@ private:
     void setMaxonMotorMode(std::string targetMode);
 
     //play 관련 전역변수들
-    std::string basePath = "/home/shy/DrumRobot/include/codes/";
-    string musicName;
+    std::string basePath = "/home/shy/DrumRobot/include/codes/";    // 악보 위치
+    std::string musicName;
     int fileIndex;
     bool BPMFlag;
     double timeSum = 0.0;

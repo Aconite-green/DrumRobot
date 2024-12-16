@@ -127,15 +127,19 @@ void PathManager::generateTrajectory()
     VectorXd Pf_L(3);
 
     float n, s_R, s_L;
-    float delta_t_measure_R = t_f_R - t_i_R;
-    float delta_t_measure_L = t_f_L - t_i_L;
+    float delta_t_measure_R;
+    float delta_t_measure_L;
     float dt = canManager.deltaT;
 
     // waist
-    float q0_t1 = 0.0, q0_t2 = 0.2;
+    float q0_t1 = 0.0, q0_t2 = 0.0;
 
     // state
     getInstrument();
+
+    // time
+    delta_t_measure_R = t_f_R - t_i_R;
+    delta_t_measure_L = t_f_L - t_i_L;
 
     // position
     Pi = getTargetPosition(inst_i);
@@ -248,7 +252,7 @@ void PathManager::solveIK()
     nextQ = q_buffer.front();
     q_buffer.pop();
 
-    q = ikfun_fixed_waist(nextP.pR, nextP.pL, nextQ.q0);
+    q = ikFixedWaist(nextP.pR, nextP.pL, nextQ.q0);
 
     q(4) += nextQ.add_qR(1);
     q(6) += nextQ.add_qL(1);
@@ -283,7 +287,17 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             item = trimWhitespace(item);
             columns.push_back(item);
             cnt++;
+
+            // 디버깅: 각 항목 출력
+            // std::cout << cnt << "--------------------getline----------------------------\n" << item << "\n";
         }
+
+        // 디버깅: columns 벡터의 상태 출력
+        for(auto& i : columns)
+        {
+            cout << i << '\t';
+        }
+        cout << '\n';
 
         if (!BPMFlag)
         { // 첫번째 행엔 bpm에 대한 정보
@@ -297,32 +311,57 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
         }
         else
         {
+            // timeSum 누적
             timeSum += stod(columns[1]);
-            columns.push_back(to_string(total_time));
+            // total_time 갱신
             total_time += stod(columns[1]);
+
+            // 디버깅: 각 값 출력 (누적되는 값을 확인)
+            cout << "After processing line " << cnt << "---------------------------------------------\n";
+            cout << "timeSum: " << timeSum << "\n";
+            cout << "total_time: " << total_time << "\n";
+
+            // columns의 원본 상태 출력
+            cout << "columns before pushing to queue:\n";
+            for(auto& i : columns)
+            {
+                cout << i << '\t';
+            }
+            cout << '\n';
+
+            // total_time을 columns의 맨 끝에 추가
+            columns.push_back(to_string(total_time)); // total_time을 columns 끝에 추가
+
+            // 디버깅: total_time이 제대로 추가되었는지 확인
+            cout << "columns after pushing total_time:\n";
+            for(auto& i : columns)
+            {
+                cout << i << '\t';
+            }
+            cout << "\n-----------------------------------------------------------------------------------------\n";
 
             // 큐에 저장
             Q.push(columns);
 
+            // timeSum이 threshold를 넘으면 출력
             if(timeSum >= threshold)
             {
-                // Q에 있는 요소들 출력
                 queue<vector<string>> tempQ = Q; // 큐 복사본 사용
                 while (!tempQ.empty())
                 {
                     vector<string> current = tempQ.front();
                     tempQ.pop();
 
-                    // 요소 출력 (탭으로 구분)
+                    // 큐의 각 요소 출력 (탭으로 구분)
                     for (size_t i = 0; i < current.size(); ++i)
                     {
                         cout << current[i];
                         if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
                             cout << '\t';
                     }
-                    cout << '\n'; // 다음 요소로 넘어갈 때 개행
+                    cout << '\n';
                 }
-                cout << '\n'; // 한 반복 끝날 때 개행 두 번
+                cout << '\n';
 
                 return true;
             }
@@ -330,7 +369,6 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
     }
     return false;
 }
-
 void PathManager::parseMeasure(double &timeSum)
 {
     map<string, int> instrument_mapping = {
@@ -369,7 +407,6 @@ void PathManager::parseMeasure(double &timeSum)
         moving_start_L = current_time;
     }
 
-    float sum = 0;
     float make_time = 0;
     //threshold/2
     VectorXd inst_R = VectorXd::Zero(9), inst_L = VectorXd::Zero(9);
@@ -381,7 +418,6 @@ void PathManager::parseMeasure(double &timeSum)
         curLine = Q.front();
         Q.pop();
         Q.push(curLine); // 현재 데이터를 다시 큐 끝에 삽입
-        sum += stod(curLine[1]); // 합계 갱신
 
         // 오른손 타격 감지
         if (curLine[2] != "0" && !(inst_R.array() != 0).any())
@@ -419,6 +455,14 @@ void PathManager::parseMeasure(double &timeSum)
     t1 = current_time;
     t2 = make_time;
 
+    t_i_R = t_i_R*100/bpm;
+    t_i_L = t_i_L*100/bpm;
+    t_f_R = t_f_R*100/bpm;
+    t_f_L = t_f_L*100/bpm;
+    t1 = t1*100/bpm;
+    t2 = t2*100/bpm;
+
+
     Q.pop();
 
     hit_state_R << stod(prev_col[2]), stod(Q.front()[2]);
@@ -450,7 +494,7 @@ void PathManager::GetArr(vector<float> &arr)
     VectorXd Vmax = VectorXd::Zero(9);
 
     float dt = canManager.deltaT;   // 0.005
-    float t = 3.0;                  // 3초동안 실행
+    float t = 2.0;                  // 3초동안 실행
     float extra_time = 1.0;         // 추가 시간 1초
     int n = (int)(t / dt);   
     int n_p = (int)(extra_time / dt); 
@@ -463,7 +507,7 @@ void PathManager::GetArr(vector<float> &arr)
         Q2(i) = arr[i];
     }
 
-    Vmax = cal_Vmax(Q1, Q2, acc_max, t);
+    Vmax = calVmax(Q1, Q2, acc_max, t);
 
     for (int k = 0; k < 9; k++)
     {
@@ -529,10 +573,14 @@ void PathManager::getInstrument()
     {
         inst_i.block(0, 0, 9, 1) = pre_inst_R;
         inst_f.block(0, 0, 9, 1) = pre_inst_R;
+        t_i_R = t1;
+        t_f_R = t2;
     }
     else if (norm_R_f == 0 && norm_R_i == 1)
     {
         inst_f.block(0, 0, 9, 1) = pre_inst_R;
+        t_i_R = t1;
+        t_f_R = t2;
     }
     else if (norm_R_f == 1 && norm_R_i == 0)
     {
@@ -548,10 +596,14 @@ void PathManager::getInstrument()
     {
         inst_i.block(9, 0, 9, 1) = pre_inst_L;
         inst_f.block(9, 0, 9, 1) = pre_inst_L;
+        t_i_L = t1;
+        t_f_L = t2;
     }
     else if (norm_L_f == 0 && norm_L_i == 1)
     {
         inst_f.block(9, 0, 9, 1) = pre_inst_L;
+        t_i_L = t1;
+        t_f_L = t2;
     }
     else if (norm_L_f == 1 && norm_L_i == 0)
     {
@@ -988,7 +1040,7 @@ float PathManager::makeElbowAngle(float t1, float t2, float t, int state, HitPar
 /*                                Solve IK                                    */
 ////////////////////////////////////////////////////////////////////////////////
 
-VectorXd PathManager::ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0)
+VectorXd PathManager::ikFixedWaist(VectorXd &pR, VectorXd &pL, float theta0)
 {
     VectorXd Qf;
     PartLength part_length;
@@ -1106,7 +1158,7 @@ void PathManager::pushConmmandBuffer(VectorXd &Qi)
 /*                           AddStance FUNCTION                               */
 ////////////////////////////////////////////////////////////////////////////////
 
-VectorXd PathManager::cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
+VectorXd PathManager::calVmax(VectorXd &q1, VectorXd &q2, float acc, float t2)
 {
     VectorXd Vmax = VectorXd::Zero(9);
 

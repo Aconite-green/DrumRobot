@@ -216,12 +216,12 @@ private:
     VectorXd hit_state_L = VectorXd::Zero(2);
 
     /////////////////////////////////////////////////////////////////////////// Play (solve IK)
-    VectorXd ikfun_fixed_waist(VectorXd &pR, VectorXd &pL, float theta0);
+    VectorXd ikFixedWaist(VectorXd &pR, VectorXd &pL, float theta0);
     void pushConmmandBuffer(VectorXd &Qi);
 
     /////////////////////////////////////////////////////////////////////////// AddStance
     // q1[rad], q2[rad], acc[rad/s^2], t2[s]
-    VectorXd cal_Vmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
+    VectorXd calVmax(VectorXd &q1, VectorXd &q2, float acc, float t2);
     // q1[rad], q2[rad], Vmax[rad/s], acc[rad/s^2], t[s], t2[s]
     VectorXd makeProfile(VectorXd &q1, VectorXd &q2, VectorXd &Vmax, float acc, float t, float t2);
     void getMotorPos();
