@@ -64,6 +64,7 @@ public:
 
     void GetDrumPositoin();
     void SetReadyAngle();
+    void InitVal();
     
     /////////////////////////////////////////////////////////////////////////// Play
     

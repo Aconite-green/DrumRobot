@@ -747,6 +747,8 @@ bool DrumRobot::processInput(const std::string &input)
             {
                 std::cout << "enter music name : ";
                 std::getline(std::cin, musicName);
+
+                pathManager.InitVal();
                 
                 BPMFlag = 0;
                 fileIndex = 0;
