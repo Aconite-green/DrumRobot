@@ -113,6 +113,19 @@ void PathManager::SetReadyAngle()
     readyArr[8] = param.wristStayAngle;
 }
 
+void PathManager::InitVal()
+{
+    threshold = 2.4;
+    total_time = 0.0;
+    detect_time_R = 0;
+    detect_time_L = 0;
+    current_time = 0;
+    moving_start_R = 0;
+    moving_start_L = 0;
+    line_n = 0; 
+    vector<string> prev_col = { "0","0","1","1","0","0","0","0" };  // default 악기 위치로 맞추기
+}
+
 ////////////////////////////////////////////////////////////////////////////////    
 /*                                  Play                                      */
 ////////////////////////////////////////////////////////////////////////////////
