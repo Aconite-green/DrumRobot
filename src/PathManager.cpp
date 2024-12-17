@@ -132,127 +132,127 @@ void PathManager::InitVal()
 
 void PathManager::generateTrajectory()
 {
-    innu_parseMeasure(innuMeasure);
+    //innu_parseMeasure(innuMeasure);
     
-    // // position
-    // VectorXd Pi(6), Pf(6);
-    // VectorXd Pi_R(3);
-    // VectorXd Pi_L(3);
-    // VectorXd Pf_R(3);
-    // VectorXd Pf_L(3);
+    // position
+    VectorXd Pi(6), Pf(6);
+    VectorXd Pi_R(3);
+    VectorXd Pi_L(3);
+    VectorXd Pf_R(3);
+    VectorXd Pf_L(3);
 
-    // float n, s_R, s_L;
-    // float delta_t_measure_R;
-    // float delta_t_measure_L;
-    // float dt = canManager.deltaT;
+    float n, s_R, s_L;
+    float delta_t_measure_R;
+    float delta_t_measure_L;
+    float dt = canManager.deltaT;
 
-    // // waist
-    // float q0_t1 = 0.0, q0_t2 = 0.0;
+    // waist
+    float q0_t1 = 0.0, q0_t2 = 0.0;
 
-    // // state
-    // getInstrument();
+    // state
+    getInstrument();
 
-    // // time
-    // delta_t_measure_R = t_f_R - t_i_R;
-    // delta_t_measure_L = t_f_L - t_i_L;
+    // time
+    delta_t_measure_R = t_f_R - t_i_R;
+    delta_t_measure_L = t_f_L - t_i_L;
 
-    // // position
-    // Pi = getTargetPosition(inst_i);
-    // Pf = getTargetPosition(inst_f);
+    // position
+    Pi = getTargetPosition(inst_i);
+    Pf = getTargetPosition(inst_f);
 
-    // Pi_R << Pi(0), Pi(1), Pi(2);
-    // Pi_L << Pi(3), Pi(4), Pi(5);
-    // Pf_R << Pf(0), Pf(1), Pf(2);
-    // Pf_L << Pf(3), Pf(4), Pf(5);
+    Pi_R << Pi(0), Pi(1), Pi(2);
+    Pi_L << Pi(3), Pi(4), Pi(5);
+    Pf_R << Pf(0), Pf(1), Pf(2);
+    Pf_L << Pf(3), Pf(4), Pf(5);
 
-    // std::cout << "\nPi_R\n" << Pi_R
-    // << "\nPi_L\n" << Pi_L
-    // << "\nPf_R\n" << Pf_R
-    // << "\nPf_L\n" << Pf_L << std::endl;
+    std::cout << "\nPi_R\n" << Pi_R
+    << "\nPi_L\n" << Pi_L
+    << "\nPf_R\n" << Pf_R
+    << "\nPf_L\n" << Pf_L << std::endl;
 
-    // // trajectory
-    // n = (t2 - t1) / dt;
-    // for (int i = 0; i < n; i++)
-    // {
-    //     Position Pt;
-    //     float t_R = dt * i + t1 - t_i_R;
-    //     float t_L = dt * i + t1 - t_i_L;
+    // trajectory
+    n = (t2 - t1) / dt;
+    for (int i = 0; i < n; i++)
+    {
+        Position Pt;
+        float t_R = dt * i + t1 - t_i_R;
+        float t_L = dt * i + t1 - t_i_L;
         
-    //     s_R = timeScaling(0.0f, delta_t_measure_R, t_R);
-    //     s_L = timeScaling(0.0f, delta_t_measure_L, t_L);
+        s_R = timeScaling(0.0f, delta_t_measure_R, t_R);
+        s_L = timeScaling(0.0f, delta_t_measure_L, t_L);
 
-    //     Pt.pR = makePath(Pi_R, Pf_R, s_R);
-    //     Pt.pL = makePath(Pi_L, Pf_L, s_L);
+        Pt.pR = makePath(Pi_R, Pf_R, s_R);
+        Pt.pL = makePath(Pi_L, Pf_L, s_L);
         
-    //     P_buffer.push(Pt);
+        P_buffer.push(Pt);
 
-    //     std::string fileName;
-    //     fileName = "Trajectory_R";
-    //     fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
-    //     fileName = "Trajectory_L";
-    //     fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
-    //     fileName = "S_R";
-    //     fun.appendToCSV_DATA(fileName, t_R, s_R, delta_t_measure_R);
-    //     fileName = "S_L";
-    //     fun.appendToCSV_DATA(fileName, t_L, s_L, delta_t_measure_L);
+        std::string fileName;
+        fileName = "Trajectory_R";
+        fun.appendToCSV_DATA(fileName, Pt.pR[0], Pt.pR[1], Pt.pR[2]);
+        fileName = "Trajectory_L";
+        fun.appendToCSV_DATA(fileName, Pt.pL[0], Pt.pL[1], Pt.pL[2]);
+        fileName = "S_R";
+        fun.appendToCSV_DATA(fileName, t_R, s_R, delta_t_measure_R);
+        fileName = "S_L";
+        fun.appendToCSV_DATA(fileName, t_L, s_L, delta_t_measure_L);
 
-    //     // waist
-    //     if (i == 0)
-    //     {
-    //         VectorXd q_t1 = ikfun_final(Pt.pR, Pt.pL);
-    //         q0_t1 = q_t1(0);
-    //     }
-    //     else if (i + 1 >= n)
-    //     {
-    //         VectorXd q_t2 = ikfun_final(Pt.pR, Pt.pL);
-    //         q0_t2 = q_t2(0);
-    //     }
-    // }
+        // waist
+        if (i == 0)
+        {
+            VectorXd q_t1 = ikfun_final(Pt.pR, Pt.pL);
+            q0_t1 = q_t1(0);
+        }
+        else if (i + 1 >= n)
+        {
+            VectorXd q_t2 = ikfun_final(Pt.pR, Pt.pL);
+            q0_t2 = q_t2(0);
+        }
+    }
 
-    // // waist, wrist, elbow & brake
-    // for (int i = 0; i < n; i++)
-    // {
-    //     AddAngle qt;
-    //     Brake brake_t;
-    //     float t = dt * i;
+    // waist, wrist, elbow & brake
+    for (int i = 0; i < n; i++)
+    {
+        AddAngle qt;
+        Brake brake_t;
+        float t = dt * i;
         
-    //     // waist
-    //     MatrixXd A;
-    //     MatrixXd b;
-    //     MatrixXd A_1;
-    //     MatrixXd sol;
+        // waist
+        MatrixXd A;
+        MatrixXd b;
+        MatrixXd A_1;
+        MatrixXd sol;
 
-    //     float t21 = t2 - t1;
+        float t21 = t2 - t1;
 
-    //     A.resize(4,4);
-    //     b.resize(4,1);
+        A.resize(4,4);
+        b.resize(4,1);
 
-    //     A << 1, 0, 0, 0,
-    //         1, t21, t21*t21, t21*t21*t21,
-    //         0, 1, 0, 0,
-    //         0, 1, 2*t21, 3*t21*t21;
+        A << 1, 0, 0, 0,
+            1, t21, t21*t21, t21*t21*t21,
+            0, 1, 0, 0,
+            0, 1, 2*t21, 3*t21*t21;
 
-    //     b << q0_t1, q0_t2, 0, 0;
+        b << q0_t1, q0_t2, 0, 0;
 
-    //     A_1 = A.inverse();
-    //     sol = A_1 * b;
+        A_1 = A.inverse();
+        sol = A_1 * b;
 
-    //     qt.q0 = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
+        qt.q0 = sol(0,0) + sol(1,0) * t + sol(2,0) * t * t + sol(3,0) * t * t * t;
         
-    //     // wrist & elbow
-    //     HitParameter param;
-    //     qt.add_qR = makeHitTrajetory(t1, t2, t, hit_state_R, param);
-    //     qt.add_qL = makeHitTrajetory(t1, t2, t, hit_state_L, param);
+        // wrist & elbow
+        HitParameter param;
+        qt.add_qR = makeHitTrajetory(t1, t2, t, hit_state_R, param);
+        qt.add_qL = makeHitTrajetory(t1, t2, t, hit_state_L, param);
 
-    //     // brake
-    //     for (int j = 0; j < 8; j++)
-    //     {
-    //         brake_t.state[j] = false;
-    //     }
+        // brake
+        for (int j = 0; j < 8; j++)
+        {
+            brake_t.state[j] = false;
+        }
 
-    //     q_buffer.push(qt);
-    //     brake_buffer.push(brake_t);
-    // }
+        q_buffer.push(qt);
+        brake_buffer.push(brake_t);
+    }
 }
 
 void PathManager::solveIK()
@@ -331,29 +331,29 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             // total_time 갱신
             total_time += stod(columns[1]);
 
-            // 디버깅: 각 값 출력 (누적되는 값을 확인)
-            cout << "After processing line " << cnt << "---------------------------------------------\n";
-            cout << "timeSum: " << timeSum << "\n";
-            cout << "total_time: " << total_time << "\n";
+            // // 디버깅: 각 값 출력 (누적되는 값을 확인)
+            // cout << "After processing line " << cnt << "---------------------------------------------\n";
+            // cout << "timeSum: " << timeSum << "\n";
+            // cout << "total_time: " << total_time << "\n";
 
-            // columns의 원본 상태 출력
-            cout << "columns before pushing to queue:\n";
-            for(auto& i : columns)
-            {
-                cout << i << '\t';
-            }
-            cout << '\n';
+            // // columns의 원본 상태 출력
+            // cout << "columns before pushing to queue:\n";
+            // for(auto& i : columns)
+            // {
+            //     cout << i << '\t';
+            // }
+            // cout << '\n';
 
             // total_time을 columns의 맨 끝에 추가
-            columns.push_back(to_string(total_time)); // total_time을 columns 끝에 추가
+            columns.push_back(to_string(total_time - stod(columns[1]))); // total_time을 columns 끝에 추가
 
-            // 디버깅: total_time이 제대로 추가되었는지 확인
-            cout << "columns after pushing total_time:\n";
-            for(auto& i : columns)
-            {
-                cout << i << '\t';
-            }
-            cout << "\n-----------------------------------------------------------------------------------------\n";
+            // // 디버깅: total_time이 제대로 추가되었는지 확인
+            // cout << "columns after pushing total_time:\n";
+            // for(auto& i : columns)
+            // {
+            //     cout << i << '\t';
+            // }
+            // cout << "\n-----------------------------------------------------------------------------------------\n";
 
             // 큐에 저장
             Q.push(columns);
@@ -1559,179 +1559,179 @@ vector<float> PathManager::fkfun()
 }
 
 
-bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
-{
-    string row;
-    double timeSum = 0.0;
+// bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
+// {
+//     string row;
+//     double timeSum = 0.0;
 
-    for (int i = 1; i < innuMeasure.rows(); i++)
-    {
-        timeSum += innuMeasure(i, 1);
-    }
+//     for (int i = 1; i < innuMeasure.rows(); i++)
+//     {
+//         timeSum += innuMeasure(i, 1);
+//     }
 
-    while(getline(inputFile, row))
-    {
-        istringstream iss(row);
-        string item;
-        vector<string> items;
+//     while(getline(inputFile, row))
+//     {
+//         istringstream iss(row);
+//         string item;
+//         vector<string> items;
 
-        while (getline(iss, item, '\t'))
-        {
-            item = trimWhitespace(item);
-            items.push_back(item);
-        }
+//         while (getline(iss, item, '\t'))
+//         {
+//             item = trimWhitespace(item);
+//             items.push_back(item);
+//         }
 
-        if (!BPMFlag)
-        {
-            cout << "music";
-            bpm = stod(items[0].substr(4));
-            cout << " bpm = " << bpm << "\n";
-            BPMFlag = 1;
+//         if (!BPMFlag)
+//         {
+//             cout << "music";
+//             bpm = stod(items[0].substr(4));
+//             cout << " bpm = " << bpm << "\n";
+//             BPMFlag = 1;
 
-            pre_inst_R << default_right;
-            pre_inst_L << default_left;
+//             pre_inst_R << default_right;
+//             pre_inst_L << default_left;
 
-            innuMeasure.resize(1, 8);
-            innuMeasure = MatrixXd::Zero(1, 8);
-        }
-        else
-        {
-            innuMeasure.conservativeResize(innuMeasure.rows() + 1, innuMeasure.cols());
-            for (int i = 0; i < 8; i++)
-            {
-                innuMeasure(innuMeasure.rows() - 1, i) = stod(items[i]);
-            }
+//             innuMeasure.resize(1, 8);
+//             innuMeasure = MatrixXd::Zero(1, 8);
+//         }
+//         else
+//         {
+//             innuMeasure.conservativeResize(innuMeasure.rows() + 1, innuMeasure.cols());
+//             for (int i = 0; i < 8; i++)
+//             {
+//                 innuMeasure(innuMeasure.rows() - 1, i) = stod(items[i]);
+//             }
 
-            // timeSum 누적
-            timeSum += innuMeasure(innuMeasure.rows() - 1, 1);
+//             // timeSum 누적
+//             timeSum += innuMeasure(innuMeasure.rows() - 1, 1);
 
-            // timeSum이 threshold를 넘으면 true 반환
-            if (timeSum >= threshold)
-            {
-                // std::cout << innuMeasure;
-                // std::cout << "\n ////////////// time sum : " << timeSum << "\n";
+//             // timeSum이 threshold를 넘으면 true 반환
+//             if (timeSum >= threshold)
+//             {
+//                 // std::cout << innuMeasure;
+//                 // std::cout << "\n ////////////// time sum : " << timeSum << "\n";
 
-                return true;
-            }
-        }
-    }
-    return false;
-}
+//                 return true;
+//             }
+//         }
+//     }
+//     return false;
+// }
 
-void PathManager::innu_parseMeasure(MatrixXd &measureMatrix)
-{
-    VectorXd Measure_time = measureMatrix.col(1);
-    VectorXd Measure_R = measureMatrix.col(2);
-    VectorXd Measure_L = measureMatrix.col(3);
+// void PathManager::innu_parseMeasure(MatrixXd &measureMatrix)
+// {
+//     VectorXd Measure_time = measureMatrix.col(1);
+//     VectorXd Measure_R = measureMatrix.col(2);
+//     VectorXd Measure_L = measureMatrix.col(3);
 
-    pair<VectorXd, MatrixXd> R;
-    pair<VectorXd, MatrixXd> L;
+//     pair<VectorXd, MatrixXd> R;
+//     pair<VectorXd, MatrixXd> L;
 
-    R = innu_parseOneArm(Measure_time, Measure_R);
-    L = innu_parseOneArm(Measure_time, Measure_L);
+//     R = innu_parseOneArm(Measure_time, Measure_R);
+//     L = innu_parseOneArm(Measure_time, Measure_L);
 
-    // 데이터 저장
-    innu_inst_i << R.first.block(0,0,9,1), L.first.block(0,0,9,1);
-    innu_inst_f << R.first.block(10,0,9,1), L.first.block(10,0,9,1);
+//     // 데이터 저장
+//     innu_inst_i << R.first.block(0,0,9,1), L.first.block(0,0,9,1);
+//     innu_inst_f << R.first.block(10,0,9,1), L.first.block(10,0,9,1);
 
-    innu_t_i_R = R.second(0,0);
-    innu_t_i_L = R.second(0,1);
-    innu_t_f_R = R.second(1,0);
-    innu_t_f_L = R.second(0,1);
+//     innu_t_i_R = R.second(0,0);
+//     innu_t_i_L = R.second(0,1);
+//     innu_t_f_R = R.second(1,0);
+//     innu_t_f_L = R.second(0,1);
 
-    innu_t1 = measureMatrix(0, 1);
-    innu_t2 = measureMatrix(1, 1);
+//     innu_t1 = measureMatrix(0, 1);
+//     innu_t2 = measureMatrix(1, 1);
 
-    // 읽은 줄 삭제
-    MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
-    tmp_matrix = measureMatrix.block(1, 0, tmp_matrix.rows(), tmp_matrix.cols());
-    measureMatrix.resize(tmp_matrix.rows(), tmp_matrix.cols());
-    measureMatrix = tmp_matrix;
-}
+//     // 읽은 줄 삭제
+//     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
+//     tmp_matrix = measureMatrix.block(1, 0, tmp_matrix.rows(), tmp_matrix.cols());
+//     measureMatrix.resize(tmp_matrix.rows(), tmp_matrix.cols());
+//     measureMatrix = tmp_matrix;
+// }
 
-pair<VectorXd, MatrixXd> PathManager::innu_parseOneArm(VectorXd t, VectorXd inst, VectorXd stateVector)
-{
-    map<int, int> instrument_mapping = {
-    {1, 2}, {2, 5}, {3, 6}, {4, 8}, {5, 3}, {6, 1}, {7, 0}, {8, 7}, {11, 2}, {51, 2}, {61, 2}, {71, 2}, {81, 2}, {91, 2}};
-    // S      FT      MT      HT      HH      R       RC      LC       S        S        S        S        S        S
+// pair<VectorXd, MatrixXd> PathManager::innu_parseOneArm(VectorXd t, VectorXd inst, VectorXd stateVector)
+// {
+//     map<int, int> instrument_mapping = {
+//     {1, 2}, {2, 5}, {3, 6}, {4, 8}, {5, 3}, {6, 1}, {7, 0}, {8, 7}, {11, 2}, {51, 2}, {61, 2}, {71, 2}, {81, 2}, {91, 2}};
+//     // S      FT      MT      HT      HH      R       RC      LC       S        S        S        S        S        S
 
-    VectorXd instVector_i = VectorXd::Zero(9), instVector_f = VectorXd::Zero(9);
-    VectorXd instVector = VectorXd::Zero(18);
+//     VectorXd instVector_i = VectorXd::Zero(9), instVector_f = VectorXd::Zero(9);
+//     VectorXd instVector = VectorXd::Zero(18);
 
-    VectorXd nextStateVector;
+//     VectorXd nextStateVector;
 
-    bool detectHit = false;
-    double detectTime = 0.0;
-    int detectInst;
-    int instNum_i, instNum_f, preState, nextState;
+//     bool detectHit = false;
+//     double detectTime = 0.0;
+//     int detectInst;
+//     int instNum_i, instNum_f, preState, nextState;
     
-    // 타격 감지
-    for (int i = 1; i < t.rows(); i++)
-    {
-        if (inst(i) != 0)
-        {
-            detectHit = true;
-            detectTime = t(i);
-            detectInst = inst(i);
-        }
-    }
+//     // 타격 감지
+//     for (int i = 1; i < t.rows(); i++)
+//     {
+//         if (inst(i) != 0)
+//         {
+//             detectHit = true;
+//             detectTime = t(i);
+//             detectInst = inst(i);
+//         }
+//     }
 
-    // inst
-    preState = stateVector(1);
+//     // inst
+//     preState = stateVector(1);
 
-    if (inst(0) == 0)
-    {
-        // 타격으로 끝나지 않음
-        if (preState == 2 || preState == 3)
-        {
-            // 궤적 생성 중
-            nextState = preState;
-            instNum_i = stateVector(0);
-            instNum_f = detectInst;
-        }
-        else
-        {
-            if (detectHit)
-            {
-                // 다음 타격 감지
-                nextState = 2;
-                instNum_i = stateVector(0);
-                instNum_f = detectInst;
-            }
-            else
-            {
-                // 다음 타격 감지 못함
-                nextState = 0;
-                instNum_i = stateVector(0);
-                instNum_f = stateVector(0);
-            }
-        }
-    }
-    else
-    {
-        // 타격으로 끝남
-        if (detectHit)
-        {
-            // 다음 타격 감지
-            nextState = 3;
-            instNum_i = inst(0);
-            instNum_f = detectInst;
-        }
-        else
-        {
-            // 다음 타격 감지 못함
-            nextState = 1;
-            instNum_i = inst(0);
-            instNum_f = inst(0);
-        }
-    }
+//     if (inst(0) == 0)
+//     {
+//         // 타격으로 끝나지 않음
+//         if (preState == 2 || preState == 3)
+//         {
+//             // 궤적 생성 중
+//             nextState = preState;
+//             instNum_i = stateVector(0);
+//             instNum_f = detectInst;
+//         }
+//         else
+//         {
+//             if (detectHit)
+//             {
+//                 // 다음 타격 감지
+//                 nextState = 2;
+//                 instNum_i = stateVector(0);
+//                 instNum_f = detectInst;
+//             }
+//             else
+//             {
+//                 // 다음 타격 감지 못함
+//                 nextState = 0;
+//                 instNum_i = stateVector(0);
+//                 instNum_f = stateVector(0);
+//             }
+//         }
+//     }
+//     else
+//     {
+//         // 타격으로 끝남
+//         if (detectHit)
+//         {
+//             // 다음 타격 감지
+//             nextState = 3;
+//             instNum_i = inst(0);
+//             instNum_f = detectInst;
+//         }
+//         else
+//         {
+//             // 다음 타격 감지 못함
+//             nextState = 1;
+//             instNum_i = inst(0);
+//             instNum_f = inst(0);
+//         }
+//     }
 
-    instVector_i(instrument_mapping[instNum_i]) = 1.0;
-    instVector_f(instrument_mapping[instNum_f]) = 1.0;
-    instVector << instVector_i, instVector_f;
+//     instVector_i(instrument_mapping[instNum_i]) = 1.0;
+//     instVector_f(instrument_mapping[instNum_f]) = 1.0;
+//     instVector << instVector_i, instVector_f;
 
-    nextStateVector.resize(2);
-    nextStateVector << instNum_i, nextState;
+//     nextStateVector.resize(2);
+//     nextStateVector << instNum_i, nextState;
 
-    return std::make_pair(instVector, instVector);
-}
+//     return std::make_pair(instVector, instVector);
+// }

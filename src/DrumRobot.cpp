@@ -357,21 +357,21 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
 
 
             // 파일에서 한 줄을 성공적으로 읽은 경우
-            if (pathManager.innu_readMeasure(inputFile, BPMFlag) == true)
-            {
-                state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
-                break;
-            }
-            else    // 파일 끝에 도달한 경우
-            {
-                inputFile.close(); // 파일 닫기
-                fileIndex++;       // 다음 파일로 이동
-                openFlag = 1;      // 파일 열 준비
-                // 다음 파일 없어도 경로 생성 안한 악보 있을 수 있나??????????????
+            // if (pathManager.innu_readMeasure(inputFile, BPMFlag) == true)
+            // {
+            //     state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+            //     break;
+            // }
+            // else    // 파일 끝에 도달한 경우
+            // {
+            //     inputFile.close(); // 파일 닫기
+            //     fileIndex++;       // 다음 파일로 이동
+            //     openFlag = 1;      // 파일 열 준비
+            //     // 다음 파일 없어도 경로 생성 안한 악보 있을 수 있나??????????????
 
-                state.play = PlaySub::ReadMusicSheet;
-                break;
-            }
+            //     state.play = PlaySub::ReadMusicSheet;
+            //     break;
+            // }
         }
 
         state.play = PlaySub::SolveIK;
