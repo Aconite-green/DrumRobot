@@ -74,6 +74,7 @@ public:
     bool innu_readMeasure(ifstream& inputFile, bool &BPMFlag);
 
     void generateTrajectory();
+    void innu_generateTrajectory();
     void solveIK();
 
     // 브레이크 상태 저장할 구조체
@@ -164,6 +165,7 @@ private:
     vector<string> prev_col = { "0","0","1","1","0","0","0","0" };  // default 악기 위치로 맞추기
 
     MatrixXd innuMeasure;
+    double totalTime = 0.0;
 
     /////////////////////////////////////////////////////////////////////////// Play (make trajectory)
     // x, y, z 저장할 구조체
@@ -202,7 +204,7 @@ private:
     float t1, t2;           // 궤적 생성 시간
 
     void innu_parseMeasure(MatrixXd &measureMatrix);
-    pair<VectorXd, MatrixXd> innu_parseOneArm(VectorXd t, VectorXd inst, VectorXd stateVector);
+    pair<VectorXd, VectorXd> innu_parseOneArm(VectorXd t, VectorXd inst, VectorXd stateVector);
 
     VectorXd innu_inst_i = VectorXd::Zero(18);   // 전체 궤적에서 출발 악기
     VectorXd innu_inst_f = VectorXd::Zero(18);   // 전체 궤적에서 도착 악기
@@ -210,6 +212,8 @@ private:
     float innu_t_i_R, innu_t_f_R;       // 전체 궤적에서 출발 시간, 도착 시간
     float innu_t_i_L, innu_t_f_L;
     float innu_t1, innu_t2;           // 궤적 생성 시간
+
+    MatrixXd innu_state = MatrixXd::Zero(2, 3);
 
     // 타격 궤적 생성 파라미터
     typedef struct {
