@@ -81,7 +81,9 @@
         "openglsupport": "cpp",
         "strstream": "cpp",
         "queue": "cpp",
-        "mprealsupport": "cpp"
+        "mprealsupport": "cpp",
+        "*.expression": "cpp",
+        "fft": "cpp"
     },
     "makefile.launchConfigurations": [
         {

@@ -314,6 +314,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         if (pathManager.brake_buffer.empty()) // brake_buffer 비어있음 -> P_buffer, q_buffer 비어있음 -> 새로 생성
         {
+            sleep(1);
+
             // 파일을 처음 열 때만
             if (openFlag == 1)
             {
@@ -352,6 +354,24 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 state.play = PlaySub::ReadMusicSheet;
                 break;
             }
+
+
+            // 파일에서 한 줄을 성공적으로 읽은 경우
+            if (pathManager.innu_readMeasure(inputFile, BPMFlag) == true)
+            {
+                state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+                break;
+            }
+            else    // 파일 끝에 도달한 경우
+            {
+                inputFile.close(); // 파일 닫기
+                fileIndex++;       // 다음 파일로 이동
+                openFlag = 1;      // 파일 열 준비
+                // 다음 파일 없어도 경로 생성 안한 악보 있을 수 있나??????????????
+
+                state.play = PlaySub::ReadMusicSheet;
+                break;
+            }
         }
 
         state.play = PlaySub::SolveIK;
@@ -371,17 +391,17 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::SolveIK:
     {
-        pathManager.solveIK();
+        // pathManager.solveIK();
 
-        // brake
-        PathManager::Brake next_brake;
-        next_brake = pathManager.brake_buffer.front();
-        pathManager.brake_buffer.pop();
+        // // brake
+        // PathManager::Brake next_brake;
+        // next_brake = pathManager.brake_buffer.front();
+        // pathManager.brake_buffer.pop();
 
-        for (int i = 0; i < 8; i++)
-        {
-            usbio.USBIO_4761_set(i, next_brake.state[i]);
-        }
+        // for (int i = 0; i < 8; i++)
+        // {
+        //     usbio.USBIO_4761_set(i, next_brake.state[i]);
+        // }
 
         state.play = PlaySub::SetCANFrame;
 
