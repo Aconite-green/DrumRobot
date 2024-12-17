@@ -306,11 +306,11 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
         }
 
         // 디버깅: columns 벡터의 상태 출력
-        for(auto& i : columns)
-        {
-            cout << i << '\t';
-        }
-        cout << '\n';
+        // for(auto& i : columns)
+        // {
+        //     cout << i << '\t';
+        // }
+        // cout << '\n';
 
         if (!BPMFlag)
         { // 첫번째 행엔 bpm에 대한 정보
@@ -329,29 +329,29 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             // total_time 갱신
             total_time += stod(columns[1]);
 
-            // 디버깅: 각 값 출력 (누적되는 값을 확인)
-            cout << "After processing line " << cnt << "---------------------------------------------\n";
-            cout << "timeSum: " << timeSum << "\n";
-            cout << "total_time: " << total_time << "\n";
+            // // 디버깅: 각 값 출력 (누적되는 값을 확인)
+            // cout << "After processing line " << cnt << "---------------------------------------------\n";
+            // cout << "timeSum: " << timeSum << "\n";
+            // cout << "total_time: " << total_time << "\n";
 
             // columns의 원본 상태 출력
-            cout << "columns before pushing to queue:\n";
-            for(auto& i : columns)
-            {
-                cout << i << '\t';
-            }
-            cout << '\n';
+            // cout << "columns before pushing to queue:\n";
+            // for(auto& i : columns)
+            // {
+            //     cout << i << '\t';
+            // }
+            // cout << '\n';
 
             // total_time을 columns의 맨 끝에 추가
-            columns.push_back(to_string(total_time)); // total_time을 columns 끝에 추가
+            columns.emplace_back(to_string(total_time - stod(columns[1]))); // total_time을 columns 끝에 추가
 
-            // 디버깅: total_time이 제대로 추가되었는지 확인
-            cout << "columns after pushing total_time:\n";
-            for(auto& i : columns)
-            {
-                cout << i << '\t';
-            }
-            cout << "\n-----------------------------------------------------------------------------------------\n";
+            // // 디버깅: total_time이 제대로 추가되었는지 확인
+            // cout << "columns after pushing total_time:\n";
+            // for(auto& i : columns)
+            // {
+            //     cout << i << '\t';
+            // }
+            // cout << "\n-----------------------------------------------------------------------------------------\n";
 
             // 큐에 저장
             Q.push(columns);
@@ -1601,6 +1601,8 @@ bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag, double &t
             // timeSum 누적
             timeSum += stod(columns[1]);
             // total_time 갱신
+            //첫 루프에는 0이여야 하고 그다음부터 더해줘야대.... 
+            //지금 현재 시간 총 시간이라고 되어있는데 첫줄 분석할떄는 현재 시간이 0이자나 아니면 
             total_time += stod(columns[1]);
 
             // 디버깅: 각 값 출력 (누적되는 값을 확인)
