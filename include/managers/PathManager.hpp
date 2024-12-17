@@ -214,6 +214,8 @@ private:
     float innu_t1, innu_t2;           // 궤적 생성 시간
 
     MatrixXd innu_state = MatrixXd::Zero(2, 3);
+    VectorXd innu_hit_state_R = VectorXd::Zero(2);
+    VectorXd innu_hit_state_L = VectorXd::Zero(2);
 
     // 타격 궤적 생성 파라미터
     typedef struct {
