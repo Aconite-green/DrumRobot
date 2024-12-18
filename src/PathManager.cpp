@@ -407,6 +407,7 @@ void PathManager::solveIK()
 }
 
 bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum)
+
 {
     string line;
 
@@ -424,16 +425,7 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             columns.push_back(item);
             cnt++;
 
-            // 디버깅: 각 항목 출력
-            // std::cout << cnt << "--------------------getline----------------------------\n" << item << "\n";
         }
-
-        // 디버깅: columns 벡터의 상태 출력
-        for(auto& i : columns)
-        {
-            cout << i << '\t';
-        }
-        cout << '\n';
 
         if (!BPMFlag)
         { // 첫번째 행엔 bpm에 대한 정보
@@ -447,34 +439,16 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
         }
         else
         {
-            // timeSum 누적
-            timeSum += stod(columns[1]);
-            // total_time 갱신
-            total_time += stod(columns[1]);
-
-            // // 디버깅: 각 값 출력 (누적되는 값을 확인)
-            // cout << "After processing line " << cnt << "---------------------------------------------\n";
-            // cout << "timeSum: " << timeSum << "\n";
-            // cout << "total_time: " << total_time << "\n";
-
-            // // columns의 원본 상태 출력
-            // cout << "columns before pushing to queue:\n";
-            // for(auto& i : columns)
-            // {
-            //     cout << i << '\t';
-            // }
-            // cout << '\n';
+            
 
             // total_time을 columns의 맨 끝에 추가
-            columns.push_back(to_string(total_time - stod(columns[1]))); // total_time을 columns 끝에 추가
+            columns.emplace_back(to_string(total_time)); // total_time을 columns 끝에 추가
 
-            // // 디버깅: total_time이 제대로 추가되었는지 확인
-            // cout << "columns after pushing total_time:\n";
-            // for(auto& i : columns)
-            // {
-            //     cout << i << '\t';
-            // }
-            // cout << "\n-----------------------------------------------------------------------------------------\n";
+            // timeSum 누적
+            timeSum += stod(columns[1]);
+
+            // total_time 갱신
+            total_time += stod(columns[1]);
 
             // 큐에 저장
             Q.push(columns);
@@ -715,18 +689,19 @@ void PathManager::getInstrument()
     }
     else if (norm_R_f == 0 && norm_R_i == 1)
     {
-        inst_f.block(0, 0, 9, 1) = pre_inst_R;
+        inst_f.block(0, 0, 9, 1) = inst_i.block(0, 0, 9, 1);
+        pre_inst_R = inst_i.block(0, 0, 9, 1);
         t_i_R = t1;
         t_f_R = t2;
     }
     else if (norm_R_f == 1 && norm_R_i == 0)
     {
         inst_i.block(0, 0, 9, 1) = pre_inst_R;
-        pre_inst_R = inst_f.block(0, 0, 9, 1);
+        pre_inst_R = inst_i.block(0, 0, 9, 1);
     }
     else if (norm_R_f == 1 && norm_R_i == 1)
     {
-        pre_inst_R = inst_f.block(0, 0, 9, 1);
+        pre_inst_R = inst_i.block(0, 0, 9, 1);
     }
 
     if (norm_L_f == 0 && norm_L_i == 0)
@@ -738,18 +713,19 @@ void PathManager::getInstrument()
     }
     else if (norm_L_f == 0 && norm_L_i == 1)
     {
-        inst_f.block(9, 0, 9, 1) = pre_inst_L;
+        inst_f.block(9, 0, 9, 1) = inst_i.block(9, 0, 9, 1);
+        pre_inst_L = inst_i.block(9, 0, 9, 1);
         t_i_L = t1;
         t_f_L = t2;
     }
     else if (norm_L_f == 1 && norm_L_i == 0)
     {
         inst_i.block(9, 0, 9, 1) = pre_inst_L;
-        pre_inst_L = inst_f.block(9, 0, 9, 1);
+        pre_inst_L = inst_i.block(9, 0, 9, 1);
     }
     else if (norm_L_f == 1 && norm_L_i == 1)
     {
-        pre_inst_L = inst_f.block(9, 0, 9, 1);
+        pre_inst_L = inst_i.block(9, 0, 9, 1);
     }
 }
 
