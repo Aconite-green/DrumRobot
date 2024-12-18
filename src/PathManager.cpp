@@ -108,7 +108,10 @@ void PathManager::SetReadyAngle()
     {
         readyArr[i] = qk(i);
     }
+
     HitParameter param;
+    readyArr[4] += param.elbowStayAngle;
+    readyArr[6] += param.elbowStayAngle;
     readyArr[7] = param.wristStayAngle;
     readyArr[8] = param.wristStayAngle;
 }
@@ -286,10 +289,10 @@ void PathManager::innu_generateTrajectory()
     Pf_R << Pf(0), Pf(1), Pf(2);
     Pf_L << Pf(3), Pf(4), Pf(5);
 
-    std::cout << "\nPi_R\n" << Pi_R.transpose()
-    << "\nPi_L\n" << Pi_L.transpose()
-    << "\nPf_R\n" << Pf_R.transpose()
-    << "\nPf_L\n" << Pf_L.transpose() << std::endl;
+    // std::cout << "\nPi_R\n" << Pi_R.transpose()
+    // << "\nPi_L\n" << Pi_L.transpose()
+    // << "\nPf_R\n" << Pf_R.transpose()
+    // << "\nPf_L\n" << Pf_L.transpose() << std::endl;
 
     // trajectory
     n = (innu_t2 - innu_t1) / dt;
@@ -1714,9 +1717,10 @@ bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
             innuMeasure.resize(1, 9);
             innuMeasure = MatrixXd::Zero(1, 9);
 
-            // 초기 위치 스네어
-            innuMeasure(0, 2) = 1.0;
-            innuMeasure(0, 3) = 1.0;
+            innu_state.resize(2, 3);
+            innu_state = MatrixXd::Zero(2, 3);
+            innu_state(0, 1) = 1.0;
+            innu_state(1, 1) = 1.0;
         }
         else
         {
@@ -1728,7 +1732,7 @@ bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
 
             // total time 누적
             totalTime += innuMeasure(innuMeasure.rows() - 1, 1);
-            innuMeasure(innuMeasure.rows() - 1, 8) = totalTime;
+            innuMeasure(innuMeasure.rows() - 1, 8) = totalTime * 100.0 / bpm;
 
             // timeSum 누적
             timeSum += innuMeasure(innuMeasure.rows() - 1, 1);
@@ -1785,9 +1789,6 @@ void PathManager::innu_parseMeasure(MatrixXd &measureMatrix)
 
     std::cout << "\n ////////////// t1 -> t2\n";
     std::cout << innu_t1 << " -> " << innu_t2;
-    // std::cout << "\n ////////////// state\n";
-    // std::cout << innu_state;
-    // std::cout << "\n ////////////// \n";
 
     // 읽은 줄 삭제
     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
