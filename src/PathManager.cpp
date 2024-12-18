@@ -256,7 +256,7 @@ void PathManager::generateTrajectory()
     }
 }
 
-void PathManager::innu_generateTrajectory()
+void PathManager::generateTrajectory___()
 {
     // position
     VectorXd Pi(6), Pf(6);
@@ -274,15 +274,15 @@ void PathManager::innu_generateTrajectory()
     float q0_t1 = 0.0, q0_t2 = 0.0;
 
     // parse
-    innu_parseMeasure(innuMeasure);
+    parseMeasure___(innuMeasure);
 
     // time
-    delta_t_measure_R = innu_t_f_R - innu_t_i_R;
-    delta_t_measure_L = innu_t_f_L - innu_t_i_L;
+    delta_t_measure_R = t_f_R - t_i_R;
+    delta_t_measure_L = t_f_L - t_i_L;
 
     // position
-    Pi = getTargetPosition(innu_inst_i);
-    Pf = getTargetPosition(innu_inst_f);
+    Pi = getTargetPosition(inst_i);
+    Pf = getTargetPosition(inst_f);
 
     Pi_R << Pi(0), Pi(1), Pi(2);
     Pi_L << Pi(3), Pi(4), Pi(5);
@@ -295,12 +295,12 @@ void PathManager::innu_generateTrajectory()
     // << "\nPf_L\n" << Pf_L.transpose() << std::endl;
 
     // trajectory
-    n = (innu_t2 - innu_t1) / dt;
+    n = (t2 - t1) / dt;
     for (int i = 0; i < n; i++)
     {
         Position Pt;
-        float t_R = dt * i + innu_t1 - innu_t_i_R;
-        float t_L = dt * i + innu_t1 - innu_t_i_L;
+        float t_R = dt * i + t1 - t_i_R;
+        float t_L = dt * i + t1 - t_i_L;
         
         s_R = timeScaling(0.0f, delta_t_measure_R, t_R);
         s_L = timeScaling(0.0f, delta_t_measure_L, t_L);
@@ -346,7 +346,7 @@ void PathManager::innu_generateTrajectory()
         MatrixXd A_1;
         MatrixXd sol;
 
-        float t21 = innu_t2 - innu_t1;
+        float t21 = t2 - t1;
 
         A.resize(4,4);
         b.resize(4,1);
@@ -365,8 +365,8 @@ void PathManager::innu_generateTrajectory()
         
         // wrist & elbow
         HitParameter param;
-        qt.add_qR = makeHitTrajetory(innu_t1, innu_t2, t, innu_hit_state_R, param);
-        qt.add_qL = makeHitTrajetory(innu_t1, innu_t2, t, innu_hit_state_L, param);
+        qt.add_qR = makeHitTrajetory(t1, t2, t, hit_state_R, param);
+        qt.add_qL = makeHitTrajetory(t1, t2, t, hit_state_L, param);
 
         // brake
         for (int j = 0; j < 8; j++)
@@ -410,7 +410,6 @@ void PathManager::solveIK()
 }
 
 bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSum)
-
 {
     string line;
 
@@ -1658,7 +1657,7 @@ vector<float> PathManager::fkfun()
     return P;
 }
 
-bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
+bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
 {
     string row;
     double timeSum = 0.0;
@@ -1693,10 +1692,10 @@ bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
             innuMeasure.resize(1, 9);
             innuMeasure = MatrixXd::Zero(1, 9);
 
-            innu_state.resize(2, 3);
-            innu_state = MatrixXd::Zero(2, 3);
-            innu_state(0, 1) = 1.0;
-            innu_state(1, 1) = 1.0;
+            state___.resize(2, 3);
+            state___ = MatrixXd::Zero(2, 3);
+            state___(0, 1) = 1.0;
+            state___(1, 1) = 1.0;
         }
         else
         {
@@ -1726,45 +1725,45 @@ bool PathManager::innu_readMeasure(ifstream& inputFile, bool &BPMFlag)
     return false;
 }
 
-void PathManager::innu_parseMeasure(MatrixXd &measureMatrix)
+void PathManager::parseMeasure___(MatrixXd &measureMatrix)
 {
     VectorXd Measure_time = measureMatrix.col(8);
     VectorXd Measure_R = measureMatrix.col(2);
     VectorXd Measure_L = measureMatrix.col(3);
 
-    pair<VectorXd, VectorXd> R = innu_parseOneArm(Measure_time, Measure_R, innu_state.row(0));
-    pair<VectorXd, VectorXd> L = innu_parseOneArm(Measure_time, Measure_L, innu_state.row(1));
+    pair<VectorXd, VectorXd> R = parseOneArm___(Measure_time, Measure_R, state___.row(0));
+    pair<VectorXd, VectorXd> L = parseOneArm___(Measure_time, Measure_L, state___.row(1));
 
     // 데이터 저장
-    innu_inst_i << R.first.block(1,0,9,1), L.first.block(1,0,9,1);
-    innu_inst_f << R.first.block(11,0,9,1), L.first.block(11,0,9,1);
+    inst_i << R.first.block(1,0,9,1), L.first.block(1,0,9,1);
+    inst_f << R.first.block(11,0,9,1), L.first.block(11,0,9,1);
 
-    innu_t_i_R = R.first(0);
-    innu_t_i_L = L.first(0);
-    innu_t_f_R = R.first(10);
-    innu_t_f_L = L.first(10);
+    t_i_R = R.first(0);
+    t_i_L = L.first(0);
+    t_f_R = R.first(10);
+    t_f_L = L.first(10);
 
-    innu_t1 = measureMatrix(0, 8);
-    innu_t2 = measureMatrix(1, 8);
+    t1 = measureMatrix(0, 8);
+    t2 = measureMatrix(1, 8);
 
-    innu_hit_state_R.resize(2);
-    innu_hit_state_R << measureMatrix(0,2), measureMatrix(1,2);
-    innu_hit_state_L.resize(2);
-    innu_hit_state_L << measureMatrix(0,3), measureMatrix(1,3);
+    hit_state_R.resize(2);
+    hit_state_R << measureMatrix(0,2), measureMatrix(1,2);
+    hit_state_L.resize(2);
+    hit_state_L << measureMatrix(0,3), measureMatrix(1,3);
 
-    innu_state.block(0,0,1,3) = R.second.transpose();
-    innu_state.block(1,0,1,3) = L.second.transpose();
+    state___.block(0,0,1,3) = R.second.transpose();
+    state___.block(1,0,1,3) = L.second.transpose();
 
     std::cout << "\n ////////////// R\n";
-    std::cout << innu_inst_i.block(0,0,9,1).transpose() << " -> " << innu_inst_f.block(0,0,9,1).transpose();
-    std::cout << "\n /// ti -> tf : " << innu_t_i_R << " -> " << innu_t_f_R;
+    std::cout << inst_i.block(0,0,9,1).transpose() << " -> " << inst_f.block(0,0,9,1).transpose();
+    std::cout << "\n /// ti -> tf : " << t_i_R << " -> " << t_f_R;
     
     std::cout << "\n ////////////// L\n";
-    std::cout << innu_inst_i.block(9,0,9,1).transpose() << " -> " << innu_inst_f.block(9,0,9,1).transpose();
-    std::cout << "\n /// ti -> tf : " << innu_t_i_L << " -> " << innu_t_f_L;
+    std::cout << inst_i.block(9,0,9,1).transpose() << " -> " << inst_f.block(9,0,9,1).transpose();
+    std::cout << "\n /// ti -> tf : " << t_i_L << " -> " << t_f_L;
 
     std::cout << "\n ////////////// t1 -> t2\n";
-    std::cout << innu_t1 << " -> " << innu_t2;
+    std::cout << t1 << " -> " << t2;
 
     // 읽은 줄 삭제
     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
@@ -1773,7 +1772,7 @@ void PathManager::innu_parseMeasure(MatrixXd &measureMatrix)
     measureMatrix = tmp_matrix;
 }
 
-pair<VectorXd, VectorXd> PathManager::innu_parseOneArm(VectorXd t, VectorXd inst, VectorXd stateVector)
+pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, VectorXd stateVector)
 {
     map<int, int> instrument_mapping = {
     {1, 2}, {2, 5}, {3, 6}, {4, 8}, {5, 3}, {6, 1}, {7, 0}, {8, 7}, {11, 2}, {51, 2}, {61, 2}, {71, 2}, {81, 2}, {91, 2}};

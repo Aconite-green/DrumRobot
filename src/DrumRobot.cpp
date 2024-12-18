@@ -355,7 +355,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
 
 
             // // 파일에서 한 줄을 성공적으로 읽은 경우
-            // if (pathManager.innu_readMeasure(inputFile, BPMFlag) == true)
+            // if (pathManager.readMeasure___(inputFile, BPMFlag) == true)
             // {
             //     state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
             //     break;
@@ -381,7 +381,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     {
         pathManager.generateTrajectory();
 
-        // pathManager.innu_generateTrajectory();
+        // pathManager.generateTrajectory___();
 
         pathManager.line++;
         
