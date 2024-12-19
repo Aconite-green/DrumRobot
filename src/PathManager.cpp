@@ -1765,6 +1765,9 @@ void PathManager::parseMeasure___(MatrixXd &measureMatrix)
     std::cout << "\n ////////////// t1 -> t2\n";
     std::cout << t1 << " -> " << t2;
 
+    std::cout << "\n ////////////// state\n";
+    std::cout << state___;
+
     // 읽은 줄 삭제
     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
     tmp_matrix = measureMatrix.block(1, 0, tmp_matrix.rows(), tmp_matrix.cols());
@@ -1787,7 +1790,7 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
     double detectTime = 0, t_i, t_f;
     int detectInst = 0, instNum_i, instNum_f;
     int preState, nextState;
-    double threshold = 1.2;
+    double threshold = 1.2*100.0/bpm;   // 일단 이렇게 하면 1줄만 읽는 일 없음
     
     // 타격 감지
     for (int i = 1; i < t.rows(); i++)

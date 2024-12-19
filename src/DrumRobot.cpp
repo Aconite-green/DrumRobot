@@ -354,6 +354,34 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
             }
 
 
+            // // 파일을 처음 열 때만
+            // if (openFlag == 1)
+            // {
+            //     openFlag = 0; // 파일 열기 상태 초기화
+            //     std::string currentFile = basePath + musicName + std::to_string(fileIndex) + ".txt";
+            //     inputFile.open(currentFile); // 파일 열기
+                
+            //     if (!inputFile.is_open()) // 파일 열기 실패
+            //     {
+            //         if(pathManager.innuMeasure.rows() > 1)
+            //         {
+            //             state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+            //             break;
+            //         }
+            //         else 
+            //         {
+            //             std::cout << "Play is Over\n";
+            //             state.main = Main::AddStance;
+            //             state.play = PlaySub::TimeCheck;
+            //             addStanceFlagSetting("goToHome");
+            //             pathManager.line = 0;
+            //             usleep(500000);     // 0.5s
+            //             break; // 파일 열지 못했으므로 상태 변경 후 종료
+            //         }
+            //     }
+            // }
+
+            // std::cout << "\n//////////////////////////////// line : " << pathManager.line + 1 << "\n";
             // // 파일에서 한 줄을 성공적으로 읽은 경우
             // if (pathManager.readMeasure___(inputFile, BPMFlag) == true)
             // {

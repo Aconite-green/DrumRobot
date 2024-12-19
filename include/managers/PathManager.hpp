@@ -85,6 +85,7 @@ public:
 
     queue<Brake> brake_buffer;
     int line = 0;  ///< 연주를 진행하고 있는 줄. 필요 없음
+    MatrixXd innuMeasure;
 
     /////////////////////////////////////////////////////////////////////////// AddStance
 
@@ -164,7 +165,6 @@ private:
     int line_n = 0; 
     vector<string> prev_col = { "0","0","1","1","0","0","0","0" };  // default 악기 위치로 맞추기
 
-    MatrixXd innuMeasure;
     double totalTime = 0.0;
 
     /////////////////////////////////////////////////////////////////////////// Play (make trajectory)
