@@ -155,6 +155,7 @@ private:
 
     float bpm = 0;         /// txt 악보의 BPM 정보.
 
+    double round_sum = 0;
     double threshold = 2.4;
     double total_time = 0.0;
     double detect_time_R = 0;

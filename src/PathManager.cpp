@@ -173,6 +173,8 @@ void PathManager::generateTrajectory()
 
     // trajectory
     n = (t2 - t1) / dt;
+
+
     for (int i = 0; i < n; i++)
     {
         Position Pt;
@@ -296,6 +298,17 @@ void PathManager::generateTrajectory___()
 
     // trajectory
     n = (t2 - t1) / dt;
+
+    round_sum += (int)(n * 1000) % 1000;
+    if (round_sum >= 1000)
+    {
+        round_sum -= 1000;
+        n++;
+    }
+    n = (int)n;
+
+    cout << "\n---------------------" << n << '\n';
+
     for (int i = 0; i < n; i++)
     {
         Position Pt;
@@ -1716,8 +1729,8 @@ bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
             // timeSum이 threshold를 넘으면 true 반환
             if (timeSum >= threshold)
             {
-                std::cout << measureMatrix;
-                std::cout << "\n ////////////// time sum : " << timeSum << "\n";
+                // std::cout << measureMatrix;
+                // std::cout << "\n ////////////// time sum : " << timeSum << "\n";
 
                 return true;
             }
@@ -1755,19 +1768,19 @@ void PathManager::parseMeasure___(MatrixXd &measureMatrix)
     state___.block(0,0,1,3) = R.second.transpose();
     state___.block(1,0,1,3) = L.second.transpose();
 
-    std::cout << "\n ////////////// R\n";
-    std::cout << inst_i.block(0,0,9,1).transpose() << " -> " << inst_f.block(0,0,9,1).transpose();
-    std::cout << "\n /// ti -> tf : " << t_i_R << " -> " << t_f_R;
+    // std::cout << "\n ////////////// R\n";
+    // std::cout << inst_i.block(0,0,9,1).transpose() << " -> " << inst_f.block(0,0,9,1).transpose();
+    // std::cout << "\n /// ti -> tf : " << t_i_R << " -> " << t_f_R;
     
-    std::cout << "\n ////////////// L\n";
-    std::cout << inst_i.block(9,0,9,1).transpose() << " -> " << inst_f.block(9,0,9,1).transpose();
-    std::cout << "\n /// ti -> tf : " << t_i_L << " -> " << t_f_L;
+    // std::cout << "\n ////////////// L\n";
+    // std::cout << inst_i.block(9,0,9,1).transpose() << " -> " << inst_f.block(9,0,9,1).transpose();
+    // std::cout << "\n /// ti -> tf : " << t_i_L << " -> " << t_f_L;
 
-    std::cout << "\n ////////////// t1 -> t2\n";
-    std::cout << t1 << " -> " << t2;
+    // std::cout << "\n ////////////// t1 -> t2\n";
+    // std::cout << t1 << " -> " << t2;
 
-    std::cout << "\n ////////////// state\n";
-    std::cout << state___;
+    // std::cout << "\n ////////////// state\n";
+    // std::cout << state___;
 
     // 읽은 줄 삭제
     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
@@ -1796,7 +1809,7 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
     // 타격 감지
     for (int i = 1; i < t.rows(); i++)
     {
-        if (threshold < t(i) - t(0))
+        if (round(10000*threshold) < round(10000*(t(i) - t(0))))
         {
             break;
         }
