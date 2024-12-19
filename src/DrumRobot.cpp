@@ -404,8 +404,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::GenerateTrajectory:
     {
-        if (pathManager.line == 78)
-            cout << "test-----------------------------\n";
         pathManager.generateTrajectory();
 
         // pathManager.generateTrajectory___();
@@ -418,8 +416,6 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::SolveIK:
     {
-        if (pathManager.line == 78)
-            cout << "test-----------------------------\n";
         pathManager.solveIK();
 
         // brake

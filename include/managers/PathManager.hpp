@@ -86,7 +86,7 @@ public:
     queue<Brake> brake_buffer;
     queue<vector<string>> Q; // 읽은 악보 저장한 큐
     int line = 0;  ///< 연주를 진행하고 있는 줄. 필요 없음
-    MatrixXd innuMeasure;
+    MatrixXd measureMatrix;
 
     /////////////////////////////////////////////////////////////////////////// AddStance
 

@@ -274,7 +274,7 @@ void PathManager::generateTrajectory___()
     float q0_t1 = 0.0, q0_t2 = 0.0;
 
     // parse
-    parseMeasure___(innuMeasure);
+    parseMeasure___(measureMatrix);
 
     // time
     delta_t_measure_R = t_f_R - t_i_R;
@@ -1663,9 +1663,9 @@ bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
     string row;
     double timeSum = 0.0;
 
-    for (int i = 1; i < innuMeasure.rows(); i++)
+    for (int i = 1; i < measureMatrix.rows(); i++)
     {
-        timeSum += innuMeasure(i, 1);
+        timeSum += measureMatrix(i, 1);
     }
 
     while(getline(inputFile, row))
@@ -1690,8 +1690,8 @@ bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
             pre_inst_R << default_right;
             pre_inst_L << default_left;
 
-            innuMeasure.resize(1, 9);
-            innuMeasure = MatrixXd::Zero(1, 9);
+            measureMatrix.resize(1, 9);
+            measureMatrix = MatrixXd::Zero(1, 9);
 
             state___.resize(2, 3);
             state___ = MatrixXd::Zero(2, 3);
@@ -1700,23 +1700,23 @@ bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
         }
         else
         {
-            innuMeasure.conservativeResize(innuMeasure.rows() + 1, innuMeasure.cols());
+            measureMatrix.conservativeResize(measureMatrix.rows() + 1, measureMatrix.cols());
             for (int i = 0; i < 8; i++)
             {
-                innuMeasure(innuMeasure.rows() - 1, i) = stod(items[i]);
+                measureMatrix(measureMatrix.rows() - 1, i) = stod(items[i]);
             }
 
             // total time 누적
-            totalTime += innuMeasure(innuMeasure.rows() - 1, 1);
-            innuMeasure(innuMeasure.rows() - 1, 8) = totalTime * 100.0 / bpm;
+            totalTime += measureMatrix(measureMatrix.rows() - 1, 1);
+            measureMatrix(measureMatrix.rows() - 1, 8) = totalTime * 100.0 / bpm;
 
             // timeSum 누적
-            timeSum += innuMeasure(innuMeasure.rows() - 1, 1);
+            timeSum += measureMatrix(measureMatrix.rows() - 1, 1);
 
             // timeSum이 threshold를 넘으면 true 반환
             if (timeSum >= threshold)
             {
-                std::cout << innuMeasure;
+                std::cout << measureMatrix;
                 std::cout << "\n ////////////// time sum : " << timeSum << "\n";
 
                 return true;
