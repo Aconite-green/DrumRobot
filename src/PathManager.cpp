@@ -479,6 +479,7 @@ bool PathManager::readMeasure(ifstream& inputFile, bool &BPMFlag, double &timeSu
             }
         }
     }
+    // sleep(5);
     return false;
 }
 

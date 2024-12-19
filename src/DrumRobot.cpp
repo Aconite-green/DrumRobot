@@ -323,6 +323,30 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                 
                 if (!inputFile.is_open()) // 파일 열기 실패
                 {
+                    if(!pathManager.Q.empty())
+                    {
+                        queue<vector<string>> tempQ = pathManager.Q; // 큐 복사본 사용
+                        while (!tempQ.empty())
+                        {
+                            vector<string> current = tempQ.front();
+                            tempQ.pop();
+
+                            // 큐의 각 요소 출력 (탭으로 구분)
+                            for (size_t i = 0; i < current.size(); ++i)
+                            {
+                                cout << current[i];
+                                if (i != current.size() - 1) // 마지막 요소가 아니라면 탭 추가
+                                    cout << '\t';
+                            }
+                            cout << '\n';
+                        }
+                        cout << '\n';
+                        // 경로 생성 완료 후 다음 상태로 전환
+                        pathManager.parseMeasure(timeSum); // 후속 작업
+                        state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+                        break;  // 상태 전환 후 종료
+                    }
+                    else{
                     std::cout << "Play is Over\n";
                     state.main = Main::AddStance;
                     state.play = PlaySub::TimeCheck;
@@ -330,6 +354,7 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                     pathManager.line = 0;
                     usleep(500000);     // 0.5s
                     break; // 파일 열지 못했으므로 상태 변경 후 종료
+                    }
                 }
             }
 
@@ -354,22 +379,22 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
             }
 
 
-            // // 파일에서 한 줄을 성공적으로 읽은 경우
-            // if (pathManager.readMeasure___(inputFile, BPMFlag) == true)
-            // {
-            //     state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
-            //     break;
-            // }
-            // else    // 파일 끝에 도달한 경우
-            // {
-            //     inputFile.close(); // 파일 닫기
-            //     fileIndex++;       // 다음 파일로 이동
-            //     openFlag = 1;      // 파일 열 준비
-            //     // 다음 파일 없어도 경로 생성 안한 악보 있을 수 있나??????????????
+            // 파일에서 한 줄을 성공적으로 읽은 경우
+            if (pathManager.readMeasure___(inputFile, BPMFlag) == true)
+            {
+                state.play = PlaySub::GenerateTrajectory; // GenerateTrajectory 상태로 전환
+                break;
+            }
+            else    // 파일 끝에 도달한 경우
+            {
+                inputFile.close(); // 파일 닫기
+                fileIndex++;       // 다음 파일로 이동
+                openFlag = 1;      // 파일 열 준비
+                // 다음 파일 없어도 경로 생성 안한 악보 있을 수 있나??????????????
 
-            //     state.play = PlaySub::ReadMusicSheet;
-            //     break;
-            // }
+                state.play = PlaySub::ReadMusicSheet;
+                break;
+            }
         }
 
         state.play = PlaySub::SolveIK;
@@ -379,6 +404,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::GenerateTrajectory:
     {
+        if (pathManager.line == 78)
+            cout << "test-----------------------------\n";
         pathManager.generateTrajectory();
 
         // pathManager.generateTrajectory___();
@@ -391,6 +418,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
     }
     case PlaySub::SolveIK:
     {
+        if (pathManager.line == 78)
+            cout << "test-----------------------------\n";
         pathManager.solveIK();
 
         // brake

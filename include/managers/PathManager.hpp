@@ -84,6 +84,7 @@ public:
     }Brake;
 
     queue<Brake> brake_buffer;
+    queue<vector<string>> Q; // 읽은 악보 저장한 큐
     int line = 0;  ///< 연주를 진행하고 있는 줄. 필요 없음
 
     /////////////////////////////////////////////////////////////////////////// AddStance
@@ -152,7 +153,6 @@ private:
     string trimWhitespace(const std::string &str);
 
     float bpm = 0;         /// txt 악보의 BPM 정보.
-    queue<vector<string>> Q; // 읽은 악보 저장한 큐
 
     double threshold = 2.4;
     double total_time = 0.0;
