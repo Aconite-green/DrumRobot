@@ -120,13 +120,16 @@ void PathManager::InitVal()
 {
     threshold = 2.4;
     total_time = 0.0;
+    totalTime = 0.0;
     detect_time_R = 0;
     detect_time_L = 0;
     current_time = 0;
     moving_start_R = 0;
     moving_start_L = 0;
     line_n = 0; 
+    round_sum = 0;
     vector<string> prev_col = { "0","0","1","1","0","0","0","0" };  // default 악기 위치로 맞추기
+    state___ = MatrixXd::Zero(2, 3);
 }
 
 ////////////////////////////////////////////////////////////////////////////////    
@@ -307,7 +310,7 @@ void PathManager::generateTrajectory___()
     }
     n = (int)n;
 
-    cout << "\n---------------------" << n << '\n';
+    // cout << "\n---------------------" << n << '\n';
 
     for (int i = 0; i < n; i++)
     {
@@ -346,11 +349,10 @@ void PathManager::generateTrajectory___()
         }
     }
 
-    // waist, wrist, elbow & brake
+    // waist, wrist & elbow
     for (int i = 0; i < n; i++)
     {
         AddAngle qt;
-        Brake brake_t;
         float t = dt * i;
         
         // waist
@@ -381,13 +383,20 @@ void PathManager::generateTrajectory___()
         qt.add_qR = makeHitTrajetory(t1, t2, t, hit_state_R, param);
         qt.add_qL = makeHitTrajetory(t1, t2, t, hit_state_L, param);
 
-        // brake
+        q_buffer.push(qt);
+    }
+
+    // brake
+    for (int i = 0; i < n; i++)
+    {
+        Brake brake_t;
+        
+
         for (int j = 0; j < 8; j++)
         {
             brake_t.state[j] = false;
         }
 
-        q_buffer.push(qt);
         brake_buffer.push(brake_t);
     }
 }
@@ -1729,8 +1738,8 @@ bool PathManager::readMeasure___(ifstream& inputFile, bool &BPMFlag)
             // timeSum이 threshold를 넘으면 true 반환
             if (timeSum >= threshold)
             {
-                // std::cout << measureMatrix;
-                // std::cout << "\n ////////////// time sum : " << timeSum << "\n";
+                std::cout << measureMatrix;
+                std::cout << "\n ////////////// time sum : " << timeSum << "\n";
 
                 return true;
             }
@@ -1768,19 +1777,19 @@ void PathManager::parseMeasure___(MatrixXd &measureMatrix)
     state___.block(0,0,1,3) = R.second.transpose();
     state___.block(1,0,1,3) = L.second.transpose();
 
-    // std::cout << "\n ////////////// R\n";
-    // std::cout << inst_i.block(0,0,9,1).transpose() << " -> " << inst_f.block(0,0,9,1).transpose();
-    // std::cout << "\n /// ti -> tf : " << t_i_R << " -> " << t_f_R;
+    std::cout << "\n ////////////// R\n";
+    std::cout << inst_i.block(0,0,9,1).transpose() << " -> " << inst_f.block(0,0,9,1).transpose();
+    std::cout << "\n /// ti -> tf : " << t_i_R << " -> " << t_f_R;
     
-    // std::cout << "\n ////////////// L\n";
-    // std::cout << inst_i.block(9,0,9,1).transpose() << " -> " << inst_f.block(9,0,9,1).transpose();
-    // std::cout << "\n /// ti -> tf : " << t_i_L << " -> " << t_f_L;
+    std::cout << "\n ////////////// L\n";
+    std::cout << inst_i.block(9,0,9,1).transpose() << " -> " << inst_f.block(9,0,9,1).transpose();
+    std::cout << "\n /// ti -> tf : " << t_i_L << " -> " << t_f_L;
 
-    // std::cout << "\n ////////////// t1 -> t2\n";
-    // std::cout << t1 << " -> " << t2;
+    std::cout << "\n ////////////// t1 -> t2\n";
+    std::cout << t1 << " -> " << t2;
 
-    // std::cout << "\n ////////////// state\n";
-    // std::cout << state___;
+    std::cout << "\n ////////////// state\n";
+    std::cout << state___;
 
     // 읽은 줄 삭제
     MatrixXd tmp_matrix(measureMatrix.rows() - 1, measureMatrix.cols());
@@ -1827,12 +1836,12 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
     // inst
     preState = stateVector(2);
 
+    // 타격으로 끝나지 않음
     if (inst(0) == 0)
     {
-        // 타격으로 끝나지 않음
+        // 궤적 생성 중
         if (preState == 2 || preState == 3)
         {
-            // 궤적 생성 중
             nextState = preState;
 
             instNum_i = stateVector(1);
@@ -1843,9 +1852,9 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
         }
         else
         {
+            // 다음 타격 감지
             if (detectHit)
             {
-                // 다음 타격 감지
                 nextState = 2;
 
                 instNum_i = stateVector(1);
@@ -1854,9 +1863,9 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
                 t_i = t(0);
                 t_f = detectTime;
             }
+            // 다음 타격 감지 못함
             else
             {
-                // 다음 타격 감지 못함
                 nextState = 0;
 
                 instNum_i = stateVector(1);
@@ -1867,12 +1876,12 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
             }
         }
     }
+    // 타격으로 끝남
     else
     {
-        // 타격으로 끝남
+        // 다음 타격 감지
         if (detectHit)
         {
-            // 다음 타격 감지
             nextState = 3;
 
             instNum_i = inst(0);
@@ -1881,9 +1890,9 @@ pair<VectorXd, VectorXd> PathManager::parseOneArm___(VectorXd t, VectorXd inst, 
             t_i = t(0);
             t_f = detectTime;
         }
+        // 다음 타격 감지 못함
         else
         {
-            // 다음 타격 감지 못함
             nextState = 1;
 
             instNum_i = inst(0);

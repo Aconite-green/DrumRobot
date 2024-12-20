@@ -207,7 +207,14 @@ private:
     void parseMeasure___(MatrixXd &measureMatrix);
     pair<VectorXd, VectorXd> parseOneArm___(VectorXd t, VectorXd inst, VectorXd stateVector);
 
-    MatrixXd state___ = MatrixXd::Zero(2, 3);
+    // state
+    // 0 : 0 <- 0
+    // 1 : 0 <- 1
+    // 2 : 1 <- 0
+    // 3 : 1 <- 1
+
+    MatrixXd state___ = MatrixXd::Zero(2, 3); // [이전 시간, 이전 악기, 상태]
+    
 
     // 타격 궤적 생성 파라미터
     typedef struct {

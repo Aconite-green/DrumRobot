@@ -402,7 +402,8 @@ void DrumRobot::SendPlayProcess(int periodMicroSec, string musicName)
                         state.play = PlaySub::TimeCheck;
                         addStanceFlagSetting("goToHome");
                         pathManager.line = 0;
-                        usleep(500000);     // 0.5s
+                        pathManager.InitVal();
+                        sleep(1);     // 1s
                         break; // 파일 열지 못했으므로 상태 변경 후 종료
                     }
                 }
